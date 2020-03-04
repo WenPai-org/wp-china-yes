@@ -3,7 +3,7 @@
 Plugin Name: WP-China-Yes
 Description: 此插件将全面替换WP访问官方服务的链接为高速稳定的中国大陆节点，以此加快站点更新版本、安装升级插件主题的速度，并彻底解决429报错问题。
 Author: 孙锡源
-Version: 1.0.0
+Version: 1.0.1
 Author URI:https://www.ibadboy.net/
 */
 
