@@ -4,12 +4,12 @@ Donate link: https://www.ibadboy.net/archives/3204.html
 Tags: China Super, 429, WP China Yes, wp-china-yes, WP-China-Yes
 Requires at least: 4.5
 Tested up to: 5.4.0
-Requires PHP: 5.2
+Requires PHP: 5.6
 Stable tag: 2.0.0
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-W此插件将全面改善中国大陆站点在访问官方服务时的用户体验，原理是将官方仓库源替换为由社区志愿者维护的国内源。
+W此插件将全面改善中国大陆站点在访问WP官方服务时的用户体验，原理是将官方仓库源替换为由社区志愿者维护的国内源。
 
 == Description ==
 

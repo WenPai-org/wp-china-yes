@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: WP-China-Yes
- * Description: 此插件将全面改善中国大陆站点在访问官方服务时的用户体验，原理是将官方仓库源替换为由社区志愿者维护的国内源。
+ * Description: 此插件将全面改善中国大陆站点在访问WP官方服务时的用户体验，原理是将官方仓库源替换为由社区志愿者维护的国内源。
  * Author: 孙锡源
  * Version: 1.9.9
  * Author URI:https://www.ibadboy.net/
@@ -15,9 +15,6 @@ define('WP_CHINA_YES_BASE_FILE', __FILE__);
 WP_CHINA_YES::init();
 
 class WP_CHINA_YES {
-    public static string $name = 'wp_china_yes';
-    public static string $option_name = 'wp_china_yes_option';
-
     public static function init() {
         if (is_admin()) {
             register_activation_hook(WP_CHINA_YES_BASE_FILE, array(
@@ -213,7 +210,7 @@ class WP_CHINA_YES {
             return $links;
         }
 
-        $settings_link = '<a href="' . menu_page_url(self::$name, false) . '">设置</a>';
+        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
 
         array_unshift($links, $settings_link);
 
@@ -225,7 +222,7 @@ class WP_CHINA_YES {
             'WP-China-Yes',
             'WP-China-Yes',
             'manage_options',
-            self::$name,
+            'wp_china_yes',
             array(__CLASS__, 'settings')
         );
     }
