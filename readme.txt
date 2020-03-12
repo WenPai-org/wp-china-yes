@@ -5,15 +5,17 @@ Tags: China Super, 429, WP China Yes, wp-china-yes, WP-China-Yes
 Requires at least: 4.5
 Tested up to: 5.4.0
 Requires PHP: 5.2
-Stable tag: 1.0.1
+Stable tag: 2.0.0
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-WP-China-Yes将接管WP站点访问官方服务时的一切流量到大陆加速节点，包括但不限于：插件主题的安装、商城图片的展示、作者的头像、主题的预览等……从而全面加快WP站点后台的访问速度，并解决429报错问题
+W此插件将全面改善中国大陆站点在访问官方服务时的用户体验，原理是将官方仓库源替换为由社区志愿者维护的国内源。
 
 == Description ==
 
-WP-China-Yes将接管WP站点访问官方服务时的一切流量到大陆加速节点，包括但不限于：插件主题的安装、商城图片的展示、作者的头像、主题的预览等……从而全面加快WP站点后台的访问速度，并解决429报错问题
+因为WordPress官方的服务器都在国外，所以中国大陆的用户在访问由WordPress官方提供的服务（插件、主题商城，WP程序版本更新等）时总是很缓慢。
+近期又因为被攻击的原因，WordPress的CDN提供商屏蔽了中国大陆的流量，导致大陆用户访问插件主题商城等服务时报429错误。
+为解决上述问题，我开发了WP-China-Yes插件，该插件可以将WP站点访问官方服务的一切流量迁移到由社区志愿者维护的大陆源上，从而全面优化用户体验。
 
 == Frequently Asked Questions ==
 
@@ -23,5 +25,9 @@ WP-China-Yes将接管WP站点访问官方服务时的一切流量到大陆加速
 
 == Changelog ==
 
+= 2.0.0 =
+* 社区源列表 完成
+* 自定义源支持 完成
+
 = 1.0.1 =
-* 基本功能完成
+* 基本功能 完成
