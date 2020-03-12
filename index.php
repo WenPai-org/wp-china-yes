@@ -41,6 +41,10 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'admin_menu'
             ));
+
+            if (empty(get_option('wp_china_yes_options'))) {
+                self::wp_china_yes_activate();
+            }
         }
     }
 
