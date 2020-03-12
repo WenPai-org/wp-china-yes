@@ -10,7 +10,7 @@
   <el-container>
     <el-header style="height: 100px;">
       <h2>WP-China-Yes</h2>
-      <span>这是一个颠覆性的插件，她将全面改善中国大陆站点在访问官方服务时的用户体验</span><br/>
+      <span>这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验</span><br/>
       <span>原理是将官方仓库源替换为由社区志愿者维护的国内源，以此达到加速的目的</span>
     </el-header>
     <el-main>
@@ -123,7 +123,7 @@
     methods: {
       changeServer() {
         let server = this.external_api.server[this.mirrors_form.community];
-        //console.log(this.external_api.server);
+
         this.server_desc = server.desc;
         this.mirrors_form.api_server = server.api_server;
         this.mirrors_form.download_server = server.download_server;
@@ -164,10 +164,11 @@
         }).then(() => {
           const loading = this.$loading({
             lock: true,
-            text: 'Loading',
+            text: '提交中',
             spinner: 'el-icon-loading',
             background: 'rgba(0, 0, 0, 0.7)'
           });
+
           let data = new FormData();
           data.append('community', vm.mirrors_form.community);
           data.append('custom_api_server', vm.mirrors_form.custom_api_server);
