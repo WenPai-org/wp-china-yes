@@ -46,7 +46,7 @@ class WP_CHINA_YES {
 
     public static function wp_china_yes_activate() {
         $options                           = array();
-        $options['community']              = 0;
+        $options['community']              = '0';
         $options['custom_api_server']      = '';
         $options['custom_download_server'] = '';
         $options['api_server']             = 'api.w.org.ibadboy.net';
