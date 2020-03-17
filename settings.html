@@ -130,7 +130,7 @@
       },
       getConfig() {
         let vm = this;
-        let root_url = window.location.href.split('wp-admin')[0]; 
+        let root_url = window.location.href.split('wp-content')[0];
         axios.get(root_url + 'wp-content/plugins/wp-china-yes/api.php?get_config')
             .then(function (response) {
               vm.mirrors_form = response.data.data;
@@ -176,7 +176,7 @@
           data.append('api_server', vm.mirrors_form.api_server);
           data.append('download_server', vm.mirrors_form.download_server);
           
-          let root_url = window.location.href.split('wp-admin')[0];
+          let root_url = window.location.href.split('wp-content')[0];
           axios.post(root_url + 'wp-content/plugins/wp-china-yes/api.php', data)
               .then(function (response) {
                 vm.$message({
