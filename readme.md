@@ -16,7 +16,7 @@
 
 ## 使用方法
 
-Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定版：[点击下载](https://github.com/sunxiyuan/wp-china-yes/releases/download/v2.0.0/wp-china-yes.zip)
+Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定版：[点击下载](https://github.com/sunxiyuan/wp-china-yes/releases/download/v2.0.1/wp-china-yes.zip)
 
 下载并安装插件后直接启用即可，该插件会自动接管所有WP访问境外服务器的流量。
 
@@ -25,10 +25,16 @@ Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定�
 
 ## 开发计划
 
-### v2.0.1
+### v2.1.0
  - [ ] 贡献者列表
  - [ ] 捐助者列表
-
+ 
+### v2.0.2
+ - [ ] 修复API接口编写不规范的问题
+ 
+### v2.0.1
+ - [x] 修复插件无法运行在子目录中的问题
+ 
 ### v2.0.0
  - [x] 社区源列表
  - [x] 自定义源支持
