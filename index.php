@@ -234,7 +234,7 @@ class WP_CHINA_YES {
     public static function settings() {
         echo <<<EOT
 <div style="height: 20px"></div>
-<iframe src="/wp-content/plugins/wp-china-yes/settings.html" 
+<iframe src="<?php echo plugins_url() ?>/wp-china-yes/settings.html" 
 frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmargin="0">
 </iframe>
 EOT;
