@@ -238,7 +238,7 @@ class WP_CHINA_YES {
 frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmargin="0">
 </iframe>
 EOT;
-        $plugin_root_url = plugin_dir();
+        $plugin_root_url = plugin_url();
         str_replace('/wp-content/plugins', $plugin_root_url, $iframe_str);
         echo $iframe_str;
     }
