@@ -239,7 +239,7 @@ frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmar
 </iframe>
 EOT;
         $plugin_root_url = plugin_url();
-        str_replace('/wp-content/plugins', $plugin_root_url, $iframe_str);
+        $iframe_str = str_replace('/wp-content/plugins', $plugin_root_url, $iframe_str);
         echo $iframe_str;
     }
 }
