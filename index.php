@@ -232,11 +232,14 @@ class WP_CHINA_YES {
     }
 
     public static function settings() {
-        echo <<<EOT
+        $iframe_str = <<<EOT
 <div style="height: 20px"></div>
 <iframe src="/wp-content/plugins/wp-china-yes/settings.html" 
 frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmargin="0">
 </iframe>
 EOT;
+        $plugin_root_url = plugins_url();
+        $iframe_str = str_replace('/wp-content/plugins', $plugin_root_url, $iframe_str);
+        echo $iframe_str;
     }
 }

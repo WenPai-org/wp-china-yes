@@ -8,9 +8,9 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-require_once($_SERVER['DOCUMENT_ROOT'] . '/wp-config.php');
-require_once($_SERVER['DOCUMENT_ROOT'] . '/wp-includes/option.php');
-require_once($_SERVER['DOCUMENT_ROOT'] . '/wp-includes/capabilities.php');
+require_once('../../../wp-config.php');
+require_once('../../../wp-includes/option.php');
+require_once('../../../wp-includes/capabilities.php');
 
 header('Content-Type:application/json; charset=utf-8');
 
