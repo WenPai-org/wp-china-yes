@@ -176,7 +176,7 @@
           data.append('custom_download_server', vm.mirrors_form.custom_download_server);
           data.append('api_server', vm.mirrors_form.api_server);
           data.append('download_server', vm.mirrors_form.download_server);
-          
+
           let root_url = window.location.href.split('wp-content')[0];
           axios.post(root_url + 'wp-content/plugins/wp-china-yes/api.php', data)
               .then(function (response) {
