@@ -106,6 +106,8 @@
 <script src="https://static.ibadboy.net/element/static/js/index.js"></script>
 <script src="https://static.ibadboy.net/element/static/js/axios.min.js"></script>
 <script>
+  const root_url = window.location.href.split('wp-content')[0];
+
   function getCookie(name) {
     let arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
     arr = document.cookie.match(reg);
@@ -144,7 +146,6 @@
       },
       getConfig() {
         let vm = this;
-        let root_url = window.location.href.split('wp-content')[0];
         let data = new FormData();
         data.append('_ajax_nonce', this.token.get_config);
         data.append('action', 'wpcy_get_config');
@@ -196,7 +197,6 @@
           data.append('api_server', vm.mirrors_form.api_server);
           data.append('download_server', vm.mirrors_form.download_server);
 
-          let root_url = window.location.href.split('wp-content')[0];
           axios.post(root_url + 'wp-admin/admin-ajax.php', data)
               .then(function (response) {
                 vm.$message({
