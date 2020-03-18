@@ -41,6 +41,18 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'admin_menu'
             ));
+            add_action('init', array(
+                __CLASS__,
+                'set_cookie'
+            ));
+            add_action('wp_ajax_wpcy_get_config', array(
+                __CLASS__,
+                'get_config'
+            ));
+            add_action('wp_ajax_wpcy_set_config', array(
+                __CLASS__,
+                'set_config'
+            ));
 
             if (empty(get_option('wp_china_yes_options'))) {
                 self::wp_china_yes_activate();
@@ -241,5 +253,56 @@ EOT;
         $plugin_root_url = plugins_url();
         $iframe_str      = str_replace('/wp-content/plugins', $plugin_root_url, $iframe_str);
         echo $iframe_str;
+    }
+
+    public static function set_cookie() {
+        if ( ! isset($_COOKIE['wp-china-yes']) && current_user_can('manage_options')) {
+            setcookie('wp-china-yes', json_encode([
+                'get_config' => wp_create_nonce('wpcy_get_config'),
+                'set_config' => wp_create_nonce('wpcy_set_config')
+            ], JSON_UNESCAPED_UNICODE), time() + 1209600, COOKIEPATH, COOKIE_DOMAIN, false);
+        }
+    }
+
+    public static function get_config() {
+        self::success('', get_option('wp_china_yes_options'));
+    }
+
+    public static function set_config() {
+        if (( ! array_key_exists('api_server', $_POST) && ! array_key_exists('download_server', $_POST)) ||
+            ( ! array_key_exists('community', $_POST) && ! array_key_exists('custom_api_server', $_POST) && ! array_key_exists('custom_download_server', $_POST))) {
+            self::error('参数错误', - 1);
+        }
+
+        $options                           = array();
+        $options['community']              = sanitize_text_field(trim($_POST['community']));
+        $options['custom_api_server']      = sanitize_text_field(trim($_POST['custom_api_server']));
+        $options['custom_download_server'] = sanitize_text_field(trim($_POST['custom_download_server']));
+        $options["api_server"]             = sanitize_text_field(trim($_POST['api_server']));
+        $options["download_server"]        = sanitize_text_field(trim($_POST['download_server']));
+        update_option("wp_china_yes_options", $options);
+        self::success('', $options);
+    }
+
+    private static function success($message = '', $data = []) {
+        header('Content-Type:application/json; charset=utf-8');
+
+        echo json_encode([
+            'code'    => 0,
+            'message' => $message,
+            'data'    => $data
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private static function error($message = '', $code = - 1) {
+        header('Content-Type:application/json; charset=utf-8');
+        header('Status:500');
+
+        echo json_encode([
+            'code'    => $code,
+            'message' => $message
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

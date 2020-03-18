@@ -106,12 +106,25 @@
 <script src="https://static.ibadboy.net/element/static/js/index.js"></script>
 <script src="https://static.ibadboy.net/element/static/js/axios.min.js"></script>
 <script>
+  function getCookie(name) {
+    let arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+    arr = document.cookie.match(reg);
+    if (arr)
+      return (decodeURIComponent(arr[2]));
+    else
+      return null;
+  }
+
   new Vue({
     el: '#app',
     data() {
       return {
         external_api: {},
         server_desc: '',
+        token: {
+          get_config: '',
+          set_config: ''
+        },
         mirrors_form: {
           community: '0',
           custom_api_server: '',
@@ -132,7 +145,11 @@
       getConfig() {
         let vm = this;
         let root_url = window.location.href.split('wp-content')[0];
-        axios.get(root_url + 'wp-content/plugins/wp-china-yes/api.php?get_config')
+        let data = new FormData();
+        data.append('_ajax_nonce', this.token.get_config);
+        data.append('action', 'wpcy_get_config');
+
+        axios.post(root_url + 'wp-admin/admin-ajax.php', data)
             .then(function (response) {
               vm.mirrors_form = response.data.data;
             })
@@ -171,6 +188,8 @@
           });
 
           let data = new FormData();
+          data.append('_ajax_nonce', this.token.set_config);
+          data.append('action', 'wpcy_set_config');
           data.append('community', vm.mirrors_form.community);
           data.append('custom_api_server', vm.mirrors_form.custom_api_server);
           data.append('custom_download_server', vm.mirrors_form.custom_download_server);
@@ -178,7 +197,7 @@
           data.append('download_server', vm.mirrors_form.download_server);
 
           let root_url = window.location.href.split('wp-content')[0];
-          axios.post(root_url + 'wp-content/plugins/wp-china-yes/api.php', data)
+          axios.post(root_url + 'wp-admin/admin-ajax.php', data)
               .then(function (response) {
                 vm.$message({
                   message: '保存成功',
@@ -203,6 +222,8 @@
     },
     created: function () {
       document.getElementById("body").style.display = "inline";
+
+      this.token = JSON.parse(getCookie('wp-china-yes'));
 
       this.getConfig();
     }
