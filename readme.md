@@ -16,7 +16,7 @@
 
 ## 使用方法
 
-Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定版：[点击下载](https://github.com/sunxiyuan/wp-china-yes/releases/download/v2.0.2/wp-china-yes.zip)
+Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定版：[点击下载](https://github.com/sunxiyuan/wp-china-yes/releases/download/v2.0.3/wp-china-yes.zip)
 
 下载并安装插件后直接启用即可，该插件会自动接管所有WP访问境外服务器的流量。
 
@@ -36,6 +36,9 @@ Master上的是开发中的版本，可能存在BUG。推荐安装最新稳定�
  - [ ] 社区源测速排序，并根据节点使用人数智能推荐负载较小的节点
  - [ ] 定时提醒排序、启动时提醒排序
  - [ ] 社区源宕机切换提示
+ 
+### v2.0.3
+ - [x] 修复修改仓库源后刷新页面无法正确展示源信息的问题
  
 ### v2.0.2
  - [x] 修复API接口编写不规范的问题
