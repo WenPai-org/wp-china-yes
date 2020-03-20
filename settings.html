@@ -153,22 +153,21 @@
         axios.post(root_url + 'wp-admin/admin-ajax.php', data)
             .then(function (response) {
               vm.mirrors_form = response.data.data;
+              axios.get('https://wp-china-yes.ibadboy.net')
+                  .then(function (response) {
+                    vm.external_api = response.data;
+                    vm.changeServer();
+                  })
+                  .catch(function (error) {
+                    vm.$message({
+                      message: error,
+                      type: 'error'
+                    });
+                  });
             })
             .catch(function (error) {
               vm.$message({
                 message: error.response.data.message,
-                type: 'error'
-              });
-            });
-
-        axios.get('https://wp-china-yes.ibadboy.net')
-            .then(function (response) {
-              vm.external_api = response.data;
-              vm.changeServer();
-            })
-            .catch(function (error) {
-              vm.$message({
-                message: error,
                 type: 'error'
               });
             });
