@@ -61,13 +61,7 @@ class WP_CHINA_YES {
     }
 
     public static function wp_china_yes_activate() {
-        $options                           = array();
-        $options['community']              = '0';
-        $options['custom_api_server']      = '';
-        $options['custom_download_server'] = '';
-        $options['api_server']             = 'api.w.org.ibadboy.net';
-        $options['download_server']        = 'd.w.org.ibadboy.net';
-        add_option('wp_china_yes_options', $options);
+        self::set_wp_option();
     }
 
     public static function wp_china_yes_deactivate() {
@@ -155,14 +149,15 @@ EOT;
             self::error('参数错误', - 1);
         }
 
-        $options                           = array();
-        $options['community']              = sanitize_text_field(trim($_POST['community']));
-        $options['custom_api_server']      = sanitize_text_field(trim($_POST['custom_api_server']));
-        $options['custom_download_server'] = sanitize_text_field(trim($_POST['custom_download_server']));
-        $options["api_server"]             = sanitize_text_field(trim($_POST['api_server']));
-        $options["download_server"]        = sanitize_text_field(trim($_POST['download_server']));
-        update_option("wp_china_yes_options", $options);
-        self::success('', $options);
+        self::set_wp_option(
+            sanitize_text_field(trim($_POST['community'])),
+            sanitize_text_field(trim($_POST['custom_api_server'])),
+            sanitize_text_field(trim($_POST['custom_download_server'])),
+            sanitize_text_field(trim($_POST['api_server'])),
+            sanitize_text_field(trim($_POST['download_server']))
+        );
+
+        self::success();
     }
 
     private static function success($message = '', $data = []) {
@@ -185,5 +180,21 @@ EOT;
             'message' => $message
         ], JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+    private static function set_wp_option(
+        $community = 0,
+        $custom_api_server = '',
+        $custom_download_server = '',
+        $api_server = 'api.w.org.ibadboy.net',
+        $download_server = 'd.w.org.ibadboy.net'
+    ) {
+        $options                           = array();
+        $options['community']              = (int) $community;
+        $options['custom_api_server']      = $custom_api_server;
+        $options['custom_download_server'] = $custom_download_server;
+        $options['api_server']             = $api_server;
+        $options['download_server']        = $download_server;
+        update_option("wp_china_yes_options", $options);
     }
 }
