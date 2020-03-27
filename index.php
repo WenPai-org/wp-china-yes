@@ -83,7 +83,7 @@ class WP_CHINA_YES {
          * 此处原本是复制了官方对外部请求处理的原始代码
          * 后经我爱水煮鱼(http://blog.wpjam.com/)提醒，可以直接调用wp_remote_request达成相同目的，由此精简掉100余行代码。
          */
-        return wp_remote_request($url , $r);
+        return wp_remote_request($url, $r);
     }
 
     public static function plugin_row_meta($links, $file) {
