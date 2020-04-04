@@ -30,8 +30,8 @@ class WP_CHINA_YES {
             return false;
         }
 
-        $url             = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
-        $url             = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
+        $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
+        $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
 
         /**
          * 此处原本是复制了官方对外部请求处理的原始代码
