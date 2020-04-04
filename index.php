@@ -22,6 +22,10 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'plugin_row_meta'
             ), 10, 2);
+            add_action('wp_dashboard_setup', array(
+                __CLASS__,
+                'donors_widgets'
+            ));
         }
     }
 
@@ -48,5 +52,11 @@ class WP_CHINA_YES {
         }
 
         return $links;
+    }
+
+    public static function donors_widgets() {
+        wp_add_dashboard_widget('custom_help_widget', '《WordPress中国区仓库源建设计划》赞助者', function () {
+            require_once plugin_dir_path(__FILE__) . 'donors_widgets.php';
+        });
     }
 }
