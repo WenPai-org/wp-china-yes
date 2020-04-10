@@ -170,7 +170,7 @@ EOT;
     }
 
     public static function sponsor_widget() {
-        wp_add_dashboard_widget('custom_help_widget', '《WordPress中国区仓库源建设计划》赞助者', function () {
+        wp_add_dashboard_widget('sponsor_widget', '《WordPress中国区仓库源建设计划》赞助者', function () {
             require_once plugin_dir_path(__FILE__) . 'sponsor_widget.php';
         });
     }
