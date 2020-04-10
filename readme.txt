@@ -5,7 +5,7 @@ Tags: China Super, 429, WP China Yes, wp-china-yes, WP-China-Yes
 Requires at least: 4.5
 Tested up to: 5.4.0
 Requires PHP: 5.6
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -22,12 +22,25 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 = 速度为什么这么慢 =
 
 加速节点使用CDN缓存数据，对于访问人数较少的冷门资源访问速度会慢很多。若遇到访问超时的情况请等10分钟再试，这段时间CDN会自动去WordPress官方服务器拉取资源供使用。
+另外也请检查一下服务器的DNS配置是否正确，之前出现过用户设置dns为1.1.1.1导致无法解析仓库源域名的情况
+
+= 为什么更新完还会再次要求更新 =
+
+一些开发者在发布新版本的时候没有标记版本tag，导致CDN返回的还是旧版本。目前我们维护了一个此类插件的“名单”，名单中的插件如有更新通常会在30秒内全网刷新缓存，若你的插件依旧无法更新可能是未被加入到“名单”中，遇到这种情况还请及时与我联系。
 
 == Changelog ==
 
+= 2.1.0 =
+* 取消社区源选择功能，只保留主源和备源
+* 去除设置页的tab
+* 在仪表盘放置了赞助者名单展示小部件（可关闭）
+* 修复修改仓库源后刷新页面无法正确展示源信息的问题
+* 修复API接口编写不规范的问题
+* 修复插件无法运行在使用子目录部署的WordPress上的问题
+
 = 2.0.0 =
-* 社区源列表 完成
-* 自定义源支持 完成
+* 社区源列表
+* 自定义源支持
 
 = 1.0.1 =
-* 基本功能 完成
+* 基本功能
