@@ -7,27 +7,17 @@
  */
 $plugin_url = plugin_dir_url(__FILE__);
 echo <<<ETO
-	<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <link rel="stylesheet" type="text/css" href="{$plugin_url}css/global.css"/>
+<link rel="stylesheet" type="text/css" href="{$plugin_url}css/global.css"/>
 
-</head>
-<body>
-  <div>
-    <div id="sponsor-container"></div>
-      <div class="url-container">
-        <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html">项目主页</a>
-        <a href="#" class="url-item addGroup">入群交流</a>
-        <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">常见问题</a>
-        <div class="close">不再显示</div>
-    </div>
-  </div>
-</body>
+<div id="sponsor-container"></div>
+<div class="url-container">
+  <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html">项目主页</a>
+  <a href="#" class="url-item addGroup">入群交流</a>
+  <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">常见问题</a>
+  <div class="close">不再显示</div>
+</div>
+  
 <script type="text/javascript">
-
 jQuery.ajax({
   url: "https://wp-mirror-dev.ibadboy.net/api/v1/donors",
   type: "GET",  
@@ -61,8 +51,8 @@ function getIcon(type) {
 }
 
 function getSubsidize(mode) {
-  var data = mode.split(',')
-  var _html = '';
+  const data = mode.split(',');
+  let _html = '';
   for (let i = 0; i < data.length; i++) {
     _html += '<div class="sponsor-item-content">' + data[i] + '</div>';
   }
@@ -70,14 +60,11 @@ function getSubsidize(mode) {
 }
 
 jQuery('.addGroup').on('click', function () {
-  alert('加入WP中国仓库源建设计划QQ交流群：1046115671')
-})
+  alert('加入WP中国仓库源建设计划QQ交流群：1046115671');
+});
 
 jQuery('.close').on('click', function () {
   window.open("https://www.ibadboy.net/archives/3683.html");
-})
-
+});
 </script>
-</html>
-
 ETO;
