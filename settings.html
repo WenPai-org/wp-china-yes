@@ -16,80 +16,65 @@
     </el-header>
     <el-main>
       <el-divider></el-divider>
-      <el-tabs tab-position="right" style="height: 520px;">
-        <el-tab-pane label="插件设置">
-          <el-container>
-            <el-main class="no_top_main_box">
-              <el-form ref="mirrors_form" :model="mirrors_form"
-                       label-width="100px" size="small"
-                       style="width: 342px;">
-                <el-card class="box-card" shadow="hover">
-                  <div slot="header">
-                    <span>使用社区源</span>
-                  </div>
-                  <el-form-item label="选择社区源">
-                    <el-select v-model="mirrors_form.community"
-                               @change="changeServer"
-                               placeholder="请选择社区源">
-                      <el-option v-for="(item,index) in external_api.server"
-                                 :label="item.name"
-                                 :value="item.id"></el-option>
-                    </el-select>
-                  </el-form-item>
-                  <el-alert
-                          :title="server_desc"
-                          type="info"
-                          :closable="false"
-                          style="width: 422px; margin-left: 20px;"
-                          show-icon>
-                  </el-alert>
-                </el-card>
-                <el-card class="box-card" shadow="hover">
-                  <div slot="header">
-                    <span>自定义源</span>
-                    <span style="font-size: 12px; margin-left: 10px;">若配置自定义源则会覆盖社区源</span>
-                    <el-link href="https://www.ibadboy.net/archives/3349.html"
-                             style="float: right;"
-                             type="primary"
-                             target="_blank"
-                             :underline="false">搭建方法
-                    </el-link>
-                  </div>
-                  <el-form-item label="API服务器" style="width: 442px;">
-                    <el-input clearable
-                              v-model="mirrors_form.custom_api_server">
-                      <template slot="prepend">https://</template>
-                    </el-input>
-                  </el-form-item>
-                  <el-form-item label="下载服务器" style="width: 442px;">
-                    <el-input clearable
-                              v-model="mirrors_form.custom_download_server">
-                      <template slot="prepend">https://</template>
-                    </el-input>
-                  </el-form-item>
-                </el-card>
-                <el-card class="box-card"
-                         style="height: 60px; text-align:center;"
-                         shadow="never">
-                  <el-button style="margin-top: -7px;"
-                             type="primary"
-                             @click="submitMirrorsForm" size="medium">保存配置
-                  </el-button>
-                </el-card>
-              </el-form>
-            </el-main>
-          </el-container>
-        </el-tab-pane>
-        <!--
-        <el-tab-pane label="贡献者名单">
-        </el-tab-pane>
-        <el-tab-pane label="捐助者名单">
-        </el-tab-pane>
-        -->
-        <el-tab-pane label="广告列表">
-
-        </el-tab-pane>
-      </el-tabs>
+      <el-container>
+        <el-main class="no_top_main_box">
+          <el-form ref="mirrors_form" :model="mirrors_form"
+                   label-width="100px" size="small"
+                   style="width: 342px;">
+            <el-card class="box-card" shadow="hover">
+              <div slot="header">
+                <span>使用社区仓库源</span>
+              </div>
+              <el-form-item label="选择仓库源">
+                <el-radio-group v-model="mirrors_form.community">
+                  <el-tooltip class="item" effect="dark"
+                              content="更新的技术、更快的速度、更佳的负载能力"
+                              placement="top-start">
+                    <el-radio :label="0">主源</el-radio>
+                  </el-tooltip>
+                  <el-tooltip class="item" effect="dark"
+                              content="不求新颖但求稳定，力求高可用"
+                              placement="top-start">
+                    <el-radio :label="1">备源</el-radio>
+                  </el-tooltip>
+                </el-radio-group>
+              </el-form-item>
+            </el-card>
+            <el-card class="box-card" shadow="hover">
+              <div slot="header">
+                <span>自定义源</span>
+                <span style="font-size: 12px; margin-left: 10px;">若配置自定义源则会覆盖社区仓库源</span>
+                <el-link href="https://www.ibadboy.net/archives/3349.html"
+                         style="float: right;"
+                         type="primary"
+                         target="_blank"
+                         :underline="false">搭建方法
+                </el-link>
+              </div>
+              <el-form-item label="API服务器" style="width: 442px;">
+                <el-input clearable
+                          v-model="mirrors_form.custom_api_server">
+                  <template slot="prepend">https://</template>
+                </el-input>
+              </el-form-item>
+              <el-form-item label="下载服务器" style="width: 442px;">
+                <el-input clearable
+                          v-model="mirrors_form.custom_download_server">
+                  <template slot="prepend">https://</template>
+                </el-input>
+              </el-form-item>
+            </el-card>
+            <el-card class="box-card"
+                     style="height: 60px; text-align:center;"
+                     shadow="never">
+              <el-button style="margin-top: -7px;"
+                         type="primary"
+                         @click="submitMirrorsForm" size="medium">保存配置
+              </el-button>
+            </el-card>
+          </el-form>
+        </el-main>
+      </el-container>
     </el-main>
     <el-divider></el-divider>
     <el-footer>
@@ -120,7 +105,6 @@
     data() {
       return {
         external_api: {},
-        server_desc: '',
         token: {
           get_config: '',
           set_config: ''
@@ -129,19 +113,10 @@
           community: '0',
           custom_api_server: '',
           custom_download_server: '',
-          api_server: '',
-          download_server: '',
         }
       }
     },
     methods: {
-      changeServer() {
-        let server = this.external_api.server[this.mirrors_form.community];
-
-        this.server_desc = server.desc;
-        this.mirrors_form.api_server = server.api_server;
-        this.mirrors_form.download_server = server.download_server;
-      },
       getConfig() {
         let vm = this;
         let data = new FormData();
@@ -154,7 +129,6 @@
               axios.get('https://wp-china-yes.ibadboy.net')
                   .then(function (response) {
                     vm.external_api = response.data;
-                    vm.changeServer();
                   })
                   .catch(function (error) {
                     vm.$message({
@@ -191,8 +165,6 @@
           data.append('community', vm.mirrors_form.community);
           data.append('custom_api_server', vm.mirrors_form.custom_api_server);
           data.append('custom_download_server', vm.mirrors_form.custom_download_server);
-          data.append('api_server', vm.mirrors_form.api_server);
-          data.append('download_server', vm.mirrors_form.download_server);
 
           axios.post(root_url + 'wp-admin/admin-ajax.php', data)
               .then(function (response) {
