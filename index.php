@@ -9,11 +9,22 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
+define('WP_CHINA_YES_PATH', __DIR__);
+define('WP_CHINA_YES_BASE_FILE', __FILE__);
+
 WP_CHINA_YES::init();
 
 class WP_CHINA_YES {
     public static function init() {
         if (is_admin()) {
+            register_activation_hook(WP_CHINA_YES_BASE_FILE, array(
+                __CLASS__,
+                'wp_china_yes_activate'
+            ));
+            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array(
+                __CLASS__,
+                'wp_china_yes_deactivate'
+            ));
             add_filter('pre_http_request', array(
                 __CLASS__,
                 'pre_http_request'
@@ -22,11 +33,43 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'plugin_row_meta'
             ), 10, 2);
+            add_filter('plugin_action_links', array(
+                __CLASS__,
+                'action_links'
+            ), 10, 2);
+            add_action('admin_menu', array(
+                __CLASS__,
+                'admin_menu'
+            ));
+            add_action('init', array(
+                __CLASS__,
+                'set_cookie'
+            ));
+            add_action('wp_ajax_wpcy_get_config', array(
+                __CLASS__,
+                'get_config'
+            ));
+            add_action('wp_ajax_wpcy_set_config', array(
+                __CLASS__,
+                'set_config'
+            ));
             add_action('wp_dashboard_setup', array(
                 __CLASS__,
                 'donors_widgets'
             ));
+
+            if (empty(get_option('wp_china_yes_options'))) {
+                self::wp_china_yes_activate();
+            }
         }
+    }
+
+    public static function wp_china_yes_activate() {
+        self::set_wp_option();
+    }
+
+    public static function wp_china_yes_deactivate() {
+        delete_option('wp_china_yes_options');
     }
 
     public static function pre_http_request($preempt, $r, $url) {
@@ -34,8 +77,11 @@ class WP_CHINA_YES {
             return false;
         }
 
-        $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
-        $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
+        $options         = get_option('wp_china_yes_options');
+        $api_server      = $options["custom_api_server"] ?: $options["api_server"];
+        $download_server = $options["custom_download_server"] ?: $options["download_server"];
+        $url             = str_replace('api.wordpress.org', $api_server, $url);
+        $url             = str_replace('downloads.wordpress.org', $download_server, $url);
 
         /**
          * 此处原本是复制了官方对外部请求处理的原始代码
@@ -45,7 +91,7 @@ class WP_CHINA_YES {
     }
 
     public static function plugin_row_meta($links, $file) {
-        $base = plugin_basename(__FILE__);
+        $base = plugin_basename(WP_CHINA_YES_BASE_FILE);
         if ($file == $base) {
             $links[] = '<a target="_blank" href="https://www.ibadboy.net/archives/3204.html">发布地址</a>';
             $links[] = '<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a>';
@@ -54,9 +100,109 @@ class WP_CHINA_YES {
         return $links;
     }
 
+    public static function action_links($links, $file) {
+        if ($file != plugin_basename(WP_CHINA_YES_BASE_FILE)) {
+            return $links;
+        }
+
+        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
+
+        array_unshift($links, $settings_link);
+
+        return $links;
+    }
+
+    public static function admin_menu() {
+        add_options_page(
+            'WP-China-Yes',
+            'WP-China-Yes',
+            'manage_options',
+            'wp_china_yes',
+            array(__CLASS__, 'settings')
+        );
+    }
+
+    public static function settings() {
+        $setting_page_url = plugins_url('settings.html', __FILE__);
+        echo <<<EOT
+<div style="height: 20px"></div>
+<iframe src="$setting_page_url" 
+frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmargin="0">
+</iframe>
+EOT;
+    }
+
+    public static function set_cookie() {
+        if ( ! isset($_COOKIE['wp-china-yes']) && current_user_can('manage_options')) {
+            setcookie('wp-china-yes', json_encode([
+                'get_config' => wp_create_nonce('wpcy_get_config'),
+                'set_config' => wp_create_nonce('wpcy_set_config')
+            ], JSON_UNESCAPED_UNICODE), time() + 1209600, COOKIEPATH, COOKIE_DOMAIN, false);
+        }
+    }
+
+    public static function get_config() {
+        self::success('', get_option('wp_china_yes_options'));
+    }
+
+    public static function set_config() {
+        if (( ! array_key_exists('api_server', $_POST) && ! array_key_exists('download_server', $_POST)) ||
+            ( ! array_key_exists('community', $_POST) && ! array_key_exists('custom_api_server', $_POST) && ! array_key_exists('custom_download_server', $_POST))) {
+            self::error('参数错误', - 1);
+        }
+
+        self::set_wp_option(
+            sanitize_text_field(trim($_POST['community'])),
+            sanitize_text_field(trim($_POST['api_server'])),
+            sanitize_text_field(trim($_POST['download_server'])),
+            sanitize_text_field(trim($_POST['custom_api_server'])),
+            sanitize_text_field(trim($_POST['custom_download_server']))
+        );
+
+        self::success();
+    }
+
     public static function donors_widgets() {
         wp_add_dashboard_widget('custom_help_widget', '《WordPress中国区仓库源建设计划》赞助者', function () {
             require_once plugin_dir_path(__FILE__) . 'donors_widgets.php';
         });
+    }
+
+    private static function success($message = '', $data = []) {
+        header('Content-Type:application/json; charset=utf-8');
+
+        echo json_encode([
+            'code'    => 0,
+            'message' => $message,
+            'data'    => $data
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private static function error($message = '', $code = - 1) {
+        header('Content-Type:application/json; charset=utf-8');
+        header('Status:500');
+
+        echo json_encode([
+            'code'    => $code,
+            'message' => $message
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private static function set_wp_option(
+        $community = 0,
+        $api_server = 'api.w.org.ibadboy.net',
+        $download_server = 'd.w.org.ibadboy.net',
+        $custom_api_server = '',
+        $custom_download_server = ''
+    ) {
+        $options                           = array();
+        $options['community']              = (int) $community;
+        $options['api_server']             = $api_server;
+        $options['download_server']        = $download_server;
+        $options['custom_api_server']      = $custom_api_server;
+        $options['custom_download_server'] = $custom_download_server;
+        update_option("wp_china_yes_options", $options);
     }
 }
