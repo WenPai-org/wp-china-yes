@@ -51,13 +51,10 @@ function getIcon(type) {
   switch (type) {
     case 1:
     return '{$plugin_url}image/enterprise.svg';
-      break;
     case 2:
       return '{$plugin_url}image/personage.svg';
-      break;
     case 3:
       return '{$plugin_url}image/school.svg';
-      break;
     default:
       break;
   }
