@@ -62,7 +62,7 @@ function getSubsidize(mode) {
 }
 
 jQuery('.addGroup').on('click', function () {
-  alert('加入WP中国仓库源建设计划QQ交流群：1046115671');
+  alert('QQ群：1046115671');
 });
 
 jQuery('.close').on('click', function () {
