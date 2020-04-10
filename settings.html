@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>WP-China-Yes设置页</title>
+  <link rel="stylesheet"
+        href="https://static.ibadboy.net/element/static/css/index.css">
+</head>
+<body id="body" style="display: none;">
+<div id="app">
+  <el-container>
+    <el-header style="height: 100px;">
+      <h2>WP-China-Yes</h2>
+      <span>这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验</span><br/>
+      <span>原理是将位于国外的官方仓库源替换为由社区志愿者维护的国内源，以此达到加速访问的目的</span>
+    </el-header>
+    <el-main>
+      <el-divider></el-divider>
+      <el-container>
+        <el-main class="no_top_main_box">
+          <el-form ref="mirrors_form" :model="mirrors_form"
+                   label-width="100px" size="small"
+                   style="width: 342px;">
+            <el-card class="box-card" shadow="hover">
+              <div slot="header">
+                <span>使用社区仓库源</span>
+              </div>
+              <el-form-item label="选择仓库源">
+                <el-radio-group v-model="mirrors_form.community">
+                  <el-tooltip class="item" effect="dark"
+                              content="更新的技术、更快的速度、更佳的负载能力"
+                              placement="top-start">
+                    <el-radio :label="0">主源</el-radio>
+                  </el-tooltip>
+                  <el-tooltip class="item" effect="dark"
+                              content="不求新颖但求稳定，力求高可用"
+                              placement="top-start">
+                    <el-radio :label="1">备源</el-radio>
+                  </el-tooltip>
+                </el-radio-group>
+              </el-form-item>
+            </el-card>
+            <el-card class="box-card" shadow="hover">
+              <div slot="header">
+                <span>自定义源</span>
+                <span style="font-size: 12px; margin-left: 10px;">若配置自定义源则会覆盖社区仓库源</span>
+                <el-link href="https://www.ibadboy.net/archives/3349.html"
+                         style="float: right;"
+                         type="primary"
+                         target="_blank"
+                         :underline="false">搭建方法
+                </el-link>
+              </div>
+              <el-form-item label="API服务器" style="width: 442px;">
+                <el-input clearable
+                          v-model="mirrors_form.custom_api_server">
+                  <template slot="prepend">https://</template>
+                </el-input>
+              </el-form-item>
+              <el-form-item label="下载服务器" style="width: 442px;">
+                <el-input clearable
+                          v-model="mirrors_form.custom_download_server">
+                  <template slot="prepend">https://</template>
+                </el-input>
+              </el-form-item>
+            </el-card>
+            <el-card class="box-card"
+                     style="height: 60px; text-align:center;"
+                     shadow="never">
+              <el-button style="margin-top: -7px;"
+                         type="primary"
+                         @click="submitMirrorsForm" size="medium">保存配置
+              </el-button>
+            </el-card>
+          </el-form>
+        </el-main>
+      </el-container>
+    </el-main>
+    <el-divider></el-divider>
+    <el-footer>
+      <span class="desc">这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。</span><br/>
+      <span class="desc">项目地址：<a target="_blank"
+                                 href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></span>
+    </el-footer>
+  </el-container>
+</div>
+</body>
+<script src="https://static.ibadboy.net/element/static/js/vue.js"></script>
+<script src="https://static.ibadboy.net/element/static/js/index.js"></script>
+<script src="https://static.ibadboy.net/element/static/js/axios.min.js"></script>
+<script>
+  const root_url = window.location.href.split('wp-content')[0];
+
+  function getCookie(name) {
+    let arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+    arr = document.cookie.match(reg);
+    if (arr)
+      return (decodeURIComponent(arr[2]));
+    else
+      return null;
+  }
+
+  new Vue({
+    el: '#app',
+    data() {
+      return {
+        external_api: {},
+        token: {
+          get_config: '',
+          set_config: ''
+        },
+        mirrors_form: {
+          community: '0',
+          custom_api_server: '',
+          custom_download_server: '',
+        }
+      }
+    },
+    methods: {
+      getConfig() {
+        let vm = this;
+        let data = new FormData();
+        data.append('_ajax_nonce', this.token.get_config);
+        data.append('action', 'wpcy_get_config');
+
+        axios.post(root_url + 'wp-admin/admin-ajax.php', data)
+            .then(function (response) {
+              vm.mirrors_form = response.data.data;
+              axios.get('https://wp-china-yes.ibadboy.net')
+                  .then(function (response) {
+                    vm.external_api = response.data;
+                  })
+                  .catch(function (error) {
+                    vm.$message({
+                      message: error,
+                      type: 'error'
+                    });
+                  });
+            })
+            .catch(function (error) {
+              vm.$message({
+                message: error.response.data.message,
+                type: 'error'
+              });
+            });
+      },
+      submitMirrorsForm() {
+        let vm = this;
+
+        this.$confirm('这将覆盖旧有配置, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          const loading = this.$loading({
+            lock: true,
+            text: '提交中',
+            spinner: 'el-icon-loading',
+            background: 'rgba(0, 0, 0, 0.7)'
+          });
+
+          let data = new FormData();
+          data.append('_ajax_nonce', this.token.set_config);
+          data.append('action', 'wpcy_set_config');
+          data.append('community', vm.mirrors_form.community);
+          data.append('custom_api_server', vm.mirrors_form.custom_api_server);
+          data.append('custom_download_server', vm.mirrors_form.custom_download_server);
+
+          axios.post(root_url + 'wp-admin/admin-ajax.php', data)
+              .then(function (response) {
+                vm.$message({
+                  message: '保存成功',
+                  type: 'success'
+                });
+                loading.close();
+              })
+              .catch(function (error) {
+                vm.$message({
+                  message: error.response.data.message,
+                  type: 'error'
+                });
+                loading.close();
+              });
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消保存'
+          });
+        });
+      }
+    },
+    created: function () {
+      document.getElementById("body").style.display = "inline";
+
+      this.token = JSON.parse(getCookie('wp-china-yes'));
+
+      this.getConfig();
+    }
+  })
+</script>
+<style>
+  .desc {
+    font-size: 14px;
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  }
+
+  .box-card {
+    margin-top: 20px;
+    width: 500px;
+  }
+
+  .no_top_main_box {
+    padding-top: 0;
+  }
+</style>
+</html>
