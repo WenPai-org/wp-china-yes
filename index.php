@@ -2,9 +2,9 @@
 /*
  * Plugin Name: WP-China-Yes
  * Description: 这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验，其原理是将位于国外的官方仓库源替换为由社区志愿者维护的国内源，以此达到加速访问的目的。
- * Author: 孙锡源
- * Version: 2.1.0
- * Author URI:https://www.ibadboy.net/
+ * Author: WP-China-Yes
+ * Version: 2.2.0
+ * Author URI:https://wp-china-yes.org/
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
