@@ -16,6 +16,10 @@ WP_CHINA_YES::init();
 
 class WP_CHINA_YES {
     public static function init() {
+        $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
+        if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,array('wpcy_set_config','wpcy_get_config'))){
+            return;
+        }
         if (is_admin()) {
             register_activation_hook(WP_CHINA_YES_BASE_FILE, array(
                 __CLASS__,
