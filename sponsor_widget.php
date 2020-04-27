@@ -2,8 +2,8 @@
 /**
  * 仪表盘赞助商列表小部件
  *
- * @author    Jialong
- * @license   http://www.gnu.org/licenses/gpl-3.0.html GPLv3 Licence
+ * @copyright  Copyright (c) 2020 - WP-China-Yes(https://wp-china-yes.org)
+ * @license    http://www.gnu.org/licenses/gpl-3.0.html  GPLv3 License
  */
 $plugin_url = plugin_dir_url(__FILE__);
 echo <<<ETO
