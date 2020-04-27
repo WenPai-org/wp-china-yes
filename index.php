@@ -70,8 +70,8 @@ class WP_CHINA_YES {
     public function plugin_row_meta($links, $file) {
         $base = plugin_basename(WP_CHINA_YES_BASE_FILE);
         if ($file == $base) {
-            $links[] = '<a target="_blank" href="https://www.ibadboy.net/archives/3204.html">发布地址</a>';
-            $links[] = '<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a>';
+            $links[] = '<a target="_blank" href="https://wp-china-yes.org">项目主页</a>';
+            $links[] = '<a target="_blank" href="https://github.com/wp-china-yes/wp-china-yes">GitHub</a>';
         }
 
         return $links;
