@@ -15,6 +15,8 @@ define('WP_CHINA_YES_BASE_FILE', __FILE__);
 (new WP_CHINA_YES)->init();
 
 class WP_CHINA_YES {
+    private $wp_china_yes_options = array();
+
     public function init() {
         add_filter('pre_http_request', array($this, 'pre_http_request'), 10, 3);
         $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
@@ -22,7 +24,8 @@ class WP_CHINA_YES {
             return;
         }
         if (is_admin()) {
-            if (empty(get_option('wp_china_yes_options'))) {
+            $this->wp_china_yes_options = get_option('wp_china_yes_options');
+            if (empty($this->wp_china_yes_options)) {
                 self::set_wp_option();
             }
             register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array($this, 'wp_china_yes_deactivate'));
@@ -45,9 +48,7 @@ class WP_CHINA_YES {
             return false;
         }
 
-        $options = get_option('wp_china_yes_options');
-
-        if ($options["community"] == 1) {
+        if ($this->wp_china_yes_options["community"] == 1) {
             $api_server      = 'api.w.org.ixmu.net';
             $download_server = 'd.w.org.ixmu.net';
         } else {
@@ -55,8 +56,8 @@ class WP_CHINA_YES {
             $download_server = 'd.w.org.ibadboy.net';
         }
 
-        $api_server      = $options["custom_api_server"] ?: $api_server;
-        $download_server = $options["custom_download_server"] ?: $download_server;
+        $api_server      = $this->wp_china_yes_options["custom_api_server"] ?: $api_server;
+        $download_server = $this->wp_china_yes_options["custom_download_server"] ?: $download_server;
         $url             = str_replace('api.wordpress.org', $api_server, $url);
         $url             = str_replace('downloads.wordpress.org', $download_server, $url);
 
@@ -118,7 +119,7 @@ EOT;
     }
 
     public function get_config() {
-        self::success('', get_option('wp_china_yes_options'));
+        self::success('', $this->wp_china_yes_options);
     }
 
     public function set_config() {
