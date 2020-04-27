@@ -9,9 +9,6 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-define('WP_CHINA_YES_PATH', __DIR__);
-define('WP_CHINA_YES_BASE_FILE', __FILE__);
-
 (new WP_CHINA_YES)->init();
 
 class WP_CHINA_YES {
@@ -28,7 +25,7 @@ class WP_CHINA_YES {
             if (empty($this->wp_china_yes_options)) {
                 self::set_wp_option();
             }
-            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, [$this, 'wp_china_yes_deactivate']);
+            register_deactivation_hook(__FILE__, [$this, 'wp_china_yes_deactivate']);
             add_filter('plugin_row_meta', [$this, 'plugin_row_meta'], 10, 2);
             add_filter('plugin_action_links', [$this, 'action_links'], 10, 2);
             add_action('admin_menu', [$this, 'admin_menu']);
@@ -69,7 +66,7 @@ class WP_CHINA_YES {
     }
 
     public function plugin_row_meta($links, $file) {
-        $base = plugin_basename(WP_CHINA_YES_BASE_FILE);
+        $base = plugin_basename(__FILE__);
         if ($file == $base) {
             $links[] = '<a target="_blank" href="https://wp-china-yes.org">项目主页</a>';
             $links[] = '<a target="_blank" href="https://github.com/wp-china-yes/wp-china-yes">GitHub</a>';
@@ -79,7 +76,7 @@ class WP_CHINA_YES {
     }
 
     public function action_links($links, $file) {
-        if ($file != plugin_basename(WP_CHINA_YES_BASE_FILE)) {
+        if ($file != plugin_basename(__FILE__)) {
             return $links;
         }
         $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
@@ -163,11 +160,7 @@ EOT;
         exit;
     }
 
-    private static function set_wp_option(
-        $community = 0,
-        $custom_api_server = '',
-        $custom_download_server = ''
-    ) {
+    private static function set_wp_option($community = 0, $custom_api_server = '', $custom_download_server = '') {
         update_option("wp_china_yes_options", [
             'community'              => (int) $community,
             'custom_api_server'      => $custom_api_server,
