@@ -123,11 +123,10 @@ class WP_CHINA_YES {
     }
 
     public static function settings() {
-        $setting_page_url = plugins_url('settings.html', __FILE__) . '?v=2.1.0';
+        $setting_page_url = plugins_url('settings.html', __FILE__) . '?v=2.2.0';
         echo <<<EOT
-<div style="height: 20px"></div>
-<iframe src="$setting_page_url" 
-frameborder="0" height="850" width="800px;" scrolling="No" leftmargin="0" topmargin="0">
+<iframe src="$setting_page_url" style="margin-top: 20px;"
+frameborder="0" height="700px;" width="600px;" scrolling="No" leftmargin="0" topmargin="0">
 </iframe>
 EOT;
     }
