@@ -16,6 +16,14 @@ WP_CHINA_YES::init();
 
 class WP_CHINA_YES {
     public static function init() {
+        add_filter('pre_http_request', array(
+            __CLASS__,
+            'pre_http_request'
+        ), 10, 3);
+        $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
+        if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,array('wpcy_set_config','wpcy_get_config'))){
+            return;
+        }
         if (is_admin()) {
             register_activation_hook(WP_CHINA_YES_BASE_FILE, array(
                 __CLASS__,
@@ -25,10 +33,6 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'wp_china_yes_deactivate'
             ));
-            add_filter('pre_http_request', array(
-                __CLASS__,
-                'pre_http_request'
-            ), 10, 3);
             add_filter('plugin_row_meta', array(
                 __CLASS__,
                 'plugin_row_meta'
