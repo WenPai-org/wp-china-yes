@@ -1,8 +1,8 @@
 <?php
 /*
  * Plugin Name: WP-China-Yes
- * Description: 这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验，其原理是将位于国外的官方仓库源替换为由社区志愿者维护的国内源，以此达到加速访问的目的。
- * Author: WP-China-Yes
+ * Description: 这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验，其原理是将位于国外的官方仓库源替换为由《WP中国区仓库源建设计划》维护的国内源，以此达到加速访问的目的。
+ * Author: 《WP中国区仓库源建设计划》
  * Version: 2.2.0
  * Author URI:https://wp-china-yes.org/
  * License: GPLv3 or later
@@ -68,8 +68,9 @@ class WP_CHINA_YES {
     public function plugin_row_meta($links, $file) {
         $base = plugin_basename(__FILE__);
         if ($file == $base) {
-            $links[] = '<a target="_blank" href="https://wp-china-yes.org">项目主页</a>';
-            $links[] = '<a target="_blank" href="https://github.com/wp-china-yes/wp-china-yes">GitHub</a>';
+            $links[] = '<a target="_blank" href="https://wp-china-yes.org/thread-20.htm">集成此插件到自己的产品中</a>';
+            $links[] = '<a target="_blank" href="https://wp-china-yes.org/thread-7.htm">参与项目发展</a>';
+            $links[] = '<a target="_blank" href="https://github.com/wp-china-yes">GitHub</a>';
         }
 
         return $links;
