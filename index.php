@@ -16,10 +16,7 @@ WP_CHINA_YES::init();
 
 class WP_CHINA_YES {
     public static function init() {
-        add_filter('pre_http_request', array(
-            __CLASS__,
-            'pre_http_request'
-        ), 10, 3);
+        add_filter('pre_http_request', array(__CLASS__, 'pre_http_request'), 10, 3);
         $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
         if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,array('wpcy_set_config','wpcy_get_config'))){
             return;
@@ -28,38 +25,14 @@ class WP_CHINA_YES {
             if (empty(get_option('wp_china_yes_options'))) {
                 self::set_wp_option();
             }
-            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array(
-                __CLASS__,
-                'wp_china_yes_deactivate'
-            ));
-            add_filter('plugin_row_meta', array(
-                __CLASS__,
-                'plugin_row_meta'
-            ), 10, 2);
-            add_filter('plugin_action_links', array(
-                __CLASS__,
-                'action_links'
-            ), 10, 2);
-            add_action('admin_menu', array(
-                __CLASS__,
-                'admin_menu'
-            ));
-            add_action('init', array(
-                __CLASS__,
-                'set_cookie'
-            ));
-            add_action('wp_ajax_wpcy_get_config', array(
-                __CLASS__,
-                'get_config'
-            ));
-            add_action('wp_ajax_wpcy_set_config', array(
-                __CLASS__,
-                'set_config'
-            ));
-            add_action('wp_dashboard_setup', array(
-                __CLASS__,
-                'sponsor_widget'
-            ));
+            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array(__CLASS__, 'wp_china_yes_deactivate'));
+            add_filter('plugin_row_meta', array(__CLASS__, 'plugin_row_meta'), 10, 2);
+            add_filter('plugin_action_links', array(__CLASS__, 'action_links'), 10, 2);
+            add_action('admin_menu', array(__CLASS__, 'admin_menu'));
+            add_action('init', array(__CLASS__, 'set_cookie'));
+            add_action('wp_ajax_wpcy_get_config', array(__CLASS__, 'get_config'));
+            add_action('wp_ajax_wpcy_set_config', array(__CLASS__, 'set_config'));
+            add_action('wp_dashboard_setup', array(__CLASS__, 'sponsor_widget'));
         }
     }
 
