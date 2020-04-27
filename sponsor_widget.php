@@ -14,9 +14,9 @@ echo <<<ETO
 
 <div id="sponsor-container"><div id="sponsor-container-item"></div></div>
 <div class="url-container">
-  <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html">项目主页</a>
+  <a class="url-item" target="_blank" href="https://wp-china-yes.org">项目主页</a>
   <a href="#" class="url-item addGroup">入群交流</a>
-  <a class="url-item" target="_blank" href="https://www.ibadboy.net/archives/3204.html#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">常见问题</a>
+  <a class="url-item" target="_blank" href="https://wp-china-yes.org/thread-12.htm">常见问题</a>
   <div class="close">不再显示</div>
 </div>
   
