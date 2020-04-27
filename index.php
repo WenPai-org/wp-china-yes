@@ -15,12 +15,12 @@ define('WP_CHINA_YES_BASE_FILE', __FILE__);
 (new WP_CHINA_YES)->init();
 
 class WP_CHINA_YES {
-    private $wp_china_yes_options = array();
+    private $wp_china_yes_options = [];
 
     public function init() {
-        add_filter('pre_http_request', array($this, 'pre_http_request'), 10, 3);
+        add_filter('pre_http_request', [$this, 'pre_http_request'], 10, 3);
         $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
-        if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,array('wpcy_set_config','wpcy_get_config'))){
+        if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,['wpcy_set_config','wpcy_get_config'])){
             return;
         }
         if (is_admin()) {
@@ -28,14 +28,14 @@ class WP_CHINA_YES {
             if (empty($this->wp_china_yes_options)) {
                 self::set_wp_option();
             }
-            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array($this, 'wp_china_yes_deactivate'));
-            add_filter('plugin_row_meta', array($this, 'plugin_row_meta'), 10, 2);
-            add_filter('plugin_action_links', array($this, 'action_links'), 10, 2);
-            add_action('admin_menu', array($this, 'admin_menu'));
-            add_action('init', array($this, 'set_cookie'));
-            add_action('wp_ajax_wpcy_get_config', array($this, 'get_config'));
-            add_action('wp_ajax_wpcy_set_config', array($this, 'set_config'));
-            add_action('wp_dashboard_setup', array($this, 'sponsor_widget'));
+            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, [$this, 'wp_china_yes_deactivate']);
+            add_filter('plugin_row_meta', [$this, 'plugin_row_meta'], 10, 2);
+            add_filter('plugin_action_links', [$this, 'action_links'], 10, 2);
+            add_action('admin_menu', [$this, 'admin_menu']);
+            add_action('init', [$this, 'set_cookie']);
+            add_action('wp_ajax_wpcy_get_config', [$this, 'get_config']);
+            add_action('wp_ajax_wpcy_set_config', [$this, 'set_config']);
+            add_action('wp_dashboard_setup', [$this, 'sponsor_widget']);
         }
     }
 
@@ -94,7 +94,7 @@ class WP_CHINA_YES {
             'WP-China-Yes',
             'manage_options',
             'wp_china_yes',
-            array($this, 'settings')
+            [$this, 'settings']
         );
     }
 
@@ -168,7 +168,7 @@ EOT;
         $custom_api_server = '',
         $custom_download_server = ''
     ) {
-        $options                           = array();
+        $options                           = [];
         $options['community']              = (int) $community;
         $options['custom_api_server']      = $custom_api_server;
         $options['custom_download_server'] = $custom_download_server;
