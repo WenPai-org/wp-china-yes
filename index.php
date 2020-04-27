@@ -168,10 +168,10 @@ EOT;
         $custom_api_server = '',
         $custom_download_server = ''
     ) {
-        $options                           = [];
-        $options['community']              = (int) $community;
-        $options['custom_api_server']      = $custom_api_server;
-        $options['custom_download_server'] = $custom_download_server;
-        update_option("wp_china_yes_options", $options);
+        update_option("wp_china_yes_options", [
+            'community'              => (int) $community,
+            'custom_api_server'      => $custom_api_server,
+            'custom_download_server' => $custom_download_server
+        ]);
     }
 }
