@@ -82,9 +82,7 @@ class WP_CHINA_YES {
         if ($file != plugin_basename(WP_CHINA_YES_BASE_FILE)) {
             return $links;
         }
-
         $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
-
         array_unshift($links, $settings_link);
 
         return $links;
