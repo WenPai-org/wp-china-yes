@@ -17,10 +17,9 @@ WP_CHINA_YES::init();
 class WP_CHINA_YES {
     public static function init() {
         if (is_admin()) {
-            register_activation_hook(WP_CHINA_YES_BASE_FILE, array(
-                __CLASS__,
-                'wp_china_yes_activate'
-            ));
+            if (empty(get_option('wp_china_yes_options'))) {
+                self::set_wp_option();
+            }
             register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array(
                 __CLASS__,
                 'wp_china_yes_deactivate'
@@ -57,15 +56,7 @@ class WP_CHINA_YES {
                 __CLASS__,
                 'sponsor_widget'
             ));
-
-            if (empty(get_option('wp_china_yes_options'))) {
-                self::wp_china_yes_activate();
-            }
         }
-    }
-
-    public static function wp_china_yes_activate() {
-        self::set_wp_option();
     }
 
     public static function wp_china_yes_deactivate() {
