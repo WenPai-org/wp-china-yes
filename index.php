@@ -142,7 +142,7 @@ EOT;
         });
     }
 
-    private function success($message = '', $data = []) {
+    private static function success($message = '', $data = []) {
         header('Content-Type:application/json; charset=utf-8');
 
         echo json_encode([
@@ -153,7 +153,7 @@ EOT;
         exit;
     }
 
-    private function error($message = '', $code = - 1) {
+    private static function error($message = '', $code = - 1) {
         header('Content-Type:application/json; charset=utf-8');
         header('Status:500');
 
@@ -164,7 +164,7 @@ EOT;
         exit;
     }
 
-    private function set_wp_option(
+    private static function set_wp_option(
         $community = 0,
         $custom_api_server = '',
         $custom_download_server = ''
