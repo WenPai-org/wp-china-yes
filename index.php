@@ -12,11 +12,11 @@
 define('WP_CHINA_YES_PATH', __DIR__);
 define('WP_CHINA_YES_BASE_FILE', __FILE__);
 
-WP_CHINA_YES::init();
+(new WP_CHINA_YES)->init();
 
 class WP_CHINA_YES {
-    public static function init() {
-        add_filter('pre_http_request', array(__CLASS__, 'pre_http_request'), 10, 3);
+    public function init() {
+        add_filter('pre_http_request', array($this, 'pre_http_request'), 10, 3);
         $post_action = isset($_POST['action']) ? sanitize_text_field(trim($_POST['action'])) : ' ';
         if( defined( 'DOING_AJAX' ) && DOING_AJAX && !in_array($post_action,array('wpcy_set_config','wpcy_get_config'))){
             return;
@@ -25,22 +25,22 @@ class WP_CHINA_YES {
             if (empty(get_option('wp_china_yes_options'))) {
                 self::set_wp_option();
             }
-            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array(__CLASS__, 'wp_china_yes_deactivate'));
-            add_filter('plugin_row_meta', array(__CLASS__, 'plugin_row_meta'), 10, 2);
-            add_filter('plugin_action_links', array(__CLASS__, 'action_links'), 10, 2);
-            add_action('admin_menu', array(__CLASS__, 'admin_menu'));
-            add_action('init', array(__CLASS__, 'set_cookie'));
-            add_action('wp_ajax_wpcy_get_config', array(__CLASS__, 'get_config'));
-            add_action('wp_ajax_wpcy_set_config', array(__CLASS__, 'set_config'));
-            add_action('wp_dashboard_setup', array(__CLASS__, 'sponsor_widget'));
+            register_deactivation_hook(WP_CHINA_YES_BASE_FILE, array($this, 'wp_china_yes_deactivate'));
+            add_filter('plugin_row_meta', array($this, 'plugin_row_meta'), 10, 2);
+            add_filter('plugin_action_links', array($this, 'action_links'), 10, 2);
+            add_action('admin_menu', array($this, 'admin_menu'));
+            add_action('init', array($this, 'set_cookie'));
+            add_action('wp_ajax_wpcy_get_config', array($this, 'get_config'));
+            add_action('wp_ajax_wpcy_set_config', array($this, 'set_config'));
+            add_action('wp_dashboard_setup', array($this, 'sponsor_widget'));
         }
     }
 
-    public static function wp_china_yes_deactivate() {
+    public function wp_china_yes_deactivate() {
         delete_option('wp_china_yes_options');
     }
 
-    public static function pre_http_request($preempt, $r, $url) {
+    public function pre_http_request($preempt, $r, $url) {
         if ( ! stristr($url, 'api.wordpress.org') && ! stristr($url, 'downloads.wordpress.org')) {
             return false;
         }
@@ -67,7 +67,7 @@ class WP_CHINA_YES {
         return wp_remote_request($url, $r);
     }
 
-    public static function plugin_row_meta($links, $file) {
+    public function plugin_row_meta($links, $file) {
         $base = plugin_basename(WP_CHINA_YES_BASE_FILE);
         if ($file == $base) {
             $links[] = '<a target="_blank" href="https://www.ibadboy.net/archives/3204.html">发布地址</a>';
@@ -77,7 +77,7 @@ class WP_CHINA_YES {
         return $links;
     }
 
-    public static function action_links($links, $file) {
+    public function action_links($links, $file) {
         if ($file != plugin_basename(WP_CHINA_YES_BASE_FILE)) {
             return $links;
         }
@@ -89,17 +89,17 @@ class WP_CHINA_YES {
         return $links;
     }
 
-    public static function admin_menu() {
+    public function admin_menu() {
         add_options_page(
             'WP-China-Yes',
             'WP-China-Yes',
             'manage_options',
             'wp_china_yes',
-            array(__CLASS__, 'settings')
+            array($this, 'settings')
         );
     }
 
-    public static function settings() {
+    public function settings() {
         $setting_page_url = plugins_url('settings.html', __FILE__) . '?v=2.2.0';
         echo <<<EOT
 <iframe src="$setting_page_url" style="margin-top: 20px;"
@@ -108,7 +108,7 @@ frameborder="0" height="700px;" width="600px;" scrolling="No" leftmargin="0" top
 EOT;
     }
 
-    public static function set_cookie() {
+    public function set_cookie() {
         if ( ! isset($_COOKIE['wp-china-yes']) && current_user_can('manage_options')) {
             setcookie('wp-china-yes', json_encode([
                 'get_config' => wp_create_nonce('wpcy_get_config'),
@@ -117,11 +117,11 @@ EOT;
         }
     }
 
-    public static function get_config() {
+    public function get_config() {
         self::success('', get_option('wp_china_yes_options'));
     }
 
-    public static function set_config() {
+    public function set_config() {
         if ( ! array_key_exists('community', $_POST) ||
              ( ! array_key_exists('custom_api_server', $_POST) && ! array_key_exists('custom_download_server', $_POST))) {
             self::error('参数错误', - 1);
@@ -136,13 +136,13 @@ EOT;
         self::success();
     }
 
-    public static function sponsor_widget() {
+    public function sponsor_widget() {
         wp_add_dashboard_widget('sponsor_widget', '《WordPress中国区仓库源建设计划》赞助商', function () {
             require_once plugin_dir_path(__FILE__) . 'sponsor_widget.php';
         });
     }
 
-    private static function success($message = '', $data = []) {
+    private function success($message = '', $data = []) {
         header('Content-Type:application/json; charset=utf-8');
 
         echo json_encode([
@@ -153,7 +153,7 @@ EOT;
         exit;
     }
 
-    private static function error($message = '', $code = - 1) {
+    private function error($message = '', $code = - 1) {
         header('Content-Type:application/json; charset=utf-8');
         header('Status:500');
 
@@ -164,7 +164,7 @@ EOT;
         exit;
     }
 
-    private static function set_wp_option(
+    private function set_wp_option(
         $community = 0,
         $custom_api_server = '',
         $custom_download_server = ''
