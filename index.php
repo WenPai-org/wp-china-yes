@@ -8,7 +8,52 @@
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
-
+register_activation_hook( __FILE__, function() {
+    $check_incompatible = check_incompatible();
+    if ( $check_incompatible  ) {
+        set_transient( 'wp-china-yes-warning-notice', true, 5 );        
+    }
+});
+add_action( 'admin_notices', function(){
+    if( get_transient( 'wp-china-yes-warning-notice' ) ){
+        echo check_incompatible()['error'];
+        delete_transient( 'wp-china-yes-warning-notice' );
+   }
+} );
+function check_incompatible(){
+    $error = false;
+    $html = '<div class="notice notice-warning is-dismissible"><h1>WP-CHINA-YES 启动提醒</h1>';
+    $html .= '<ul>';
+    if( ( defined('WP_PROXY_HOST') && defined('WP_PROXY_PORT') ) ){
+        if(WP_PROXY_HOST=='us.centos.bz'){
+            $error  = true;
+            $html .= '<li>插件检测到您已开启代理，请参考<a href="https://www.centos.bz/2017/03/upgrade-wordpress-using-proxy-server/" target="_blank">https://www.centos.bz/2017/03/upgrade-wordpress-using-proxy-server/</a>关闭代理</li>';
+        }
+    }
+	$html .= '</ul>';
+    $incompatible_plugins = [
+        'wpjam-basic/wpjam-basic.php',
+        'cardui-x/cardui-x.php',
+        'nicetheme-jimu/nc-plugins.php',
+    ];
+    if ( is_network_admin() ) {
+        $active_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+        $active_plugins = array_keys( $active_plugins );
+    } else{
+        $active_plugins = (array) get_option( 'active_plugins' );
+    }
+	$matches = array_intersect( $active_plugins, $incompatible_plugins );
+    if($matches){
+        $error  = true;
+        $html .= '<p>检测到您已启用下列提供类似功能的插件，请注意：您必须关闭这些插件中带有的wp代理更新、429错误解决等相关功能，以免系统更新被多次接管而产生错误。</p><ul>';
+        foreach ( $matches as $matche ) {
+			$data = get_plugin_data( WP_PLUGIN_DIR . '/' . $matche );
+            $html.= '<li>'.$data["Name"].'</li>';
+        }
+    }
+    $html .= '</ul></div>';
+    if($error) return ['error' => $html];
+}
 (new WP_CHINA_YES)->init();
 
 class WP_CHINA_YES {
