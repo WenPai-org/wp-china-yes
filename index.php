@@ -8,9 +8,48 @@
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
-
+register_activation_hook( __FILE__,function() {
+    $check_incompatible = check_incompatible();
+    if ( $check_incompatible  ) {
+        deactivate_plugins( plugin_basename( __FILE__ ) );
+        wp_die( $check_incompatible['error'],'发现兼容错误');
+    }
+});
+function check_incompatible(){
+    $error = false;
+    $html = '<h1>发现兼容错误</h1>';
+    $html .= '<ul>';
+    if( ( defined('WP_PROXY_HOST') && defined('WP_PROXY_PORT') ) ){
+        if(WP_PROXY_HOST=='us.centos.bz'){
+            $error  = true;
+            $html .= '<li>您已开启代理，请参考<a href="https://www.centos.bz/2017/03/upgrade-wordpress-using-proxy-server/" target="_blank">https://www.centos.bz/2017/03/upgrade-wordpress-using-proxy-server/</a>关闭代理</li>';
+        }
+    }
+	$html .= '</ul>';
+    $incompatible_plugins = [
+        'wpjam-basic/wpjam-basic.php',
+		'cardui-x/cardui-x.php',
+		'nicetheme-jimu/nc-plugins.php',
+    ];
+    if ( is_network_admin() ) {
+        $active_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+        $active_plugins = array_keys( $active_plugins );
+    } else{
+        $active_plugins = (array) get_option( 'active_plugins' );
+    }
+	$matches = array_intersect( $active_plugins, $incompatible_plugins );
+    if($matches){
+        $error  = true;
+        $html .= '<p>发现不兼容插件，请先关闭他们：</p><ul>';
+        foreach ( $matches as $matche ) {
+			$data = get_plugin_data( WP_PLUGIN_DIR . '/' . $matche );
+            $html.= '<li>'.$data["Name"].'</li>';
+        }
+    }
+    $html .= '</ul>';
+    if($error) return ['error' => $html];
+}
 (new WP_CHINA_YES)->init();
-
 class WP_CHINA_YES {
     private $wp_china_yes_options = [];
 
