@@ -193,6 +193,25 @@ class WP_CHINA_YES {
                         <input name="download" type="text" id="download" value="" class="regular-text ltr">
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row"><label for="help">自定义源搭建方法</label></th>
+                    <td>
+                        <a target="_blank"
+            href="https://www.ibadboy.net/archives/3349.html">https://www.ibadboy.net/archives/3349.html</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table id="other" class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row"><h3>其他内容加速</h3></th>
+                    <td>
+                        <a target="_blank"
+            href="https://wp-china-yes.org/thread-23.htm">Gravatar头像</a>
+                    </td>
+                </tr>
             </tbody>
         </table>
 
@@ -200,8 +219,8 @@ class WP_CHINA_YES {
         </p>
     </form>
 
-    <p>这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。<br />项目地址：<a target="_blank"
-            href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></p>
+    <p>这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。<br />
+    项目地址：<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></p>
 </div>
 <script>
     const root_url = window.location.href.split('wp-admin')[0];
