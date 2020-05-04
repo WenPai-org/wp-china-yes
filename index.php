@@ -219,8 +219,8 @@ class WP_CHINA_YES {
         </p>
     </form>
 
-    <p>这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。<br />
-    项目地址：<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></p>
+    <!--<p>这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。<br />
+    项目地址：<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></p>-->
 </div>
 <script>
     const root_url = window.location.href.split('wp-admin')[0];
