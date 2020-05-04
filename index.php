@@ -184,13 +184,15 @@ class WP_CHINA_YES {
                 <tr>
                     <th scope="row"><label for="api">API</label></th>
                     <td>
-                        <input name="api" type="text" id="api" value="" class="regular-text ltr">
+                        <label>https://</label>
+                        <input name="api" type="text" id="api" value="" placeholder="api.w.org.ibadboy.net" class="regular-text ltr">
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="download">Download</label></th>
                     <td>
-                        <input name="download" type="text" id="download" value="" class="regular-text ltr">
+                        <label>https://</label>
+                        <input name="download" type="text" id="download" value="" placeholder="d.w.org.ibadboy.net" class="regular-text ltr">
                     </td>
                 </tr>
                 <tr>
@@ -253,7 +255,7 @@ class WP_CHINA_YES {
             } else {
                 jQuery('input:radio[name="select_mirrors"]').val(['1']);
                 jQuery('#api').val(data.data.custom_api_server);
-                jQuery('#download').val(data.data.custom_api_server);
+                jQuery('#download').val(data.data.custom_download_server);
                 jQuery('#community').hide();
                 jQuery('#custom').show();
 
