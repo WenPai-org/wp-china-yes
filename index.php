@@ -142,16 +142,179 @@ class WP_CHINA_YES {
     }
 
     public function settings() {
-        $setting_page_url = plugins_url('settings.html', __FILE__) . '?v=2.2.0';
         echo <<<EOT
-<iframe src="$setting_page_url" style="margin-top: 20px;"
-frameborder="0" height="700px;" width="600px;" scrolling="No" leftmargin="0" topmargin="0">
-</iframe>
+<div class="wrap">
+    <h1>WP-China-Yes</h1>
+    <form method="post" id="mirrors" style="display: none;">
+        <table class="form-table" role="presentation">
+            <tbody>
+                <p>这是一个颠覆性的插件，她将全面改善中国大陆站点在访问WP官方服务时的用户体验<br />
+                    原理是将位于国外的官方仓库源替换为由社区志愿者维护的国内源，以此达到加速访问的目的</p>
+                <tr>
+                    <th scope="row">源：</th>
+                    <td>
+                        <fieldset>
+                            <p>
+                                <label><input name="select_mirrors" type="radio" value="0" checked="checked">
+                                    社区源</label>&nbsp;&nbsp;&nbsp;
+                                <label><input name="select_mirrors" type="radio" value="1">自定义源</label>
+                            </p>
+                        </fieldset>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table id="community" class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row"><label for="community_mirrors">社区源</label></th>
+                    <td>
+                        <select name="community_mirrors" id="community_mirrors" class="postform">
+                            <option class="level-0" value="0">主源</option>
+                            <option class="level-0" value="1">备源</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table id="custom" class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row"><label for="api">API</label></th>
+                    <td>
+                        <label>https://</label>
+                        <input name="api" type="text" id="api" value="" placeholder="api.w.org.ibadboy.net" class="regular-text ltr">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="download">Download</label></th>
+                    <td>
+                        <label>https://</label>
+                        <input name="download" type="text" id="download" value="" placeholder="d.w.org.ibadboy.net" class="regular-text ltr">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="help">自定义源搭建方法</label></th>
+                    <td>
+                        <a target="_blank"
+            href="https://www.ibadboy.net/archives/3349.html">https://www.ibadboy.net/archives/3349.html</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table id="other" class="form-table" role="presentation">
+            <tbody>
+                <tr>
+                    <th scope="row"><h3>其他内容加速</h3></th>
+                    <td>
+                        <a target="_blank"
+            href="https://wp-china-yes.org/thread-23.htm">Gravatar头像</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="submit"><button type="button" name="submit" id="submit" class="button button-primary">保存更改</button>
+        </p>
+    </form>
+
+    <!--<p>这是一个开源项目，她需要每个人的支持和贡献才能健康长久的发展。<br />
+    项目地址：<a target="_blank" href="https://github.com/sunxiyuan/wp-china-yes">GitHub</a></p>-->
+</div>
+<script>
+    const root_url = window.location.href.split('wp-admin')[0];
+
+    function getCookie(name) {
+        let arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+        arr = document.cookie.match(reg);
+        if (arr)
+            return (decodeURIComponent(arr[2]));
+        else
+            return null;
+    }
+
+    var token = JSON.parse(getCookie('wp-china-yes'));
+
+    jQuery.ajax({
+        type: 'post',
+        url: root_url + 'wp-admin/admin-ajax.php',
+        cache: false,
+        data: {
+            '_ajax_nonce': token.get_config,
+            'action': 'wpcy_get_config',
+        },
+        success: function (data) {
+            jQuery("#mirrors").show();
+            if (data.data.custom_api_server == '' || data.data.custom_download_server == '') {
+                jQuery('select[name="community_mirrors"]').val(data.data.community);
+                jQuery('#custom').hide();
+                jQuery('#community').show();
+            } else {
+                jQuery('input:radio[name="select_mirrors"]').val(['1']);
+                jQuery('#api').val(data.data.custom_api_server);
+                jQuery('#download').val(data.data.custom_download_server);
+                jQuery('#community').hide();
+                jQuery('#custom').show();
+
+            }
+        },
+        error: function () {
+            alert('请求失败，请刷新重试')
+        }
+    })
+
+    jQuery('input:radio[name="select_mirrors"]').change(function () {
+        var select_mirror = jQuery(this).val();
+        if (select_mirror == 0) {
+            jQuery('#custom').hide();
+            jQuery('#community').show();
+        } else if (select_mirror == 1) {
+            jQuery('#community').hide();
+            jQuery('#custom').show();
+        }
+
+    });
+
+    jQuery('#submit').click(function () {
+        var select_mirrors = jQuery('input:radio:checked').val();
+
+        if (select_mirrors == 0) {
+            var api = null;
+            var download = null;
+        } else {
+            var api = jQuery('#api').val();
+            var download = jQuery('#download').val();
+        }
+
+        jQuery.ajax({
+            type: 'post',
+            url: root_url + 'wp-admin/admin-ajax.php',
+            cache: false,
+            data: {
+                '_ajax_nonce': token.set_config,
+                'action': 'wpcy_set_config',
+                'community': jQuery('#community_mirrors').val(),
+                'custom_api_server': api,
+                'custom_download_server': download,
+            },
+            success: function (data) {
+                alert('保存成功');
+            },
+            error: function () {
+                alert('保存失败，请刷新重试');
+            }
+        })
+
+    });
+</script>
 EOT;
     }
 
     public function set_cookie() {
-        if ( ! isset($_COOKIE['wp-china-yes']) && current_user_can('manage_options')) {
+        if (current_user_can('manage_options')) {
             setcookie('wp-china-yes', json_encode([
                 'get_config' => wp_create_nonce('wpcy_get_config'),
                 'set_config' => wp_create_nonce('wpcy_set_config')
@@ -160,10 +323,12 @@ EOT;
     }
 
     public function get_config() {
+	check_ajax_referer('wpcy_get_config');
         self::success('', $this->wp_china_yes_options);
     }
 
     public function set_config() {
+	check_ajax_referer('wpcy_set_config');
         if ( ! array_key_exists('community', $_POST) ||
              ( ! array_key_exists('custom_api_server', $_POST) && ! array_key_exists('custom_download_server', $_POST))) {
             self::error('参数错误', - 1);
