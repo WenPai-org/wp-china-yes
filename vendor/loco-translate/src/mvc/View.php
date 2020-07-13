@@ -156,7 +156,7 @@ class Loco_mvc_View implements IteratorAggregate {
      * @return bool
      */
     public function has( $prop ){
-        return array_key_exists($prop,$this->scope);
+        return isset($this->scope[$prop]);
     }
 
 
