@@ -20,19 +20,22 @@ echo $header;
                     <button class="button has-icon icon-save" data-loco="save" disabled>
                         <span><?php $ui->e('save')?></span>
                     </button>
+                    <!--
                     <button class="button has-icon icon-revert" data-loco="revert" disabled>
                         <span><?php $ui->e('revert')?></span>
                     </button>
                     <button class="button has-icon icon-sync" data-loco="sync" disabled>
                         <span><?php $ui->e('sync')?></span>
                     </button>
+                    -->
                 </fieldset><?php
-                if( $locale ):?> 
+                if( $locale ):?>
+                <!--
                 <fieldset>
                     <button class="button has-icon icon-robot" data-loco="auto" disabled>
                         <span><?php $ui->e('auto')?></span>
                     </button>
-                </fieldset><?php
+                </fieldset>--><?php
                 else:?> 
                 <fieldset>
                     <button class="button has-icon icon-add" data-loco="add" disabled>
