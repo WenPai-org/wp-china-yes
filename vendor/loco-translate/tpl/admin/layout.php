@@ -31,14 +31,14 @@
 
     
     if( $this->has('tabs') ):?> 
-    <h2 class="nav-tab-wrapper"><?php
+    <!--<h2 class="nav-tab-wrapper"><?php
         /* @var Loco_mvc_ViewParams[] $tabs */
         foreach( $tabs as $item ):?> 
         <a href="<?php $item->e('href')?>" class="nav-tab<?php echo $item->active?' nav-tab-active':''?>">
             <?php $item->e('name')?> 
         </a><?php
         endforeach;?> 
-    </h2><?php
+    </h2>--><?php
     endif?> 
 
 
