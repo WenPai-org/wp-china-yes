@@ -100,7 +100,7 @@ class Loco_hooks_AdminHooks extends Loco_hooks_Hookable {
                 }
                 // ok to add "translate" link into meta row
                 $href = Loco_mvc_AdminRouter::generate('plugin-view', array( 'bundle' => $plugin) );
-                $links[] = '<a href="'.esc_attr($href).'">'.esc_html__('Translate','loco-translate').'</a>';
+                $links[] = '<a href="'.esc_attr($href).'">翻译校准</a>';
              }
          }
          catch( Exception $e ){
