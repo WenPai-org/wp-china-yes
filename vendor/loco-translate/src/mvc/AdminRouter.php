@@ -33,24 +33,25 @@ class Loco_mvc_AdminRouter extends Loco_hooks_Hookable {
         
         // main loco pages, hooking only if has permission
         if( $user->has_cap($cap) ){
-
+/*
             $label = __('Loco Translate','loco-translate');
             // translators: Page title for plugin home screen
             $title = __('Loco, Translation Management','loco-translate');
             add_menu_page( $title, $label, $cap, 'loco', $render, 'dashicons-translation' );
             // alternative label for first menu item which gets repeated from top level 
             add_submenu_page( 'loco', $title, __('Home','loco-translate'), $cap, 'loco', $render );
-
-            $label = __('Themes','loco-translate');
-            // translators: Page title for theme translations
-            $title = __('Theme translations &lsaquo; Loco','loco-translate');
-            add_submenu_page( 'loco', $title, $label, $cap, 'loco-theme', $render );
-
-            $label = __('Plugins', 'loco-translate');
+*/
+            $label = __('插件翻译校准', 'loco-translate');
             // translators: Page title for plugin translations
             $title = __('Plugin translations &lsaquo; Loco','loco-translate');
-            add_submenu_page( 'loco', $title, $label, $cap, 'loco-plugin', $render );
+            add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-plugin', $render, 1 );
 
+            $label = __('主题翻译校准','loco-translate');
+            // translators: Page title for theme translations
+            $title = __('Theme translations &lsaquo; Loco','loco-translate');
+            add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-theme', $render, 2 );
+
+/*
             $label = __('WordPress', 'loco-translate');
             // translators: Page title for core WordPress translations
             $title = __('Core translations &lsaquo; Loco', 'loco-translate');
@@ -71,6 +72,7 @@ class Loco_mvc_AdminRouter extends Loco_hooks_Hookable {
                 $title = __('User options','loco-translate');
                 add_submenu_page( 'loco', $title, __('Settings','loco-translate'), $cap, 'loco-config-user', $render );
             }
+*/
         }
     }
 
