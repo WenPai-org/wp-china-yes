@@ -109,10 +109,10 @@ class Loco_ajax_FsConnectController extends Loco_mvc_AjaxController {
                     }
                     else if( 'move' === $type ){
                         $message = __('This directory is managed by WordPress. Removed files may be restored during updates','loco-translate');
-                    }
+                    }/*
                     else {
                         $message = __('Changes to this file may be overwritten or deleted when you update WordPress','loco-translate');
-                    }
+                    }*/
                     $this->set('warning',$message);
                 }
             }
