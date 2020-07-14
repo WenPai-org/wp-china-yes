@@ -2,7 +2,8 @@
 /**
  * Links above PO files table
  */
-?> 
+?>
+<!--
 <nav class="above-list-table"><?php
     /* @var $link Loco_mvc_ViewParams */
     foreach( $nav as $link ):?> 
@@ -11,3 +12,4 @@
     echo $this->render('../common/inc-table-filter');
     ?> 
 </nav>
+-->
