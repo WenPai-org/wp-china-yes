@@ -45,6 +45,7 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
         }
 
         // add contextual help tabs to current screen if there are any
+        /*
         if( $screen = get_current_screen() ){
             try {
                 $this->view->cd('/admin/help');
@@ -66,6 +67,7 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
                 Loco_error_AdminNotices::add( $e );
             }
         }
+        */
         
         // helper properties for loading static resources
         $this->baseurl = plugins_url( '', loco_plugin_self() );
