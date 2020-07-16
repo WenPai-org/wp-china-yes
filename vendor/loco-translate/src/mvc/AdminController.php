@@ -113,7 +113,8 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
      */
     public function filter_admin_footer_text(){
         $url = apply_filters('loco_external', 'https://localise.biz/');
-        return '<span id="loco-credit">'.sprintf( '<span>%s</span> <a href="%s" target="_blank">Loco</a>', esc_html(__('Loco Translate is powered by','loco-translate')), esc_url($url) ).'</span>';
+        // return '<span id="loco-credit">'.sprintf( '<span>%s</span> <a href="%s" target="_blank">Loco</a>', esc_html(__('Loco Translate is powered by','loco-translate')), esc_url($url) ).'</span>';
+        return '';
     }
 
     
