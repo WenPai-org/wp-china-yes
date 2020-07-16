@@ -126,7 +126,8 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
         if( $this->bench && ( $info = $this->get('_debug') ) ){
             $html .= sprintf('<span>%ss</span>', number_format_i18n($info['time'],2) );
         }
-        return $html;
+        // return $html;
+        return $text;
     }
 
 
