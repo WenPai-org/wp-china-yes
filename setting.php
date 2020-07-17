@@ -67,6 +67,12 @@ function wpcy_settings_init() {
 
 add_action('admin_init', 'wpcy_settings_init');
 
+function wpcy_section_main_cb() {
+    ?>
+    服务器赞助：<a href="">硅云</a> | <a href="">又拍云</a><br/>
+    资金赞助榜：<a href="">赞助榜单</a>
+    <?php
+}
 
 function wpcy_field_wpapi_cb($args) {
     $wpapi = get_option('wpapi');
