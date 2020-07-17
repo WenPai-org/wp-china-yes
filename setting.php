@@ -22,9 +22,9 @@ function wpcy_settings_init() {
     register_setting('wpcy', 'super_googlefonts');
 
     add_settings_section(
-        'wpcy_section_developers',
+        'wpcy_section_main',
         '这是一个革命性的插件，从此中国人会拥有针对国内环境专门定制的WordPress，以及一个由中国人主导的社区生态环境',
-        '',
+        'wpcy_section_main_cb',
         'wpcy'
     );
 
@@ -33,7 +33,7 @@ function wpcy_settings_init() {
         '选择仓库源',
         'wpcy_field_wpapi_cb',
         'wpcy',
-        'wpcy_section_developers',
+        'wpcy_section_main',
         []
     );
 
@@ -42,7 +42,7 @@ function wpcy_settings_init() {
         '加速管理后台',
         'wpcy_field_super_admin_cb',
         'wpcy',
-        'wpcy_section_developers',
+        'wpcy_section_main',
         []
     );
 
@@ -51,7 +51,7 @@ function wpcy_settings_init() {
         '加速G家头像',
         'wpcy_field_super_gravatar_cb',
         'wpcy',
-        'wpcy_section_developers',
+        'wpcy_section_main',
         []
     );
 
@@ -60,7 +60,7 @@ function wpcy_settings_init() {
         '加速谷歌字体',
         'wpcy_field_super_googlefonts_cb',
         'wpcy',
-        'wpcy_section_developers',
+        'wpcy_section_main',
         []
     );
 }
