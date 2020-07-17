@@ -159,7 +159,8 @@ function wpcy_options_page_html() {
   <p>
     <a href="https://wp-china.org">WP中国本土化社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
     同时社区也在积极开发<b>备用</b>的WordPress中国衍生版，以防中美意识形态战争摧毁整个国内WordPress相关产业（担忧来源于19年10月至20年5月的429问题）。<br/>
-    如果你是开发者或解决方案提供商，请了解<a href="https://wpunion.org.cn">WordPress中国产业联盟</a>。
+    如果你是开发者或解决方案提供商，请了解<a href="https://wpunion.org.cn">WordPress中国产业联盟</a>。<br/>
+    特别感谢<a href="https://zmingcx.com/">知更鸟</a>、<a href="https://www.weixiaoduo.com/">薇晓朵团队</a>、<a href="https://www.appnode.com/">AppNode</a>在项目萌芽期给予的帮助，点击<a href="#">这里</a>了解这段故事。
   </p>
     <?php
 }
