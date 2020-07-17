@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: WP-China-Yes
- * Description: WP&中国？是的！此插件完全本土化你的WordPress为中国特供版。插件将WordPress核心的官方服务链接悉数替换为带有中国大陆节点的全球加速网络，并为官方仓库的所有作品追加基于机器翻译的汉化支持。
+ * Description: 这是一个革命性的插件，从此中国人会拥有针对国内环境专门定制的WordPress，以及一个由中国人主导的社区生态环境
  * Author: WP中国本土化社区
  * Author URI:https://wp-china-yes.org/
  * Version: 3.0.0-Beta
