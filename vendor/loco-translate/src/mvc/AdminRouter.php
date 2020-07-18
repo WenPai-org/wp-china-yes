@@ -43,12 +43,12 @@ class Loco_mvc_AdminRouter extends Loco_hooks_Hookable {
 */
             $label = __('插件翻译校准', 'loco-translate');
             // translators: Page title for plugin translations
-            $title = __('Plugin translations &lsaquo; Loco','loco-translate');
+            $title = __('插件翻译校准','loco-translate');
             add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-plugin', $render, 1 );
 
             $label = __('主题翻译校准','loco-translate');
             // translators: Page title for theme translations
-            $title = __('Theme translations &lsaquo; Loco','loco-translate');
+            $title = __('主题翻译校准','loco-translate');
             add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-theme', $render, 2 );
 
 /*
