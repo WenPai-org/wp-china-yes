@@ -25,6 +25,8 @@ class Loco_ajax_SaveController extends Loco_ajax_common_BundleController {
 
         $pofile = new Loco_fs_LocaleFile( $path );
         $pofile->normalize( loco_constant('WP_CONTENT_DIR') );
+        $source_pofile = Loco_gettext_Data::fromSource( $pofile->getContents() );
+        $source_pofile_array = $source_pofile->jsonSerialize();
         $poexists = $pofile->exists();
 
         // ensure we only deal with PO/POT source files.
@@ -103,8 +105,66 @@ class Loco_ajax_SaveController extends Loco_ajax_common_BundleController {
                 $api->authorizeSave( $mofile );
                 $bytes = $mofile->putContents( $data->msgfmt() );
                 $this->set( 'mobytes', $bytes );
-                Loco_error_AdminNotices::success( __('PO file saved and MO file compiled','loco-translate') );
-                
+
+                /**
+                 * 默认的通过PO文件内容生成的数组是个纯二维数组，查找效率很低，所以对数组结构进行调整，把源字符串提取出来作为一级数组的KEY
+                 *
+                 * @param $pofile_array  $pofile->jsonSerialize()方法生成的PO文件的格式化数组
+                 *
+                 * @return array
+                 */
+                $pofile_key_array = function($pofile_array) {
+                    $pofile_key_array = [];
+                    foreach ($pofile_array as $v) {
+                        if (empty($v['source'])) {
+                            continue;
+                        }
+                        $pofile_key_array[$v['source']] = $v;
+                    }
+
+                    return $pofile_key_array;
+                };
+
+                $source_pofile_key_array = $pofile_key_array($source_pofile_array);
+                $pofile_key_array = $pofile_key_array($data->jsonSerialize());
+
+
+                /**
+                 * 取出用户提交的PO文件结构化数组相较于原版PO文件数组的差异部分
+                 */
+                $pofile_diff_array = [];
+                foreach ($source_pofile_key_array as $k => $v) {
+                    if (!array_key_exists($k, $pofile_key_array)) {
+                        continue;
+                    }
+
+                    if ($v['target'] != $pofile_key_array[$k]['target']) {
+                        $pofile_diff_array = array_merge($pofile_diff_array, [$pofile_key_array[$k]]);
+                    }
+                }
+
+                /**
+                 * 将差异部分上报给WP-China.org
+                 */
+                $form_data = array(
+                    'data' => json_encode($pofile_diff_array, JSON_UNESCAPED_UNICODE)
+                );
+
+                $response = wp_safe_remote_request(sprintf('https://openapi.wp-china-yes.net/v1/translations/%s/%s',
+                    $pofile->getParent()->basename(), str_replace('-zh_CN.po', '', $pofile->basename())),
+                    ['method' => 'PUT', 'body' => $form_data]);
+
+                $update_trans_ok = false;
+                $body = json_decode(wp_remote_retrieve_body($response), true);
+                if ($body['code'] == 0) {
+                    $update_trans_ok = true;
+                }
+
+                if ($update_trans_ok) {
+                    Loco_error_AdminNotices::success('翻译校准已在本地实时生效并已成功上传到WP-China.org');
+                } else {
+                    Loco_error_AdminNotices::success('翻译校准已在本地实时生效但未成功上传到WP-China.org，WP-China.org返回错误：'.$body['message']);
+                }
             }
             catch( Exception $e ){
                 Loco_error_AdminNotices::debug( $e->getMessage() );
