@@ -8,16 +8,16 @@
         <thead>
             <tr>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Bundle name', 'loco-translate')?> 
+                    <?php esc_html_e('显示名称', 'loco-translate')?> 
                 </th>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Text domain','loco-translate')?> 
+                    <?php esc_html_e('包名称','loco-translate')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Last modified','loco-translate')?> 
+                    <?php esc_html_e('最后修改','loco-translate')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Sets','loco-translate')?> 
+                    <?php esc_html_e('组','loco-translate')?> 
                 </th>
             </tr>
         </thead>
