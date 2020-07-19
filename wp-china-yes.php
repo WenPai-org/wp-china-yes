@@ -31,6 +31,26 @@ if (is_admin()) {
 
 
     /**
+     * 初始化设置项
+     */
+    if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
+        update_option("wpapi", '1');
+        update_option("super_gravatar", '1');
+        update_option("super_googlefonts", '2');
+    }
+
+
+    /**
+     * 禁用插件时删除配置
+     */
+    register_deactivation_hook(__FILE__, function () {
+        delete_option("wpapi");
+        delete_option("super_gravatar");
+        delete_option("super_googlefonts");
+    });
+
+
+    /**
      * 菜单注册
      */
     add_action('admin_menu', function () {
