@@ -79,6 +79,8 @@ function wpcy_field_wpapi_cb($args) {
     ?>
   <label>
     <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>中国本土源（推荐）
+  </label>
+  <label>
     <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方原版源
   </label>
   <p class="description">
@@ -101,6 +103,8 @@ function wpcy_field_super_admin_cb($args) {
     ?>
   <label>
     <input type="radio" value="1" name="super_admin" <?php checked($super_admin, '1'); ?>>启用
+  </label>
+  <label>
     <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
   </label>
   <p class="description">
@@ -114,6 +118,8 @@ function wpcy_field_super_gravatar_cb($args) {
     ?>
   <label>
     <input type="radio" value="1" name="super_gravatar" <?php checked($super_gravatar, '1'); ?>>启用
+  </label>
+  <label>
     <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '2'); ?>>禁用
   </label>
   <p class="description">
@@ -127,6 +133,8 @@ function wpcy_field_super_googlefonts_cb($args) {
     ?>
   <label>
     <input type="radio" value="1" name="super_googlefonts" <?php checked($super_googlefonts, '1'); ?>>启用
+  </label>
+  <label>
     <input type="radio" value="2" name="super_googlefonts" <?php checked($super_googlefonts, '2'); ?>>禁用
   </label>
   <p class="description">
