@@ -50,18 +50,6 @@ if (is_admin()) {
             'wpcy_options_page_html',
             0
         );
-
-        add_submenu_page(
-            'wpcy',
-            '关于',
-            '关于',
-            'manage_options',
-            'wpcy-about',
-            function () {
-                echo 'a';
-            },
-            3
-        );
     });
 
 
