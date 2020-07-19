@@ -18,8 +18,6 @@
         endforeach;
     endif;
 ?>
-<!--
-TODO:这里应该包含上报包信息的逻辑
--->
-该包未被<a href="https://translate.wp-china.org">https://translate.wp-china.org</a>翻译，当前已经上报，通常会在30分钟内推送汉化包
 
+该包还未被<a href="https://translate.wp-china.org">https://translate.wp-china.org</a>翻译<br/>
+若你确定该包处于WordPress官方仓库中，则24小时内就会收到该包的翻译推送，若未收到请<a href="https://wp-china.org/forums/forum/104">反馈问题</a>
