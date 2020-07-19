@@ -76,11 +76,11 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
                 // flash messages for display after redirect
                 try {
                     if( $count ) {
-                        Loco_data_Session::get()->flash( 'success', sprintf( _n( 'File moved', '%u files moved', $total, 'loco-translate' ), $total ) );
+                        Loco_data_Session::get()->flash( 'success', sprintf( _n( 'File moved', '%u files moved', $total, 'wp-china-yes' ), $total ) );
                     }
                     if( $total > $count ){
                         $diff = $total - $count;
-                        Loco_data_Session::get()->flash( 'error', sprintf( _n( 'One file could not be moved', '%u files could not be moved', $diff, 'loco-translate' ), $diff ) );
+                        Loco_data_Session::get()->flash( 'error', sprintf( _n( 'One file could not be moved', '%u files could not be moved', $diff, 'wp-china-yes' ), $diff ) );
                     }
                     Loco_data_Session::close();
                 }
@@ -97,7 +97,7 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
         }
         // set page title before render sets inline title
         $bundle = $this->getBundle();
-        $this->set('title', sprintf( __('Move %s','loco-translate'), $file->basename() ).' &lsaquo; '.$bundle->getName() );
+        $this->set('title', sprintf( __('Move %s','wp-china-yes'), $file->basename() ).' &lsaquo; '.$bundle->getName() );
     }
 
 
@@ -124,7 +124,7 @@ class Loco_admin_file_MoveController extends Loco_admin_file_BaseController {
         $custom = is_null($project) || $this->get('custom') || 'po' !== $file->extension() || ! $locale->isValid();
         // common page elements:
         $this->set('files',$files->expand() );
-        $this->set('title', sprintf( __('Move %s','loco-translate'), $file->filename() ) );
+        $this->set('title', sprintf( __('Move %s','wp-china-yes'), $file->filename() ) );
         $this->enqueueScript('move');
         // set info for existing file location
         $content_dir = loco_constant('WP_CONTENT_DIR');

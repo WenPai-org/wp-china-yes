@@ -9,19 +9,19 @@ $this->start('header');
 ?> 
 
     <div class="notice inline notice-info">
-        <h3><?php esc_html_e('Template file','loco-translate')?></h3>
+        <h3><?php esc_html_e('Template file','wp-china-yes')?></h3>
         <dl>
-            <dt><?php self::e( __('File size','loco-translate') )?>:</dt>
+            <dt><?php self::e( __('File size','wp-china-yes') )?>:</dt>
             <dd><?php $file->e('size')?></dd>
 
-            <dt><?php esc_html_e('File modified','loco-translate')?>:</dt>
+            <dt><?php esc_html_e('File modified','wp-china-yes')?>:</dt>
             <dd><time><?php $file->date('mtime')?></time></dd>
 
-            <dt><?php esc_html_e('Last extracted','loco-translate')?>:</dt>
+            <dt><?php esc_html_e('Last extracted','wp-china-yes')?>:</dt>
             <dd><time><?php $params->date('potime')?></time></dd>
             
-            <dt><?php echo esc_html_x('Source text','Editor','loco-translate')?>:</dt>
-            <dd><?php echo esc_html( $meta->getTotalSummary() )?> <span>(<?php echo sprintf( _n('1 word','%s words', $words, 'loco-translate'), number_format_i18n($words) )?>)</span></dd>
+            <dt><?php echo esc_html_x('Source text','Editor','wp-china-yes')?>:</dt>
+            <dd><?php echo esc_html( $meta->getTotalSummary() )?> <span>(<?php echo sprintf( _n('1 word','%s words', $words, 'wp-china-yes'), number_format_i18n($words) )?>)</span></dd>
         </dl>
    </div>
     

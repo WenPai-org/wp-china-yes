@@ -10,7 +10,7 @@ class Loco_error_WriteException extends Loco_error_Exception {
      * {@inheritdoc}
      */
     public function getTitle(){
-        return __('Permission denied','loco-translate');
+        return __('Permission denied','wp-china-yes');
     }
 
 }

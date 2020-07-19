@@ -9,11 +9,11 @@ $this->start('header');
    if( $params->has('jsonFields') ):?> 
     <form action="" method="post" enctype="application/x-www-form-urlencoded" class="notice inline notice-generic jsonly" id="loco-remote">
         <h3>
-            <?php esc_html_e('Check config repository','loco-translate')?>  
+            <?php esc_html_e('Check config repository','wp-china-yes')?>  
         </h3>
         <fieldset id="loco-remote-query">
             <p>
-                <?php esc_html_e("We have a database of non-standard bundle configurations.\nIf we know your bundle, we'll configure it for you automatically",'loco-translate')?> 
+                <?php esc_html_e("We have a database of non-standard bundle configurations.\nIf we know your bundle, we'll configure it for you automatically",'wp-china-yes')?> 
             </p>
             <p>
                 <select name="vendor">
@@ -24,14 +24,14 @@ $this->start('header');
         </fieldset>
         <div id="loco-remote-empty">
             <p>
-                <button type="button" class="button button-primary"><?php esc_html_e('Find config','loco-translate')?></button>
+                <button type="button" class="button button-primary"><?php esc_html_e('Find config','wp-china-yes')?></button>
                 <a href="<?php $tabs[1]->e('href')?>" class="button button-link"><?php esc_html_e('Cancel','default')?></a>
                 <span></span>
             </p>
         </div>
         <div id="loco-remote-found" class="jshide">
             <p>
-                <input type="submit" class="button button-success" name="json-setup" value="<?php esc_attr_e('OK, Load this config','loco-translate')?>" />
+                <input type="submit" class="button button-success" name="json-setup" value="<?php esc_attr_e('OK, Load this config','wp-china-yes')?>" />
                 <input type="reset" class="button button-link" value="<?php esc_attr_e('Cancel','default')?>" />
             </p>
         </div>
@@ -43,16 +43,16 @@ $this->start('header');
     if( $params->has('xmlFields') ):?> 
     <form action="" method="post" enctype="application/x-www-form-urlencoded" class="notice inline notice-generic">
         <h3>
-            <?php esc_html_e('XML setup','loco-translate')?> 
+            <?php esc_html_e('XML setup','wp-china-yes')?> 
         </h3>
         <p>
-            <?php esc_html_e("If you've been given a configuration file by a developer, paste the XML code here",'loco-translate')?>:
+            <?php esc_html_e("If you've been given a configuration file by a developer, paste the XML code here",'wp-china-yes')?>:
         </p>
         <fieldset>
             <textarea name="xml-content" class="large-text" rows="3" wrap="virtual"></textarea>
         </fieldset>
         <p>
-            <input type="submit" class="button button-primary" name="xml-setup" value="<?php esc_html_e('Load config','loco-translate')?>" />
+            <input type="submit" class="button button-primary" name="xml-setup" value="<?php esc_html_e('Load config','wp-china-yes')?>" />
             <a href="<?php $tabs[1]->e('href')?>" class="button button-link"><?php esc_html_e('Cancel','default')?></a>
         </p>
         <?php $xmlFields->_e()?> 

@@ -102,12 +102,12 @@ abstract class Loco_admin_file_BaseController extends Loco_admin_bundle_BaseCont
         $tabs = new Loco_admin_Navigation;
         $this->set( 'tabs', $tabs );
         $actions = array (
-            'file-edit' => __('Editor','loco-translate'),
-            'file-view' => __('Source','loco-translate'),
-            'file-info' => __('File info','loco-translate'),
-            'file-diff' => __('Restore','loco-translate'),
-            'file-move' => $localised ? __('Relocate','loco-translate') : null,
-            'file-delete' => __('Delete','loco-translate'),
+            'file-edit' => __('Editor','wp-china-yes'),
+            'file-view' => __('Source','wp-china-yes'),
+            'file-info' => __('File info','wp-china-yes'),
+            'file-diff' => __('Restore','wp-china-yes'),
+            'file-move' => $localised ? __('Relocate','wp-china-yes') : null,
+            'file-delete' => __('Delete','wp-china-yes'),
         );
  
         $suffix = $this->get('action');
@@ -126,7 +126,7 @@ abstract class Loco_admin_file_BaseController extends Loco_admin_bundle_BaseCont
             $args = array( 'bundle' => $bundle->getHandle(), 'domain' => $project->getId() );
             $this->set( 'msginit', new Loco_mvc_ViewParams( array (
                 'href' => Loco_mvc_AdminRouter::generate( $prefix.'-msginit', $args ),
-                'text' => __('New language','loco-translate'),
+                'text' => __('New language','wp-china-yes'),
             ) ) );
         }
         catch( Exception $e ){

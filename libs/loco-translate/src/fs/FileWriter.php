@@ -49,7 +49,7 @@ class Loco_fs_FileWriter {
                     Loco_error_AdminNotices::warn($reason);
                 }
             }
-            throw new Loco_error_WriteException( __('Failed to connect to remote server','loco-translate') );
+            throw new Loco_error_WriteException( __('Failed to connect to remote server','wp-china-yes') );
         }
         $this->fs = $fs;
         return $this;
@@ -129,7 +129,7 @@ class Loco_fs_FileWriter {
     public function chmod( $mode, $recursive = false ){
         $this->authorize();
         if( ! $this->fs->chmod( $this->getPath(), $mode, $recursive ) ){
-            throw new Loco_error_WriteException( sprintf( __('Failed to chmod %s','loco-translate'), $this->file->basename() ) );
+            throw new Loco_error_WriteException( sprintf( __('Failed to chmod %s','wp-china-yes'), $this->file->basename() ) );
         }
         return $this;
     }
@@ -147,7 +147,7 @@ class Loco_fs_FileWriter {
         // bugs in WP file system "exists" methods means we must force $overwrite=true; so checking file existence first
         if( $copy->exists() ){
             Loco_error_AdminNotices::debug(sprintf('Cannot copy %s to %s (target already exists)',$source,$target));
-            throw new Loco_error_WriteException( __('Refusing to copy over an existing file','loco-translate') );
+            throw new Loco_error_WriteException( __('Refusing to copy over an existing file','wp-china-yes') );
         }
         // ensure target directory exists, although in most cases copy will be in situ
         $parent = $copy->getParent();
@@ -157,7 +157,7 @@ class Loco_fs_FileWriter {
         // perform WP file system copy method
         if( ! $this->fs->copy($source,$target,true) ){
             Loco_error_AdminNotices::debug(sprintf('Failed to copy %s to %s via "%s" method',$source,$target,$this->fs->method));
-            throw new Loco_error_WriteException( sprintf( __('Failed to copy %s to %s','loco-translate'), basename($source), basename($target) ) );
+            throw new Loco_error_WriteException( sprintf( __('Failed to copy %s to %s','wp-china-yes'), basename($source), basename($target) ) );
         }
 
         return $this;
@@ -195,7 +195,7 @@ class Loco_fs_FileWriter {
     public function delete( $recursive = false ){
         $this->authorize();
         if( ! $this->fs->delete( $this->getPath(), $recursive ) ){
-            throw new Loco_error_WriteException( sprintf( __('Failed to delete %s','loco-translate'), $this->file->basename() ) );
+            throw new Loco_error_WriteException( sprintf( __('Failed to delete %s','wp-china-yes'), $this->file->basename() ) );
         }
 
         return $this;
@@ -211,7 +211,7 @@ class Loco_fs_FileWriter {
         $this->authorize();
         $file = $this->file;
         if( $file->isDirectory() ){
-            throw new Loco_error_WriteException( sprintf( __('"%s" is a directory, not a file','loco-translate'), $file->basename() ) );
+            throw new Loco_error_WriteException( sprintf( __('"%s" is a directory, not a file','wp-china-yes'), $file->basename() ) );
         }
         // file having no parent directory is likely an error, like a relative path.
         $dir = $file->getParent();
@@ -236,17 +236,17 @@ class Loco_fs_FileWriter {
             // provide useful reason for failure if possible
             if( $file->exists() && ! $file->writable() ){
                 Loco_error_AdminNotices::debug( sprintf('File not writable via "%s" method, check permissions on %s',$fs->method,$path) );
-                throw new Loco_error_WriteException( __("Permission denied to update file",'loco-translate') );
+                throw new Loco_error_WriteException( __("Permission denied to update file",'wp-china-yes') );
             }
             // directory path should exist or have thrown error earlier.
             // directory path may not be writable by same fs context
             if( ! $dir->writable() ){
                 Loco_error_AdminNotices::debug( sprintf('Directory not writable via "%s" method; check permissions for %s',$fs->method,$dir) );
-                throw new Loco_error_WriteException( __("Parent directory isn't writable",'loco-translate') );
+                throw new Loco_error_WriteException( __("Parent directory isn't writable",'wp-china-yes') );
             }
             // else reason for failure is not established
             Loco_error_AdminNotices::debug( sprintf('Unknown write failure via "%s" method; check %s',$fs->method,$path) );
-            throw new Loco_error_WriteException( __('Failed to save file','loco-translate').': '.$file->basename() );
+            throw new Loco_error_WriteException( __('Failed to save file','wp-china-yes').': '.$file->basename() );
         }
         
         return $this;
@@ -277,7 +277,7 @@ class Loco_fs_FileWriter {
                 foreach( $stack as $path ){
                     if( ! $fs->mkdir($path,$mode) ){
                         Loco_error_AdminNotices::debug( sprintf('mkdir(%s,%03o) failed via "%s" method;',var_export($path,1),$mode,$fs->method) );
-                        throw new Loco_error_WriteException( __('Failed to create directory','loco-translate') );
+                        throw new Loco_error_WriteException( __('Failed to create directory','wp-china-yes') );
                     }
                 }
                 return true;
@@ -285,7 +285,7 @@ class Loco_fs_FileWriter {
             $here = $parent;
         }
         // refusing to create directory when the entire path is missing. e.g. "/bad"
-        throw new Loco_error_WriteException( __('Failed to build directory path','loco-translate') );
+        throw new Loco_error_WriteException( __('Failed to build directory path','wp-china-yes') );
     }
 
 
@@ -296,17 +296,17 @@ class Loco_fs_FileWriter {
      */
     public function authorize(){
         if( $this->disabled() ){
-            throw new Loco_error_WriteException( __('File modification is disallowed by your WordPress config','loco-translate') );
+            throw new Loco_error_WriteException( __('File modification is disallowed by your WordPress config','wp-china-yes') );
         }
         $opts = Loco_data_Settings::get();
         // deny system file changes (fs_protect = 2)
         if( 1 < $opts->fs_protect && $this->file->getUpdateType() ){
-            throw new Loco_error_WriteException( __('Modification of installed files is disallowed by the plugin settings','loco-translate') );
+            throw new Loco_error_WriteException( __('Modification of installed files is disallowed by the plugin settings','wp-china-yes') );
         }
         // deny POT modification (pot_protect = 2)
         // this assumes that templates all have .pot extension, which isn't guaranteed. UI should prevent saving of wrongly files like "default.po"
         if( 'pot' === $this->file->extension() &&  1 < $opts->pot_protect ){
-            throw new Loco_error_WriteException( __('Modification of POT (template) files is disallowed by the plugin settings','loco-translate') );
+            throw new Loco_error_WriteException( __('Modification of POT (template) files is disallowed by the plugin settings','wp-china-yes') );
         }
         return $this;
     } 

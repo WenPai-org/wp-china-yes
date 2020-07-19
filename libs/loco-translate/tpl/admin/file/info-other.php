@@ -8,7 +8,7 @@ $this->start('header');
 
     <div class="notice inline notice-error">
         <h3 class="has-icon">
-            <?php esc_html_e('Unexpected file type','loco-translate')?>  
+            <?php esc_html_e('Unexpected file type','wp-china-yes')?>  
         </h3>
         <p>
             <?php $params->e('error')?> 

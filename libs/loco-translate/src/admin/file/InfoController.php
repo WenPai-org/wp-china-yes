@@ -124,7 +124,7 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
             try {
                 $data = Loco_gettext_Data::load($file);
                 $head = $data->getHeaders();
-                $author = $head->trimmed('Last-Translator') or $author = __('Unknown author','loco-translate');
+                $author = $head->trimmed('Last-Translator') or $author = __('Unknown author','wp-china-yes');
                 $this->set( 'author', $author );
                 // date headers may not be same as file modification time (files copied to server etc..)
                 $podate = $head->trimmed( $locale ? 'PO-Revision-Date' : 'POT-Creation-Date' );
@@ -155,14 +155,14 @@ class Loco_admin_file_InfoController extends Loco_admin_file_BaseController {
                 if( $debugging ){
                     // missing or invalid headers are tollerated but developers should be notified
                     if( $debugging && ! count($head) ){
-                        $debug[] = __('File does not have a valid header','loco-translate');
+                        $debug[] = __('File does not have a valid header','wp-china-yes');
                     }
                     // Language header sanity checks, raising developer (debug) warnings
                     if( $locale ){
                         if( $value = $head['Language'] ){
                             $check = (string) Loco_Locale::parse($value);
                             if( $check !== $code ){
-                                $debug[]= sprintf( __('Language header is "%s" but file name contains "%s"','loco-translate'), $value, $code );
+                                $debug[]= sprintf( __('Language header is "%s" but file name contains "%s"','wp-china-yes'), $value, $code );
                             }
                         }
                         if( $value = $head['Plural-Forms'] ){

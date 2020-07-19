@@ -11,7 +11,7 @@ $this->start('source');
 ?> 
     <div class="notice inline notice-generic">
         <h2>
-            <?php self::e( __('Enter a new location for this file','loco-translate') );?> 
+            <?php self::e( __('Enter a new location for this file','wp-china-yes') );?> 
         </h2>
         <p>
             <input type="text" name="dest" value="<?php $file->e('relpath')?>" class="large-text" />

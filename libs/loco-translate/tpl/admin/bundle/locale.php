@@ -11,7 +11,7 @@ $this->extend('../layout');
             <span <?php echo $locale->attr?>><code><?php $locale->e('code')?></code></span> 
             <span><?php $locale->e('name')?></span>
             <span class="loco-meta">
-                <span><?php echo esc_html_x('Updated','Modified time','loco-translate')?>:</span>
+                <span><?php echo esc_html_x('Updated','Modified time','wp-china-yes')?>:</span>
                 <span><?php $params->date('modified')?></span>
             </span>
         </h3>
@@ -29,24 +29,24 @@ $this->extend('../layout');
             <thead>
                 <tr>
                     <th data-sort-type="s">
-                        <?php esc_html_e('Bundle name','loco-translate')?> 
+                        <?php esc_html_e('Bundle name','wp-china-yes')?> 
                     </th><?php
                     if( $npofiles ):?> 
                     <th colspan="2" data-sort-type="n">
-                        <?php esc_html_e('Translation progress','loco-translate')?> 
+                        <?php esc_html_e('Translation progress','wp-china-yes')?> 
                     </th>
                     <th data-sort-type="n">
-                        <?php esc_html_e('Pending','loco-translate')?> 
+                        <?php esc_html_e('Pending','wp-china-yes')?> 
                     </th><?php
                     endif?> 
                     <th data-sort-type="s">
-                        <?php esc_html_e('File info','loco-translate')?> 
+                        <?php esc_html_e('File info','wp-china-yes')?> 
                     </th>
                     <th data-sort-type="n">
-                        <?php esc_html_e('Last modified','loco-translate')?> 
+                        <?php esc_html_e('Last modified','wp-china-yes')?> 
                     </th>
                     <th data-sort-type="s">
-                        <?php esc_html_e('Folder','loco-translate')?> 
+                        <?php esc_html_e('Folder','wp-china-yes')?> 
                     </th>
                 </tr>
             </thead>
@@ -60,19 +60,19 @@ $this->extend('../layout');
                         </a>
                         <nav class="row-actions">
                             <span>
-                                <a href="<?php $po->e('edit')?>"><?php esc_html_e('Edit','loco-translate')?></a> |
+                                <a href="<?php $po->e('edit')?>"><?php esc_html_e('Edit','wp-china-yes')?></a> |
                             </span>
                             <span>
-                                <a href="<?php $po->e('view')?>"><?php esc_html_e('View','loco-translate')?></a> |
+                                <a href="<?php $po->e('view')?>"><?php esc_html_e('View','wp-china-yes')?></a> |
                             </span>
                             <span>
-                                <a href="<?php $po->e('info')?>"><?php esc_html_e('Info','loco-translate')?></a> |
+                                <a href="<?php $po->e('info')?>"><?php esc_html_e('Info','wp-china-yes')?></a> |
                             </span>
                             <span>
-                                <a href="<?php $po->e('copy')?>"><?php esc_html_e('Copy','loco-translate')?></a> |
+                                <a href="<?php $po->e('copy')?>"><?php esc_html_e('Copy','wp-china-yes')?></a> |
                             </span>
                             <span class="trash">
-                                <a href="<?php $po->e('delete')?>"><?php esc_html_e('Delete','loco-translate')?></a>
+                                <a href="<?php $po->e('delete')?>"><?php esc_html_e('Delete','wp-china-yes')?></a>
                             </span>
                         </nav>
                     </td><?php

@@ -9,7 +9,7 @@ class Loco_admin_config_ApisController extends Loco_admin_config_BaseController 
      */
     public function init(){
         parent::init();
-        $this->set( 'title', __('API keys','loco-translate') );
+        $this->set( 'title', __('API keys','wp-china-yes') );
 
         // collect support API keys
         $apis = array();
@@ -40,7 +40,7 @@ class Loco_admin_config_ApisController extends Loco_admin_config_BaseController 
                     }
                     if( $filter ){
                         Loco_data_Settings::get()->populate($data,$filter)->persistIfDirty();
-                        Loco_error_AdminNotices::success( __('Settings saved','loco-translate') );
+                        Loco_error_AdminNotices::success( __('Settings saved','wp-china-yes') );
                     }
                 }
             }
@@ -56,7 +56,7 @@ class Loco_admin_config_ApisController extends Loco_admin_config_BaseController 
      */
     public function render(){
 
-        $title = __('Plugin settings','loco-translate');
+        $title = __('Plugin settings','wp-china-yes');
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title );
         

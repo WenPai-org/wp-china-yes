@@ -181,9 +181,9 @@ class Loco_data_Settings extends Loco_data_Serializable {
             $updated = true;
             // feature alerts:
             if( '2.4.' === substr($new,0,4) && '2.4.' !== substr($old,0,4) ){
-                Loco_error_AdminNotices::info( __('Loco Translate 2.4 supports third party translation providers. Set up your API keys in the plugin settings!','loco-translate') )
-                   ->addLink( Loco_mvc_AdminRouter::generate('config-apis'), __('Settings','loco-translate') )
-                   ->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/providers'), __('Documentation','loco-translate') );
+                Loco_error_AdminNotices::info( __('Loco Translate 2.4 supports third party translation providers. Set up your API keys in the plugin settings!','wp-china-yes') )
+                   ->addLink( Loco_mvc_AdminRouter::generate('config-apis'), __('Settings','wp-china-yes') )
+                   ->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/providers'), __('Documentation','wp-china-yes') );
             }
         }
         return $updated;

@@ -13,7 +13,7 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         $this->enqueueStyle('poinit');
         //
         $bundle = $this->getBundle();
-        $this->set('title', __('New template','loco-translate').' &lsaquo; '.$bundle );
+        $this->set('title', __('New template','wp-china-yes').' &lsaquo; '.$bundle );
     }
 
 
@@ -35,7 +35,7 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         
         $breadcrumb = $this->prepareNavigation();
         // "new" tab is confusing when no project-scope navigation
-        // $this->get('tabs')->add( __('New POT','loco-translate'), '', true );
+        // $this->get('tabs')->add( __('New POT','wp-china-yes'), '', true );
 
         $bundle = $this->getBundle();
         $project = $this->getProject();
@@ -65,7 +65,7 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         
         // POT should actually not exist at this stage. It should be edited instead.
         if( $pot->exists() ){
-            throw new Loco_error_Exception( __('Template file already exists','loco-translate') );
+            throw new Loco_error_Exception( __('Template file already exists','wp-china-yes') );
         }
         
         // Bundle may deliberately lock template to avoid end-user tampering
@@ -113,8 +113,8 @@ class Loco_admin_init_InitPotController extends Loco_admin_bundle_BaseController
         $this->set('pot', Loco_mvc_FileParams::create( $pot ) );
         $this->set('dir', Loco_mvc_FileParams::create( $dir ) );
         
-        $title = __('New template file','loco-translate');
-        $subhead = sprintf( __('New translations template for "%s"','loco-translate'), $project );
+        $title = __('New template file','wp-china-yes');
+        $subhead = sprintf( __('New translations template for "%s"','wp-china-yes'), $project );
         $this->set('subhead', $subhead );
         
         // navigate up to bundle listing page 

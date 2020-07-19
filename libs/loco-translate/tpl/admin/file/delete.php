@@ -9,11 +9,11 @@ $this->extend('../layout');
         <div class="notice inline notice-danger">
             <h3>
                 <span class="has-icon icon-trash"> </span>
-                <span><?php esc_html_e('Confirm delete','loco-translate')?></span>
+                <span><?php esc_html_e('Confirm delete','wp-china-yes')?></span>
             </h3>
             <p>
                 <?php
-                echo __('Are you sure you want to <strong>permanently</strong> delete the following file?','loco-translate')?> 
+                echo __('Are you sure you want to <strong>permanently</strong> delete the following file?','wp-china-yes')?> 
             </p>
             <p>
                 <code><?php $info->e('relpath')?></code>

@@ -59,7 +59,7 @@ class Loco_ajax_XgettextController extends Loco_ajax_common_BundleController {
         
         // put flash message into session to be displayed on redirected page
         try {
-            Loco_data_Session::get()->flash('success', __('Template file created','loco-translate') );
+            Loco_data_Session::get()->flash('success', __('Template file created','wp-china-yes') );
             Loco_data_Session::close();
         }
         catch( Exception $e ){

@@ -113,7 +113,7 @@ class Loco_admin_bundle_LocaleController extends Loco_mvc_AdminController {
             ) );
         }
         
-        $title = __( 'Installed languages', 'loco-translate' );
+        $title = __( 'Installed languages', 'wp-china-yes' );
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title, Loco_mvc_AdminRouter::generate('lang') );
         //$breadcrumb->add( $locale->getName() );
@@ -126,25 +126,25 @@ class Loco_admin_bundle_LocaleController extends Loco_mvc_AdminController {
         
         // files may be available for language even if not installed (i.e. no core files on disk)
         if( ! $installed || ! isset($translations['core']) && 'en_US' !== $tag ){
-            Loco_error_AdminNotices::warn( __('No core translation files are installed for this language','loco-translate') )
-                ->addLink('https://codex.wordpress.org/Installing_WordPress_in_Your_Language', __('Documentation','loco-translate') );
+            Loco_error_AdminNotices::warn( __('No core translation files are installed for this language','wp-china-yes') )
+                ->addLink('https://codex.wordpress.org/Installing_WordPress_in_Your_Language', __('Documentation','wp-china-yes') );
         }
 
         // Translated type labels and "See all <type>" links
         $types = array(
             'core' => new Loco_mvc_ViewParams( array(
-                'name' => __('WordPress Core','loco-translate'),
-                'text' => __('See all core translations','loco-translate'), 
+                'name' => __('WordPress Core','wp-china-yes'),
+                'text' => __('See all core translations','wp-china-yes'), 
                 'href' => Loco_mvc_AdminRouter::generate('core') 
             ) ),
             'theme' => new Loco_mvc_ViewParams( array(
-                'name' => __('Themes','loco-translate'),
-                'text' => __('See all themes','loco-translate'), 
+                'name' => __('Themes','wp-china-yes'),
+                'text' => __('See all themes','wp-china-yes'), 
                 'href' => Loco_mvc_AdminRouter::generate('theme') 
             ) ),
             'plugin' => new Loco_mvc_ViewParams( array(
-                'name' => __('Plugins','loco-translate'),
-                'text' => __('See all plugins','loco-translate'), 
+                'name' => __('Plugins','wp-china-yes'),
+                'text' => __('See all plugins','wp-china-yes'), 
                 'href' => Loco_mvc_AdminRouter::generate('plugin') 
             ) ),
         );

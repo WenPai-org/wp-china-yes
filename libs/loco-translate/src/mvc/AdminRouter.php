@@ -34,43 +34,43 @@ class Loco_mvc_AdminRouter extends Loco_hooks_Hookable {
         // main loco pages, hooking only if has permission
         if( $user->has_cap($cap) ){
 /*
-            $label = __('Loco Translate','loco-translate');
+            $label = __('Loco Translate','wp-china-yes');
             // translators: Page title for plugin home screen
-            $title = __('Loco, Translation Management','loco-translate');
+            $title = __('Loco, Translation Management','wp-china-yes');
             add_menu_page( $title, $label, $cap, 'loco', $render, 'dashicons-translation' );
             // alternative label for first menu item which gets repeated from top level 
-            add_submenu_page( 'loco', $title, __('Home','loco-translate'), $cap, 'loco', $render );
+            add_submenu_page( 'loco', $title, __('Home','wp-china-yes'), $cap, 'loco', $render );
 */
-            $label = __('插件翻译校准', 'loco-translate');
+            $label = __('插件翻译校准', 'wp-china-yes');
             // translators: Page title for plugin translations
-            $title = __('Plugin translations &lsaquo; Loco','loco-translate');
+            $title = __('Plugin translations &lsaquo; Loco','wp-china-yes');
             add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-plugin', $render, 1 );
 
-            $label = __('主题翻译校准','loco-translate');
+            $label = __('主题翻译校准','wp-china-yes');
             // translators: Page title for theme translations
-            $title = __('Theme translations &lsaquo; Loco','loco-translate');
+            $title = __('Theme translations &lsaquo; Loco','wp-china-yes');
             add_submenu_page( 'wpcy', $title, $label, $cap, 'loco-theme', $render, 2 );
 
 /*
-            $label = __('WordPress', 'loco-translate');
+            $label = __('WordPress', 'wp-china-yes');
             // translators: Page title for core WordPress translations
-            $title = __('Core translations &lsaquo; Loco', 'loco-translate');
+            $title = __('Core translations &lsaquo; Loco', 'wp-china-yes');
             add_submenu_page( 'loco', $title, $label, $cap, 'loco-core', $render );
 
-            $label = __('Languages', 'loco-translate');
+            $label = __('Languages', 'wp-china-yes');
             // translators: Page title for installed languages page
-            $title = __('Languages &lsaquo; Loco', 'loco-translate');
+            $title = __('Languages &lsaquo; Loco', 'wp-china-yes');
             add_submenu_page( 'loco', $title, $label, $cap, 'loco-lang', $render );
             
             // settings page only for users with manage_options permission in addition to Loco access:
             if( $user->has_cap('manage_options') ){
-                $title = __('Plugin settings','loco-translate');
-                add_submenu_page( 'loco', $title, __('Settings','loco-translate'), 'manage_options', 'loco-config', $render );
+                $title = __('Plugin settings','wp-china-yes');
+                add_submenu_page( 'loco', $title, __('Settings','wp-china-yes'), 'manage_options', 'loco-config', $render );
             }
             // but all users need access to user preferences which require standard Loco access permission
             else {
-                $title = __('User options','loco-translate');
-                add_submenu_page( 'loco', $title, __('Settings','loco-translate'), $cap, 'loco-config-user', $render );
+                $title = __('User options','wp-china-yes');
+                add_submenu_page( 'loco', $title, __('Settings','wp-china-yes'), $cap, 'loco-config-user', $render );
             }
 */
         }
@@ -236,7 +236,7 @@ class Loco_mvc_AdminRouter extends Loco_hooks_Hookable {
         try {
             // show deferred failure from initPage
             if( ! $this->ctrl ){
-                throw new Loco_error_Exception( __('Page not found','loco-translate') );
+                throw new Loco_error_Exception( __('Page not found','wp-china-yes') );
             }
             // display loco admin page
             echo $this->ctrl->render();

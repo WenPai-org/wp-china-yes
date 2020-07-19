@@ -7,15 +7,15 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
 ?> 
     <div class="notice inline notice-warning">
         <h3 class="has-icon">
-            <?php esc_html_e('Template missing','loco-translate')?> 
+            <?php esc_html_e('Template missing','wp-china-yes')?> 
         </h3><?php
         if( $params->has('pot') ):?> 
         <p>
-            <?php esc_html_e("This bundle's template file doesn't exist yet. We recommend you create it before adding languages",'loco-translate')?>.
+            <?php esc_html_e("This bundle's template file doesn't exist yet. We recommend you create it before adding languages",'wp-china-yes')?>.
         </p><?php
         else:?> 
         <p>
-            <?php esc_html_e("This bundle doesn't define a translations template file",'loco-translate')?>.
+            <?php esc_html_e("This bundle doesn't define a translations template file",'wp-china-yes')?>.
         </p><?php
         endif?> 
         <p>
@@ -24,19 +24,19 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
             if( $this->has('conf') ):?> 
             <a href="<?php $conf->e('link')?>" class="button button-link has-icon icon-wrench"><?php $conf->e('text')?></a><?php
             endif?> 
-            <a class="button button-link has-icon icon-help" href="<?php echo esc_url($help)?>" target="_blank"><?php esc_html_e('About templates','loco-translate')?></a>
+            <a class="button button-link has-icon icon-help" href="<?php echo esc_url($help)?>" target="_blank"><?php esc_html_e('About templates','wp-china-yes')?></a>
         </p>
     </div><?php
 
     $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/faqs/template-missing');
     ?> 
     <div class="notice inline notice-info">
-        <h3 class="has-icon"><?php esc_html_e('Suggestion','loco-translate')?></h3>
+        <h3 class="has-icon"><?php esc_html_e('Suggestion','wp-china-yes')?></h3>
         <p>
-            <?php esc_html_e('You can use existing translations as a template using the Copy feature.','loco-translate')?> 
+            <?php esc_html_e('You can use existing translations as a template using the Copy feature.','wp-china-yes')?> 
         </p>
         <p>
             <a class="button button-link has-icon icon-back" href="<?php $tabs[0]->e('href')?>"><?php esc_html_e('Back','default')?></a>
-            <a class="button button-link has-icon icon-help" href="<?php echo esc_url($help)?>" target="_blank"><?php esc_html_e('See FAQ','loco-translate')?></a>
+            <a class="button button-link has-icon icon-help" href="<?php echo esc_url($help)?>" target="_blank"><?php esc_html_e('See FAQ','wp-china-yes')?></a>
         </p>
     </div>

@@ -10,7 +10,7 @@ class Loco_admin_config_VersionController extends Loco_admin_config_BaseControll
      */
     public function init(){
         parent::init();
-        $this->set( 'title', __('Version','loco-translate') );
+        $this->set( 'title', __('Version','wp-china-yes') );
     }
 
 
@@ -19,7 +19,7 @@ class Loco_admin_config_VersionController extends Loco_admin_config_BaseControll
      */
     public function render(){
         
-        $title = __('Plugin settings','loco-translate');
+        $title = __('Plugin settings','wp-china-yes');
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title );
         

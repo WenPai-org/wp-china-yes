@@ -93,7 +93,7 @@ class Loco_admin_bundle_ViewController extends Loco_admin_bundle_BaseController 
         // always offer msginit even if we find out later we can't extract any strings
         $p['nav'][] = new Loco_mvc_ViewParams( array( 
             'href' => $this->getProjectLink('msginit', $project ),
-            'name' => __('New language','loco-translate'),
+            'name' => __('New language','wp-china-yes'),
             'icon' => 'add',
         ) );
 
@@ -105,7 +105,7 @@ class Loco_admin_bundle_ViewController extends Loco_admin_bundle_BaseController 
                 $meta = Loco_gettext_Metadata::load($pot);
                 $p['nav'][] = new Loco_mvc_ViewParams( array(
                     'href' => $this->getResourceLink('file-view', $project, $meta ),
-                    'name' => __('View template','loco-translate'),
+                    'name' => __('View template','wp-china-yes'),
                     'icon' => 'file',
                 ) );
             }
@@ -116,7 +116,7 @@ class Loco_admin_bundle_ViewController extends Loco_admin_bundle_BaseController 
             $meta = Loco_gettext_Metadata::load($pot);
             $p['nav'][] = new Loco_mvc_ViewParams( array( 
                 'href' => $this->getResourceLink('file-edit', $project, $meta ),
-                'name' => __('Edit template','loco-translate'),
+                'name' => __('Edit template','wp-china-yes'),
                 'icon' => 'pencil',
             ) );
         }
@@ -124,7 +124,7 @@ class Loco_admin_bundle_ViewController extends Loco_admin_bundle_BaseController 
         else {
             $p['nav'][] = new Loco_mvc_ViewParams( array( 
                 'href' => $this->getProjectLink('xgettext', $project ),
-                'name' => __('Create template','loco-translate'),
+                'name' => __('Create template','wp-china-yes'),
                 'icon' => 'add',
             ) );
         }

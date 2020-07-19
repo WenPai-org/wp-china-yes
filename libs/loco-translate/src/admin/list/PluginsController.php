@@ -9,7 +9,7 @@ class Loco_admin_list_PluginsController extends Loco_admin_list_BaseController {
     public function render(){
 
         $this->set( 'type', 'plugin' );
-        $this->set( 'title', __( 'Translate plugins', 'loco-translate' ) );
+        $this->set( 'title', __( 'Translate plugins', 'wp-china-yes' ) );
         
         foreach( Loco_package_Plugin::get_plugins() as $handle => $data ){
             try {

@@ -205,7 +205,7 @@ class Loco_package_Plugin extends Loco_package_Bundle {
         // plugin must be registered with at least a name and "basedir"
         $data = self::get_plugin($handle);
         if( ! $data ){
-            throw new Loco_error_Exception( sprintf( __('Plugin not found: %s','loco-translate'),$handle) );
+            throw new Loco_error_Exception( sprintf( __('Plugin not found: %s','wp-china-yes'),$handle) );
         }
 
         // lazy resolve of base directory from "basedir" property that we added

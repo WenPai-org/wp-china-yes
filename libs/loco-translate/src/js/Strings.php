@@ -11,158 +11,158 @@ class Loco_js_Strings extends Loco_hooks_TranslateBuffer {
     public function compile(){
 
         // When text filtering reduces to an empty view
-        __("Nothing matches the text filter",'loco-translate');
+        __("Nothing matches the text filter",'wp-china-yes');
 
         /* Where %s is the name of the POT template file. Message appears after sync
          * xgettext: javascript-format */
-        __("Merged from %s",'loco-translate');
+        __("Merged from %s",'wp-china-yes');
 
         // Message appears after sync operation
-        __("Merged from source code",'loco-translate');
+        __("Merged from source code",'wp-china-yes');
 
         /* Summary of new strings after running in-editor Sync
          * xgettext: javascript-format */
-        _n("1 new string added","%s new strings added",0,'loco-translate');
+        _n("1 new string added","%s new strings added",0,'wp-china-yes');
 
         /* Summary of existing strings that no longer exist after running in-editor Sync
          * xgettext: javascript-format */
-        _n("1 obsolete string removed","%s obsolete strings removed",0,'loco-translate');
+        _n("1 obsolete string removed","%s obsolete strings removed",0,'wp-china-yes');
 
         /* Summary of existing translations where the source text has changed slightly
          * xgettext: javascript-format */
-        _n("1 string marked Fuzzy","%s strings marked Fuzzy",0,'loco-translate');
+        _n("1 string marked Fuzzy","%s strings marked Fuzzy",0,'wp-china-yes');
 
         /* Message appears after sync operation, where %s refers to a POT file.
          * xgettext: javascript-format */
-        __("Strings up to date with %s",'loco-translate');
+        __("Strings up to date with %s",'wp-china-yes');
 
         // Message appears after sync operation.
-        __("Strings up to date with source code",'loco-translate');
+        __("Strings up to date with source code",'wp-china-yes');
 
         // xgettext: javascript-format
-        __("%s unique source strings.",'loco-translate');
+        __("%s unique source strings.",'wp-china-yes');
 
         /* characters meaning individual unicode characters of source text
          * xgettext: javascript-format */
-        __("%s characters will be sent for translation.",'loco-translate');
+        __("%s characters will be sent for translation.",'wp-china-yes');
 
         /* %s%% is a percentage, e.g. 50%
          * xgettext: javascript-format */
-        __("Translation progress %s%%",'loco-translate');
+        __("Translation progress %s%%",'wp-china-yes');
 
         // xgettext: javascript-format
-        _n("Translation job aborted with one string remaining","Translation job aborted with %s strings remaining",0,'loco-translate');
+        _n("Translation job aborted with one string remaining","Translation job aborted with %s strings remaining",0,'wp-china-yes');
 
         /* e.g. via Google Translate
          * xgettext: javascript-format */
-        _n("%s string translated via %s","%s strings translated via %s",0,'loco-translate');
+        _n("%s string translated via %s","%s strings translated via %s",0,'wp-china-yes');
 
         // xgettext: javascript-format
-        _n("%s string updated","%s strings updated",0,'loco-translate');
+        _n("%s string updated","%s strings updated",0,'wp-china-yes');
 
         //
-        __("Nothing needed updating",'loco-translate');
+        __("Nothing needed updating",'wp-china-yes');
 
         //
-        __("Use this translation",'loco-translate');
+        __("Use this translation",'wp-china-yes');
 
         //
-        __("Suggested translations",'loco-translate');
+        __("Suggested translations",'wp-china-yes');
 
         //
-        __("Loading suggestions",'loco-translate');
+        __("Loading suggestions",'wp-china-yes');
 
         //
-        __("Keep this translation",'loco-translate');
+        __("Keep this translation",'wp-china-yes');
 
         // Warning appears when user tries to refresh or navigate away when editor work is unsaved
-        __("Your changes will be lost if you continue without saving",'loco-translate');
+        __("Your changes will be lost if you continue without saving",'wp-china-yes');
 
         /* Shows total string count at top of editor
          * xgettext: javascript-format */
-        _n("1 string","%s strings",0,'loco-translate');
+        _n("1 string","%s strings",0,'wp-china-yes');
 
         /* Shows percentage translated at top of editor
          * xgettext: javascript-format */
-        __("%s%% translated",'loco-translate');
+        __("%s%% translated",'wp-china-yes');
 
         /* Shows number of fuzzy strings at top of editor
          * xgettext: javascript-format */
-        __("%s fuzzy",'loco-translate');
+        __("%s fuzzy",'wp-china-yes');
 
         /* Shows number of untranslated strings at top of editor
          * xgettext: javascript-format */
-        __("%s untranslated",'loco-translate');
+        __("%s untranslated",'wp-china-yes');
 
         // Generic error when external process broke an Ajax request
-        __("Server returned invalid data",'loco-translate');
+        __("Server returned invalid data",'wp-china-yes');
 
         //
-        __("Check console output for debugging information",'loco-translate');
+        __("Check console output for debugging information",'wp-china-yes');
 
         //
-        __("Provide the following text when reporting a problem",'loco-translate');
+        __("Provide the following text when reporting a problem",'wp-china-yes');
 
         //
-        __("Unknown error",'loco-translate');
+        __("Unknown error",'wp-china-yes');
 
         //
-        __("Error",'loco-translate');
+        __("Error",'wp-china-yes');
 
         //
-        __("Warning",'loco-translate');
+        __("Warning",'wp-china-yes');
 
         //
-        __("Notice",'loco-translate');
+        __("Notice",'wp-china-yes');
 
         //
-        __("OK",'loco-translate');
+        __("OK",'wp-china-yes');
 
         /* Label for the window pane holding the original English text
          * List heading showing preview of English text for each item */
-        _x("Source text","Editor",'loco-translate');
+        _x("Source text","Editor",'wp-china-yes');
 
         /* Where %s is the name of the language, e.g. "French translation"
          * xgettext: javascript-format */
-        _x("%s translation","Editor",'loco-translate');
+        _x("%s translation","Editor",'wp-china-yes');
 
         // Label for the window pane holding message context
-        _x("Context","Editor",'loco-translate');
+        _x("Context","Editor",'wp-china-yes');
 
         // Label for the window pane for entering translator comments
-        _x("Comments","Editor",'loco-translate');
+        _x("Comments","Editor",'wp-china-yes');
 
         // Label for the singular form of the original English text
-        _x("Single","Editor",'loco-translate');
+        _x("Single","Editor",'wp-china-yes');
 
         // Label for the plural form of the original English text
-        _x("Plural","Editor",'loco-translate');
+        _x("Plural","Editor",'wp-china-yes');
 
         //
-        _x("Untranslated","Editor",'loco-translate');
+        _x("Untranslated","Editor",'wp-china-yes');
 
         //
-        _x("Translated","Editor",'loco-translate');
+        _x("Translated","Editor",'wp-china-yes');
 
         //
-        _x("Toggle Fuzzy","Editor",'loco-translate');
+        _x("Toggle Fuzzy","Editor",'wp-china-yes');
 
         //
-        _x("Suggest translation","Editor",'loco-translate');
+        _x("Suggest translation","Editor",'wp-china-yes');
 
         // Label for the source text window when no translation selected
-        _x("Source text not loaded","Editor",'loco-translate');
+        _x("Source text not loaded","Editor",'wp-china-yes');
 
         // Label for the context window when no translation selected
-        _x("Context not loaded","Editor",'loco-translate');
+        _x("Context not loaded","Editor",'wp-china-yes');
 
         // Label for the translation editing window when no translation selected
-        _x("Translation not loaded","Editor",'loco-translate');
+        _x("Translation not loaded","Editor",'wp-china-yes');
 
         // List heading showing preview of translated text for each item
-        _x("Translation","Editor",'loco-translate');
+        _x("Translation","Editor",'wp-china-yes');
 
 
-        return $this->flush('loco-translate');
+        return $this->flush('wp-china-yes');
     }
 }

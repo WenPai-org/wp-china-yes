@@ -23,7 +23,7 @@ class Loco_package_Core extends Loco_package_Bundle {
             'TextDomain' => 'default',
             'DomainPath' => '/wp-content/languages/',
             // dummy author info for core components
-            'Name' => __('WordPress core','loco-translate'),
+            'Name' => __('WordPress core','wp-china-yes'),
             'Version' => $GLOBALS['wp_version'],
             'Author' => __('The WordPress Team','default'),
             'AuthorURI' => __('https://wordpress.org/','default'),
@@ -76,7 +76,7 @@ class Loco_package_Core extends Loco_package_Bundle {
         $rootDir = loco_constant('ABSPATH');
         $langDir = loco_constant('WP_LANG_DIR');
         
-        $bundle = new Loco_package_Core('core', __('WordPress Core','loco-translate') );
+        $bundle = new Loco_package_Core('core', __('WordPress Core','wp-china-yes') );
         $bundle->setDirectoryPath( $rootDir );
         
         // Core config may be saved in DB, but not supporting bundled XML

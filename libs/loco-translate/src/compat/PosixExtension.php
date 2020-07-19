@@ -106,7 +106,7 @@ abstract class Loco_compat_PosixExtension {
             }
         }
         // translators: used when user name of web server process is unknown
-        return __('the web server','loco-translate');
+        return __('the web server','wp-china-yes');
         // @codeCoverageIgnoreEnd
      }
 

@@ -3,6 +3,6 @@
         <fieldset class="loco-clearable">
             <input type="text" name="q" value="" autocomplete="off" placeholder="<?php 
             // translators: text field placeholder
-            esc_html_e('Filter...','loco-translate')?>" size="20" />
+            esc_html_e('Filter...','wp-china-yes')?>" size="20" />
         </fieldset>
     </form>

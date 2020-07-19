@@ -9,7 +9,7 @@ class Loco_admin_config_DebugController extends Loco_admin_config_BaseController
      */
     public function init(){
         parent::init();
-        $this->set( 'title', __('Debug','loco-translate') );
+        $this->set( 'title', __('Debug','wp-china-yes') );
     }
 
 
@@ -44,7 +44,7 @@ class Loco_admin_config_DebugController extends Loco_admin_config_BaseController
      */
     public function render(){
         
-        $title = __('System diagnostics','loco-translate');
+        $title = __('System diagnostics','wp-china-yes');
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title );
 

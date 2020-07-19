@@ -3,7 +3,7 @@
  * Common "Help & support" help tab
  */
 ?><h2>
-    <?php esc_html_e('Getting help with Loco Translate','loco-translate')?> 
+    <?php esc_html_e('Getting help with Loco Translate','wp-china-yes')?> 
 </h2>
 <p>
     If you have problems using Loco Translate, please try our 

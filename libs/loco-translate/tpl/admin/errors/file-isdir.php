@@ -8,10 +8,10 @@ $this->extend('../layout');
 
     <div class="notice inline notice-error">
         <h3 class="has-icon">
-            <?php esc_html_e('File is a directory','loco-translate')?> 
+            <?php esc_html_e('File is a directory','wp-china-yes')?> 
         </h3>
         <p>
-            <?php esc_html_e("This page was expecting a file, but the path is actually a directory",'loco-translate')?>:
+            <?php esc_html_e("This page was expecting a file, but the path is actually a directory",'wp-china-yes')?>:
         </p>
         <p>
             <code><?php $info->e('relpath')?></code>

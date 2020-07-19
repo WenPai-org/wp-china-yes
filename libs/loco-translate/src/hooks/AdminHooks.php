@@ -60,10 +60,10 @@ class Loco_hooks_AdminHooks extends Loco_hooks_Hookable {
 	    if( function_exists('wp_add_privacy_policy_content') ) {
 	    	$url = apply_filters('loco_external','https://localise.biz/wordpress/plugin/privacy');
 		    wp_add_privacy_policy_content(
-		    	__('Loco Translate','loco-translate'),
-			    esc_html( __("This plugin doesn't collect any data from public website visitors.",'loco-translate') ).'<br />'. 
+		    	__('Loco Translate','wp-china-yes'),
+			    esc_html( __("This plugin doesn't collect any data from public website visitors.",'wp-china-yes') ).'<br />'. 
                 wp_kses( 
-                    sprintf( __('Administrators and auditors may wish to review Loco\'s <a href="%s">plugin privacy notice</a>.','loco-translate'), esc_url($url) ),
+                    sprintf( __('Administrators and auditors may wish to review Loco\'s <a href="%s">plugin privacy notice</a>.','wp-china-yes'), esc_url($url) ),
                     array('a'=>array('href'=>true)), array('https')
                 )
 		    );
@@ -78,7 +78,7 @@ class Loco_hooks_AdminHooks extends Loco_hooks_Hookable {
         // This earliest we need translations, and admin user locale should be set by now
         if( $this->router ){
             $domainPath = dirname( loco_plugin_self() ).'/languages';
-            load_plugin_textdomain( 'loco-translate', false, $domainPath );
+            load_plugin_textdomain( 'wp-china-yes', false, $domainPath );
         }
         // Unhook failure notice that would fire if this hook was not successful
         remove_action( 'admin_notices', array(__CLASS__,'print_hook_failure') );

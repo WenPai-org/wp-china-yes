@@ -47,7 +47,7 @@ class Loco_admin_file_DiffController extends Loco_admin_file_BaseController {
                         }
                         // replacing source file last in case of failures
                         $pofile->putContents( $source );
-                        Loco_error_AdminNotices::success( __('File restored','loco-translate') );
+                        Loco_error_AdminNotices::success( __('File restored','wp-china-yes') );
                         // prune to configured level after success
                         $backups->prune( $num_backups );
                         $backups = null;
@@ -58,7 +58,7 @@ class Loco_admin_file_DiffController extends Loco_admin_file_BaseController {
                         $target->normalize( loco_constant('WP_CONTENT_DIR') );
                         $api->authorizeDelete( $target );
                         $target->unlink();
-                        Loco_error_AdminNotices::success( __('File deleted','loco-translate') );
+                        Loco_error_AdminNotices::success( __('File deleted','wp-china-yes') );
                     }
                     else {
                         throw new Loco_error_Exception('Nothing selected');
@@ -71,7 +71,7 @@ class Loco_admin_file_DiffController extends Loco_admin_file_BaseController {
         }
         
         $bundle = $this->getBundle();
-        $this->set('title', sprintf( __('Restore %s','loco-translate'), $pofile->basename() ).' &lsaquo; '.$bundle->getName() );
+        $this->set('title', sprintf( __('Restore %s','wp-china-yes'), $pofile->basename() ).' &lsaquo; '.$bundle->getName() );
     }
 
 
@@ -89,7 +89,7 @@ class Loco_admin_file_DiffController extends Loco_admin_file_BaseController {
         $info = Loco_mvc_FileParams::create($file);
         $info['mtime'] = $file->modified();
         $this->set( 'master', $info );
-        $this->set( 'title', sprintf( __('Restore %s','loco-translate'), $info->name ) );        
+        $this->set( 'title', sprintf( __('Restore %s','wp-china-yes'), $info->name ) );
         
         $enabled = Loco_data_Settings::get()->num_backups;
         $this->set( 'enabled', $enabled );
@@ -133,7 +133,7 @@ class Loco_admin_file_DiffController extends Loco_admin_file_BaseController {
         $min = count($files) + 1;
         if( $enabled < $min ){
             $notice = Loco_error_AdminNotices::info('We recommend enabling more backups before restoring');
-            $notice->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/settings#po'), __('Documentation','loco-translate') )
+            $notice->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/settings#po'), __('Documentation','wp-china-yes') )
                    ->addLink( Loco_mvc_AdminRouter::generate('config').'#loco--num-backups', __('Settings') );
         }*/
 

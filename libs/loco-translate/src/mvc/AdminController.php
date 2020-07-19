@@ -51,7 +51,7 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
                 $this->view->cd('/admin/help');
                 $tabs = $this->getHelpTabs();
                 // always append common help tabs
-                $tabs[ __('Help & support','loco-translate') ] = $this->view->render('tab-support');
+                $tabs[ __('Help & support','wp-china-yes') ] = $this->view->render('tab-support');
                 // set all tabs and common side bar
                 $i = 0;
                 foreach( $tabs as $title => $content ){
@@ -115,7 +115,7 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
      */
     public function filter_admin_footer_text(){
         $url = apply_filters('loco_external', 'https://localise.biz/');
-        // return '<span id="loco-credit">'.sprintf( '<span>%s</span> <a href="%s" target="_blank">Loco</a>', esc_html(__('Loco Translate is powered by','loco-translate')), esc_url($url) ).'</span>';
+        // return '<span id="loco-credit">'.sprintf( '<span>%s</span> <a href="%s" target="_blank">Loco</a>', esc_html(__('Loco Translate is powered by','wp-china-yes')), esc_url($url) ).'</span>';
         return '';
     }
 
@@ -213,14 +213,14 @@ abstract class Loco_mvc_AdminController extends Loco_mvc_Controller {
         // TODO perhaps do some kind of in-script check validation check
         // $jsConf->offsetSet('$v',loco_plugin_version() );
         // localize script if translations in memory
-        if( is_textdomain_loaded('loco-translate') ){
+        if( is_textdomain_loaded('wp-china-yes') ){
             $strings = new Loco_js_Strings;
             $jsConf['wpl10n'] = $strings->compile();
             $strings->unhook();
             unset( $strings );
             // add currently loaded locale for passing plural equation into js.
             // note that plural rules come from our data, because MO is not trusted.
-            $tag = apply_filters( 'plugin_locale', get_locale(), 'loco-translate' );
+            $tag = apply_filters( 'plugin_locale', get_locale(), 'wp-china-yes' );
             $jsConf['wplang'] = Loco_Locale::parse($tag);
         }
         // take benchmark for debugger to be rendered in footer

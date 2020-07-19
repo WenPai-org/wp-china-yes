@@ -126,7 +126,7 @@ function loco_check_extension( $name ) {
             $cache[ $name ] = true;
         }
         else {
-            Loco_error_AdminNotices::warn( sprintf( __('Loco requires the "%s" PHP extension. Ask your hosting provider to install it','loco-translate'), $name ) );
+            Loco_error_AdminNotices::warn( sprintf( __('Loco requires the "%s" PHP extension. Ask your hosting provider to install it','wp-china-yes'), $name ) );
             $class = 'Loco_compat_'.ucfirst($name).'Extension.php';
             $cache[$name] = class_exists($class);
         }

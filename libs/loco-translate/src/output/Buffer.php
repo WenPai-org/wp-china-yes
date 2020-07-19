@@ -126,7 +126,7 @@ class Loco_output_Buffer {
     public static function check(){
 	    if( headers_sent($file,$line) && 'cli' !== PHP_SAPI ){
 		    $file = str_replace( trailingslashit( loco_constant('ABSPATH') ), '', $file );
-		    throw new Loco_error_Exception( sprintf( __('Loco interrupted by output from %s:%u','loco-translate'), $file, $line ) );
+		    throw new Loco_error_Exception( sprintf( __('Loco interrupted by output from %s:%u','wp-china-yes'), $file, $line ) );
 	    }
     }
 

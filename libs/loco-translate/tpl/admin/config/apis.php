@@ -20,11 +20,11 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
                 <td>
                     <fieldset>
                         <legend class="screen-reader-text">
-                            <span><?php esc_html_e(__('API key','loco-translate'))?></span>
+                            <span><?php esc_html_e(__('API key','wp-china-yes'))?></span>
                         </legend>
                         <p>
                             <label for="loco--google_api_key">
-                                <?php esc_html_e(__('API key','loco-translate'))?>:
+                                <?php esc_html_e(__('API key','wp-china-yes'))?>:
                             </label>
                             <input type="text" size="50" name="api[google][key]" id="loco--google_api_key" value="<?php $api->e('key')?>" spellcheck="false" />
                         </p>
@@ -41,17 +41,17 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
                 <td>
                     <fieldset>
                         <legend class="screen-reader-text">
-                            <span><?php esc_html_e(__('API key','loco-translate'))?></span>
+                            <span><?php esc_html_e(__('API key','wp-china-yes'))?></span>
                         </legend>
                         <p>
                             <label for="loco--microsoft_api_key">
-                                <?php esc_html_e(__('API key','loco-translate'))?>:
+                                <?php esc_html_e(__('API key','wp-china-yes'))?>:
                             </label>
                             <input type="text" size="50" name="api[microsoft][key]" id="loco--microsoft_api_key" value="<?php $api->e('key')?>" spellcheck="false" />
                         </p>
                         <p>
                             <label for="loco--microsoft_api_region">
-                                <?php esc_html_e(__('API region','loco-translate'))?>:
+                                <?php esc_html_e(__('API region','wp-china-yes'))?>:
                             </label>
                             <input type="text" size="20" name="api[microsoft][region]" id="loco--microsoft_api_region" value="<?php $api->e('region')?>" spellcheck="false" placeholder="global" />
                         </p>
@@ -68,11 +68,11 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
                 <td>
                     <fieldset>
                         <legend class="screen-reader-text">
-                            <span><?php esc_html_e(__('API key','loco-translate'))?></span>
+                            <span><?php esc_html_e(__('API key','wp-china-yes'))?></span>
                         </legend>
                         <p>
                             <label for="loco--yandex_api_key">
-                                <?php esc_html_e(__('API key','loco-translate'))?>:
+                                <?php esc_html_e(__('API key','wp-china-yes'))?>:
                             </label>
                             <input type="text" size="90" name="api[yandex][key]" id="loco--yandex_api_key" value="<?php $api->e('key')?>" spellcheck="false" />
                         </p>
@@ -87,16 +87,16 @@ $help = apply_filters('loco_external','https://localise.biz/wordpress/plugin/man
 
     <div class="notice inline">
         <p>
-            <strong class="has-icon"><?php esc_html_e('Important','loco-translate')?>:</strong>
+            <strong class="has-icon"><?php esc_html_e('Important','wp-china-yes')?>:</strong>
             <span>
-                <?php esc_html_e('Third party services are subject to their own terms of use and may incur costs from the provider','loco-translate')?>.
-                <a href="<?php self::e($help)?>#legal" target="_blank" tabindex="-1"><?php esc_html_e('See full disclaimer','loco-translate')?></a>.
+                <?php esc_html_e('Third party services are subject to their own terms of use and may incur costs from the provider','wp-china-yes')?>.
+                <a href="<?php self::e($help)?>#legal" target="_blank" tabindex="-1"><?php esc_html_e('See full disclaimer','wp-china-yes')?></a>.
             </span>
         </p>
     </div>  
 
     <p class="submit">
-        <input type="submit" class="button-primary" value="<?php esc_html_e('Save settings','loco-translate')?>" />
-        <a class="button button-link" href="<?php self::e($help)?>" target="_blank"><?php esc_html_e('Documentation','loco-translate')?></a>
+        <input type="submit" class="button-primary" value="<?php esc_html_e('Save settings','wp-china-yes')?>" />
+        <a class="button button-link" href="<?php self::e($help)?>" target="_blank"><?php esc_html_e('Documentation','wp-china-yes')?></a>
     </p>
 </form>

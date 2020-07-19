@@ -38,10 +38,10 @@ class Loco_admin_Navigation extends ArrayIterator {
                 'href' => Loco_mvc_AdminRouter::generate($type),
             ) );
             if( 'theme' === $type ){
-                $link['name'] = __('Themes','loco-translate');
+                $link['name'] = __('Themes','wp-china-yes');
             }
             else {
-                $link['name'] = __('Plugins','loco-translate');
+                $link['name'] = __('Plugins','wp-china-yes');
             }
             $nav[] = $link;
         }

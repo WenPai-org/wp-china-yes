@@ -10,7 +10,7 @@ class Loco_admin_config_PrefsController extends Loco_admin_config_BaseController
      */
     public function init(){
         parent::init();
-        $this->set( 'title', __('User options','loco-translate') );
+        $this->set( 'title', __('User options','wp-china-yes') );
         
         // user preference options
         $opts = Loco_data_Preferences::get();
@@ -23,7 +23,7 @@ class Loco_admin_config_PrefsController extends Loco_admin_config_BaseController
                 $post = Loco_mvc_PostParams::get();
                 if( $post->has('opts') ){
                     $opts->populate( $post->opts )->persist();
-                    Loco_error_AdminNotices::success( __('Settings saved','loco-translate') );
+                    Loco_error_AdminNotices::success( __('Settings saved','wp-china-yes') );
                 }
             }
         }
@@ -39,7 +39,7 @@ class Loco_admin_config_PrefsController extends Loco_admin_config_BaseController
      */
     public function render(){
         
-        $title = __('Plugin settings','loco-translate');
+        $title = __('Plugin settings','wp-china-yes');
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title );
         

@@ -44,7 +44,7 @@ class Loco_ajax_DiffController extends Loco_mvc_AjaxController {
 
         if( $tablesrc === $emptysrc ){
             // translators: Where %s is a file name
-            $message = __('Revisions are identical, you can delete %s','loco-translate');
+            $message = __('Revisions are identical, you can delete %s','wp-china-yes');
             $this->set( 'error', sprintf( $message, $rhs->basename() ) );
         }
         else {

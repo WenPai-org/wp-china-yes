@@ -190,7 +190,7 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
      */
     public function getTotalSummary(){
         $total = $this->getTotal();
-        return sprintf( _n('1 string','%s strings',$total,'loco-translate'), number_format($total) );
+        return sprintf( _n('1 string','%s strings',$total,'wp-china-yes'), number_format($total) );
     }
 
 
@@ -200,12 +200,12 @@ class Loco_gettext_Metadata extends Loco_data_Transient {
      */
     public function getProgressSummary(){
         $extra = array();
-        $stext = sprintf( __('%s%% translated','loco-translate'), $this->getPercent() ).', '.$this->getTotalSummary();
+        $stext = sprintf( __('%s%% translated','wp-china-yes'), $this->getPercent() ).', '.$this->getTotalSummary();
         if( $num = $this->countFuzzy() ){
-            $extra[] = sprintf( __('%s fuzzy','loco-translate'), number_format($num) );
+            $extra[] = sprintf( __('%s fuzzy','wp-china-yes'), number_format($num) );
         }
         if( $num = $this->countUntranslated() ){
-            $extra[] = sprintf( __('%s untranslated','loco-translate'), number_format($num) );
+            $extra[] = sprintf( __('%s untranslated','wp-china-yes'), number_format($num) );
         }
         if( $extra ){
             $stext .= ' ('.implode(', ', $extra).')';

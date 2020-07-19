@@ -32,7 +32,7 @@ class Loco_admin_list_LocalesController extends Loco_mvc_AdminController {
      */
     public function render(){
 
-        $this->set( 'title', __( 'Installed languages', 'loco-translate' ) );
+        $this->set( 'title', __( 'Installed languages', 'wp-china-yes' ) );
         
         $used = array();
         $locales = array();

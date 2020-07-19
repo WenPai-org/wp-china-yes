@@ -8,16 +8,16 @@
         <thead>
             <tr>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Bundle name', 'loco-translate')?> 
+                    <?php esc_html_e('Bundle name', 'wp-china-yes')?> 
                 </th>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Text domain','loco-translate')?> 
+                    <?php esc_html_e('Text domain','wp-china-yes')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Last modified','loco-translate')?> 
+                    <?php esc_html_e('Last modified','wp-china-yes')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Sets','loco-translate')?> 
+                    <?php esc_html_e('Sets','wp-china-yes')?> 
                 </th>
             </tr>
         </thead>

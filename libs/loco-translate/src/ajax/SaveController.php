@@ -71,7 +71,7 @@ class Loco_ajax_SaveController extends Loco_ajax_common_BundleController {
             }
             catch( Exception $e ){
                 Loco_error_AdminNotices::debug( $e->getMessage() );
-                $message = __('Failed to create backup file in "%s". Check file permissions or disable backups','loco-translate');
+                $message = __('Failed to create backup file in "%s". Check file permissions or disable backups','wp-china-yes');
                 Loco_error_AdminNotices::warn( sprintf( $message, $pofile->getParent()->basename() ) );
             }
         }
@@ -168,14 +168,14 @@ class Loco_ajax_SaveController extends Loco_ajax_common_BundleController {
             }
             catch( Exception $e ){
                 Loco_error_AdminNotices::debug( $e->getMessage() );
-                Loco_error_AdminNotices::warn( __('PO file saved, but MO file compilation failed','loco-translate') );
+                Loco_error_AdminNotices::warn( __('PO file saved, but MO file compilation failed','wp-china-yes') );
                 $this->set( 'mobytes', 0 );
                 // prevent further compilation if MO failed
                 $compile = false;
             }
         }
         else {
-            Loco_error_AdminNotices::success( __('POT file saved','loco-translate') );
+            Loco_error_AdminNotices::success( __('POT file saved','wp-china-yes') );
         }
 
         /*/ Compile JSON translations for WordPress >= 5
@@ -213,7 +213,7 @@ class Loco_ajax_SaveController extends Loco_ajax_common_BundleController {
             }
             catch( Exception $e ){
                 Loco_error_AdminNotices::debug( $e->getMessage() );
-                Loco_error_AdminNotices::warn( __('JSON compilation failed','loco-translate') );
+                Loco_error_AdminNotices::warn( __('JSON compilation failed','wp-china-yes') );
             }
             $this->set( 'jsbytes', $bytes );
         }*/

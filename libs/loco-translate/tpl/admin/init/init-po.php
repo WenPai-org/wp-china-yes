@@ -9,8 +9,8 @@ $this->extend('../layout');
     if( $params->has('ext') ):?> 
     <div class="notice inline notice-info">
         <p>
-            <?php esc_html_e("You're creating translations directly from source code",'loco-translate')?>.
-            <a href="<?php $ext->e('link')?>"><?php esc_html_e('Create template instead','loco-translate')?></a>.
+            <?php esc_html_e("You're creating translations directly from source code",'wp-china-yes')?>.
+            <a href="<?php $ext->e('link')?>"><?php esc_html_e('Create template instead','wp-china-yes')?></a>.
         </p>
     </div><?php
     endif;
@@ -20,13 +20,13 @@ $this->extend('../layout');
     if( $params->has('fsNotice') ):?> 
     <div id="loco-fs-info" class="has-nav notice inline notice-info jshide">
         <p>
-            <strong class="has-icon"><?php esc_html_e('Warning','loco-translate')?>:</strong>
+            <strong class="has-icon"><?php esc_html_e('Warning','wp-china-yes')?>:</strong>
             <span><?php $params->e('fsNotice')?>.</span>
         </p>
         <nav>
-            <a href="<?php echo $help?>#locations" target="_blank"><?php esc_html_e('Documentation','loco-translate')?></a>
+            <a href="<?php echo $help?>#locations" target="_blank"><?php esc_html_e('Documentation','wp-china-yes')?></a>
             <span>|</span>
-            <a href="<?php $this->route('config')->e('href')?>#loco--fs-protect"><?php esc_html_e('Settings','loco-translate')?></a>
+            <a href="<?php $this->route('config')->e('href')?>#loco--fs-protect"><?php esc_html_e('Settings','wp-china-yes')?></a>
         </nav>
     </div><?php
     endif*/?> 
@@ -45,26 +45,26 @@ $this->extend('../layout');
                     <tr valign="top">
                         <th scope="row">
                             <label for="loco-select-locale">
-                                1. <?php esc_html_e('Choose a language','loco-translate')?>:
+                                1. <?php esc_html_e('Choose a language','wp-china-yes')?>:
                             </label>
                         </th>
                         <td>
                             <fieldset>
                                 <label for="loco-use-selector-1">
                                     <span><input type="radio" name="use-selector" value="1" checked id="loco-use-selector-1" /></span>
-                                    <?php esc_attr_e('WordPress language','loco-translate')?>:
+                                    <?php esc_attr_e('WordPress language','wp-china-yes')?>:
                                 </label>
                                 <div>
                                     <span class="lang nolang"></span>
                                     <select id="loco-select-locale" name="select-locale">
-                                        <option value=""><?php esc_attr_e('No language selected','loco-translate')?></option>
-                                        <optgroup label="<?php esc_attr_e( 'Installed languages', 'loco-translate' )?>"><?php
+                                        <option value=""><?php esc_attr_e('No language selected','wp-china-yes')?></option>
+                                        <optgroup label="<?php esc_attr_e( 'Installed languages', 'wp-china-yes' )?>"><?php
                                             /* @var Loco_mvc_ViewParams[] $installed */
                                             foreach( $installed as $option ):?> 
                                             <option value="<?php $option->e('value')?>" data-icon="<?php $option->e('icon')?>"><?php $option->e('label')?></option><?php
                                             endforeach;?> 
                                         </optgroup>
-                                        <optgroup label="<?php esc_attr_e( 'Available languages', 'loco-translate' )?>"><?php
+                                        <optgroup label="<?php esc_attr_e( 'Available languages', 'wp-china-yes' )?>"><?php
                                             /* @var Loco_mvc_ViewParams[] $locales */
                                             foreach( $locales as $option ):?> 
                                             <option value="<?php $option->e('value')?>" data-icon="<?php $option->e('icon')?>"><?php $option->e('label')?></option><?php
@@ -76,7 +76,7 @@ $this->extend('../layout');
                             <fieldset class="disabled">
                                 <label for="loco-user-selector-0">
                                     <span><input type="radio" name="use-selector" value="0" /></span>
-                                    <?php esc_attr_e('Custom language','loco-translate')?>:
+                                    <?php esc_attr_e('Custom language','wp-china-yes')?>:
                                 </label>
                                 <div>
                                     <span class="lang nolang"></span>
@@ -90,7 +90,7 @@ $this->extend('../layout');
                     <tr valign="top">
                         <th scope="row">
                             <label>
-                                2. <?php esc_html_e('Choose a location','loco-translate')?>:
+                                2. <?php esc_html_e('Choose a location','wp-china-yes')?>:
                             </label>
                         </th>
                         <td>
@@ -133,7 +133,7 @@ $this->extend('../layout');
                 <tbody>
                     <tr valign="top">
                         <th scope="row" rowspan="3">
-                            3. <?php esc_html_e('Template options','loco-translate')?>:
+                            3. <?php esc_html_e('Template options','wp-china-yes')?>:
                         </th>
                         <td>
                             <a href="<?php $help->e('href')?>#copy" class="has-icon icon-help" target="_blank" tabindex="-1"><?php $help->e('text')?></a>
@@ -144,13 +144,13 @@ $this->extend('../layout');
                             <p>
                                 <label>
                                     <input type="radio" name="strip" value="" />
-                                    <?php $params->f('sourceLocale', __('Copy target translations from "%s"','loco-translate') )?> 
+                                    <?php $params->f('sourceLocale', __('Copy target translations from "%s"','wp-china-yes') )?> 
                                 </label>
                             </p>
                             <p>
                                 <label>
                                     <input type="radio" name="strip" value="1" checked />
-                                    <?php esc_html_e('Just copy English source strings','loco-translate')?> 
+                                    <?php esc_html_e('Just copy English source strings','wp-china-yes')?> 
                                 </label>
                             </p>
                         </td>
@@ -160,7 +160,7 @@ $this->extend('../layout');
                             <p>
                                 <label>
                                     <input type="checkbox" name="link" value="1" />
-                                    <?php esc_html_e('Use this file as template when running Sync','loco-translate')?> 
+                                    <?php esc_html_e('Use this file as template when running Sync','wp-china-yes')?> 
                                 </label>
                             </p>
                         </td>
@@ -170,7 +170,7 @@ $this->extend('../layout');
             </table>
     
             <p class="submit">
-                <button type="submit" class="button button-large button-primary" disabled><?php esc_html_e('Start translating','loco-translate')?></button>
+                <button type="submit" class="button button-large button-primary" disabled><?php esc_html_e('Start translating','wp-china-yes')?></button>
             </p>
     
         </form>

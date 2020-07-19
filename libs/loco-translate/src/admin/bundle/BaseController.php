@@ -35,7 +35,7 @@ abstract class Loco_admin_bundle_BaseController extends Loco_mvc_AdminController
     protected function saveBundle(){
         $custom = new Loco_config_CustomSaved;
         if( $custom->setBundle($this->bundle)->persist() ){
-            Loco_error_AdminNotices::success( __('Configuration saved','loco-translate') );
+            Loco_error_AdminNotices::success( __('Configuration saved','wp-china-yes') );
         }
         // invalidate bundle in memory so next fetch is re-configured from DB
         $this->bundle = null;
@@ -50,7 +50,7 @@ abstract class Loco_admin_bundle_BaseController extends Loco_mvc_AdminController
     protected function resetBundle(){
         $option = $this->bundle->getCustomConfig();
         if( $option && $option->remove() ){
-            Loco_error_AdminNotices::success( __('Configuration reset','loco-translate') );
+            Loco_error_AdminNotices::success( __('Configuration reset','wp-china-yes') );
             // invalidate bundle in memory so next fetch falls back to auto-config
             $this->bundle = null;
         }
@@ -92,12 +92,12 @@ abstract class Loco_admin_bundle_BaseController extends Loco_mvc_AdminController
         $tabs = new Loco_admin_Navigation;
         $this->set( 'tabs', $tabs );
         $actions = array (
-            'view'  => __('Overview','loco-translate'),
-            'setup' => __('Setup','loco-translate'),
-            'conf'  => __('Advanced','loco-translate'),
+            'view'  => __('Overview','wp-china-yes'),
+            'setup' => __('Setup','wp-china-yes'),
+            'conf'  => __('Advanced','wp-china-yes'),
         );
         if( loco_debugging() ){
-            $actions['debug'] = __('Debug','loco-translate');
+            $actions['debug'] = __('Debug','wp-china-yes');
         }
         $suffix = $this->get('action');
         $prefix = strtolower( $this->get('type') );

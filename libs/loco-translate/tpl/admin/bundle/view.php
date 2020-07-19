@@ -26,13 +26,13 @@ endforeach;
 if( $unknown ):?> 
     <div class="loco-project">
         <div class="notice inline notice-info">
-            <h2><?php esc_html_e('Additional files found','loco-translate')?></h2>
+            <h2><?php esc_html_e('Additional files found','wp-china-yes')?></h2>
             <p>
                 <?php
-                esc_html_e("This bundle isn't fully configured, so we don't know what the following files are for",'loco-translate')?>. <?php
+                esc_html_e("This bundle isn't fully configured, so we don't know what the following files are for",'wp-china-yes')?>. <?php
                 // Translators: %s is a URL. Keep the <a> tag intact
                 echo wp_kses(
-                    sprintf( __('Click the <a href="%s">setup</a> tab to complete the bundle configuration','loco-translate'), $tabs[1]->href ),
+                    sprintf( __('Click the <a href="%s">setup</a> tab to complete the bundle configuration','wp-china-yes'), $tabs[1]->href ),
                     array('a'=>array('href'=>true)), array('http','https')
                 );?>.
             </p>
@@ -49,12 +49,12 @@ endif;
 else:?> 
 <div class="loco-project">
     <div class="notice inline notice-error">
-        <h2><?php $params->e('name')?> <span>(<?php esc_html_e('unconfigured','loco-translate')?>)</span></h2>
+        <h2><?php $params->e('name')?> <span>(<?php esc_html_e('unconfigured','wp-china-yes')?>)</span></h2>
         <p>
             <?php
-            esc_html_e("This bundle isn't automatically compatible and requires configuring before you can use all the functions of Loco Translate",'loco-translate')?>. <?php
+            esc_html_e("This bundle isn't automatically compatible and requires configuring before you can use all the functions of Loco Translate",'wp-china-yes')?>. <?php
             echo wp_kses(
-                sprintf( __('Click the <a href="%s">setup</a> tab to complete the bundle configuration','loco-translate'), $tabs[1]->href ),
+                sprintf( __('Click the <a href="%s">setup</a> tab to complete the bundle configuration','wp-china-yes'), $tabs[1]->href ),
                 array('a'=>array('href'=>true)), array('http','https')
             );?>.
         </p>

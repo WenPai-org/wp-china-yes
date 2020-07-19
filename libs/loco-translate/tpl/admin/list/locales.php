@@ -10,19 +10,19 @@ echo $this->render('../common/inc-table-filter');
         <thead>
             <tr>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Locale name', 'loco-translate')?> 
+                    <?php esc_html_e('Locale name', 'wp-china-yes')?> 
                 </th>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Locale code', 'loco-translate')?> 
+                    <?php esc_html_e('Locale code', 'wp-china-yes')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Last modified','loco-translate')?> 
+                    <?php esc_html_e('Last modified','wp-china-yes')?> 
                 </th>
                 <th data-sort-type="n">
-                    <?php esc_html_e('Files found', 'loco-translate')?> 
+                    <?php esc_html_e('Files found', 'wp-china-yes')?> 
                 </th>
                 <th data-sort-type="s">
-                    <?php esc_html_e('Site language', 'loco-translate')?> 
+                    <?php esc_html_e('Site language', 'wp-china-yes')?> 
                 </th>
             </tr>
         </thead>

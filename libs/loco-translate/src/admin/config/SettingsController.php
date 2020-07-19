@@ -28,7 +28,7 @@ class Loco_admin_config_SettingsController extends Loco_admin_config_BaseControl
                     $opts->populate( $post->opts )->persist();
                     $perms->populate( $post->has('caps') ? $post->caps : array() );
                     // done update
-                    Loco_error_AdminNotices::success( __('Settings saved','loco-translate') );
+                    Loco_error_AdminNotices::success( __('Settings saved','wp-china-yes') );
                     // remove saved params from session if persistent options unset
                     if( ! $opts['fs_persist'] ){
                         $session = Loco_data_Session::get();
@@ -63,9 +63,9 @@ class Loco_admin_config_SettingsController extends Loco_admin_config_BaseControl
         }
         // allow/deny warning levels
         $this->set('verbose', new Loco_mvc_ViewParams( array(
-            0 => __('Allow','loco-translate'),
-            1 => __('Allow (with warning)','loco-translate'),
-            2 => __('Disallow','loco-translate'),
+            0 => __('Allow','wp-china-yes'),
+            1 => __('Allow (with warning)','wp-china-yes'),
+            2 => __('Disallow','wp-china-yes'),
         ) ) );
     }
 
@@ -76,7 +76,7 @@ class Loco_admin_config_SettingsController extends Loco_admin_config_BaseControl
      */
     public function render(){
         
-        $title = __('Plugin settings','loco-translate');
+        $title = __('Plugin settings','wp-china-yes');
         $breadcrumb = new Loco_admin_Navigation;
         $breadcrumb->add( $title );
         

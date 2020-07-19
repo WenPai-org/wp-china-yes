@@ -16,7 +16,7 @@ class Loco_error_Debug extends Loco_error_Exception {
      * {@inheritdoc}
      */
     public function getTitle(){
-        return __('Debug','loco-translate');
+        return __('Debug','wp-china-yes');
     }
 
 

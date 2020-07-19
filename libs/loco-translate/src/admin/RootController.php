@@ -20,7 +20,7 @@ class Loco_admin_RootController extends Loco_admin_list_BaseController {
     public function render(){
         
         // translators: home screen title where %s is the version number
-        $this->set('title', sprintf( __('Loco Translate %s','loco-translate'), loco_plugin_version() ) );
+        $this->set('title', sprintf( __('Loco Translate %s','wp-china-yes'), loco_plugin_version() ) );
 
         // Show currently active theme on home page
         $theme = Loco_package_Theme::create(null);
@@ -81,7 +81,7 @@ class Loco_admin_RootController extends Loco_admin_list_BaseController {
             }
         }
         
-        $this->set('title', __('Welcome to Loco Translate','loco-translate') );
+        $this->set('title', __('Welcome to Loco Translate','wp-china-yes') );
         
         return $this->view('admin/root');
     }

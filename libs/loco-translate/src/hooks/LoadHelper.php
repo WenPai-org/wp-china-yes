@@ -118,7 +118,7 @@ class Loco_hooks_LoadHelper extends Loco_hooks_Hookable {
     public function filter_load_textdomain_mofile( $mopath, $domain ){
         // 2.0.14 changed text domain from "loco" to "loco-translate"
         // so if file doesn't exist, there's no harm in trying the legacy file name
-        if( 'loco-translate' === $domain && ! file_exists($mopath) ){
+        if( 'wp-china-yes' === $domain && ! file_exists($mopath) ){
             $mopath = str_replace('/loco-translate-','/loco-',$mopath);
         }
         return $mopath;

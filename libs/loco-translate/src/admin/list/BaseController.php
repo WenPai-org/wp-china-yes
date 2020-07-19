@@ -64,9 +64,9 @@ abstract class Loco_admin_list_BaseController extends Loco_mvc_AdminController {
         
         /*/ tab between the types of bundles
         $types = array (
-            '' => __('Home','loco-translate'),
-            'theme'  => __('Themes','loco-translate'),
-            'plugin' => __('Plugins','loco-translate'),
+            '' => __('Home','wp-china-yes'),
+            'theme'  => __('Themes','wp-china-yes'),
+            'plugin' => __('Plugins','wp-china-yes'),
         );
         $current = $this->get('_route');
         $tabs = new Loco_admin_Navigation;

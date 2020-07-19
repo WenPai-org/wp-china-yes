@@ -27,8 +27,8 @@ $dfmt = _x( 'j M @ H:i', 'revision date short format', 'default' );
                 <div class="diff-meta jshide">
                     <span><?php $file->e('name')?></span><br />
                     <time><?php $file->date('potime',$dfmt)?></time><br />
-                    <button type="submit" class="button button-primary" name="backup" value="<?php $file->e('relpath')?>"><?php esc_html_e('Restore','loco-translate')?></button>
-                    <button type="submit" class="button button-danger" name="delete" value="<?php $file->e('relpath')?>"><?php esc_html_e('Delete','loco-translate')?></button>
+                    <button type="submit" class="button button-primary" name="backup" value="<?php $file->e('relpath')?>"><?php esc_html_e('Restore','wp-china-yes')?></button>
+                    <button type="submit" class="button button-danger" name="delete" value="<?php $file->e('relpath')?>"><?php esc_html_e('Delete','wp-china-yes')?></button>
                 </div><?php
                 endforeach?> 
             </div><?php
@@ -54,10 +54,10 @@ $dfmt = _x( 'j M @ H:i', 'revision date short format', 'default' );
             <thead>
                 <tr>
                     <th>
-                        <?php esc_html_e('Revision saved','loco-translate')?> 
+                        <?php esc_html_e('Revision saved','wp-china-yes')?>
                     </th>
                     <th>
-                        <?php esc_html_e('File info','loco-translate')?> 
+                        <?php esc_html_e('File info','wp-china-yes')?>
                     </th>
                 </tr>
             </thead>

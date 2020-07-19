@@ -54,7 +54,7 @@ class Loco_admin_file_DeleteController extends Loco_admin_file_BaseController {
                     // flash message for display after redirect
                     try {
                         $n = count( $files );
-                        Loco_data_Session::get()->flash('success', sprintf( _n('File deleted','%u files deleted',$n,'loco-translate'),$n) );
+                        Loco_data_Session::get()->flash('success', sprintf( _n('File deleted','%u files deleted',$n,'wp-china-yes'),$n) );
                         Loco_data_Session::close();
                     }
                     catch( Exception $e ){
@@ -73,7 +73,7 @@ class Loco_admin_file_DeleteController extends Loco_admin_file_BaseController {
         }
         // set page title before render sets inline title
         $bundle = $this->getBundle();
-        $this->set('title', sprintf( __('Delete %s','loco-translate'), $file->basename() ).' &lsaquo; '.$bundle->getName() );
+        $this->set('title', sprintf( __('Delete %s','wp-china-yes'), $file->basename() ).' &lsaquo; '.$bundle->getName() );
     }
 
 
@@ -91,12 +91,12 @@ class Loco_admin_file_DeleteController extends Loco_admin_file_BaseController {
         $files = $this->expandFiles( $file );
         $info = Loco_mvc_FileParams::create($file);
         $this->set( 'info', $info );
-        $this->set( 'title', sprintf( __('Delete %s','loco-translate'), $info->name ) );
+        $this->set( 'title', sprintf( __('Delete %s','wp-china-yes'), $info->name ) );
         
         // warn about additional files that will be deleted along with this
         if( $deps = array_slice($files,1) ){
             $count = count($deps);
-            $this->set('warn', sprintf( _n( 'One dependent file will also be deleted', '%u dependent files will also be deleted', $count, 'loco-translate' ), $count ) );
+            $this->set('warn', sprintf( _n( 'One dependent file will also be deleted', '%u dependent files will also be deleted', $count, 'wp-china-yes' ), $count ) );
             $infos = array();
             foreach( $deps as $depfile ){
                 $infos[] = Loco_mvc_FileParams::create( $depfile );

@@ -98,20 +98,20 @@ class Loco_ajax_FsConnectController extends Loco_mvc_AjaxController {
                 $this->set( 'valid', $this->api->getOutputCredentials() );
                 $this->set( 'creds', $this->api->getInputCredentials() );
                 $this->set( 'method', $this->api->getFileSystem()->method );
-                $this->set( 'success', __('Connected to remote file system','loco-translate') );
+                $this->set( 'success', __('Connected to remote file system','wp-china-yes') );
                 // warning when writing to this location is risky (overwrites during wp update)
                 if( Loco_data_Settings::get()->fs_protect && $file->getUpdateType() ){
                     if( 'create' === $type ){
-                        $message = __('This file may be overwritten or deleted when you update WordPress','loco-translate');
+                        $message = __('This file may be overwritten or deleted when you update WordPress','wp-china-yes');
                     }
                     else if( 'delete' === $type ){
-                        $message = __('This directory is managed by WordPress, be careful what you delete','loco-translate');
+                        $message = __('This directory is managed by WordPress, be careful what you delete','wp-china-yes');
                     }
                     else if( 'move' === $type ){
-                        $message = __('This directory is managed by WordPress. Removed files may be restored during updates','loco-translate');
+                        $message = __('This directory is managed by WordPress. Removed files may be restored during updates','wp-china-yes');
                     }/*
                     else {
-                        $message = __('Changes to this file may be overwritten or deleted when you update WordPress','loco-translate');
+                        $message = __('Changes to this file may be overwritten or deleted when you update WordPress','wp-china-yes');
                     }*/
                     $this->set('warning',$message);
                 }
@@ -121,16 +121,16 @@ class Loco_ajax_FsConnectController extends Loco_mvc_AjaxController {
                 $this->set( 'prompt', $html );
                 // supporting text based on file operation type explains why auth is required
                 if( 'create' === $type ){
-                    $message = __('Creating this file requires permission','loco-translate');
+                    $message = __('Creating this file requires permission','wp-china-yes');
                 }
                 else if( 'delete' === $type ){
-                    $message = __('Deleting this file requires permission','loco-translate');
+                    $message = __('Deleting this file requires permission','wp-china-yes');
                 }
                 else if( 'move' === $type ){
-                    $message = __('This move operation requires permission','loco-translate');
+                    $message = __('This move operation requires permission','wp-china-yes');
                 }
                 else {
-                    $message = __('Saving this file requires permission','loco-translate');
+                    $message = __('Saving this file requires permission','wp-china-yes');
                 }
                 // message is printed before default text, so needs delimiting.
                 $this->set('message',$message.'.');

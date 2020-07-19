@@ -21,7 +21,7 @@ class Loco_admin_bundle_DebugController extends Loco_admin_bundle_BaseController
      */
     public function render(){
 
-        $this->prepareNavigation()->add( __('Bundle diagnostics','loco-translate') );
+        $this->prepareNavigation()->add( __('Bundle diagnostics','wp-china-yes') );
 
         $bundle = $this->getBundle();
         $debugger = new Loco_package_Debugger($bundle);

@@ -5,17 +5,32 @@
  * Author: WP中国本土化社区
  * Author URI:https://wp-china-yes.org/
  * Version: 3.0.0-Beta
+ * Text Domain: wp-china-yes
+ * Domain Path: /languages
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 if (is_admin()) {
     /**
+     * 加载翻译
+     */
+    add_action('plugins_loaded', function () {
+        load_plugin_textdomain(
+            'wp-china-yes',
+            false,
+            basename(dirname(__FILE__)).'/languages/'
+        );
+    });
+
+
+    /**
      * WP-China-Yes的翻译校准基于Loco Translate插件开发，这里通过引入入口文件的方式激活该插件的二次开发版
      */
     if ( file_exists(__DIR__ . '/libs/loco-translate/loco.php') ) {
         require __DIR__ . '/libs/loco-translate/loco.php';
     }
+
 
     /**
      * 引入设置页

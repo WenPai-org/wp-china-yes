@@ -5,7 +5,7 @@
             <span><?php $locale->e('name')?></span>
         </a>
         <span class="loco-meta">
-            <span><?php echo esc_html_x('Updated','Modified time','loco-translate')?>:</span>
+            <span><?php echo esc_html_x('Updated','Modified time','wp-china-yes')?>:</span>
             <span id="loco-po-modified"><?php $params->date('modified')?></span>
             &ndash;
             <span id="loco-po-status"><?php $params->has('meta') && self::e( $meta->getProgressSummary() )?></span>

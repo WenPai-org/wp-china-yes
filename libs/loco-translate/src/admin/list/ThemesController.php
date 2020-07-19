@@ -11,7 +11,7 @@ class Loco_admin_list_ThemesController extends Loco_admin_list_BaseController {
     public function render(){
 
         $this->set('type', 'theme' );
-        $this->set('title', __( 'Translate themes', 'loco-translate' ) );
+        $this->set('title', __( 'Translate themes', 'wp-china-yes' ) );
         
         /* @var $theme WP_Theme */
         foreach( wp_get_themes() as $theme ){

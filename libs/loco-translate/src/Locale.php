@@ -301,7 +301,7 @@ class Loco_Locale implements JsonSerializable {
             }
         }
         else {
-            $this->setName( __('Invalid locale','loco-translate') );
+            $this->setName( __('Invalid locale','wp-china-yes') );
         }
         return $this->getName();
     }
@@ -380,7 +380,7 @@ class Loco_Locale implements JsonSerializable {
         // handle languages with no plural forms, where n is always 0
         if( ! isset($raw[1][1]) ){
             // Translators: Plural category for languages that have no plurals
-            $raw[1] = array( _x('All forms','Plural category','loco-translate') );
+            $raw[1] = array( _x('All forms','Plural category','wp-china-yes') );
             $raw[0] = '0';
         }
         // else translate all implemented plural forms
@@ -388,17 +388,17 @@ class Loco_Locale implements JsonSerializable {
         else {
             $forms = array(
                 // Translators: Plural category for zero quantity
-                'zero' => _x('Zero','Plural category','loco-translate'),
+                'zero' => _x('Zero','Plural category','wp-china-yes'),
                 // Translators: Plural category for singular quantity
-                'one' => _x('One','Plural category','loco-translate'),
+                'one' => _x('One','Plural category','wp-china-yes'),
                 // Translators: Plural category used in some multi-plural languages
-                'two' => _x('Two','Plural category','loco-translate'),
+                'two' => _x('Two','Plural category','wp-china-yes'),
                 // Translators: Plural category used in some multi-plural languages
-                'few' => _x('Few','Plural category','loco-translate'),
+                'few' => _x('Few','Plural category','wp-china-yes'),
                 // Translators: Plural category used in some multi-plural languages
-                'many' => _x('Many','Plural category','loco-translate'),
+                'many' => _x('Many','Plural category','wp-china-yes'),
                 // Translators: General plural category not covered by other forms
-                'other' => _x('Other','Plural category','loco-translate'),
+                'other' => _x('Other','Plural category','wp-china-yes'),
             );
             foreach( $raw[1] as $k => $v ){
                 if( isset($forms[$v]) ){

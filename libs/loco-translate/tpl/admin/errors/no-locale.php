@@ -8,7 +8,7 @@ $this->extend('../layout');
     
     <div class="notice inline notice-error">
         <h3 class="has-icon">
-            <?php esc_html_e('No files found for this language','loco-translate')?> 
+            <?php esc_html_e('No files found for this language','wp-china-yes')?> 
         </h3>
         <p>
             It may not be installed properly.

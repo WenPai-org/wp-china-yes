@@ -5,7 +5,7 @@
 $this->extend('../layout');
 ?> 
     <p>
-        <?php esc_html_e('This information is for developers to find problems in the bundle setup','loco-translate')?>.
+        <?php esc_html_e('This information is for developers to find problems in the bundle setup','wp-china-yes')?>.
     </p>
     <p data-vendor="<?php $meta->e('vendor')?>">
         <?php echo $meta->author?> 

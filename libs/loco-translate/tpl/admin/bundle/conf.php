@@ -26,91 +26,91 @@ $this->extend('../layout');
                 <tbody>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-name"><?php esc_html_e('Project name','loco-translate')?></label>
+                            <label for="<?php echo $id?>-name"><?php esc_html_e('Project name','wp-china-yes')?></label>
                         </th>
                         <td>
                             <input type="text" name="<?php echo $p->prefix?>[name]" value="<?php $p->e('name')?>" id="<?php echo $id?>-name" class="regular-text" />
                             <p class="description">
                                 <?php // Translators: Help tip for "Project name" field in advanced bundle config
-                                esc_html_e('Descriptive name for this set of translatable strings','loco-translate')?> 
+                                esc_html_e('Descriptive name for this set of translatable strings','wp-china-yes')?> 
                             </p>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-domain"><?php esc_html_e('Text domain','loco-translate')?></label>
+                            <label for="<?php echo $id?>-domain"><?php esc_html_e('Text domain','wp-china-yes')?></label>
                         </th>
                         <td>
                             <input type="text" name="<?php echo $p->prefix?>[domain]" value="<?php $p->e('domain')?>" id="<?php echo $id?>-domain" class="regular-text" />
                             <p class="description">
                                 <?php // Translators: Help tip for "Text domain" field in advanced bundle config
-                                esc_html_e('The namespace into which WordPress will load translated strings','loco-translate')?> 
+                                esc_html_e('The namespace into which WordPress will load translated strings','wp-china-yes')?> 
                             </p>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-slug"><?php esc_html_e('File prefix','loco-translate')?></label>
+                            <label for="<?php echo $id?>-slug"><?php esc_html_e('File prefix','wp-china-yes')?></label>
                         </th>
                         <td>
                             <input type="text" name="<?php echo $p->prefix?>[slug]" value="<?php $p->e('slug')?>" id="<?php echo $id?>-slug" class="regular-text" />
                             <p class="description">
                                 <?php // Translators: Help tip for "File prefix" field in advanced bundle config
-                                esc_html_e("Usually the same as the text domain, but don't leave blank unless you mean to",'loco-translate')?> 
+                                esc_html_e("Usually the same as the text domain, but don't leave blank unless you mean to",'wp-china-yes')?> 
                             </p>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-template"><?php esc_html_e('Template file','loco-translate')?></label>
+                            <label for="<?php echo $id?>-template"><?php esc_html_e('Template file','wp-china-yes')?></label>
                         </th>
                         <td>
                             <input type="text" name="<?php echo $p->prefix?>[template][path]" id="<?php echo $id?>-template" class="regular-text" value="<?php echo $p->escape( $p->template['path'] )?>" />
                             <label>
                                 <input type="checkbox" value="1" name="<?php echo $p->prefix?>[template][locked]" <?php empty($p->template['locked']) || print('checked');?> />
-                                <?php esc_html_e('Locked','loco-translate')?> 
+                                <?php esc_html_e('Locked','wp-china-yes')?> 
                             </label>
                             <p class="description">
                                 <?php // Translators: Help tip for "Template file" field in advanced bundle config
-                                esc_html_e('Relative path from bundle root to the official POT file','loco-translate')?> 
+                                esc_html_e('Relative path from bundle root to the official POT file','wp-china-yes')?> 
                             </p>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-target"><?php esc_html_e('Domain path','loco-translate')?></label>
+                            <label for="<?php echo $id?>-target"><?php esc_html_e('Domain path','wp-china-yes')?></label>
                         </th>
                         <td class="twin">
                             <div>
-                                <span class="description"><?php esc_html_e('Include','loco-translate')?>:</span>
+                                <span class="description"><?php esc_html_e('Include','wp-china-yes')?>:</span>
                                 <textarea name="<?php echo $p->prefix?>[target][path]" id="<?php echo $id?>-target" rows="2" cols="30" class="large-text"><?php echo $p->escape( $p->target['path'] )?></textarea>
                             </div>
                             <div>
-                                <span class="description"><?php esc_html_e('Exclude','loco-translate')?>:</span>
+                                <span class="description"><?php esc_html_e('Exclude','wp-china-yes')?>:</span>
                                 <textarea name="<?php echo $p->prefix?>[target][exclude][path]" id="<?php echo $id?>-xtarget" rows="2" cols="30" class="large-text"><?php echo $p->escape( $p->target['exclude']['path'] )?></textarea>
                             </div>
                             <p class="description">
                                 <?php // Translators: Help tip for "Domain path" field in advanced bundle config
-                                esc_html_e('Folders within the bundle that contain author-supplied translations','loco-translate')?>. (<?php esc_html_e('no wildcards','loco-translate')?>)
+                                esc_html_e('Folders within the bundle that contain author-supplied translations','wp-china-yes')?>. (<?php esc_html_e('no wildcards','wp-china-yes')?>)
                             </p>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="<?php echo $id?>-source"><?php esc_html_e('Source file paths','loco-translate')?></label>
+                            <label for="<?php echo $id?>-source"><?php esc_html_e('Source file paths','wp-china-yes')?></label>
                         </th>
                         <td class="twin">
                             <div>
-                                <span class="description"><?php esc_html_e('Include','loco-translate')?>:</span>
+                                <span class="description"><?php esc_html_e('Include','wp-china-yes')?>:</span>
                                 <textarea name="<?php echo $p->prefix?>[source][path]" id="<?php echo $id?>-source" rows="2" cols="30" class="large-text"><?php echo $p->escape( $p->source['path'] )?></textarea>
                             </div>  
                             <div>
-                                <span class="description"><?php esc_html_e('Exclude','loco-translate')?>:</span>
+                                <span class="description"><?php esc_html_e('Exclude','wp-china-yes')?>:</span>
                                 <textarea name="<?php echo $p->prefix?>[source][exclude][path]" id="<?php echo $id?>-xsource" rows="2" cols="30" class="large-text"><?php echo $p->escape( $p->source['exclude']['path'] )?></textarea>
                             </div>
                             <p class="description">
                                 <?php // Translators: Help tip for "Source file paths" field in advanced bundle config
-                                esc_html_e('Files and folders within the bundle that contain localized PHP code','loco-translate')?>. (<?php esc_html_e('no wildcards','loco-translate')?>)
+                                esc_html_e('Files and folders within the bundle that contain localized PHP code','wp-china-yes')?>. (<?php esc_html_e('no wildcards','wp-china-yes')?>)
                             </p>
                         </td>
                     </tr>
@@ -125,25 +125,25 @@ $this->extend('../layout');
                 <tbody>
                     <tr valign="top">
                         <th scope="row">
-                            <label for="all-excl"><?php esc_html_e('Blocked paths','loco-translate')?>:</label>
+                            <label for="all-excl"><?php esc_html_e('Blocked paths','wp-china-yes')?>:</label>
                         </th>
                         <td>
                             <textarea name="exclude[path]" id="all-excl" rows="3" cols="30" class="large-text"><?php echo $params->escape($excl['path'])?></textarea>
                             <p class="description">
                                 <?php // Translators: Help tip for "Blocked paths" field in advanced bundle config
-                                esc_html_e('Folders within the bundle that will never be searched for files','loco-translate')?>. (<?php esc_html_e('no wildcards','loco-translate')?>)
+                                esc_html_e('Folders within the bundle that will never be searched for files','wp-china-yes')?>. (<?php esc_html_e('no wildcards','wp-china-yes')?>)
                             </p>
                         </td>
                     </tr>
                 </tbody>
             </table>
             <p class="submit" >
-                <input type="submit" class="button-primary" value="<?php esc_html_e('Save config','loco-translate')?>" />
-                <button type="button" class="button" disabled id="loco-add-butt"><?php esc_html_e('Add set','loco-translate')?></button><?php
+                <input type="submit" class="button-primary" value="<?php esc_html_e('Save config','wp-china-yes')?>" />
+                <button type="button" class="button" disabled id="loco-add-butt"><?php esc_html_e('Add set','wp-china-yes')?></button><?php
                 if( $params->parent ):?> 
-                <a class="button button-link has-icon icon-cog" href="<?php $parent->e('href')?>"><?php esc_html_e('Parent theme','loco-translate')?></a><?php
+                <a class="button button-link has-icon icon-cog" href="<?php $parent->e('href')?>"><?php esc_html_e('Parent theme','wp-china-yes')?></a><?php
                 endif?> 
-                <a class="button button-link has-icon icon-download" href="<?php $params->e('xmlUrl')?>"><?php esc_html_e('XML','loco-translate')?></a>
+                <a class="button button-link has-icon icon-download" href="<?php $params->e('xmlUrl')?>"><?php esc_html_e('XML','wp-china-yes')?></a>
             </p>
         </footer>
 
@@ -156,7 +156,7 @@ $this->extend('../layout');
     <?php if( 'db' === $saved ):?> 
     <form action="" method="post" id="loco-reset">
         <p class="submit">
-            <input type="submit" name="unconf" class="button button-danger" value="<?php esc_html_e('Reset config','loco-translate')?>" />
+            <input type="submit" name="unconf" class="button button-danger" value="<?php esc_html_e('Reset config','wp-china-yes')?>" />
             <input type="hidden" name="<?php $nonce->e('name')?>" value="<?php $nonce->e('value')?>" />
         </p>
     </form><?php

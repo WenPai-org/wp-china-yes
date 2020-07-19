@@ -15,7 +15,7 @@ class Loco_admin_file_EditController extends Loco_admin_file_BaseController {
         $file = $this->get('file');
         $bundle = $this->getBundle();
         // translators: %1$s is the file name, %2$s is the bundle name
-        $this->set('title', sprintf( __('Editing %1$s in %2$s','loco-translate'), $file->basename(), $bundle ) );
+        $this->set('title', sprintf( __('Editing %1$s in %2$s','wp-china-yes'), $file->basename(), $bundle ) );
     }
 
 
@@ -128,18 +128,18 @@ class Loco_admin_file_EditController extends Loco_admin_file_BaseController {
                         $potdata = Loco_gettext_Data::load( $potfile );
                         /*
                         if( ! $potdata->equalSource($data) ){
-                            Loco_error_AdminNotices::debug( sprintf( __("Translations don't match template. Run sync to update from %s",'loco-translate'), $potfile->basename() ) );
+                            Loco_error_AdminNotices::debug( sprintf( __("Translations don't match template. Run sync to update from %s",'wp-china-yes'), $potfile->basename() ) );
                         }*/
                     }
                     catch( Exception $e ){
                         // translators: Where %s is the name of the invalid POT file
-                        Loco_error_AdminNotices::warn( sprintf( __('Translation template is invalid (%s)','loco-translate'), $potfile->basename() ) );
+                        Loco_error_AdminNotices::warn( sprintf( __('Translation template is invalid (%s)','wp-china-yes'), $potfile->basename() ) );
                         $potfile = null;
                     }
                 }
                 // else template doesn't exist, so sync will be done to source code
                 else {
-                    // Loco_error_AdminNotices::debug( sprintf( __('Template file not found (%s)','loco-translate'), $potfile->basename() ) );
+                    // Loco_error_AdminNotices::debug( sprintf( __('Template file not found (%s)','wp-china-yes'), $potfile->basename() ) );
                     $potfile = null;
                 }
             }
@@ -171,9 +171,9 @@ class Loco_admin_file_EditController extends Loco_admin_file_BaseController {
             }
             // translators: Warning when POT file is opened in the file editor. It can be disabled in settings.
             else if( 1 === $settings->pot_protect ){
-                Loco_error_AdminNotices::warn( __("This is NOT a translation file. Manual editing of source strings is not recommended.",'loco-translate') )
-                 ->addLink( Loco_mvc_AdminRouter::generate('config').'#loco--pot-protect', __('Settings','loco-translate') )
-                 ->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/templates'), __('Documentation','loco-translate') );
+                Loco_error_AdminNotices::warn( __("This is NOT a translation file. Manual editing of source strings is not recommended.",'wp-china-yes') )
+                 ->addLink( Loco_mvc_AdminRouter::generate('config').'#loco--pot-protect', __('Settings','wp-china-yes') )
+                 ->addLink( apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/templates'), __('Documentation','wp-china-yes') );
             }
         }
         
@@ -197,26 +197,26 @@ class Loco_admin_file_EditController extends Loco_admin_file_BaseController {
         ) ) );
         $this->set( 'ui', new Loco_mvc_ViewParams( array(
              // Translators: button for adding a new string when manually editing a POT file
-             'add'      => _x('Add','Editor','loco-translate'),
+             'add'      => _x('Add','Editor','wp-china-yes'),
              // Translators: button for removing a string when manually editing a POT file
-             'del'      => _x('Remove','Editor','loco-translate'),
-             'help'     => __('Help','loco-translate'),
+             'del'      => _x('Remove','Editor','wp-china-yes'),
+             'help'     => __('Help','wp-china-yes'),
              // Translators: Button that saves translations to disk
-             'save'     => _x('Save','Editor','loco-translate'),
+             'save'     => _x('Save','Editor','wp-china-yes'),
              // Translators: Button that runs in-editor sync/operation
-             'sync'     => _x('Sync','Editor','loco-translate'),
+             'sync'     => _x('Sync','Editor','wp-china-yes'),
              // Translators: Button that reloads current screen
-             'revert'   => _x('Revert','Editor','loco-translate'),
+             'revert'   => _x('Revert','Editor','wp-china-yes'),
              // Translators: Button that opens window for auto-translating
-             'auto'     => _x('Auto','Editor','loco-translate'),
+             'auto'     => _x('Auto','Editor','wp-china-yes'),
              // Translators: Button for downloading a PO, MO or POT file
-             'download' => _x('Download','Editor','loco-translate'),
+             'download' => _x('Download','Editor','wp-china-yes'),
              // Translators: Placeholder text for text filter above editor
-             'filter'   => __('Filter translations','loco-translate'),
+             'filter'   => __('Filter translations','wp-china-yes'),
              // Translators: Button that toggles invisible characters
-             'invs'     => _x('Toggle invisibles','Editor','loco-translate'),
+             'invs'     => _x('Toggle invisibles','Editor','wp-china-yes'),
              // Translators: Button that toggles between "code" and regular text editing modes
-             'code'     => _x('Toggle code view','Editor','loco-translate'),
+             'code'     => _x('Toggle code view','Editor','wp-china-yes'),
         ) ) );
 
         // Download form params

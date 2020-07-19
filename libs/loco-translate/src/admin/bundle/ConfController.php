@@ -13,7 +13,7 @@ class Loco_admin_bundle_ConfController extends Loco_admin_bundle_BaseController 
         $this->enqueueScript('config');
         $bundle = $this->getBundle();
         // translators: where %s is a plugin or theme
-        $this->set( 'title', sprintf( __('Configure %s','loco-translate'),$bundle->getName() ) );
+        $this->set( 'title', sprintf( __('Configure %s','wp-china-yes'),$bundle->getName() ) );
 
         $post = Loco_mvc_PostParams::get();
         // always set a nonce for current bundle
@@ -52,7 +52,7 @@ class Loco_admin_bundle_ConfController extends Loco_admin_bundle_BaseController 
      */
     public function getHelpTabs(){
         return array (
-            __('Advanced tab','loco-translate') => $this->viewSnippet('tab-bundle-conf'),
+            __('Advanced tab','wp-china-yes') => $this->viewSnippet('tab-bundle-conf'),
         );
     }
     
@@ -92,7 +92,7 @@ class Loco_admin_bundle_ConfController extends Loco_admin_bundle_BaseController 
                 if( $parent && $parent->hasProject($project) ){
                     // warn if child theme uses parent theme's text domain (but allowing to render so we don't get an empty form.
                     if( $project === $default ){
-                        Loco_error_AdminNotices::warn( __("Child theme declares the same Text Domain as the parent theme",'loco-translate') );
+                        Loco_error_AdminNotices::warn( __("Child theme declares the same Text Domain as the parent theme",'wp-china-yes') );
                     }
                     // else safe to remove parent theme configuration as it should be held in its own bundle
                     else {
@@ -137,7 +137,7 @@ class Loco_admin_bundle_ConfController extends Loco_admin_bundle_BaseController 
         $this->set( 'xmlUrl', Loco_mvc_AjaxRouter::generate( 'DownloadConf', $args ) );
         $this->set( 'manUrl', apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/bundle-config') );
         
-        $this->prepareNavigation()->add( __('Advanced configuration','loco-translate') );
+        $this->prepareNavigation()->add( __('Advanced configuration','wp-china-yes') );
         return $this->view('admin/bundle/conf', compact('conf','base','name','excl') );
     }    
     

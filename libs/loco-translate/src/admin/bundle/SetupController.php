@@ -12,7 +12,7 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
         $bundle = $this->getBundle();
         
         // translators: where %s is a plugin or theme
-        $this->set( 'title', sprintf( __('Set up %s','loco-translate'),$bundle->getName() ) );
+        $this->set( 'title', sprintf( __('Set up %s','wp-china-yes'),$bundle->getName() ) );
     }
 
 
@@ -22,7 +22,7 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
      */
     public function getHelpTabs(){
         return array (
-            __('Setup tab','loco-translate') => $this->viewSnippet('tab-bundle-setup'),
+            __('Setup tab','wp-china-yes') => $this->viewSnippet('tab-bundle-setup'),
         );
     }
 
@@ -32,7 +32,7 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
      */
     public function render(){
 
-        $this->prepareNavigation()->add( __('Bundle setup','loco-translate') );
+        $this->prepareNavigation()->add( __('Bundle setup','wp-china-yes') );
         $bundle = $this->getBundle();
         $action = 'setup:'.$bundle->getId();
  
@@ -111,7 +111,7 @@ class Loco_admin_bundle_SetupController extends Loco_admin_bundle_BaseController
                 $n += count($files);
             }
             if( $n ){
-                $notices[] = sprintf( _n("One file can't be matched to a known set of strings","%s files can't be matched to a known set of strings",$n,'loco-translate'), number_format($n) );
+                $notices[] = sprintf( _n("One file can't be matched to a known set of strings","%s files can't be matched to a known set of strings",$n,'wp-china-yes'), number_format($n) );
             }
         }
         

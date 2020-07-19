@@ -13,7 +13,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
         $this->enqueueStyle('poinit');
         //
         $bundle = $this->getBundle();
-        $this->set('title', __('New language','loco-translate').' &lsaquo; '.$bundle );
+        $this->set('title', __('New language','wp-china-yes').' &lsaquo; '.$bundle );
     }
 
 
@@ -92,7 +92,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
         
         $breadcrumb = $this->prepareNavigation();
         // "new" tab is confusing when no project-scope navigation
-        // $this->get('tabs')->add( __('New PO','loco-translate'), '', true );
+        // $this->get('tabs')->add( __('New PO','wp-china-yes'), '', true );
         
         // bundle mandatory, but project optional
         $bundle = $this->getBundle();
@@ -101,14 +101,14 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
             $project = $this->getProject();
             $slug = $project->getSlug();
             $domain = (string) $project->getDomain();
-            $subhead = sprintf( __('Initializing new translations in "%s"','loco-translate'), $slug?$slug:$domain );
+            $subhead = sprintf( __('Initializing new translations in "%s"','wp-china-yes'), $slug?$slug:$domain );
         }
         catch( Loco_error_Exception $e ){
             $project = null;
-            $subhead = __('Initializing new translations in unknown set','loco-translate');
+            $subhead = __('Initializing new translations in unknown set','wp-china-yes');
         }
 
-        $title = __('New language','loco-translate');
+        $title = __('New language','wp-china-yes');
         $this->set('subhead', $subhead );
         
         // navigate up to bundle listing page 
@@ -190,7 +190,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
         if( $potfile && $potfile->exists() ){
             $meta = Loco_gettext_Metadata::load($potfile);
             $total = $meta->getTotal();
-            $summary = sprintf( _n('One string found in %2$s','%s strings found in %s',$total,'loco-translate'), number_format($total), $potfile->basename() );
+            $summary = sprintf( _n('One string found in %2$s','%s strings found in %s',$total,'wp-china-yes'), number_format($total), $potfile->basename() );
             $this->set( 'pot', new Loco_mvc_ViewParams( array(
                 'name' => $potfile->basename(),
                 'path' => $meta->getPath(false),
@@ -209,7 +209,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
         else {
             $this->set( 'ext', new Loco_mvc_ViewParams( array(
                 'link' => Loco_mvc_AdminRouter::generate( $this->get('type').'-xgettext', $_GET ),
-                'text' => __('Create template','loco-translate'),
+                'text' => __('Create template','wp-china-yes'),
             ) ) );
             // if forcing source extraction show brief description of source files
             if( $this->get('extract') ){
@@ -218,13 +218,13 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
                     return $this->view('admin/errors/no-tokenizer');
                 }
                 $nfiles = count( $project->findSourceFiles() );
-                $summary = sprintf( _n('1 source file will be scanned for translatable strings','%s source files will be scanned for translatable strings',$nfiles,'loco-translate'), number_format_i18n($nfiles) );
+                $summary = sprintf( _n('1 source file will be scanned for translatable strings','%s source files will be scanned for translatable strings',$nfiles,'wp-china-yes'), number_format_i18n($nfiles) );
             }
             // else prompt for template creation before continuing
             else {
                 $this->set( 'skip', new Loco_mvc_ViewParams( array(
                     'link' => Loco_mvc_AdminRouter::generate( $this->get('_route'), $_GET + array( 'extract' => '1' ) ),
-                    'text' => __('Skip template','loco-translate'),
+                    'text' => __('Skip template','wp-china-yes'),
                 ) ) );
                 // POT could still be defined, it might just not exist yet
                 if( $potfile ){
@@ -234,7 +234,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
                 else {
                     $this->set( 'conf', new Loco_mvc_ViewParams( array(
                         'link' => Loco_mvc_AdminRouter::generate( $this->get('type').'-conf', array_intersect_key($_GET,array('bundle'=>'')) ),
-                        'text' => __('Assign template','loco-translate'),
+                        'text' => __('Assign template','wp-china-yes'),
                     ) ) );
                 }
                 return $this->view('admin/init/init-prompt');
@@ -313,7 +313,7 @@ class Loco_admin_init_InitPoController extends Loco_admin_bundle_BaseController 
         
         $this->set('help', new Loco_mvc_ViewParams( array(
             'href' => apply_filters('loco_external','https://localise.biz/wordpress/plugin/manual/msginit'),
-            'text' => __("What's this?",'loco-translate'),
+            'text' => __("What's this?",'wp-china-yes'),
         ) ) );
 
         // file system prompts will be handled when paths are selected (i.e. we don't have one yet)

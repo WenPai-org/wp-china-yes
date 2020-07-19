@@ -57,13 +57,13 @@ class Loco_ajax_MsginitController extends Loco_ajax_common_BundleController {
         // Target MO probably doesn't exist, but we don't want to overwrite it without asking
         $mofile = $pofile->cloneExtension('mo');
         if( $mofile->exists() ){
-            throw new Loco_error_Exception( __('MO file exists for this language already. Delete it first','loco-translate') );
+            throw new Loco_error_Exception( __('MO file exists for this language already. Delete it first','wp-china-yes') );
         }
 
         /*/ Same for JSON file, but WordPress >= only 5
         $jsfile = function_exists('wp_set_script_translations') ? $pofile->cloneExtension('json') : null;
         if( $jsfile && $jsfile->exists() ){
-            throw new Loco_error_Exception( __('JSON file exists for this language already. Delete it first','loco-translate') );
+            throw new Loco_error_Exception( __('JSON file exists for this language already. Delete it first','wp-china-yes') );
         }*/
         
         // Permit forcing of any parsable file as strings template
