@@ -7,11 +7,6 @@ function wpcy_settings_init() {
     register_setting('wpcy', 'wpapi');
 
     /**
-     * super_admin用以标记用户是否启用管理后台加速功能
-     */
-    register_setting('wpcy', 'super_admin');
-
-    /**
      * super_gravatar用以标记用户是否启用G家头像加速功能
      */
     register_setting('wpcy', 'super_gravatar');
@@ -32,15 +27,6 @@ function wpcy_settings_init() {
         'wpcy_field_select_wpapi',
         '选择仓库源',
         'wpcy_field_wpapi_cb',
-        'wpcy',
-        'wpcy_section_main',
-        []
-    );
-
-    add_settings_field(
-        'wpcy_field_select_super_admin',
-        '加速管理后台',
-        'wpcy_field_super_admin_cb',
         'wpcy',
         'wpcy_section_main',
         []
@@ -94,21 +80,6 @@ function wpcy_field_wpapi_cb($args) {
   </p>
   <p class="description">
     官方原版源直接从api.wordpress.org反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
-  </p>
-    <?php
-}
-
-function wpcy_field_super_admin_cb($args) {
-    $super_admin = get_option('super_gravatar');
-    ?>
-  <label>
-    <input type="radio" value="1" name="super_admin" <?php checked($super_admin, '1'); ?>>启用
-  </label>
-  <label>
-    <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
-  </label>
-  <p class="description">
-    为WordPress核心所依赖的CSS、JS、图片等静态资源进行CDN加速，对于小带宽服务器后台访问速度提升明显。目前支持WordPress 5.4、5.3、5.2、5.1
   </p>
     <?php
 }
