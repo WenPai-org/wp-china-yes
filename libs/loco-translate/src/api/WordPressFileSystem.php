@@ -43,8 +43,8 @@ class Loco_api_WordPressFileSystem {
     public static function direct(){
         // Emulate WP_Filesystem to avoid FS_METHOD and filters overriding "direct" type
         if( ! class_exists('WP_Filesystem_Direct',false) ){
-            require_once ABSPATH.'wp-admin/includes/class-wp-filesystem-base.php';
-            require_once ABSPATH.'wp-admin/includes/class-wp-filesystem-direct.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
         }
         return new WP_Filesystem_Direct(null);
     }

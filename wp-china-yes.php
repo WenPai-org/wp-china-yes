@@ -11,17 +11,10 @@
 
 if (is_admin()) {
     /**
-     * 使用Composer作PHP文件自动加载
-     */
-    if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
-        require __DIR__ . '/vendor/autoload.php';
-    }
-
-    /**
      * WP-China-Yes的翻译校准基于Loco Translate插件开发，这里通过引入入口文件的方式激活该插件的二次开发版
      */
-    if ( file_exists( __DIR__ . '/vendor/loco-translate/loco.php' ) ) {
-        require __DIR__ . '/vendor/loco-translate/loco.php';
+    if ( file_exists(__DIR__ . '/libs/loco-translate/loco.php') ) {
+        require __DIR__ . '/libs/loco-translate/loco.php';
     }
 
     /**
