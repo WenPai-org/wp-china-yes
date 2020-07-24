@@ -4,7 +4,7 @@
  * Description: 这是一个革命性的插件，从此中国人会拥有针对国内环境专门定制的WordPress，以及一个由中国人主导的社区生态环境
  * Author: WP中国本土化社区
  * Author URI:https://wp-china-yes.org/
- * Version: 3.0.0-Beta
+ * Version: 3.0.0-Beta2
  * Text Domain: wp-china-yes
  * Domain Path: /languages
  * License: GPLv3 or later
