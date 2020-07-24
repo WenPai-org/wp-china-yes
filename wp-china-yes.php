@@ -71,7 +71,7 @@ if (is_admin()) {
 
         add_submenu_page(
             'wpcy',
-            'China Yes!!!',
+            'WP&China Yes!',
             '系统本土化',
             'manage_options',
             'wpcy-setting',
