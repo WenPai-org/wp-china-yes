@@ -25,7 +25,7 @@ function wpcy_settings_init() {
 
     add_settings_field(
         'wpcy_field_select_wpapi',
-        '选择仓库源',
+        '选择应用市场',
         'wpcy_field_wpapi_cb',
         'wpcy',
         'wpcy_section_main',
@@ -64,22 +64,22 @@ function wpcy_field_wpapi_cb($args) {
     $wpapi = get_option('wpapi');
     ?>
   <label>
-    <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>中国本土源（推荐）
+    <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>本土应用市场（推荐）
   </label>
   <label>
-    <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方原版源
+    <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方原版应用市场
   </label>
   <p class="description">
-    中国本土源由<a href="https://wp-china.org">WP中国本土化社区</a>所开发维护，拥有以下特性：
+    本土应用市场由<a href="https://wp-china.org">WP中国本土化社区</a>所开发维护，拥有以下特性：
   <ul style="list-style-type: decimal; margin-left: 30px;">
     <li>直接从国内数据库合成数据并对外提供服务，速度飞快</li>
     <li>对仓库中所有的作品追加基于机器翻译的完全汉化支持，同时支持翻译校准并记忆校准内容，日后推送更新时不会覆盖</li>
     <li>仓库支持中文作品信息显示及中文语义化搜索（开发中）</li>
-    <li>支持直接购买国内开发者的优秀作品并享受和官方原版仓库一致的用户体验（开发中）</li>
+    <li>支持直接购买国内开发者的优秀作品并享受和官方原版应用市场一致的用户体验（开发中）</li>
   </ul>
   </p>
   <p class="description">
-    官方原版源直接从api.wordpress.org反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
+    官方原版应用市场直接从api.wordpress.org反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
   </p>
     <?php
 }
