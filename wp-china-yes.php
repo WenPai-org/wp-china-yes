@@ -19,6 +19,20 @@ if (is_admin()) {
 
 
     /**
+     * 插件列表项目中增加设置项
+     */
+    add_filter('plugin_action_links', function ($links, $file) {
+        if ($file != plugin_basename(__FILE__)) {
+            return $links;
+        }
+        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
+        array_unshift($links, $settings_link);
+
+        return $links;
+    }, 10, 2);
+
+
+    /**
      * 初始化设置项
      */
     if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
