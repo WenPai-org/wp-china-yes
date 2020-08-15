@@ -76,10 +76,11 @@ if (is_admin()) {
         }
         if (get_option('wpapi') == 1) {
             $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
         } else {
-            $url = str_replace('api.wordpress.org', 'api-original.wp-china-yes.net', $url);
+            $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
         }
-        $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
 
         return wp_remote_request($url, $r);
     }, 10, 3);
