@@ -1,1 +1,0 @@
-!function(e,o){var t=o.getElementById("loco-fs"),n=o.getElementById("loco-del");t&&n&&e.locoScope.fs.init(t).setForm(n)}(window,document,jQuery);
