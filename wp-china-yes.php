@@ -36,7 +36,7 @@ if (is_admin()) {
      * 初始化设置项
      */
     if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
-        update_option("wpapi", '1');
+        update_option("wpapi", '2');
         update_option("super_gravatar", '1');
         update_option("super_googlefonts", '2');
     }
