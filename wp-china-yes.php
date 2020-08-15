@@ -74,7 +74,7 @@ if (is_admin()) {
         if ( ! stristr($url, 'api.wordpress.org') && ! stristr($url, 'downloads.wordpress.org')) {
             return false;
         }
-        if (get_option('super_gravatar') == 1) {
+        if (get_option('wpapi') == 1) {
             $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
         } else {
             $url = str_replace('api.wordpress.org', 'api-original.wp-china-yes.net', $url);
