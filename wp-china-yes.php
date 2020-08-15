@@ -56,21 +56,12 @@ if (is_admin()) {
      * 菜单注册
      */
     add_action('admin_menu', function () {
-        add_menu_page(
-            '本土化',
-            '本土化',
-            '',
-            'wpcy'
-        );
-
-        add_submenu_page(
-            'wpcy',
-            'WP&China Yes!',
-            '系统本土化',
+        add_options_page(
+            'WP-China-Yes',
+            'WP-China-Yes',
             'manage_options',
-            'wpcy-setting',
-            'wpcy_options_page_html',
-            0
+            'wp_china_yes',
+            'wpcy_options_page_html'
         );
     });
 
