@@ -28,8 +28,7 @@ function wpcy_settings_init() {
         '选择应用市场',
         'wpcy_field_wpapi_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 
     add_settings_field(
@@ -37,8 +36,7 @@ function wpcy_settings_init() {
         '加速G家头像',
         'wpcy_field_super_gravatar_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 
     add_settings_field(
@@ -46,21 +44,13 @@ function wpcy_settings_init() {
         '加速谷歌字体',
         'wpcy_field_super_googlefonts_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 }
 
 add_action('admin_init', 'wpcy_settings_init');
 
-function wpcy_section_main_cb() {
-    ?>
-    服务器赞助：<a href="">硅云</a> | <a href="">又拍云</a><br/>
-    资金赞助榜：<a href="">赞助榜单</a>
-    <?php
-}
-
-function wpcy_field_wpapi_cb($args) {
+function wpcy_field_wpapi_cb() {
     $wpapi = get_option('wpapi');
     ?>
   <label>
@@ -84,7 +74,7 @@ function wpcy_field_wpapi_cb($args) {
     <?php
 }
 
-function wpcy_field_super_gravatar_cb($args) {
+function wpcy_field_super_gravatar_cb() {
     $super_gravatar = get_option('super_gravatar');
     ?>
   <label>
@@ -99,7 +89,7 @@ function wpcy_field_super_gravatar_cb($args) {
     <?php
 }
 
-function wpcy_field_super_googlefonts_cb($args) {
+function wpcy_field_super_googlefonts_cb() {
     $super_googlefonts = get_option('super_googlefonts');
     ?>
   <label>
@@ -115,12 +105,8 @@ function wpcy_field_super_googlefonts_cb($args) {
 }
 
 function wpcy_options_page_html() {
-    if ( ! current_user_can('manage_options')) {
+    if (!current_user_can('manage_options')) {
         return;
-    }
-
-    if (isset($_GET['settings-updated'])) {
-        add_settings_error('wpcy_messages', 'wpcy_message', '保存成功', 'updated');
     }
 
     settings_errors('wpcy_messages');
