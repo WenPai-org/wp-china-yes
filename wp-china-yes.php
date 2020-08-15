@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: WP-China-Yes
- * Description: 这是一个革命性的插件，从此中国人会拥有针对国内环境专门定制的WordPress，以及一个由中国人主导的社区生态环境
+ * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
- * Author URI:https://wp-china-yes.org/
- * Version: 3.0.0-Beta
+ * Author URI:https://wp-china.org/
+ * Version: 3.0.0
  * Text Domain: wp-china-yes
  * Domain Path: /languages
  * License: GPLv3 or later
@@ -13,36 +13,30 @@
 
 if (is_admin()) {
     /**
-     * 加载翻译
-     */
-    add_action('plugins_loaded', function () {
-        load_plugin_textdomain(
-            'wp-china-yes',
-            false,
-            basename(dirname(__FILE__)).'/languages/'
-        );
-    });
-
-
-    /**
-     * WP-China-Yes的翻译校准基于Loco Translate插件开发，这里通过引入入口文件的方式激活该插件的二次开发版
-     */
-    if ( file_exists(__DIR__ . '/libs/loco-translate/loco.php') ) {
-        require __DIR__ . '/libs/loco-translate/loco.php';
-    }
-
-
-    /**
      * 引入设置页
      */
     require __DIR__ . '/setting.php';
 
 
     /**
+     * 插件列表项目中增加设置项
+     */
+    add_filter('plugin_action_links', function ($links, $file) {
+        if ($file != plugin_basename(__FILE__)) {
+            return $links;
+        }
+        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
+        array_unshift($links, $settings_link);
+
+        return $links;
+    }, 10, 2);
+
+
+    /**
      * 初始化设置项
      */
     if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
-        update_option("wpapi", '1');
+        update_option("wpapi", '2');
         update_option("super_gravatar", '1');
         update_option("super_googlefonts", '2');
     }
@@ -62,21 +56,12 @@ if (is_admin()) {
      * 菜单注册
      */
     add_action('admin_menu', function () {
-        add_menu_page(
-            '本土化',
-            '本土化',
-            '',
-            'wpcy'
-        );
-
-        add_submenu_page(
-            'wpcy',
-            'China Yes!!!',
-            '系统本土化',
+        add_options_page(
+            'WP-China-Yes',
+            'WP-China-Yes',
             'manage_options',
-            'wpcy-setting',
-            'wpcy_options_page_html',
-            0
+            'wp_china_yes',
+            'wpcy_options_page_html'
         );
     });
 
@@ -89,42 +74,16 @@ if (is_admin()) {
         if ( ! stristr($url, 'api.wordpress.org') && ! stristr($url, 'downloads.wordpress.org')) {
             return false;
         }
-        if (get_option('super_gravatar') == 1) {
+        if (get_option('wpapi') == 1) {
             $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
         } else {
-            $url = str_replace('api.wordpress.org', 'api-original.wp-china-yes.net', $url);
+            $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
         }
-        $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
 
         return wp_remote_request($url, $r);
     }, 10, 3);
-
-    
-    /**
-     * 替换仪表盘默认的“WordPress活动与新闻”为本土化版本
-     */
-    add_action('wp_dashboard_setup', function () {
-        global $wp_meta_boxes;
-
-        unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_primary']);
-
-        wp_add_dashboard_widget('sponsor_widget', 'WordPress活动及新闻', function () {
-            echo <<<EOT
-<div class="wordpress-news hide-if-no-js">
-<div class="rss-widget">
-EOT;
-            wp_widget_rss_output('https://wp-china.org/archives/category/news/feed/');
-            echo <<<EOT
-</div>
-</div>
-<p class="community-events-footer" style="padding-bottom: 3px;">
-<a href="https://wp-china.org/" target="_blank">WP中国本土化社区</a>
- | 
-<a href="https://wp-china.org/thank" target="_blank">赞助者名单</a>
-</p>
-EOT;
-        });
-    });
 }
 
 
@@ -138,7 +97,8 @@ if (get_option('super_gravatar') == 1) {
             '0.gravatar.com',
             '1.gravatar.com',
             '2.gravatar.com',
-            'secure.gravatar.com'
+            'secure.gravatar.com',
+            'cn.gravatar.com'
         ], 'gravatar.wp-china-yes.net', $avatar);
     });
 }

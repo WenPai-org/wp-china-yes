@@ -18,18 +18,17 @@ function wpcy_settings_init() {
 
     add_settings_section(
         'wpcy_section_main',
-        '这是一个革命性的插件，从此中国人会拥有针对国内环境专门定制的WordPress，以及一个由中国人主导的社区生态环境',
-        'wpcy_section_main_cb',
+        '将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress',
+        '',
         'wpcy'
     );
 
     add_settings_field(
         'wpcy_field_select_wpapi',
-        '选择仓库源',
+        '选择应用市场',
         'wpcy_field_wpapi_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 
     add_settings_field(
@@ -37,8 +36,7 @@ function wpcy_settings_init() {
         '加速G家头像',
         'wpcy_field_super_gravatar_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 
     add_settings_field(
@@ -46,45 +44,31 @@ function wpcy_settings_init() {
         '加速谷歌字体',
         'wpcy_field_super_googlefonts_cb',
         'wpcy',
-        'wpcy_section_main',
-        []
+        'wpcy_section_main'
     );
 }
 
 add_action('admin_init', 'wpcy_settings_init');
 
-function wpcy_section_main_cb() {
-    ?>
-    服务器赞助：<a href="">硅云</a> | <a href="">又拍云</a><br/>
-    资金赞助榜：<a href="">赞助榜单</a>
-    <?php
-}
-
-function wpcy_field_wpapi_cb($args) {
+function wpcy_field_wpapi_cb() {
     $wpapi = get_option('wpapi');
     ?>
   <label>
-    <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>中国本土源（推荐）
+    <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方应用市场加速镜像
   </label>
   <label>
-    <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方原版源
+    <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>本土应用市场（技术试验）
   </label>
   <p class="description">
-    中国本土源由<a href="https://wp-china.org">WP中国本土化社区</a>所开发维护，拥有以下特性：
-  <ul style="list-style-type: decimal; margin-left: 30px;">
-    <li>直接从国内数据库合成数据并对外提供服务，速度飞快</li>
-    <li>对仓库中所有的作品追加基于机器翻译的完全汉化支持，同时支持翻译校准并记忆校准内容，日后推送更新时不会覆盖</li>
-    <li>仓库支持中文作品信息显示及中文语义化搜索（开发中）</li>
-    <li>支持直接购买国内开发者的优秀作品并享受和官方原版仓库一致的用户体验（开发中）</li>
-  </ul>
+    <b>官方应用市场加速镜像</b>：直接从官方反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
   </p>
   <p class="description">
-    官方原版源直接从api.wordpress.org反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
+    <b>本土应用市场</b>：与<a href="https://translate.wp-china.org/" target="_blank">本土翻译平台</a>深度整合，为大家提供基于AI翻译+人工辅助校准的全量作品汉化支持（注意，这仍属于试验阶段，存在可能的接口报错、速度缓慢等问题，<a href="https://wp-china.org/forums/forum/228" target="_blank">问题反馈</a>）
   </p>
     <?php
 }
 
-function wpcy_field_super_gravatar_cb($args) {
+function wpcy_field_super_gravatar_cb() {
     $super_gravatar = get_option('super_gravatar');
     ?>
   <label>
@@ -99,7 +83,7 @@ function wpcy_field_super_gravatar_cb($args) {
     <?php
 }
 
-function wpcy_field_super_googlefonts_cb($args) {
+function wpcy_field_super_googlefonts_cb() {
     $super_googlefonts = get_option('super_googlefonts');
     ?>
   <label>
@@ -115,12 +99,8 @@ function wpcy_field_super_googlefonts_cb($args) {
 }
 
 function wpcy_options_page_html() {
-    if ( ! current_user_can('manage_options')) {
+    if (!current_user_can('manage_options')) {
         return;
-    }
-
-    if (isset($_GET['settings-updated'])) {
-        add_settings_error('wpcy_messages', 'wpcy_message', '保存成功', 'updated');
     }
 
     settings_errors('wpcy_messages');
@@ -136,10 +116,8 @@ function wpcy_options_page_html() {
     </form>
   </div>
   <p>
-    <a href="https://wp-china.org">WP中国本土化社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
-    同时社区也在积极开发<b>备用</b>的WordPress中国衍生版，以防中美意识形态战争摧毁整个国内WordPress相关产业（担忧来源于19年10月至20年5月的429问题）。<br/>
-    如果你是开发者或解决方案提供商，请了解<a href="https://wpunion.org.cn">WordPress中国产业联盟</a>。<br/>
-    特别感谢<a href="https://zmingcx.com/">知更鸟</a>、<a href="https://www.weixiaoduo.com/">薇晓朵团队</a>、<a href="https://www.appnode.com/">AppNode</a>在项目萌芽期给予的帮助，点击<a href="#">这里</a>了解这段故事。
+    <a href="https://wp-china.org" target="_blank">WP中国本土化社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
+    特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。
   </p>
     <?php
 }
