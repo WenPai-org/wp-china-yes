@@ -84,33 +84,6 @@ if (is_admin()) {
 
         return wp_remote_request($url, $r);
     }, 10, 3);
-
-    
-    /**
-     * 替换仪表盘默认的“WordPress活动与新闻”为本土化版本
-     */
-    add_action('wp_dashboard_setup', function () {
-        global $wp_meta_boxes;
-
-        unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_primary']);
-
-        wp_add_dashboard_widget('sponsor_widget', 'WordPress活动及新闻', function () {
-            echo <<<EOT
-<div class="wordpress-news hide-if-no-js">
-<div class="rss-widget">
-EOT;
-            wp_widget_rss_output('https://wp-china.org/archives/category/news/feed/');
-            echo <<<EOT
-</div>
-</div>
-<p class="community-events-footer" style="padding-bottom: 3px;">
-<a href="https://wp-china.org/" target="_blank">WP中国本土化社区</a>
- | 
-<a href="https://wp-china.org/thank" target="_blank">赞助者名单</a>
-</p>
-EOT;
-        });
-    });
 }
 
 
