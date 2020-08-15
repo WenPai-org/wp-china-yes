@@ -97,7 +97,8 @@ if (get_option('super_gravatar') == 1) {
             '0.gravatar.com',
             '1.gravatar.com',
             '2.gravatar.com',
-            'secure.gravatar.com'
+            'secure.gravatar.com',
+            'cn.gravatar.com'
         ], 'gravatar.wp-china-yes.net', $avatar);
     });
 }
