@@ -3,8 +3,8 @@
  * Plugin Name: WP-China-Yes
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
- * Author URI:https://wp-china-yes.org/
- * Version: 3.0.0-Beta2
+ * Author URI:https://wp-china.org/
+ * Version: 3.0.0
  * Text Domain: wp-china-yes
  * Domain Path: /languages
  * License: GPLv3 or later
