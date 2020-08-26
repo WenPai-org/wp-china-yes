@@ -33,8 +33,9 @@ if (is_admin()) {
     /**
      * 初始化设置项
      */
-    if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
+    if (empty(get_option('wpapi')) || empty(get_option('super_admin')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
         update_option("wpapi", '2');
+        update_option("super_admin", '1');
         update_option("super_gravatar", '1');
         update_option("super_googlefonts", '2');
     }
@@ -45,6 +46,7 @@ if (is_admin()) {
      */
     register_deactivation_hook(__FILE__, function () {
         delete_option("wpapi");
+        delete_option("super_admin");
         delete_option("super_gravatar");
         delete_option("super_googlefonts");
     });
@@ -82,6 +84,19 @@ if (is_admin()) {
 
         return wp_remote_request($url, $r);
     }, 10, 3);
+
+
+    /**
+     * 将WordPress核心所依赖的静态文件访问链接替换为jsDelivr提供的CDN节点
+     */
+    if (get_option('super_admin') == 1) {
+        add_action('init', function () {
+            ob_start(function ($buffer) {
+                $buffer = str_replace(esc_url(home_url('/wp-includes/css/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/css/', $GLOBALS['wp_version']), $buffer);
+                return str_replace(esc_url(home_url('/wp-includes/js/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/js/', $GLOBALS['wp_version']), $buffer);
+            });
+        });
+    }
 }
 
 
