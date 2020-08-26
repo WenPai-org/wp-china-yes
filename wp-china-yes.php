@@ -9,7 +9,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-if (is_admin()) {
+if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 引入设置页
      */
@@ -67,26 +67,6 @@ if (is_admin()) {
 
 
     /**
-     * 替换api.wordpress.org和downloads.wordpress.org为WP-China.org维护的大陆加速节点
-     * URL替换代码来自于我爱水煮鱼(http://blog.wpjam.com/)开发的WPJAM Basic插件
-     */
-    add_filter('pre_http_request', function ($preempt, $r, $url) {
-        if ( ! stristr($url, 'api.wordpress.org') && ! stristr($url, 'downloads.wordpress.org')) {
-            return false;
-        }
-        if (get_option('wpapi') == 1) {
-            $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
-            $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
-        } else {
-            $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
-            $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
-        }
-
-        return wp_remote_request($url, $r);
-    }, 10, 3);
-
-
-    /**
      * 将WordPress核心所依赖的静态文件访问链接替换为jsDelivr提供的CDN节点
      */
     if (get_option('super_admin') == 1) {
@@ -100,30 +80,54 @@ if (is_admin()) {
 }
 
 
-/**
- * 替换G家头像为WP-China.org维护的大陆加速节点
- */
-if (get_option('super_gravatar') == 1) {
-    add_filter('get_avatar', function ($avatar) {
-        return str_replace([
-            'www.gravatar.com',
-            '0.gravatar.com',
-            '1.gravatar.com',
-            '2.gravatar.com',
-            'secure.gravatar.com',
-            'cn.gravatar.com'
-        ], 'gravatar.wp-china-yes.net', $avatar);
-    });
+if (is_admin()) {
+    /**
+     * 替换api.wordpress.org和downloads.wordpress.org为WP-China.org维护的大陆加速节点
+     * URL替换代码来自于我爱水煮鱼(http://blog.wpjam.com/)开发的WPJAM Basic插件
+     */
+    add_filter('pre_http_request', function ($preempt, $r, $url) {
+        if (!stristr($url, 'api.wordpress.org') && !stristr($url, 'downloads.wordpress.org')) {
+            return false;
+        }
+        if (get_option('wpapi') == 1) {
+            $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
+        } else {
+            $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
+            $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
+        }
+
+        return wp_remote_request($url, $r);
+    }, 10, 3);
 }
 
 
-/**
- * 替换谷歌字体为WP-China.org维护的大陆加速节点
- */
-if (get_option('super_googlefonts') == 1) {
-    add_action('init', function () {
-        ob_start(function ($buffer) {
-            return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
+if (!(defined('DOING_AJAX') && DOING_AJAX)) {
+    /**
+     * 替换G家头像为WP-China.org维护的大陆加速节点
+     */
+    if (get_option('super_gravatar') == 1) {
+        add_filter('get_avatar', function ($avatar) {
+            return str_replace([
+                'www.gravatar.com',
+                '0.gravatar.com',
+                '1.gravatar.com',
+                '2.gravatar.com',
+                'secure.gravatar.com',
+                'cn.gravatar.com'
+            ], 'gravatar.wp-china-yes.net', $avatar);
         });
-    });
+    }
+
+
+    /**
+     * 替换谷歌字体为WP-China.org维护的大陆加速节点
+     */
+    if (get_option('super_googlefonts') == 1) {
+        add_action('init', function () {
+            ob_start(function ($buffer) {
+                return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
+            });
+        });
+    }
 }
