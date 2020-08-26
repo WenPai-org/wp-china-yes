@@ -7,6 +7,11 @@ function wpcy_settings_init() {
     register_setting('wpcy', 'wpapi');
 
     /**
+     * super_admin用以标记用户是否启用管理后台加速功能
+     */
+    register_setting('wpcy', 'super_admin');
+
+    /**
      * super_gravatar用以标记用户是否启用G家头像加速功能
      */
     register_setting('wpcy', 'super_gravatar');
@@ -27,6 +32,14 @@ function wpcy_settings_init() {
         'wpcy_field_select_wpapi',
         '选择应用市场',
         'wpcy_field_wpapi_cb',
+        'wpcy',
+        'wpcy_section_main'
+    );
+
+    add_settings_field(
+        'wpcy_field_select_super_admin',
+        '管理后台加速',
+        'wpcy_field_super_admin_cb',
         'wpcy',
         'wpcy_section_main'
     );
@@ -59,11 +72,29 @@ function wpcy_field_wpapi_cb() {
   <label>
     <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>本土应用市场（技术试验）
   </label>
+  <label>
+    <input type="radio" value="3" name="wpapi" <?php checked($wpapi, '3'); ?>>不接管应用市场
+  </label>
   <p class="description">
     <b>官方应用市场加速镜像</b>：直接从官方反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
   </p>
   <p class="description">
     <b>本土应用市场</b>：与<a href="https://translate.wp-china.org/" target="_blank">本土翻译平台</a>深度整合，为大家提供基于AI翻译+人工辅助校准的全量作品汉化支持（注意，这仍属于试验阶段，存在可能的接口报错、速度缓慢等问题，<a href="https://wp-china.org/forums/forum/228" target="_blank">问题反馈</a>）
+  </p>
+    <?php
+}
+
+function wpcy_field_super_admin_cb() {
+    $super_admin = get_option('super_admin');
+    ?>
+  <label>
+    <input type="radio" value="1" name="super_admin" <?php checked($super_admin, '1'); ?>>启用
+  </label>
+  <label>
+    <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
+  </label>
+  <p class="description">
+    将WordPress核心所依赖的静态资源切换到jsDelivr上加载，此选项极大的加快管理后台访问速度
   </p>
     <?php
 }

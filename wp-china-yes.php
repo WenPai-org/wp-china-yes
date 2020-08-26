@@ -4,14 +4,12 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.0.0
- * Text Domain: wp-china-yes
- * Domain Path: /languages
+ * Version: 3.1.0-Beta1
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-if (is_admin()) {
+if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 引入设置页
      */
@@ -35,8 +33,9 @@ if (is_admin()) {
     /**
      * 初始化设置项
      */
-    if (empty(get_option('wpapi')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
+    if (empty(get_option('wpapi')) || empty(get_option('super_admin')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
         update_option("wpapi", '2');
+        update_option("super_admin", '1');
         update_option("super_gravatar", '1');
         update_option("super_googlefonts", '2');
     }
@@ -47,6 +46,7 @@ if (is_admin()) {
      */
     register_deactivation_hook(__FILE__, function () {
         delete_option("wpapi");
+        delete_option("super_admin");
         delete_option("super_gravatar");
         delete_option("super_googlefonts");
     });
@@ -67,11 +67,28 @@ if (is_admin()) {
 
 
     /**
+     * 将WordPress核心所依赖的静态文件访问链接替换为jsDelivr提供的CDN节点
+     */
+    if (get_option('super_admin') == 1) {
+        add_action('init', function () {
+            ob_start(function ($buffer) {
+                $buffer = str_replace(esc_url(home_url('/wp-admin/css/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-admin/css/', $GLOBALS['wp_version']), $buffer);
+                $buffer = str_replace(esc_url(home_url('/wp-admin/js/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-admin/js/', $GLOBALS['wp_version']), $buffer);
+                $buffer = str_replace(esc_url(home_url('/wp-includes/css/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/css/', $GLOBALS['wp_version']), $buffer);
+                return str_replace(esc_url(home_url('/wp-includes/js/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/js/', $GLOBALS['wp_version']), $buffer);
+            });
+        });
+    }
+}
+
+
+if (is_admin()) {
+    /**
      * 替换api.wordpress.org和downloads.wordpress.org为WP-China.org维护的大陆加速节点
      * URL替换代码来自于我爱水煮鱼(http://blog.wpjam.com/)开发的WPJAM Basic插件
      */
     add_filter('pre_http_request', function ($preempt, $r, $url) {
-        if ( ! stristr($url, 'api.wordpress.org') && ! stristr($url, 'downloads.wordpress.org')) {
+        if ((!stristr($url, 'api.wordpress.org') && !stristr($url, 'downloads.wordpress.org')) || get_option('wpapi') == 3) {
             return false;
         }
         if (get_option('wpapi') == 1) {
@@ -87,30 +104,32 @@ if (is_admin()) {
 }
 
 
-/**
- * 替换G家头像为WP-China.org维护的大陆加速节点
- */
-if (get_option('super_gravatar') == 1) {
-    add_filter('get_avatar', function ($avatar) {
-        return str_replace([
-            'www.gravatar.com',
-            '0.gravatar.com',
-            '1.gravatar.com',
-            '2.gravatar.com',
-            'secure.gravatar.com',
-            'cn.gravatar.com'
-        ], 'gravatar.wp-china-yes.net', $avatar);
-    });
-}
-
-
-/**
- * 替换谷歌字体为WP-China.org维护的大陆加速节点
- */
-if (get_option('super_googlefonts') == 1) {
-    add_action('init', function () {
-        ob_start(function ($buffer) {
-            return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
+if (!(defined('DOING_AJAX') && DOING_AJAX)) {
+    /**
+     * 替换G家头像为WP-China.org维护的大陆加速节点
+     */
+    if (get_option('super_gravatar') == 1) {
+        add_filter('get_avatar', function ($avatar) {
+            return str_replace([
+                'www.gravatar.com',
+                '0.gravatar.com',
+                '1.gravatar.com',
+                '2.gravatar.com',
+                'secure.gravatar.com',
+                'cn.gravatar.com'
+            ], 'gravatar.wp-china-yes.net', $avatar);
         });
-    });
+    }
+
+
+    /**
+     * 替换谷歌字体为WP-China.org维护的大陆加速节点
+     */
+    if (get_option('super_googlefonts') == 1) {
+        add_action('init', function () {
+            ob_start(function ($buffer) {
+                return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
+            });
+        });
+    }
 }
