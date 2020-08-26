@@ -72,6 +72,9 @@ function wpcy_field_wpapi_cb() {
   <label>
     <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>本土应用市场（技术试验）
   </label>
+  <label>
+    <input type="radio" value="3" name="wpapi" <?php checked($wpapi, '3'); ?>>不接管应用市场
+  </label>
   <p class="description">
     <b>官方应用市场加速镜像</b>：直接从官方反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
   </p>

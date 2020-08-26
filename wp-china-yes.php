@@ -86,7 +86,7 @@ if (is_admin()) {
      * URL替换代码来自于我爱水煮鱼(http://blog.wpjam.com/)开发的WPJAM Basic插件
      */
     add_filter('pre_http_request', function ($preempt, $r, $url) {
-        if (!stristr($url, 'api.wordpress.org') && !stristr($url, 'downloads.wordpress.org')) {
+        if ((!stristr($url, 'api.wordpress.org') && !stristr($url, 'downloads.wordpress.org')) || get_option('wpapi') == 3) {
             return false;
         }
         if (get_option('wpapi') == 1) {
