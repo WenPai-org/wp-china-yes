@@ -72,6 +72,8 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     if (get_option('super_admin') == 1) {
         add_action('init', function () {
             ob_start(function ($buffer) {
+                $buffer = str_replace(esc_url(home_url('/wp-admin/css/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-admin/css/', $GLOBALS['wp_version']), $buffer);
+                $buffer = str_replace(esc_url(home_url('/wp-admin/js/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-admin/js/', $GLOBALS['wp_version']), $buffer);
                 $buffer = str_replace(esc_url(home_url('/wp-includes/css/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/css/', $GLOBALS['wp_version']), $buffer);
                 return str_replace(esc_url(home_url('/wp-includes/js/')), sprintf('https://cdn.jsdelivr.net/gh/WordPress/WordPress@%s/wp-includes/js/', $GLOBALS['wp_version']), $buffer);
             });
