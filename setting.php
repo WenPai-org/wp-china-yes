@@ -94,7 +94,7 @@ function wpcy_field_super_admin_cb() {
     <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
   </label>
   <p class="description">
-    将WordPress核心所依赖的静态资源切换到jsDelivr上加载，此选项极大的加快管理后台访问速度
+    将WordPress核心所依赖的静态文件切换为公共资源，此选项极大的加快管理后台访问速度
   </p>
     <?php
 }
