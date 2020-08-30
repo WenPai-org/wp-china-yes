@@ -19,15 +19,12 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 插件列表项目中增加设置项
      */
-    add_filter('plugin_action_links', function ($links, $file) {
-        if ($file != plugin_basename(__FILE__)) {
-            return $links;
-        }
-        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
-        array_unshift($links, $settings_link);
-
-        return $links;
-    }, 10, 2);
+    add_filter(sprintf('%splugin_action_links_%s', is_multisite() ? 'network_admin_' : '', plugin_basename(__FILE__)), function ($links) {
+        return array_merge(
+            [sprintf('<a href="%s">%s</a>', network_admin_url(is_multisite() ? 'settings.php?page=wp-china-yes' : 'options-general.php?page=wp-china-yes'), '设置')],
+            $links
+        );
+    });
 
 
     /**
@@ -55,12 +52,13 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 菜单注册
      */
-    add_action('admin_menu', function () {
-        add_options_page(
+    add_action(is_multisite() ? 'network_admin_menu' : 'admin_menu', function () {
+        add_submenu_page(
+            is_multisite() ? 'settings.php' : 'options-general.php',
             'WP-China-Yes',
             'WP-China-Yes',
-            'manage_options',
-            'wp_china_yes',
+            is_multisite() ? 'manage_network_options' : 'manage_options',
+            'wp-china-yes',
             'wpcy_options_page_html'
         );
     });
