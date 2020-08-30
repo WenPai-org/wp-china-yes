@@ -65,12 +65,12 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
 
 
     /**
-     * 将WordPress核心所依赖的静态文件访问链接替换为jsDelivr提供的CDN节点
+     * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
      */
     if (get_option('super_admin') == 1) {
         add_action('init', function () {
             ob_start(function ($buffer) {
-                return preg_replace('~'.home_url('/').'(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
+                return preg_replace('~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
             });
         });
     }
