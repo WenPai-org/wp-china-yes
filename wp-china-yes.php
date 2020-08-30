@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.1.1
+ * Version: 3.1.2
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -19,25 +19,22 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 插件列表项目中增加设置项
      */
-    add_filter('plugin_action_links', function ($links, $file) {
-        if ($file != plugin_basename(__FILE__)) {
-            return $links;
-        }
-        $settings_link = '<a href="' . menu_page_url('wp_china_yes', false) . '">设置</a>';
-        array_unshift($links, $settings_link);
-
-        return $links;
-    }, 10, 2);
+    add_filter(sprintf('%splugin_action_links_%s', is_multisite() ? 'network_admin_' : '', plugin_basename(__FILE__)), function ($links) {
+        return array_merge(
+            [sprintf('<a href="%s">%s</a>', network_admin_url(is_multisite() ? 'settings.php?page=wp-china-yes' : 'options-general.php?page=wp-china-yes'), '设置')],
+            $links
+        );
+    });
 
 
     /**
      * 初始化设置项
      */
     if (empty(get_option('wpapi')) || empty(get_option('super_admin')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
-        update_option("wpapi", '2');
-        update_option("super_admin", '1');
-        update_option("super_gravatar", '1');
-        update_option("super_googlefonts", '2');
+        update_option("wpapi", get_option('wpapi') ?: '2');
+        update_option("super_admin", get_option('super_admin') ?: '1');
+        update_option("super_gravatar", get_option('super_gravatar') ?: '1');
+        update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
     }
 
 
@@ -55,24 +52,25 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
     /**
      * 菜单注册
      */
-    add_action('admin_menu', function () {
-        add_options_page(
+    add_action(is_multisite() ? 'network_admin_menu' : 'admin_menu', function () {
+        add_submenu_page(
+            is_multisite() ? 'settings.php' : 'options-general.php',
             'WP-China-Yes',
             'WP-China-Yes',
-            'manage_options',
-            'wp_china_yes',
+            is_multisite() ? 'manage_network_options' : 'manage_options',
+            'wp-china-yes',
             'wpcy_options_page_html'
         );
     });
 
 
     /**
-     * 将WordPress核心所依赖的静态文件访问链接替换为jsDelivr提供的CDN节点
+     * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
      */
     if (get_option('super_admin') == 1) {
         add_action('init', function () {
             ob_start(function ($buffer) {
-                return preg_replace('~'.home_url('/').'(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
+                return preg_replace('~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
             });
         });
     }
