@@ -34,10 +34,10 @@ if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
      * 初始化设置项
      */
     if (empty(get_option('wpapi')) || empty(get_option('super_admin')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
-        update_option("wpapi", '2');
-        update_option("super_admin", '1');
-        update_option("super_gravatar", '1');
-        update_option("super_googlefonts", '2');
+        update_option("wpapi", get_option('wpapi') ?: '2');
+        update_option("super_admin", get_option('super_admin') ?: '1');
+        update_option("super_gravatar", get_option('super_gravatar') ?: '1');
+        update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
     }
 
 
