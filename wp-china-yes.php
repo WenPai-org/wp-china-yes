@@ -262,6 +262,15 @@ class WP_CHINA_YES {
     }
 
     public function options_page_html() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            update_option("wpapi", sanitize_text_field($_POST['wpapi']));
+            update_option("super_admin", sanitize_text_field($_POST['super_admin']));
+            update_option("super_gravatar", sanitize_text_field($_POST['super_gravatar']));
+            update_option("super_googlefonts", sanitize_text_field($_POST['super_googlefonts']));
+
+            echo '<div class="notice notice-success settings-error is-dismissible"><p><strong>设置已保存</strong></p></div>';
+        }
+
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -270,7 +279,7 @@ class WP_CHINA_YES {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <form action="options.php" method="post">
+            <form action="<?php echo $this->page_url; ?>" method="post">
                 <?php
                 settings_fields('wpcy');
                 do_settings_sections('wpcy');
