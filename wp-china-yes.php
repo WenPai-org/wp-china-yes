@@ -5,6 +5,7 @@
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
  * Version: 3.1.3
+ * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
