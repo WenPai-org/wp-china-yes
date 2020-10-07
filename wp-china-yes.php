@@ -236,11 +236,11 @@ class WP_CHINA_YES {
     }
 
     public function field_super_googlefonts_cb() {
-        $this->field_cb('super_googlefonts' , '请只在主题包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失');
+        $this->field_cb('super_googlefonts' , '请只在包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失');
     }
 
     public function field_super_googleajax_cb() {
-        $this->field_cb('super_googleajax' , '请只在主题包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失');
+        $this->field_cb('super_googleajax' , '请只在包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失');
     }
 
     public function options_page_html() {
