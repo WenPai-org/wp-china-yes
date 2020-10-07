@@ -71,11 +71,11 @@ class WP_CHINA_YES {
             /**
              * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
              */
-            if (get_option('super_admin') == 1) {
+            if (get_option('super_admin') != 2) {
                 $this->page_str_replace('preg_replace', [
                     '~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~',
                     sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
-                ]);
+                ], get_option('super_admin'));
             }
         }
 
@@ -192,15 +192,15 @@ class WP_CHINA_YES {
             /**
              * 替换谷歌字体为WP-China.org维护的大陆加速节点
              */
-            if (get_option('super_googlefonts') == 1) {
-                $this->page_str_replace('str_replace', ['fonts.googleapis.com', 'googlefonts.wp-china-yes.net']);
+            if (get_option('super_googlefonts') != 2) {
+                $this->page_str_replace('str_replace', ['fonts.googleapis.com', 'googlefonts.wp-china-yes.net'], get_option('super_googlefonts'));
             }
 
             /**
              * 替换谷歌前端公共库为WP-China.org维护的大陆加速节点
              */
-            if (get_option('super_googleajax') == 1) {
-                $this->page_str_replace('str_replace', ['ajax.googleapis.com', 'googleajax.wp-china-yes.net']);
+            if (get_option('super_googleajax') != 2) {
+                $this->page_str_replace('str_replace', ['ajax.googleapis.com', 'googleajax.wp-china-yes.net'], get_option('super_googleajax'));
             }
         }
     }
@@ -245,7 +245,13 @@ class WP_CHINA_YES {
         $super_gravatar = get_option('super_gravatar');
         ?>
         <label>
-            <input type="radio" value="1" name="super_gravatar" <?php checked($super_gravatar, '1'); ?>>启用
+            <input type="radio" value="3" name="super_gravatar" <?php checked($super_gravatar, '3'); ?>>前台启用
+        </label>
+        <label>
+            <input type="radio" value="4" name="super_gravatar" <?php checked($super_gravatar, '4'); ?>>后台启用
+        </label>
+        <label>
+            <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '1'); ?>>全局启用
         </label>
         <label>
             <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '2'); ?>>禁用
@@ -260,7 +266,13 @@ class WP_CHINA_YES {
         $super_googlefonts = get_option('super_googlefonts');
         ?>
         <label>
-            <input type="radio" value="1" name="super_googlefonts" <?php checked($super_googlefonts, '1'); ?>>启用
+            <input type="radio" value="3" name="super_googlefonts" <?php checked($super_googlefonts, '3'); ?>>前台启用
+        </label>
+        <label>
+            <input type="radio" value="4" name="super_googlefonts" <?php checked($super_googlefonts, '4'); ?>>后台启用
+        </label>
+        <label>
+            <input type="radio" value="1" name="super_googlefonts" <?php checked($super_googlefonts, '1'); ?>>全局启用
         </label>
         <label>
             <input type="radio" value="2" name="super_googlefonts" <?php checked($super_googlefonts, '2'); ?>>禁用
@@ -274,15 +286,21 @@ class WP_CHINA_YES {
     public function field_super_googleajax_cb() {
         $super_googleajax = get_option('super_googleajax');
         ?>
-      <label>
-        <input type="radio" value="1" name="super_googleajax" <?php checked($super_googleajax, '1'); ?>>启用
-      </label>
-      <label>
-        <input type="radio" value="2" name="super_googleajax" <?php checked($super_googleajax, '2'); ?>>禁用
-      </label>
-      <p class="description">
+        <label>
+            <input type="radio" value="3" name="super_googleajax" <?php checked($super_googleajax, '3'); ?>>前台启用
+        </label>
+        <label>
+            <input type="radio" value="4" name="super_googleajax" <?php checked($super_googleajax, '4'); ?>>后台启用
+        </label>
+        <label>
+            <input type="radio" value="1" name="super_googleajax" <?php checked($super_googleajax, '1'); ?>>全局启用
+        </label>
+        <label>
+            <input type="radio" value="2" name="super_googleajax" <?php checked($super_googleajax, '2'); ?>>禁用
+        </label>
+        <p class="description">
         请只在主题包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失
-      </p>
+        </p>
         <?php
     }
 
@@ -320,7 +338,18 @@ class WP_CHINA_YES {
         <?php
     }
 
-    private function page_str_replace($replace_func, $param) {
+    /**
+     * @param $replace_func string 要调用的字符串关键字替换函数
+     * @param $param array 传递给字符串替换函数的参数
+     * @param $level int 替换级别：1.全局替换 3.前台替换 4.后台替换
+     */
+    private function page_str_replace($replace_func, $param, $level) {
+        if ($level == 3 && is_admin()) {
+            return;
+        } elseif ($level == 4 && !is_admin()) {
+            return;
+        }
+
         add_action('init', function () use ($replace_func, $param) {
             ob_start(function ($buffer) use ($replace_func, $param) {
                 $param[] = $buffer;
