@@ -45,9 +45,9 @@ WP中国本土化社区（[WP-China.org][0]）出品，旨在将你的WordPress�
 ### 服务器及管理软件
 
 <img src="https://a0.wp-china-yes.net/wp-content/uploads/2020/08/logo.png" width="127" height="79" alt="" class="wp-image-763 alignnone size-full">
-<br/>
+
 <img src="https://a0.wp-china-yes.net/wp-content/uploads/2020/08/又拍云_logo5-300x153.png" width="137" height="70" alt="" class="wp-image-764 alignnone size-medium" srcset="https://a0.wp-china-yes.net/wp-content/uploads/2020/08/又拍云_logo5-300x153.png 300w, https://a0.wp-china-yes.net/wp-content/uploads/2020/08/又拍云_logo5-480x244.png 480w, https://a0.wp-china-yes.net/wp-content/uploads/2020/08/又拍云_logo5.png 594w" sizes="(max-width: 137px) 100vw, 137px">
-<br/>
+
 <img src="https://a0.wp-china-yes.net/wp-content/uploads/2020/08/logo-s.gif" width="175" height="44" alt="" class="wp-image-762 alignnone size-full">
 
 
