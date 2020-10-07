@@ -120,7 +120,7 @@ class WP_CHINA_YES {
 
                 add_settings_field(
                     'wpcy_field_select_super_admin',
-                    '管理后台加速',
+                    '加速管理后台',
                     [$this, 'field_super_admin_cb'],
                     'wpcy',
                     'wpcy_section_main'
