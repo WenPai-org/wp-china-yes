@@ -39,6 +39,7 @@ class WP_CHINA_YES {
             update_option("super_admin", get_option('super_admin') ?: '1');
             update_option("super_gravatar", get_option('super_gravatar') ?: '1');
             update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
+            update_option("super_googleajax", get_option('super_googleajax') ?: '2');
 
 
             /**
@@ -140,6 +141,14 @@ class WP_CHINA_YES {
                     'wpcy',
                     'wpcy_section_main'
                 );
+
+                add_settings_field(
+                    'wpcy_field_select_super_googleajax',
+                    '加速谷歌前端公共库',
+                    [$this, 'field_super_googleajax_cb'],
+                    'wpcy',
+                    'wpcy_section_main'
+                );
             });
 
             /**
@@ -188,6 +197,17 @@ class WP_CHINA_YES {
                 add_action('init', function () {
                     ob_start(function ($buffer) {
                         return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
+                    });
+                });
+            }
+
+            /**
+             * 替换谷歌前端公共库为WP-China.org维护的大陆加速节点
+             */
+            if (get_option('super_googleajax') == 1) {
+                add_action('init', function () {
+                    ob_start(function ($buffer) {
+                        return str_replace('ajax.googleapis.com', 'googleajax.wp-china-yes.net', $buffer);
                     });
                 });
             }
@@ -260,12 +280,28 @@ class WP_CHINA_YES {
         <?php
     }
 
+    public function field_super_googleajax_cb() {
+        $super_googleajax = get_option('super_googleajax');
+        ?>
+      <label>
+        <input type="radio" value="1" name="super_googleajax" <?php checked($super_googleajax, '1'); ?>>启用
+      </label>
+      <label>
+        <input type="radio" value="2" name="super_googleajax" <?php checked($super_googleajax, '2'); ?>>禁用
+      </label>
+      <p class="description">
+        请只在主题包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失
+      </p>
+        <?php
+    }
+
     public function options_page_html() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             update_option("wpapi", sanitize_text_field($_POST['wpapi']));
             update_option("super_admin", sanitize_text_field($_POST['super_admin']));
             update_option("super_gravatar", sanitize_text_field($_POST['super_gravatar']));
             update_option("super_googlefonts", sanitize_text_field($_POST['super_googlefonts']));
+            update_option("super_googleajax", sanitize_text_field($_POST['super_googleajax']));
 
             echo '<div class="notice notice-success settings-error is-dismissible"><p><strong>设置已保存</strong></p></div>';
         }
