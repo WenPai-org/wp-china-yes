@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.1.3
+ * Version: 3.2.0
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -35,12 +35,11 @@ class WP_CHINA_YES {
             /**
              * 初始化设置项
              */
-            if (empty(get_option('wpapi')) || empty(get_option('super_admin')) || empty(get_option('super_gravatar')) || empty(get_option('super_googlefonts'))) {
-                update_option("wpapi", get_option('wpapi') ?: '2');
-                update_option("super_admin", get_option('super_admin') ?: '1');
-                update_option("super_gravatar", get_option('super_gravatar') ?: '1');
-                update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
-            }
+            update_option("wpapi", get_option('wpapi') ?: '2');
+            update_option("super_admin", get_option('super_admin') ?: '1');
+            update_option("super_gravatar", get_option('super_gravatar') ?: '1');
+            update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
+            update_option("super_googleajax", get_option('super_googleajax') ?: '2');
 
 
             /**
@@ -51,6 +50,7 @@ class WP_CHINA_YES {
                 delete_option("super_admin");
                 delete_option("super_gravatar");
                 delete_option("super_googlefonts");
+                delete_option("super_googleajax");
             });
 
 
@@ -72,12 +72,11 @@ class WP_CHINA_YES {
             /**
              * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
              */
-            if (get_option('super_admin') == 1) {
-                add_action('init', function () {
-                    ob_start(function ($buffer) {
-                        return preg_replace('~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
-                    });
-                });
+            if (get_option('super_admin') != 2) {
+                $this->page_str_replace('preg_replace', [
+                    '~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~',
+                    sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
+                ], get_option('super_admin'));
             }
         }
 
@@ -121,7 +120,7 @@ class WP_CHINA_YES {
 
                 add_settings_field(
                     'wpcy_field_select_super_admin',
-                    '管理后台加速',
+                    '加速管理后台',
                     [$this, 'field_super_admin_cb'],
                     'wpcy',
                     'wpcy_section_main'
@@ -139,6 +138,14 @@ class WP_CHINA_YES {
                     'wpcy_field_select_super_googlefonts',
                     '加速谷歌字体',
                     [$this, 'field_super_googlefonts_cb'],
+                    'wpcy',
+                    'wpcy_section_main'
+                );
+
+                add_settings_field(
+                    'wpcy_field_select_super_googleajax',
+                    '加速谷歌前端公共库',
+                    [$this, 'field_super_googleajax_cb'],
                     'wpcy',
                     'wpcy_section_main'
                 );
@@ -186,12 +193,15 @@ class WP_CHINA_YES {
             /**
              * 替换谷歌字体为WP-China.org维护的大陆加速节点
              */
-            if (get_option('super_googlefonts') == 1) {
-                add_action('init', function () {
-                    ob_start(function ($buffer) {
-                        return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
-                    });
-                });
+            if (get_option('super_googlefonts') != 2) {
+                $this->page_str_replace('str_replace', ['fonts.googleapis.com', 'googlefonts.wp-china-yes.net'], get_option('super_googlefonts'));
+            }
+
+            /**
+             * 替换谷歌前端公共库为WP-China.org维护的大陆加速节点
+             */
+            if (get_option('super_googleajax') != 2) {
+                $this->page_str_replace('str_replace', ['ajax.googleapis.com', 'googleajax.wp-china-yes.net'], get_option('super_googleajax'));
             }
         }
     }
@@ -218,48 +228,19 @@ class WP_CHINA_YES {
     }
 
     public function field_super_admin_cb() {
-        $super_admin = get_option('super_admin');
-        ?>
-        <label>
-            <input type="radio" value="1" name="super_admin" <?php checked($super_admin, '1'); ?>>启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            将WordPress核心所依赖的静态文件切换为公共资源，此选项极大的加快管理后台访问速度
-        </p>
-        <?php
+        $this->field_cb('super_admin' , '将WordPress核心所依赖的静态文件切换为公共资源，此选项极大的加快管理后台访问速度', true);
     }
 
     public function field_super_gravatar_cb() {
-        $super_gravatar = get_option('super_gravatar');
-        ?>
-        <label>
-            <input type="radio" value="1" name="super_gravatar" <?php checked($super_gravatar, '1'); ?>>启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            为Gravatar头像加速，推荐所有用户启用该选项
-        </p>
-        <?php
+        $this->field_cb('super_gravatar' , '为Gravatar头像加速，推荐所有用户启用该选项');
     }
 
     public function field_super_googlefonts_cb() {
-        $super_googlefonts = get_option('super_googlefonts');
-        ?>
-        <label>
-            <input type="radio" value="1" name="super_googlefonts" <?php checked($super_googlefonts, '1'); ?>>启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_googlefonts" <?php checked($super_googlefonts, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            请只在主题包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失
-        </p>
-        <?php
+        $this->field_cb('super_googlefonts' , '请只在包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失');
+    }
+
+    public function field_super_googleajax_cb() {
+        $this->field_cb('super_googleajax' , '请只在包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失');
     }
 
     public function options_page_html() {
@@ -268,6 +249,7 @@ class WP_CHINA_YES {
             update_option("super_admin", sanitize_text_field($_POST['super_admin']));
             update_option("super_gravatar", sanitize_text_field($_POST['super_gravatar']));
             update_option("super_googlefonts", sanitize_text_field($_POST['super_googlefonts']));
+            update_option("super_googleajax", sanitize_text_field($_POST['super_googleajax']));
 
             echo '<div class="notice notice-success settings-error is-dismissible"><p><strong>设置已保存</strong></p></div>';
         }
@@ -293,5 +275,49 @@ class WP_CHINA_YES {
             特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。
         </p>
         <?php
+    }
+
+    private function field_cb($option_name, $description, $is_global = false) {
+        $option_value = get_option($option_name);
+
+        if (!$is_global):
+        ?>
+        <label>
+            <input type="radio" value="3" name="<?php echo $option_name; ?>" <?php checked($option_value, '3'); ?>>前台启用
+        </label>
+        <label>
+            <input type="radio" value="4" name="<?php echo $option_name; ?>" <?php checked($option_value, '4'); ?>>后台启用
+        </label>
+        <?php endif; ?>
+        <label>
+            <input type="radio" value="1" name="<?php echo $option_name; ?>" <?php checked($option_value, '1'); ?>><?php echo $is_global ? '启用' : '全局启用' ?>
+        </label>
+        <label>
+            <input type="radio" value="2" name="<?php echo $option_name; ?>" <?php checked($option_value, '2'); ?>>禁用
+        </label>
+        <p class="description">
+            <?php echo $description; ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * @param $replace_func string 要调用的字符串关键字替换函数
+     * @param $param array 传递给字符串替换函数的参数
+     * @param $level int 替换级别：1.全局替换 3.前台替换 4.后台替换
+     */
+    private function page_str_replace($replace_func, $param, $level) {
+        if ($level == 3 && is_admin()) {
+            return;
+        } elseif ($level == 4 && !is_admin()) {
+            return;
+        }
+
+        add_action('init', function () use ($replace_func, $param) {
+            ob_start(function ($buffer) use ($replace_func, $param) {
+                $param[] = $buffer;
+                return call_user_func_array($replace_func, $param);
+            });
+        });
     }
 }
