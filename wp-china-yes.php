@@ -228,81 +228,19 @@ class WP_CHINA_YES {
     }
 
     public function field_super_admin_cb() {
-        $super_admin = get_option('super_admin');
-        ?>
-        <label>
-            <input type="radio" value="1" name="super_admin" <?php checked($super_admin, '1'); ?>>启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_admin" <?php checked($super_admin, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            将WordPress核心所依赖的静态文件切换为公共资源，此选项极大的加快管理后台访问速度
-        </p>
-        <?php
+        $this->field_cb('super_admin' , '将WordPress核心所依赖的静态文件切换为公共资源，此选项极大的加快管理后台访问速度', true);
     }
 
     public function field_super_gravatar_cb() {
-        $super_gravatar = get_option('super_gravatar');
-        ?>
-        <label>
-            <input type="radio" value="3" name="super_gravatar" <?php checked($super_gravatar, '3'); ?>>前台启用
-        </label>
-        <label>
-            <input type="radio" value="4" name="super_gravatar" <?php checked($super_gravatar, '4'); ?>>后台启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '1'); ?>>全局启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_gravatar" <?php checked($super_gravatar, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            为Gravatar头像加速，推荐所有用户启用该选项
-        </p>
-        <?php
+        $this->field_cb('super_gravatar' , '为Gravatar头像加速，推荐所有用户启用该选项');
     }
 
     public function field_super_googlefonts_cb() {
-        $super_googlefonts = get_option('super_googlefonts');
-        ?>
-        <label>
-            <input type="radio" value="3" name="super_googlefonts" <?php checked($super_googlefonts, '3'); ?>>前台启用
-        </label>
-        <label>
-            <input type="radio" value="4" name="super_googlefonts" <?php checked($super_googlefonts, '4'); ?>>后台启用
-        </label>
-        <label>
-            <input type="radio" value="1" name="super_googlefonts" <?php checked($super_googlefonts, '1'); ?>>全局启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_googlefonts" <?php checked($super_googlefonts, '2'); ?>>禁用
-        </label>
-        <p class="description">
-            请只在主题包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失
-        </p>
-        <?php
+        $this->field_cb('super_googlefonts' , '请只在主题包含谷歌字体的情况下才启用该选项，以免造成不必要的性能损失');
     }
 
     public function field_super_googleajax_cb() {
-        $super_googleajax = get_option('super_googleajax');
-        ?>
-        <label>
-            <input type="radio" value="3" name="super_googleajax" <?php checked($super_googleajax, '3'); ?>>前台启用
-        </label>
-        <label>
-            <input type="radio" value="4" name="super_googleajax" <?php checked($super_googleajax, '4'); ?>>后台启用
-        </label>
-        <label>
-            <input type="radio" value="1" name="super_googleajax" <?php checked($super_googleajax, '1'); ?>>全局启用
-        </label>
-        <label>
-            <input type="radio" value="2" name="super_googleajax" <?php checked($super_googleajax, '2'); ?>>禁用
-        </label>
-        <p class="description">
-        请只在主题包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失
-        </p>
-        <?php
+        $this->field_cb('super_googleajax' , '请只在主题包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失');
     }
 
     public function options_page_html() {
@@ -339,8 +277,28 @@ class WP_CHINA_YES {
         <?php
     }
 
-    private function field_cb() {
+    private function field_cb($option_name, $description, $is_global = false) {
+        $option_value = get_option($option_name);
 
+        if (!$is_global):
+        ?>
+        <label>
+            <input type="radio" value="3" name="<?php echo $option_name; ?>" <?php checked($option_value, '3'); ?>>前台启用
+        </label>
+        <label>
+            <input type="radio" value="4" name="<?php echo $option_name; ?>" <?php checked($option_value, '4'); ?>>后台启用
+        </label>
+        <?php endif; ?>
+        <label>
+            <input type="radio" value="1" name="<?php echo $option_name; ?>" <?php checked($option_value, '1'); ?>><?php echo $is_global ? '启用' : '全局启用' ?>
+        </label>
+        <label>
+            <input type="radio" value="2" name="<?php echo $option_name; ?>" <?php checked($option_value, '2'); ?>>禁用
+        </label>
+        <p class="description">
+            <?php echo $description; ?>
+        </p>
+        <?php
     }
 
     /**
