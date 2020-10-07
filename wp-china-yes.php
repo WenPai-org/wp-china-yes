@@ -72,11 +72,10 @@ class WP_CHINA_YES {
              * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
              */
             if (get_option('super_admin') == 1) {
-                add_action('init', function () {
-                    ob_start(function ($buffer) {
-                        return preg_replace('~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~', sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version']), $buffer);
-                    });
-                });
+                $this->page_str_replace('preg_replace', [
+                    '~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~',
+                    sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
+                ]);
             }
         }
 
@@ -194,22 +193,14 @@ class WP_CHINA_YES {
              * 替换谷歌字体为WP-China.org维护的大陆加速节点
              */
             if (get_option('super_googlefonts') == 1) {
-                add_action('init', function () {
-                    ob_start(function ($buffer) {
-                        return str_replace('fonts.googleapis.com', 'googlefonts.wp-china-yes.net', $buffer);
-                    });
-                });
+                $this->page_str_replace('str_replace', ['fonts.googleapis.com', 'googlefonts.wp-china-yes.net']);
             }
 
             /**
              * 替换谷歌前端公共库为WP-China.org维护的大陆加速节点
              */
             if (get_option('super_googleajax') == 1) {
-                add_action('init', function () {
-                    ob_start(function ($buffer) {
-                        return str_replace('ajax.googleapis.com', 'googleajax.wp-china-yes.net', $buffer);
-                    });
-                });
+                $this->page_str_replace('str_replace', ['ajax.googleapis.com', 'googleajax.wp-china-yes.net']);
             }
         }
     }
@@ -327,5 +318,14 @@ class WP_CHINA_YES {
             特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。
         </p>
         <?php
+    }
+
+    private function page_str_replace($replace_func, $param) {
+        add_action('init', function () use ($replace_func, $param) {
+            ob_start(function ($buffer) use ($replace_func, $param) {
+                $param[] = $buffer;
+                return call_user_func_array($replace_func, $param);
+            });
+        });
     }
 }
