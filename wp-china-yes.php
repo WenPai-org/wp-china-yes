@@ -50,6 +50,7 @@ class WP_CHINA_YES {
                 delete_option("super_admin");
                 delete_option("super_gravatar");
                 delete_option("super_googlefonts");
+                delete_option("super_googleajax");
             });
 
 
@@ -336,6 +337,10 @@ class WP_CHINA_YES {
             特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。
         </p>
         <?php
+    }
+
+    private function field_cb() {
+
     }
 
     /**
