@@ -36,7 +36,7 @@ class WP_CHINA_YES {
              * 插件列表页中所有插件增加“翻译校准”链接
              */
             if (get_option('wpapi') == 1) {
-                add_filter('plugin_action_links', function ($links, $plugin = '') {
+                add_filter(sprintf('%splugin_action_links', is_multisite() ? 'network_admin_' : ''), function ($links, $plugin = '') {
                     $links[] = '<a target="_blank" href="https://translate.wp-china.org/projects/plugins/' . substr($plugin, 0, strpos($plugin, '/')) . '/zh-cn/default">翻译校准</a>';
 
                     return $links;
