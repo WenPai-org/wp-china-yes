@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.2.0
+ * Version: 3.3.0
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -30,6 +30,18 @@ class WP_CHINA_YES {
                     $links
                 );
             });
+
+
+            /**
+             * 插件列表页中所有插件增加“翻译校准”链接
+             */
+            if (get_option('wpapi') == 1) {
+                add_filter(sprintf('%splugin_action_links', is_multisite() ? 'network_admin_' : ''), function ($links, $plugin = '') {
+                    $links[] = '<a target="_blank" href="https://translate.wp-china.org/projects/plugins/' . substr($plugin, 0, strpos($plugin, '/')) . '/zh-cn/default">翻译校准</a>';
+
+                    return $links;
+                }, 10, 2);
+            }
 
 
             /**
