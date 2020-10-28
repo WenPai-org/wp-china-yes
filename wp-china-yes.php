@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.3.0
+ * Version: 3.3.1
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -48,7 +48,7 @@ class WP_CHINA_YES {
              * 初始化设置项
              */
             update_option("wpapi", get_option('wpapi') ?: '2');
-            update_option("super_admin", get_option('super_admin') ?: '1');
+            update_option("super_admin", get_option('super_admin') ?: '2');
             update_option("super_gravatar", get_option('super_gravatar') ?: '1');
             update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
             update_option("super_googleajax", get_option('super_googleajax') ?: '2');
@@ -84,7 +84,7 @@ class WP_CHINA_YES {
             /**
              * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
              */
-            if (get_option('super_admin') != 2) {
+            if (get_option('super_admin') != 2 && !stristr($GLOBALS['wp_version'], 'alpha') && !stristr($GLOBALS['wp_version'], 'beta')) {
                 $this->page_str_replace('preg_replace', [
                     '~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~',
                     sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
