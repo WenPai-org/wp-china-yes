@@ -48,7 +48,7 @@ class WP_CHINA_YES {
              * 初始化设置项
              */
             update_option("wpapi", get_option('wpapi') ?: '2');
-            update_option("super_admin", get_option('super_admin') ?: '1');
+            update_option("super_admin", get_option('super_admin') ?: '2');
             update_option("super_gravatar", get_option('super_gravatar') ?: '1');
             update_option("super_googlefonts", get_option('super_googlefonts') ?: '2');
             update_option("super_googleajax", get_option('super_googleajax') ?: '2');
