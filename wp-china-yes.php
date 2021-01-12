@@ -180,6 +180,19 @@ if (!class_exists('WP_CHINA_YES')) {
                         $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
                     }
 
+                    $curl_version = '1.0.0';
+                    if (function_exists('curl_version')) {
+                        $curl_version_array = curl_version();
+                        if (is_array($curl_version_array) && key_exists('version', $curl_version_array)) {
+                            $curl_version = $curl_version_array['version'];
+                        }
+                    }
+
+                    // 如果CURL版本小于7.15.0，说明不支持SNI，无法通过HTTPS访问又拍云的节点，故而改用HTTP
+                    if (version_compare($curl_version, '7.15.0', '<')) {
+                        $url = str_replace('https://', 'http://', $url);
+                    }
+
                     return wp_remote_request($url, $r);
                 }, 10, 3);
             }
