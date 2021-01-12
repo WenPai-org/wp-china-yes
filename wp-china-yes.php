@@ -10,7 +10,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-(new WP_CHINA_YES)->init();
+defined( 'ABSPATH' ) || exit;
 
 class WP_CHINA_YES {
     private $page_url;
