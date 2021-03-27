@@ -298,7 +298,8 @@ if (!class_exists('WP_CHINA_YES')) {
             </div>
             <p>
                 <a href="https://wp-china.org" target="_blank">WP中国本土化社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
-                特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。
+                特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵团队</a>、<a href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。<br/>
+                项目所需服务器资源由<a href="https://www.vpsor.cn/" target="_blank">硅云</a>和<a href="https://www.upyun.com/" target="_blank">又拍云</a>提供。
             </p>
             <?php
         }
