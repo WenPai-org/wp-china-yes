@@ -200,23 +200,6 @@ if (!class_exists('WP_CHINA_YES')) {
 
             if ( ! (defined('DOING_AJAX') && DOING_AJAX)) {
                 /**
-                 * 替换G家头像为WP-China.org维护的大陆加速节点
-                 */
-                if (get_option('super_gravatar') == 1) {
-                    add_filter('get_avatar', function ($avatar) {
-                        return str_replace([
-                            'www.gravatar.com',
-                            '0.gravatar.com',
-                            '1.gravatar.com',
-                            '2.gravatar.com',
-                            'secure.gravatar.com',
-                            'cn.gravatar.com'
-                        ], 'gravatar.wp-china-yes.net', $avatar);
-                    });
-                }
-
-
-                /**
                  * 替换谷歌字体为WP-China.org维护的大陆加速节点
                  */
                 if (get_option('super_googlefonts') != 2) {
@@ -229,6 +212,22 @@ if (!class_exists('WP_CHINA_YES')) {
                 if (get_option('super_googleajax') != 2) {
                     $this->page_str_replace('str_replace', ['ajax.googleapis.com', 'googleajax.wp-china-yes.net'], get_option('super_googleajax'));
                 }
+            }
+
+            /**
+             * 替换G家头像为WP-China.org维护的大陆加速节点
+             */
+            if (get_option('super_gravatar') == 1) {
+                add_filter('get_avatar', function ($avatar) {
+                    return str_replace([
+                        'www.gravatar.com',
+                        '0.gravatar.com',
+                        '1.gravatar.com',
+                        '2.gravatar.com',
+                        'secure.gravatar.com',
+                        'cn.gravatar.com'
+                    ], 'gravatar.wp-china-yes.net', $avatar);
+                });
             }
         }
 
