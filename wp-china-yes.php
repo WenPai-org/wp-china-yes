@@ -227,7 +227,7 @@ if (!class_exists('WP_CHINA_YES')) {
                         'secure.gravatar.com',
                         'cn.gravatar.com'
                     ], 'gravatar.wp-china-yes.net', $avatar);
-                });
+                }, 1);
             }
         }
 
