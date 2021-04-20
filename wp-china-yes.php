@@ -194,7 +194,7 @@ if (!class_exists('WP_CHINA_YES')) {
                     }
 
                     return wp_remote_request($url, $r);
-                }, 10, 3);
+                }, 1, 3);
             }
 
 
