@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.3.4
+ * Version: 3.3.5
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -218,16 +218,13 @@ if (!class_exists('WP_CHINA_YES')) {
              * 替换G家头像为WP-China.org维护的大陆加速节点
              */
             if (get_option('super_gravatar') == 1) {
-                add_filter('get_avatar', function ($avatar) {
-                    return str_replace([
-                        'www.gravatar.com',
-                        '0.gravatar.com',
-                        '1.gravatar.com',
-                        '2.gravatar.com',
-                        'secure.gravatar.com',
-                        'cn.gravatar.com'
-                    ], 'gravatar.wp-china-yes.net', $avatar);
-                }, 1);
+                add_filter( 'get_avatar_data', function ( $args ) {
+                    if ( ! empty( $args ) && is_array( $args ) && isset( $args['url'] ) ) {
+                        $args['url'] = preg_replace( '/[^\.\/]+\.[^\.\/]+$/', 'gravatar.wp-china-yes.net', $args['url'] );
+                    }
+
+                    return $args;
+                }, 9999 );
             }
         }
 
