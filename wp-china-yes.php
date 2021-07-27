@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.3.5
+ * Version: 3.4.0
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -141,7 +141,7 @@ if (!class_exists('WP_CHINA_YES')) {
 
                     add_settings_field(
                         'wpcy_field_select_super_gravatar',
-                        '加速G家头像',
+                        '使用 Cravatar 头像',
                         [$this, 'field_super_gravatar_cb'],
                         'wpcy',
                         'wpcy_section_main'
@@ -218,13 +218,30 @@ if (!class_exists('WP_CHINA_YES')) {
              * 替换G家头像为WP-China.org维护的大陆加速节点
              */
             if (get_option('super_gravatar') == 1) {
-                add_filter( 'get_avatar_data', function ( $args ) {
-                    if ( ! empty( $args ) && is_array( $args ) && isset( $args['url'] ) ) {
-                        $args['url'] = preg_replace( '/[^\.\/]+\.[^\.\/]+$/', 'gravatar.wp-china-yes.net', $args['url'] );
+                if (!function_exists('get_cravatar_url')) {
+                    /**
+                     * 替换Gravatar头像为Cravatar头像
+                     *
+                     * Cravatar是Gravatar在中国的完美替代方案，你可以在https://cravatar.cn更新你的头像
+                     */
+                    function get_cravatar_url($url)
+                    {
+                        $sources = array(
+                            'www.gravatar.com',
+                            '0.gravatar.com',
+                            '1.gravatar.com',
+                            '2.gravatar.com',
+                            'secure.gravatar.com',
+                            'cn.gravatar.com'
+                        );
+
+                        return str_replace($sources, 'cravatar.cn', $url);
                     }
 
-                    return $args;
-                }, 9999 );
+                    add_filter('um_user_avatar_url_filter', 'get_cravatar_url', 1);
+                    add_filter('bp_gravatar_url', 'get_cravatar_url', 1);
+                    add_filter('get_avatar_url', 'get_cravatar_url', 1);
+                }
             }
         }
 
@@ -254,7 +271,7 @@ if (!class_exists('WP_CHINA_YES')) {
         }
 
         public function field_super_gravatar_cb() {
-            $this->field_cb('super_gravatar' , '为Gravatar头像加速，推荐所有用户启用该选项');
+            $this->field_cb('super_gravatar' , 'Cravatar 是 Gravatar 在中国的完美替代方案，你可以在 <a href="https://cravatar.cn" target="_blank">https://cravatar.cn</a> 更新你的头像。（任何开发者均可在自己的产品中集成该服务）');
         }
 
         public function field_super_googlefonts_cb() {
