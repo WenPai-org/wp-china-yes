@@ -85,7 +85,12 @@ if (!class_exists('WP_CHINA_YES')) {
                 /**
                  * 将WordPress核心所依赖的静态文件访问链接替换为公共资源节点
                  */
-                if (get_option('super_admin') != 2 && !stristr($GLOBALS['wp_version'], 'alpha') && !stristr($GLOBALS['wp_version'], 'beta')) {
+                if (
+                    get_option('super_admin') != 2 &&
+                    !stristr($GLOBALS['wp_version'], 'alpha') &&
+                    !stristr($GLOBALS['wp_version'], 'beta') &&
+                    !stristr($GLOBALS['wp_version'], 'RC')
+                ) {
                     $this->page_str_replace('preg_replace', [
                         '~' . home_url('/') . '(wp-admin|wp-includes)/(css|js)/~',
                         sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
