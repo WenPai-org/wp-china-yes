@@ -243,6 +243,24 @@ if (!class_exists('WP_CHINA_YES')) {
                         return str_replace($sources, 'cravatar.cn', $url);
                     }
 
+                    /**
+                     * 替换WordPress讨论设置中的默认LOGO名称
+                     */
+                    function set_defaults_for_cravatar($avatar_defaults) {
+                      $avatar_defaults['gravatar_default'] = 'Cravatar 标志';
+
+                      return $avatar_defaults;
+                    }
+
+                    /**
+                     * 替换个人资料卡中的头像上传地址
+                     */
+                    function set_user_profile_picture_for_cravatar() {
+                        return '<a href="https://cravatar.cn" target="_blank">您可以在 Cravatar 修改您的资料图片</a>';
+                    }
+
+                    add_filter('user_profile_picture_description', 'set_user_profile_picture_for_cravatar');
+                    add_filter('avatar_defaults', 'set_defaults_for_cravatar', 1);
                     add_filter('um_user_avatar_url_filter', 'get_cravatar_url', 1);
                     add_filter('bp_gravatar_url', 'get_cravatar_url', 1);
                     add_filter('get_avatar_url', 'get_cravatar_url', 1);
