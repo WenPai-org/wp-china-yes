@@ -178,8 +178,8 @@ if (!class_exists('WP_CHINA_YES')) {
                         return false;
                     }
                     if (get_option('wpapi') == 1) {
-                        $url = str_replace('api.wordpress.org', 'api.wp-china-yes.net', $url);
-                        $url = str_replace('downloads.wordpress.org', 'download.wp-china-yes.net', $url);
+                        $url = str_replace('api.wordpress.org', 'api.litepress.cn', $url);
+                        $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
                     } else {
                         $url = str_replace('api.wordpress.org', 'api.w.org.ibadboy.net', $url);
                         $url = str_replace('downloads.wordpress.org', 'd.w.org.ibadboy.net', $url);
@@ -275,16 +275,16 @@ if (!class_exists('WP_CHINA_YES')) {
                 <input type="radio" value="2" name="wpapi" <?php checked($wpapi, '2'); ?>>官方应用市场加速镜像
             </label>
             <label>
-                <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>本土应用市场（技术试验）
+                <input type="radio" value="1" name="wpapi" <?php checked($wpapi, '1'); ?>>LitePress 应用市场（技术试验）
             </label>
             <label>
                 <input type="radio" value="3" name="wpapi" <?php checked($wpapi, '3'); ?>>不接管应用市场
             </label>
             <p class="description">
-                <b>官方应用市场加速镜像</b>：直接从官方反代并在大陆分发，除了增加对WP-China-Yes插件的更新支持外未做任何更改
+                <b>官方应用市场加速镜像</b>：直接从官方反代并在大陆分发，除了增加对 WP-China-Yes 插件的更新支持外未做任何更改
             </p>
             <p class="description">
-                <b>本土应用市场</b>：与<a href="https://translate.wp-china.org/" target="_blank">本土翻译平台</a>深度整合，为大家提供基于AI翻译+人工辅助校准的全量作品汉化支持<b>（注意，这仍属于试验阶段，存在可能的接口报错、速度缓慢等问题，<a href="https://wp-china.org/forums/forum/228" target="_blank">问题反馈</a>）</b>
+                <b>LitePress 应用市场</b>：该接口处于开发阶段，目前提供了与 <a href="https://litepress.cn/translate" target="_blank">LitePress 翻译平台</a> 的整合<b>（注意，你可能在使用此接口时遇到未知 BUG，希望能帮忙 <a href="https://litepress.cn/" target="_blank">反馈</a>）</b>
             </p>
             <?php
         }
