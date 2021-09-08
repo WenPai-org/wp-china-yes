@@ -232,6 +232,7 @@ if (!class_exists('WP_CHINA_YES')) {
                     function get_cravatar_url($url)
                     {
                         $sources = array(
+                            'gravatar.com',
                             'www.gravatar.com',
                             '0.gravatar.com',
                             '1.gravatar.com',
