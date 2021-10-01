@@ -89,7 +89,8 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 					get_option( 'super_admin' ) != 2 &&
 					! stristr( $GLOBALS['wp_version'], 'alpha' ) &&
 					! stristr( $GLOBALS['wp_version'], 'beta' ) &&
-					! stristr( $GLOBALS['wp_version'], 'RC' )
+					! stristr( $GLOBALS['wp_version'], 'RC' ) &&
+					! isset( $GLOBALS['lp_version'] )
 				) {
 					$this->page_str_replace( 'preg_replace', [
 						'~' . home_url( '/' ) . '(wp-admin|wp-includes)/(css|js)/~',
@@ -184,11 +185,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 						$url = str_replace( 'api.wordpress.org', 'api.w.org.ibadboy.net', $url );
 						$url = str_replace( 'downloads.wordpress.org', 'd.w.org.ibadboy.net', $url );
 					}
-
-					//if ( stristr( $url, 'themes' ) ) {
-					// var_dump($r);
-					//exit;
-					//}
 
 					$curl_version = '1.0.0';
 					if ( function_exists( 'curl_version' ) ) {
