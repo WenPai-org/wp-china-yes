@@ -176,7 +176,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 				 */
 				add_filter( 'pre_http_request', function ( $preempt, $r, $url ) {
 					if ( ( ! stristr( $url, 'api.wordpress.org' ) && ! stristr( $url, 'downloads.wordpress.org' ) ) || get_option( 'wpapi' ) == 3 ) {
-						return false;
+						return $preempt;
 					}
 					if ( get_option( 'wpapi' ) == 1 ) {
 						$url = str_replace( 'api.wordpress.org', 'api.litepress.cn', $url );
@@ -403,10 +403,3 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 
 	( new WP_CHINA_YES )->init();
 }
-
-add_filter( 'the_content', function ( $content ) {
-	$pattern     = "/<img(.*?)src=('|\")(.*?).(bmp|gif|jpeg|jpg|png)('|\")(.*?)>/i";
-	$replacement = '<a href=$2$3.$4$5 rel="lightbox"><img$1href=$2$3.$4$5 rel="lightbox"$6></a>';
-
-	return preg_replace( $pattern, $replacement, $content );
-} );
