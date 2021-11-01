@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.5.2
+ * Version: 3.5.3
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -100,7 +100,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 			}
 
 
-			if ( is_admin() ) {
+			if ( is_admin() || wp_doing_cron() ) {
 				add_action( 'admin_init', function () {
 					/**
 					 * wpapi用以标记用户所选的仓库api，数值说明：1 使用由WP-China.org提供的国区定制API，2 只是经代理加速的api.wordpress.org原版API
