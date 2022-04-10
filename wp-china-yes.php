@@ -4,7 +4,7 @@
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
  * Author: WP中国本土化社区
  * Author URI:https://wp-china.org/
- * Version: 3.5.3
+ * Version: 3.5.4
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -94,7 +94,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 				) {
 					$this->page_str_replace( 'preg_replace', [
 						'~' . home_url( '/' ) . '(wp-admin|wp-includes)/(css|js)/~',
-						sprintf( 'https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'] )
+						sprintf( 'https://wpstatic.cdn.wepublish.cn/%s/$1/$2/', $GLOBALS['wp_version'] )
 					], get_option( 'super_admin' ) );
 				}
 			}
@@ -206,28 +206,28 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 
 			if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 				/**
-				 * 替换谷歌字体为WP-China.org维护的大陆加速节点
+				 * 替换谷歌字体为WePublish维护的加速节点
 				 */
 				if ( get_option( 'super_googlefonts' ) != 2 ) {
 					$this->page_str_replace( 'str_replace', [
 						'fonts.googleapis.com',
-						'googlefonts.wp-china-yes.net'
+						'gfont.cdn.wepublish.cn'
 					], get_option( 'super_googlefonts' ) );
 				}
 
 				/**
-				 * 替换谷歌前端公共库为WP-China.org维护的大陆加速节点
+				 * 替换谷歌前端公共库为WePublish维护的加速节点
 				 */
 				if ( get_option( 'super_googleajax' ) != 2 ) {
 					$this->page_str_replace( 'str_replace', [
 						'ajax.googleapis.com',
-						'googleajax.wp-china-yes.net'
+						'gajax.cdn.wepublish.cn'
 					], get_option( 'super_googleajax' ) );
 				}
 			}
 
 			/**
-			 * 替换G家头像为WP-China.org维护的大陆加速节点
+			 * 替换Gravatar头像为Cravatar头像
 			 */
 			if ( get_option( 'super_gravatar' ) == 1 ) {
 				if ( ! function_exists( 'get_cravatar_url' ) ) {
