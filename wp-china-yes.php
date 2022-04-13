@@ -115,7 +115,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 					register_setting( 'wpcy', 'super_admin' );
 
 					/**
-					 * super_gravatar用以标记用户是否启用G家头像加速功能
+					 * super_gravatar用以标记用户是否启用Cravatar头像功能
 					 */
 					register_setting( 'wpcy', 'super_gravatar' );
 
@@ -338,7 +338,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 			$this->field_cb( 'super_googleajax', '请只在包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失' );
 		}
 		
-		public function field_super_googleajax_cb() {
+		public function field_super_cdnjs_cb() {
 			$this->field_cb( 'super_cdnjs', '请只在包含CDNJS前端公共库的情况下才启用该选项，以免造成不必要的性能损失' );
 		}
 
