@@ -2,9 +2,9 @@
 /**
  * Plugin Name: WP-China-Yes
  * Description: 将你的WordPress接入本土生态体系中，这将为你提供一个更贴近中国人使用习惯的WordPress
- * Author: WP中国本土化社区
- * Author URI:https://wp-china.org/
- * Version: 3.5.4
+ * Author: LitePress社区
+ * Author URI:https://litepress.cn/
+ * Version: 3.5.5
  * Network: True
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -53,7 +53,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 				update_option( "super_gravatar", get_option( 'super_gravatar' ) ?: '1' );
 				update_option( "super_googlefonts", get_option( 'super_googlefonts' ) ?: '2' );
 				update_option( "super_googleajax", get_option( 'super_googleajax' ) ?: '2' );
-				update_option( "super_cdnjs", get_option( 'super_cdnjs' ) ?: '2' );
 
 
 				/**
@@ -65,7 +64,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 					delete_option( "super_gravatar" );
 					delete_option( "super_googlefonts" );
 					delete_option( "super_googleajax" );
-					delete_option( "super_cdnjs" );
 				} );
 
 
@@ -96,7 +94,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 				) {
 					$this->page_str_replace( 'preg_replace', [
 						'~' . home_url( '/' ) . '(wp-admin|wp-includes)/(css|js)/~',
-						sprintf( 'https://wpstatic.cdn.wepublish.cn/%s/$1/$2/', $GLOBALS['wp_version'] )
+                        sprintf('https://a2.wp-china-yes.net/WordPress@%s/$1/$2/', $GLOBALS['wp_version'])
 					], get_option( 'super_admin' ) );
 				}
 			}
@@ -123,11 +121,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 					 * super_googlefonts用以标记用户是否启用谷歌字体加速功能
 					 */
 					register_setting( 'wpcy', 'super_googlefonts' );
-					
-					/**
-					 * super_cdnjs用以标记用户是否启用CDNJS加速功能
-					 */
-					register_setting( 'wpcy', 'super_cdnjs' );
 
 					add_settings_section(
 						'wpcy_section_main',
@@ -175,14 +168,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 						'wpcy',
 						'wpcy_section_main'
 					);
-					
-					add_settings_field(
-						'wpcy_field_select_super_cdnjs',
-						'加速CDNJS前端公共库',
-						[ $this, 'field_super_cdnjs_cb' ],
-						'wpcy',
-						'wpcy_section_main'
-					);
+
 				} );
 
 				/**
@@ -221,34 +207,25 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 
 			if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 				/**
-				 * 替换谷歌字体为WePublish维护的加速节点
+				 * 替换谷歌字体为 LitePress 维护的加速节点
 				 */
 				if ( get_option( 'super_googlefonts' ) != 2 ) {
 					$this->page_str_replace( 'str_replace', [
 						'fonts.googleapis.com',
-						'gfont.cdn.wepublish.cn'
+						'googlefonts.wp-china-yes.net'
 					], get_option( 'super_googlefonts' ) );
 				}
 
 				/**
-				 * 替换谷歌前端公共库为WePublish维护的加速节点
+				 * 替换谷歌前端公共库为 LitePress 维护的加速节点
 				 */
 				if ( get_option( 'super_googleajax' ) != 2 ) {
 					$this->page_str_replace( 'str_replace', [
 						'ajax.googleapis.com',
-						'gajax.cdn.wepublish.cn'
+						'googleajax.wp-china-yes.net'
 					], get_option( 'super_googleajax' ) );
 				}
-				
-				/**
-				 * 替换CDNJS前端公共库为WePublish维护的加速节点
-				 */
-				if ( get_option( 'super_cdnjs' ) != 2 ) {
-					$this->page_str_replace( 'str_replace', [
-						'cdnjs.cloudflare.com/ajax/libs',
-						'cdnjs.cdn.wepublish.cn'
-					], get_option( 'super_cdnjs' ) );
-				}
+
 			}
 
 			/**
@@ -337,10 +314,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 		public function field_super_googleajax_cb() {
 			$this->field_cb( 'super_googleajax', '请只在包含谷歌前端公共库的情况下才启用该选项，以免造成不必要的性能损失' );
 		}
-		
-		public function field_super_cdnjs_cb() {
-			$this->field_cb( 'super_cdnjs', '请只在包含CDNJS前端公共库的情况下才启用该选项，以免造成不必要的性能损失' );
-		}
 
 		public function options_page_html() {
 			if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
@@ -349,7 +322,6 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
 				update_option( "super_gravatar", sanitize_text_field( $_POST['super_gravatar'] ) );
 				update_option( "super_googlefonts", sanitize_text_field( $_POST['super_googlefonts'] ) );
 				update_option( "super_googleajax", sanitize_text_field( $_POST['super_googleajax'] ) );
-				update_option( "super_cdnjs", sanitize_text_field( $_POST['super_cdnjs'] ) );
 
 				echo '<div class="notice notice-success settings-error is-dismissible"><p><strong>设置已保存</strong></p></div>';
 			}
@@ -371,7 +343,7 @@ if ( ! class_exists( 'WP_CHINA_YES' ) ) {
                 </form>
             </div>
             <p>
-                <a href="https://wp-china.org" target="_blank">WP中国本土化社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
+                <a href="https://litepress.cn" target="_blank">LitePress社区</a>的使命是帮助WordPress在中国建立起良好的本土生态环境，以求推进行业整体发展，做大市场蛋糕。<br/>
                 特别感谢<a href="https://zmingcx.com/" target="_blank">知更鸟</a>、<a href="https://www.weixiaoduo.com/"
                                                                               target="_blank">薇晓朵团队</a>、<a
                         href="https://www.appnode.com/" target="_blank">AppNode</a>在项目萌芽期给予的帮助。<br/>

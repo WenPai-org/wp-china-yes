@@ -1,7 +1,7 @@
 # WP-China-Yes
 
 ## 简介
-WP中国本土化社区（[WP-China.org][0]）出品，旨在将你的WordPress一键接入到本土生态体系中
+LitePress社区（[litepress.cn][0]）出品，旨在将你的WordPress一键接入到本土生态体系中
 
 ## 安装
 如果你期望参与测试，可以直接Clone Master分支中的代码，此处是功能模块基本完整的测试版本。
@@ -9,7 +9,7 @@ WP中国本土化社区（[WP-China.org][0]）出品，旨在将你的WordPress�
 若期望用于正式环境请移步[发布列表][1]，下载最新稳定版的压缩包后直接访问[http://你的域名/wp-admin/plugin-install.php][2]，然后点击页面左上角的“上传插件”，上传安装即可。
 
 ## 插件截图
-![图片无法加载](https://wp-china.org/wp-content/uploads/2020/10/QQ图片20201007131531.png)
+![图片无法加载](https://litepress.cn/wp-content/uploads/2020/10/QQ图片20201007131531.png)
 
 ## 主要特性
  - 对来自wordpress.org的所有外部服务进行加速
