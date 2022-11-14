@@ -14,7 +14,7 @@ LitePress社区（[litepress.cn][0]）出品，旨在将你的WordPress一键接
 ## 主要特性
  - 对来自wordpress.org的所有外部服务进行加速
  - 对来自谷歌公共库的一些服务进行加速
- - 对接[本土翻译平台][3]，为WordPress本身及官方应用市场中的所有应用推送基于AI翻译+人工辅助校准的全量汉化包
+ - 对接[LitePress翻译平台][3]，为WordPress本身及官方应用市场中的所有应用推送基于AI翻译+人工辅助校准的全量汉化包
  - 使WordPress内置应用市场支持中文作品信息展示及中文语义化搜索（开发中）
  - 使WordPress内置应用市场中支持选购国内开发者所推出的优秀作品并享受集成式的安装及更新推送服务（开发中）
 
@@ -24,7 +24,7 @@ LitePress社区（[litepress.cn][0]）出品，旨在将你的WordPress一键接
 你可以选择以下三种方式反馈问题：
 
  1. 提交一个[Issue][4]
- 2. 在本土化社区的[论坛][5]中提交一个帖子
+ 2. 在LitePress社区的[论坛][5]中提交一个帖子
  3. 加项目交流QQ群：1046115671
 
 无论选择何种方式提交问题，都希望你可以详细描述问题的表现及触发条件，这样对减少交流成本及快速定位问题有很大好处。
@@ -44,14 +44,14 @@ LitePress社区（[litepress.cn][0]）出品，旨在将你的WordPress一键接
 <img src="https://litepress.cn/wp-content/uploads/2020/08/又拍云_logo5-300x153.png" width="137" height="70" alt="" class="wp-image-764 alignnone size-medium" srcset="https://litepress.cn/wp-content/uploads/2020/08/又拍云_logo5-300x153.png 300w, https://litepress.cn/wp-content/uploads/2020/08/又拍云_logo5-300x153.png 480w, https://litepress.cn/wp-content/uploads/2020/08/又拍云_logo5-300x153.png 594w" sizes="(max-width: 137px) 100vw, 137px">
 
 
-[0]: https://wp-china.org
+[0]: https://litepress.cn
 
-[1]: https://github.com/wp-china/wp-china-yes/releases
+[1]: https://github.com/litepress/wp-china-yes/releases
 
 [2]: http://你的域名/wp-admin/plugin-install.php
 
-[3]: https://translate.wp-china.org
+[3]: https://litepress.cn/translate/
 
-[4]: https://github.com/wp-china/wp-china-yes/issues
+[4]: https://github.com/litepress/wp-china-yes/issues
 
-[5]: https://wp-china.org/forums
+[5]: https://litepress.cn/forums
