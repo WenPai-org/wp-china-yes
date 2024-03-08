@@ -1,0 +1,24 @@
+{
+    "name": "wenpai-org/wp-china-yes",
+    "description": "WordPress Optimized Plugin for Mainland China",
+    "type": "project",
+    "require": {
+        "thetnb/wp-setting-api": "^2.0",
+        "yahnis-elsts/plugin-update-checker": "^5.2"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "WenPai\\ChinaYes\\": "./"
+        }
+    },
+    "authors": [
+        {
+            "name": "耗子",
+            "email": "i@haozi.net"
+        }
+    ],
+    "config": {
+        "optimize-autoloader": true
+    }
+}
