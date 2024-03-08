@@ -55,9 +55,9 @@ class Monitor {
 	 * 检查应用市场可用性
 	 */
 	public function maybe_check_store() {
-		$test_url = 'https://api.wenpai.org/china-yes/version-check';
+		$test_url = 'https://api.wenpai.net/china-yes/version-check';
 		if ( $this->settings['store'] == 'proxy' ) {
-			$test_url = 'http://wpa.cdn.haozi.net/core/version-check/1.7/';
+			$test_url = 'https://api.wpmirror.com/core/version-check/1.7/';
 		}
 		$response = wp_remote_get( $test_url );
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {

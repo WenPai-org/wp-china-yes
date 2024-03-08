@@ -15,7 +15,7 @@ class Update {
 
 	public function __construct() {
 		PucFactory::buildUpdateChecker(
-			'https://api.wenpai.org/china-yes/version-check',
+			'https://api.wenpai.net/china-yes/version-check',
 			CHINA_YES_PLUGIN_FILE,
 			'wp-china-yes'
 		);

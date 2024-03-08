@@ -153,7 +153,7 @@ class Setting {
 		echo <<<HTML
 <div class="settings-header">
     <div class="settings-title-section">
-        <h1>文派叶子🍃(WP-China-Yes)</h1>
+        <h1>文派叶子🍃（WP-China-Yes）</h1>
     </div>
     <h3>将您的 WordPress 接入本土生态体系，这将为您提供一个更贴近中国人使用习惯的 WordPress。</h3>
     <h4>100% 开源代码，一起参与文派（WordPress）软件国产化进程，打造属于您自己的开源自助建站程序。</h4>

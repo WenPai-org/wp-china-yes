@@ -225,11 +225,11 @@ class Super {
 		}
 
 		if ( $this->settings['store'] == 'wenpai' ) {
-			$url = str_replace( 'api.wordpress.org', 'api.wenpai.org', $url );
+			$url = str_replace( 'api.wordpress.org', 'api.wenpai.net', $url );
 		} else {
-			$url = str_replace( 'api.wordpress.org', 'wpa.cdn.haozi.net', $url );
+			$url = str_replace( 'api.wordpress.org', 'api.wpmirror.com', $url );
 		}
-		$url = str_replace( 'downloads.wordpress.org', 'wpd.cdn.haozi.net', $url );
+		$url = str_replace( 'downloads.wordpress.org', 'downloads.wenpai.net', $url );
 
 		$curl_version = '1.0.0';
 		if ( function_exists( 'curl_version' ) ) {
