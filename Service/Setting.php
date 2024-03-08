@@ -139,70 +139,119 @@ class Setting {
 	 * 设置页面模版
 	 */
 	public function setting_page() {
-		echo '<h1>WP-China-Yes</h1>';
-		echo '<h3>将您的 WordPress 接入本土生态体系，这将为您提供一个更贴近中国人使用习惯的 WordPress。</h3><h4>100% 开源代码，一起参与文派（WordPress）软件国产化进程，打造属于您自己的开源自助建站程序。</h4>';
+		echo '<div class="wpcy-settings-header">
+	<div class="wpcy-settings-title-section"><h1>文派叶子🍃(WP-China-Yes)</h1></div>';
+		echo '<h3>将您的 WordPress 接入本土生态体系，这将为您提供一个更贴近中国人使用习惯的 WordPress。</h3><h4>100% 开源代码，一起参与文派（WordPress）软件国产化进程，打造属于您自己的开源自助建站程序。</h4></div>';
 		echo <<<HTML
-<style>
-  .container {
-    display: flex;
-    flex-wrap: wrap;
-    width: 100%;
-  }
-  .left-column, .right-column {
-    width: 100%;
-  }
-  .left-column {
-    background-color: #f0f0f0;
-  }
-  .right-column {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .card {
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.13);
-    border-radius: 4px;
-  }
-  .card h3 {
-    margin-top: 0;
-  }
-  .card a, .left-column a {
-    text-decoration: none;
-  }
-  .card-body, .card-footer {
-    margin: 10px 0;
-  }
-  
-  .sponsor-logos {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+		<style>
+		html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+    font-family: "Source Han Sans SC", "Noto Sans CJK SC", "Source Han Sans CN", "Noto Sans SC", "Source Han Sans TC", "Noto Sans CJK TC", sans-serif, -apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, "WenQuanYi Zen Hei Sharp", sans-serif;
+}
+		#wpcontent, #wpfooter {
+       background-color: #ffffff;
+      }
+		  .container {
+		    display: flex;
+		    flex-wrap: wrap;
+		    width: 100%;
+		  }
+		  .left-column, .right-column {
+		    width: 100%;
+		  }
+		  .right-column {
+		    padding: 20px;
+		    display: flex;
+		    flex-direction: column;
+		    gap: 20px;
+		  }
+		  .card {
+		    background-color: #fff;
+		    padding: 10%;
+	  		border-radius: 10px;
+		    text-transform: none;
+		    border: 0px solid #c3c4c7;
+		    font-size: 14px;
+		    line-height: 2;
+		    box-shadow: 0 0.375rem 1.5rem 0 rgba(141, 153, 165, 0.13);
+		}
 
-  .sponsor-logos img {
-    width: 30%;
-    margin-bottom: 12px;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    height: fit-content;
-  }
+		  .card h3 {
+		    margin-top: 0;
+				font-size: 18px;
+				font-weight: 400;
+		  }
+		  .card a, .left-column a {
+		    text-decoration: none;
+		  }
+		  .card-body, .card-footer {
+		    margin: 10px 0;
+		  }
 
-  @media (min-width: 768px) {
-  .container {
-  flex-wrap: nowrap;
-  }
-    .left-column {
-      width: 70%;
+		   .card-footer a.button.button-primary {
+		    padding: 1% 5%;
+		    margin-top: 10px;
+		}
+		.form-table th {
+		    width: 120px;
+				padding: 5% 0;
+ 		}
+		.form-table td {
+        padding: 5% 0;
     }
-    .right-column {
-      width: 30%;
+		.wpcy-settings-header {
+		    padding-top: 20px;
+		    max-width: 1280px;
+		    margin: 0 auto;
+		    line-height: 1.5;
+		}
+		.wpcy-settings-title-section {
+    padding: 1% 0;
+   }
+	 .wpcy-settings-title-section h3 {
+	 font-size: large;
+	 }
+    .wpcy-settings-title-section h4 {
+    font-size: large;
+    font-weight: 400;
     }
-  }
-</style>
+		.wpcy-settings-footer p {
+    font-size: x-small;
+    line-height: 2;
+    }
+		  .sponsor-logos {
+		    display: flex;
+		    flex-wrap: wrap;
+		    justify-content: center;
+		  }
+
+			.sponsor-logos img {
+			  width: 26%;
+			  margin-bottom: 30px;
+			  display: block;
+			  margin-left: auto;
+			  margin-right: auto;
+			  height: fit-content;
+			}
+
+			@media screen and (max-width: 782px){
+			.auto-fold #wpcontent {
+			    padding: 10px;
+			}
+		}
+		  @media (min-width: 768px) {
+		  .container {
+		  flex-wrap: nowrap;
+			max-width: 1280px;
+      margin: 0 auto;
+		  }
+		    .left-column {
+		      width: 70%;
+		    }
+		    .right-column {
+		      width: 30%;
+		    }
+		  }
+		</style>
 <div class="container">
   <div class="left-column">
 HTML;
@@ -210,6 +259,10 @@ HTML;
 		$this->setting_api->show_forms();
 
 		echo <<<HTML
+		<div class="wpcy-settings-footer">
+		<p><strong>提示：</strong>插件会定期检查节点可用性，并在节点不可用时自动切换至可用节点，以保证您的网站正常访问。如您发现设置项被自动切换，可在此页面重新设置。</p>
+		<p><strong>帮助：</strong>您可以随时在此处调整个性化设置以便适应不同的业务场景，萌新请保持默认即可。此项目的发展离不开您的支持和建议，<a href="https://wp-china-yes.com/contact" target="_blank">查看联系方式</a>。</p>
+	</div>
   </div>
   <div class="right-column">
     <div class="card">
@@ -255,8 +308,6 @@ HTML;
     </div>
   </div>
 </div>
-<p>提示：插件会定期检查节点可用性，并在节点不可用时自动切换至可用节点，以保证您的网站正常访问。如您发现设置项被自动切换，可在此页面重新设置。</p>
-<p>帮助：您可以随时在此处调整个性化设置以便适应不同的业务场景，萌新请保持默认即可。此项目的发展离不开您的支持和建议，<a href="https://wp-china-yes.com/contact" target="_blank">查看联系方式</a>。</p>
 HTML;
 
 	}
