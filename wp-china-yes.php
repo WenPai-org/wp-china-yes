@@ -19,15 +19,16 @@ namespace WenPai\ChinaYes;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION     = '3.6.1';
-const PLUGIN_FILE = __FILE__;
-const PLUGIN_DIR  = __DIR__;
+define( 'CHINA_YES_VERSION', '3.6.1' );
+define( 'CHINA_YES_PLUGIN_FILE', __FILE__ );
+define( 'CHINA_YES_PLUGIN_URL', plugin_dir_url( CHINA_YES_PLUGIN_FILE ) );
+define( 'CHINA_YES_PLUGIN_PATH', plugin_dir_path( CHINA_YES_PLUGIN_FILE ) );
 
-require_once( plugin_dir_path( __FILE__ ) . 'vendor/autoload.php' );
+require_once( plugin_dir_path( CHINA_YES_PLUGIN_FILE ) . 'vendor/autoload.php' );
 
 // 注册插件激活钩子
-register_activation_hook( PLUGIN_FILE, [ Plugin::class, 'activate' ] );
+register_activation_hook( CHINA_YES_PLUGIN_FILE, [ Plugin::class, 'activate' ] );
 // 注册插件删除钩子
-register_uninstall_hook( PLUGIN_FILE, [ Plugin::class, 'uninstall' ] );
+register_uninstall_hook( CHINA_YES_PLUGIN_FILE, [ Plugin::class, 'uninstall' ] );
 
 new Plugin();

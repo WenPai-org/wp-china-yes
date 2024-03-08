@@ -38,7 +38,7 @@ class Plugin {
 	 * 插件加载时执行
 	 */
 	public function plugins_loaded() {
-		load_plugin_textdomain( 'wp-china-yes', false, plugin_dir_path( PLUGIN_FILE ) . 'languages' );
+		load_plugin_textdomain( 'wp-china-yes', false, CHINA_YES_PLUGIN_PATH . 'languages' );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
 	}
 

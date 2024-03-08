@@ -217,8 +217,10 @@ class Super {
 	 * WordPress.Org 替换
 	 */
 	public function filter_wordpress_org( $preempt, $args, $url ) {
-		if ( ( ! strpos( $url, 'api.wordpress.org' ) && ! strpos( $url,
-				'downloads.wordpress.org' ) ) ) {
+		if ( $preempt || isset( $args['_wp_china_yes'] ) ) {
+			return $preempt;
+		}
+		if ( ( ! strpos( $url, 'api.wordpress.org' ) && ! strpos( $url, 'downloads.wordpress.org' ) ) ) {
 			return $preempt;
 		}
 
@@ -239,6 +241,8 @@ class Super {
 		if ( version_compare( $curl_version, '7.15.0', '<' ) ) {
 			$url = str_replace( 'https://', 'http://', $url );
 		}
+
+		$args['_wp_china_yes'] = true;
 
 		return wp_remote_request( $url, $args );
 	}
