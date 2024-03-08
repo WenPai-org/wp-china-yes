@@ -4,6 +4,8 @@ namespace WenPai\ChinaYes\Service;
 
 defined( 'ABSPATH' ) || exit;
 
+use function WenPai\ChinaYes\get_settings;
+
 /**
  * Class Super
  * 插件加速服务
@@ -12,19 +14,9 @@ defined( 'ABSPATH' ) || exit;
 class Super {
 
 	private $settings;
-	private $default = [
-		'store'     => 'wenpai',
-		'admincdn'  => [
-			'admin' => 'admin',
-		],
-		'cravatar'  => 'cn',
-		'windfonts' => 'off',
-		'adblock'   => 'off',
-	];
 
 	public function __construct() {
-		$this->settings = is_multisite() ? get_site_option( 'wp_china_yes' ) : get_option( 'wp_china_yes' );
-		$this->settings = wp_parse_args( $this->settings, $this->default );
+		$this->settings = get_settings();
 
 		/**
 		 * WordPress.Org API 替换

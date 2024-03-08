@@ -37,20 +37,20 @@ class Setting {
 				[
 					'name'    => 'store',
 					'label'   => __( '应用市场', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源(WPMirror)</a>：直接从 .org 反代至大陆分发；文派存储库：中国境内自建托管仓库，同时集成文派集市产品更新。',
+					'desc'    => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'wenpai',
 					'options' => [
 						'proxy'  => '官方镜像',
-						'wenpai' => '文派中国',
+						'wenpai' => '文派开源',
 						'off'    => '不启用'
 					]
 				],
 				[
 					'name'    => 'admincdn',
 					'label'   => __( '萌芽加速', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速(adminCDN)</a>：将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，请关注 adminCDN 项目。',
+					'desc'    => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，请关注 adminCDN 项目。',
 						'wp-china-yes' ),
 					'type'    => 'multicheck',
 					'default' => [
@@ -67,21 +67,21 @@ class Setting {
 				[
 					'name'    => 'cravatar',
 					'label'   => __( '初认头像', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://cravatar.com/" target="_blank">初认头像(Cravatar)</a>：是 Gravatar 在中国的完美替代方案，您可以在 https://cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 WordPress）',
+					'desc'    => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 https://cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 WordPress）',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'cn',
 					'options' => [
-						'cn'       => '全局启用',
+						'cn'       => '默认线路',
 						'global'   => '国际线路',
-						'weavatar' => '备用源',
+						'weavatar' => '备用源（WeAvatar）',
 						'off'      => '不启用'
 					]
 				],
 				[
 					'name'    => 'windfonts',
 					'label'   => __( '文风字体', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://windfonts.com/" target="_blank">文风字体(Windfonts)</a>：即将为您的网页渲染中文字体并对主题、插件内的 Google 字体进行加速。',
+					'desc'    => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>即将为您的网页渲染中文字体并对主题、插件内的字体进行加速。',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'off',
@@ -92,7 +92,7 @@ class Setting {
 				[
 					'name'    => 'adblock',
 					'label'   => __( '广告拦截', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃(WP-China-Yes)</a>：独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息；启用后若存在异常拦截，请切换为手动模式，查看<a href="https://wp-china-yes.com/" target="_blank">可优化插件列表</a>。',
+					'desc'    => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息；启用后若存在异常拦截，请切换为手动模式，查看<a href="https://wp-china-yes.com/" target="_blank">可优化插件列表</a>。',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'off',
@@ -169,7 +169,7 @@ class Setting {
   .card h3 {
     margin-top: 0;
   }
-  .card a {
+  .card a, .left-column a {
     text-decoration: none;
   }
   .card-body, .card-footer {
@@ -221,8 +221,6 @@ HTML;
         <a class="button button-primary" href="https://wp-china-yes.com/" target="_blank">了解更多</a>
       </div>
     </div>
-    
-    <!-- 第二个卡片 -->
     <div class="card">
       <h3>赞助商</h3>
       <div class="card-body sponsor-logos">
@@ -240,8 +238,6 @@ HTML;
         <a class="button button-primary" href="https://wp-china-yes.com/about/sponsor" target="_blank">成为赞助商</a>
       </div>
     </div>
-    
-    <!-- 第三个卡片 -->
     <div class="card">
       <h3>建站套件</h3>
       <div class="card-body">
@@ -259,7 +255,7 @@ HTML;
     </div>
   </div>
 </div>
-<p>提示：此处选项设置并不与任何文派插件及独立功能扩展冲突，可放心安装启用。</p>
+<p>提示：插件会定期检查节点可用性，并在节点不可用时自动切换至可用节点，以保证您的网站正常访问。如您发现设置项被自动切换，可在此页面重新设置。</p>
 <p>帮助：您可以随时在此处调整个性化设置以便适应不同的业务场景，萌新请保持默认即可。此项目的发展离不开您的支持和建议，<a href="https://wp-china-yes.com/contact" target="_blank">查看联系方式</a>。</p>
 HTML;
 

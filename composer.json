@@ -10,7 +10,10 @@
     "autoload": {
         "psr-4": {
             "WenPai\\ChinaYes\\": "./"
-        }
+        },
+        "files": [
+            "helpers.php"
+        ]
     },
     "authors": [
         {
