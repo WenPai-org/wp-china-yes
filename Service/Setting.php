@@ -68,7 +68,7 @@ class Setting {
 				[
 					'name'    => 'cravatar',
 					'label'   => __( '初认头像', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 https://cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 WordPress）',
+					'desc'    => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 WordPress）',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'cn',
