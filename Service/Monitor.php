@@ -127,7 +127,7 @@ class Monitor {
 		}
 		// Google 前端公共库
 		if ( ! empty( $this->settings['admincdn']['googleajax'] ) ) {
-			$response = wp_remote_get( 'https://googleajax.admincdn.com/ajax/libs/jquery/3.5.1/jquery.min.js' );
+			$response = wp_remote_get( 'https://googleajax.admincdn.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
 				unset( $this->settings['admincdn']['googleajax'] );
 				$this->update_settings();
@@ -135,7 +135,7 @@ class Monitor {
 		}
 		// CDNJS 前端公共库
 		if ( ! empty( $this->settings['admincdn']['cdnjs'] ) ) {
-			$response = wp_remote_get( 'https://cdnjs.admincdn.com/jquery/3.5.1/jquery.min.js' );
+			$response = wp_remote_get( 'https://cdnjs.admincdn.com/jquery/3.7.1/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
 				unset( $this->settings['admincdn']['cdnjs'] );
 				$this->update_settings();

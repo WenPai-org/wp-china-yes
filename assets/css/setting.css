@@ -5,9 +5,11 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
 #wpcontent, #wpfooter {
     background-color: #ffffff;
 }
+
 #wpbody-content {
     padding-bottom: 10%;
 }
+
 .notice {
     background-color: #f5f5f5;
 }
@@ -74,6 +76,7 @@ html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockq
     margin: 0 auto;
     line-height: 1.5;
 }
+
 .settings-header .update-messages h2, .update-php h2, h4 {
     font-size: 15px;
     font-weight: 400;
