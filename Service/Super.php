@@ -147,7 +147,7 @@ class Super {
 				global $concatenate_scripts;
 				$concatenate_scripts = false;
 
-				$this->page_str_replace( 'preg_replace', [
+				$this->page_str_replace( 'init', 'preg_replace', [
 					'~' . home_url( '/' ) . '(wp-admin|wp-includes)/(css|js)/~',
 					sprintf( 'https://wpstatic.admincdn.com/%s/$1/$2/', $GLOBALS['wp_version'] )
 				] );
@@ -159,7 +159,7 @@ class Super {
 			 * 前台静态加速
 			 */
 			if ( ! empty( $this->settings['admincdn']['frontend'] ) ) {
-				$this->page_str_replace( 'preg_replace', [
+				$this->page_str_replace( 'template_redirect', 'preg_replace', [
 					'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
 					'https://public.admincdn.com/$0'
 				] );
@@ -169,7 +169,7 @@ class Super {
 			 * Google 字体替换
 			 */
 			if ( ! empty( $this->settings['admincdn']['googlefonts'] ) ) {
-				$this->page_str_replace( 'str_replace', [
+				$this->page_str_replace( 'init', 'str_replace', [
 					'fonts.googleapis.com',
 					'googlefonts.admincdn.com'
 				] );
@@ -179,7 +179,7 @@ class Super {
 			 * Google 前端公共库替换
 			 */
 			if ( ! empty( $this->settings['admincdn']['googleajax'] ) ) {
-				$this->page_str_replace( 'str_replace', [
+				$this->page_str_replace( 'init', 'str_replace', [
 					'ajax.googleapis.com',
 					'googleajax.admincdn.com'
 				] );
@@ -189,7 +189,7 @@ class Super {
 			 * CDNJS 前端公共库替换
 			 */
 			if ( ! empty( $this->settings['admincdn']['cdnjs'] ) ) {
-				$this->page_str_replace( 'str_replace', [
+				$this->page_str_replace( 'init', 'str_replace', [
 					'cdnjs.cloudflare.com/ajax/libs',
 					'cdnjs.admincdn.com'
 				] );
@@ -199,7 +199,7 @@ class Super {
 			 * jsDelivr 前端公共库替换
 			 */
 			if ( ! empty( $this->settings['admincdn']['jsdelivr'] ) ) {
-				$this->page_str_replace( 'str_replace', [
+				$this->page_str_replace( 'init', 'str_replace', [
 					'cdn.jsdelivr.net',
 					'jsd.admincdn.com'
 				] );
@@ -330,12 +330,12 @@ class Super {
 	 * @param $replace_func string 要调用的字符串关键字替换函数
 	 * @param $param array 传递给字符串替换函数的参数
 	 */
-	private function page_str_replace( $replace_func, $param ) {
+	private function page_str_replace( $hook, $replace_func, $param ) {
 		// CLI 下返回，防止影响缓冲区
-		if ( class_exists( 'WP_CLI' ) ) {
+		if ( php_sapi_name() == 'cli' ) {
 			return;
 		}
-		add_action( 'template_redirect', function () use ( $replace_func, $param ) {
+		add_action( $hook, function () use ( $replace_func, $param ) {
 			ob_start( function ( $buffer ) use ( $replace_func, $param ) {
 				$param[] = $buffer;
 
