@@ -2,6 +2,13 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.6.4 - 2024-08-23
+
+1. WP-CLI 下不运行 adminCDN 部分，防止影响缓冲区。
+2. 部分文案调整支持多语言。
+
+**Full Changelog**: https://github.com/WenPai-org/wp-china-yes/compare/v3.6.3...v3.6.4
+
 ## v3.6.3 - 2024-08-23
 
 1. 为自动监控功能添加开关
