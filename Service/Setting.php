@@ -58,12 +58,13 @@ class Setting {
 						'admin' => 'admin',
 					],
 					'options' => [
-						'admin'       => '后台加速',
-						'frontend'    => '前台加速',
-						'googlefonts' => 'Google 字体',
-						'googleajax'  => 'Google 前端公共库',
-						'cdnjs'       => 'CDNJS 前端公共库',
-						'jsdelivr'    => 'jsDelivr 公共库',
+						'compatibility' => '兼容模式',
+						'admin'         => '后台加速',
+						'frontend'      => '前台加速',
+						'googlefonts'   => 'Google 字体',
+						'googleajax'    => 'Google 前端公共库',
+						'cdnjs'         => 'CDNJS 前端公共库',
+						'jsdelivr'      => 'jsDelivr 公共库',
 					]
 				],
 				[

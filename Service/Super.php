@@ -159,10 +159,17 @@ class Super {
 			 * 前台静态加速
 			 */
 			if ( ! empty( $this->settings['admincdn']['frontend'] ) ) {
-				$this->page_str_replace( 'preg_replace', [
-					'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
-					'https://public.admincdn.com/$0'
-				] );
+				if ( ! empty( $this->settings['admincdn']['compatibility'] ) ) {
+					$this->page_str_replace( 'str_replace', [
+						site_url(),
+						'https://public.admincdn.com/' . site_url()
+					] );
+				}else{
+					$this->page_str_replace( 'preg_replace', [
+						'#(?<=[(\"\'])(?:' . quotemeta( site_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
+						'https://public.admincdn.com/$0'
+					] );
+				}
 			}
 
 			/**
@@ -335,12 +342,21 @@ class Super {
 		if ( class_exists( 'WP_CLI' ) ) {
 			return;
 		}
-		add_action( 'template_redirect', function () use ( $replace_func, $param ) {
-			ob_start( function ( $buffer ) use ( $replace_func, $param ) {
-				$param[] = $buffer;
-
+		if ( ! empty( $this->settings['admincdn']['compatibility'] ) ) {
+			$replacer = function ( $src ) use ( $param, $replace_func ) {
+				$param[] = $src;
 				return call_user_func_array( $replace_func, $param );
-			} );
-		}, PHP_INT_MAX );
+			};
+			add_filter( 'style_loader_src', $replacer );
+			add_filter( 'script_loader_src', $replacer );
+		} else {
+			add_action( 'template_redirect', function () use ( $replace_func, $param ) {
+				ob_start( function ( $buffer ) use ( $replace_func, $param ) {
+					$param[] = $buffer;
+					
+					return call_user_func_array( $replace_func, $param );
+				} );
+			}, PHP_INT_MAX );
+		}
 	}
 }
