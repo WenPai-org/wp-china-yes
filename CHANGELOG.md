@@ -2,6 +2,15 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.6.3 - 2024-08-23
+
+1. 为自动监控功能添加开关
+2. adminCDN 支持 jsDelivr 加速
+3. Windfonts 支持优化模式开关
+
+**adminCDN 的 jsd 加速默认屏蔽 gh 端点，如有主题插件作者需要使用请联系加白。**
+**Full Changelog**: https://github.com/WenPai-org/wp-china-yes/compare/v3.6.2...v3.6.3
+
 ## v3.6.2 - 2024-03-09
 
 1. UI 重构
