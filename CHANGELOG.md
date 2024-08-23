@@ -2,6 +2,13 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.6.5 - 2024-08-23
+
+1. 优化 CLI 判断
+2. 回退替换钩子修改
+
+**Full Changelog**: https://github.com/WenPai-org/wp-china-yes/compare/v3.6.4...v3.6.5
+
 ## v3.6.4 - 2024-08-23
 
 1. WP-CLI 下不运行 adminCDN 部分，防止影响缓冲区。
