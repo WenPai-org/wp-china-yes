@@ -16,5 +16,6 @@ function get_settings() {
 		'cravatar'  => 'cn',
 		'windfonts' => 'off',
 		'adblock'   => 'off',
+		'monitor'   => 'on',
 	] );
 }

@@ -62,7 +62,8 @@ class Setting {
 						'frontend'    => '前台加速',
 						'googlefonts' => 'Google 字体',
 						'googleajax'  => 'Google 前端公共库',
-						'cdnjs'       => 'CDNJS 前端公共库'
+						'cdnjs'       => 'CDNJS 前端公共库',
+						'jsdelivr'    => 'jsDelivr 公共库',
 					]
 				],
 				[
@@ -75,19 +76,20 @@ class Setting {
 					'options' => [
 						'cn'       => '默认线路',
 						'global'   => '国际线路',
-						'weavatar' => '备用源（WeAvatar）',
+						'weavatar' => '备用源（<a href="https://weavatar.com/" target="_blank">WeAvatar</a>）',
 						'off'      => '不启用'
 					]
 				],
 				[
 					'name'    => 'windfonts',
 					'label'   => __( '文风字体', 'wp-china-yes' ),
-					'desc'    => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>即将为您的网页渲染中文字体并对主题、插件内的字体进行加速。',
+					'desc'    => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>为您的网页渲染中文字体并对主题、插件内的字体进行加速；优化模式可优化浏览器字体调用。',
 						'wp-china-yes' ),
 					'type'    => 'radio',
 					'default' => 'off',
 					'options' => [
-						'off' => '即将上线',
+						'optimize' => '优化模式',
+						'off' => '不启用',
 					]
 				],
 				[
@@ -99,6 +101,18 @@ class Setting {
 					'default' => 'off',
 					'options' => [
 						'off' => '即将上线',
+					]
+				],
+				[
+					'name'    => 'monitor',
+					'label'   => __( '自动监控', 'wp-china-yes' ),
+					'desc'    => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问。',
+						'wp-china-yes' ),
+					'type'    => 'radio',
+					'default' => 'on',
+					'options' => [
+						'on'  => '启用',
+						'off' => '不启用',
 					]
 				],
 			]
@@ -166,7 +180,7 @@ HTML;
 
 		echo <<<HTML
         <div class="settings-footer">
-            <p><strong>提示：</strong>插件会定期检查节点可用性，并在节点不可用时自动切换至可用节点，以保证您的网站正常访问。如您发现设置项被自动切换，可在此页面重新设置。</p>
+            <p><strong>提示：</strong>插件会定期检查节点可用性，并在节点不可用时自动切换至可用节点，以保证您的网站正常访问。如您发现设置项被自动切换，可重新设置或关闭自动监控功能。</p>
             <p><strong>帮助：</strong>您可以随时在此处调整个性化设置以便适应不同的业务场景，萌新请保持默认即可。此项目的发展离不开您的支持和建议，<a href="https://wp-china-yes.com/contact" target="_blank">查看联系方式</a>。</p>
         </div>
     </div>

@@ -199,6 +199,16 @@ class Super {
 					'cdnjs.admincdn.com'
 				] );
 			}
+
+			/**
+			 * jsDelivr 前端公共库替换
+			 */
+			if ( ! empty( $this->settings['admincdn']['jsdelivr'] ) ) {
+				$this->page_str_replace( 'str_replace', [
+					'cdn.jsdelivr.net',
+					'jsd.admincdn.com'
+				] );
+			}
 		}
 
 		/**
@@ -210,6 +220,15 @@ class Super {
 			add_filter( 'um_user_avatar_url_filter', [ $this, 'get_cravatar_url' ], 1 );
 			add_filter( 'bp_gravatar_url', [ $this, 'get_cravatar_url' ], 1 );
 			add_filter( 'get_avatar_url', [ $this, 'get_cravatar_url' ], 1 );
+		}
+
+		/**
+		 * 文风字体
+		 */
+		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'optimize' ) {
+			add_action( 'init', function () {
+				wp_enqueue_style( 'windfonts-optimize', CHINA_YES_PLUGIN_URL . 'assets/css/fonts.css', [], CHINA_YES_VERSION );
+			} );
 		}
 	}
 

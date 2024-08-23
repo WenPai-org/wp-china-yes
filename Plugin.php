@@ -10,7 +10,7 @@ use WenPai\ChinaYes\Service\Setting;
 class Plugin {
 
 	/**
-	 * 创建一个插件实例
+	 * 创建插件实例
 	 */
 	public function __construct() {
 		new Base();

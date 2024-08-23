@@ -37,6 +37,9 @@ class Monitor {
 	 * 初始化
 	 */
 	public function init() {
+		if ( $this->settings['monitor'] != 'on' ) {
+			return;
+		}
 		// 检查应用市场可用性
 		if ( ! wp_next_scheduled( 'wp_china_yes_maybe_check_store' ) && $this->settings['store'] != 'off' ) {
 			wp_schedule_event( time(), 'hourly', 'wp_china_yes_maybe_check_store' );
@@ -138,6 +141,14 @@ class Monitor {
 			$response = wp_remote_get( 'https://cdnjs.admincdn.com/jquery/3.7.1/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
 				unset( $this->settings['admincdn']['cdnjs'] );
+				$this->update_settings();
+			}
+		}
+		// jsDelivr 公共库
+		if ( ! empty( $this->settings['admincdn']['jsdelivr'] ) ) {
+			$response = wp_remote_get( 'https://jsd.admincdn.com/npm/jquery@3.7.1/dist/jquery.slim.min.js' );
+			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
+				unset( $this->settings['admincdn']['jsdelivr'] );
 				$this->update_settings();
 			}
 		}
