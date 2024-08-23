@@ -1,0 +1,160 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP-China-Yes\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-23 03:41+0000\n"
+"PO-Revision-Date: 2024-08-23 12:20+0800\n"
+"Last-Translator: \n"
+"Language-Team: 简体中文\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.4.4\n"
+"X-Loco-Version: 2.6.10; wp-6.6\n"
+"X-Domain: wp-china-yes\n"
+
+#: Service/Setting.php:54
+msgid ""
+"<a href=\"https://admincdn.com/\" target=\"_blank\">萌芽加速（adminCDN）</a>"
+"将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需"
+"要加速的项目，更多细节控制和功能，请关注 adminCDN 项目。"
+msgstr ""
+"<a href=\"https://admincdn.com/\" target=\"_blank\">萌芽加速（adminCDN）</a>"
+"将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需"
+"要加速的项目，更多细节控制和功能，请关注 adminCDN 项目。"
+
+#: Service/Setting.php:72
+msgid ""
+"<a href=\"https://cravatar.com/\" target=\"_blank\">初认头像（Cravatar）</"
+"a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请"
+"安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 "
+"WordPress）"
+msgstr ""
+"<a href=\"https://cravatar.com/\" target=\"_blank\">初认头像（Cravatar）</"
+"a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请"
+"安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 "
+"WordPress）"
+
+#: Service/Setting.php:86
+msgid ""
+"<a href=\"https://windfonts.com/\" target=\"_blank\">文风字体（Windfonts）</"
+"a>为您的网页渲染中文字体并对主题、插件内的字体进行加速；优化模式可优化浏览器"
+"字体调用。"
+msgstr ""
+"<a href=\"https://windfonts.com/\" target=\"_blank\">文风字体（Windfonts）</"
+"a>为您的网页渲染中文字体并对主题、插件内的字体进行加速；优化模式可优化浏览器"
+"字体调用。"
+
+#: Service/Setting.php:109
+msgid ""
+"<a href=\"https://wp-china-yes.com/ads\" target=\"_blank\">文派叶子🍃（WP-"
+"China-Yes）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节"
+"点或关闭加速，以保证您的网站正常访问。"
+msgstr ""
+"<a href=\"https://wp-china-yes.com/ads\" target=\"_blank\">文派叶子🍃（WP-"
+"China-Yes）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节"
+"点或关闭加速，以保证您的网站正常访问。"
+
+#: Service/Setting.php:98
+msgid ""
+"<a href=\"https://wp-china-yes.com/ads\" target=\"_blank\">文派叶子🍃（WP-"
+"China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用"
+"插件侵入式后台广告、通知及无用信息；启用后若存在异常拦截，请切换为手动模式，"
+"查看<a href=\"https://wp-china-yes.com/\" target=\"_blank\">可优化插件列表</"
+"a>。"
+msgstr ""
+"<a href=\"https://wp-china-yes.com/ads\" target=\"_blank\">文派叶子🍃（WP-"
+"China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用"
+"插件侵入式后台广告、通知及无用信息；启用后若存在异常拦截，请切换为手动模式，"
+"查看<a href=\"https://wp-china-yes.com/\" target=\"_blank\">可优化插件列表</"
+"a>。"
+
+#: Service/Setting.php:41
+msgid ""
+"<a href=\"https://wpmirror.com/\" target=\"_blank\">官方加速源（WPMirror）</"
+"a>直接从 .org 反代至大陆分发；<a href=\"https://wenpai.org/\" "
+"target=\"_blank\">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文"
+"派翻译平台。"
+msgstr ""
+"<a href=\"https://wpmirror.com/\" target=\"_blank\">官方加速源（WPMirror）</"
+"a>直接从 .org 反代至大陆分发；<a href=\"https://wenpai.org/\" "
+"target=\"_blank\">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文"
+"派翻译平台。"
+
+#. Author URI of the plugin
+msgid "https://wp-china-yes.com"
+msgstr "https://wp-china-yes.com"
+
+#. Name of the plugin
+#: Service/Setting.php:143 Service/Setting.php:144
+msgid "WP-China-Yes"
+msgstr "WP-China-Yes"
+
+#: Plugin.php:52
+#, php-format
+msgid ""
+"WP-China-Yes 插件需要 PHP 5.6.0 或更高版本，当前版本为 %s，插件已自动禁用。"
+msgstr ""
+"WP-China-Yes 插件需要 PHP 5.6.0 或更高版本，当前版本为 %s，插件已自动禁用。"
+
+#: Service/Setting.php:71
+msgid "初认头像"
+msgstr "初认头像"
+
+#: Service/Setting.php:97
+msgid "广告拦截"
+msgstr "广告拦截"
+
+#: Service/Setting.php:40
+msgid "应用市场"
+msgstr "应用市场"
+
+#. Description of the plugin
+msgid ""
+"文派叶子 🍃（WP-China-Yes）是中国 WordPress 生态基础设施软件，犹如落叶新芽，"
+"生生不息。"
+msgstr ""
+"文派叶子 🍃（WP-China-Yes）是中国 WordPress 生态基础设施软件，犹如落叶新芽，"
+"生生不息。"
+
+#. Author of the plugin
+msgid "文派开源"
+msgstr "文派开源"
+
+#: Service/Setting.php:85
+msgid "文风字体"
+msgstr "文风字体"
+
+#: Plugin.php:71
+msgid "检测到不兼容的插件 Kill 429，已自动禁用！"
+msgstr "检测到不兼容的插件 Kill 429，已自动禁用！"
+
+#: Plugin.php:65
+msgid "检测到不兼容的插件 WP-China-Plus，已自动禁用！"
+msgstr "检测到不兼容的插件 WP-China-Plus，已自动禁用！"
+
+#: Plugin.php:78
+msgid ""
+"检测到已在 WordPress 配置文件中设置代理服务器，这可能会导致插件无法正常工"
+"作！"
+msgstr ""
+"检测到已在 WordPress 配置文件中设置代理服务器，这可能会导致插件无法正常工"
+"作！"
+
+#: Plugin.php:59
+msgid "检测到旧版插件 WP-China-No，已自动禁用！"
+msgstr "检测到旧版插件 WP-China-No，已自动禁用！"
+
+#: Service/Setting.php:108
+msgid "自动监控"
+msgstr "自动监控"
+
+#: Service/Setting.php:53
+msgid "萌芽加速"
+msgstr "萌芽加速"
+
+#: Service/Setting.php:32 Service/Setting.php:155
+msgid "设置"
+msgstr "设置"

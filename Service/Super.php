@@ -159,15 +159,10 @@ class Super {
 			 * 前台静态加速
 			 */
 			if ( ! empty( $this->settings['admincdn']['frontend'] ) ) {
-				add_action( 'template_redirect', function () {
-					ob_start( function ( $content ) {
-						$regex = '#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#';
-
-						return preg_replace_callback( $regex, function ( $asset ) {
-							return 'https://public.admincdn.com/' . $asset[0];
-						}, $content );
-					} );
-				} );
+				$this->page_str_replace( 'preg_replace', [
+					'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
+					'https://public.admincdn.com/$0'
+				] );
 			}
 
 			/**
@@ -309,7 +304,11 @@ class Super {
 	 * WordPress 讨论设置中的默认 LOGO 名称替换
 	 */
 	public function set_defaults_for_cravatar( $avatar_defaults ) {
-		$avatar_defaults['gravatar_default'] = '初认头像';
+		if ( $this->settings['cravatar'] == 'weavatar' ) {
+			$avatar_defaults['gravatar_default'] = 'WeAvatar';
+		} else {
+			$avatar_defaults['gravatar_default'] = '初认头像';
+		}
 
 		return $avatar_defaults;
 	}
@@ -318,7 +317,11 @@ class Super {
 	 * 个人资料卡中的头像上传地址替换
 	 */
 	public function set_user_profile_picture_for_cravatar() {
-		return '<a href="https://cravatar.com" target="_blank">您可以在初认头像修改您的资料图片</a>';
+		if ( $this->settings['cravatar'] == 'weavatar' ) {
+			return '<a href="https://weavatar.com" target="_blank">您可以在 WeAvatar 修改您的资料图片</a>';
+		} else {
+			return '<a href="https://cravatar.com" target="_blank">您可以在初认头像修改您的资料图片</a>';
+		}
 	}
 
 	/**
@@ -328,12 +331,16 @@ class Super {
 	 * @param $param array 传递给字符串替换函数的参数
 	 */
 	private function page_str_replace( $replace_func, $param ) {
-		add_action( 'init', function () use ( $replace_func, $param ) {
+		// CLI 下返回，防止影响缓冲区
+		if ( class_exists( 'WP_CLI' ) ) {
+			return;
+		}
+		add_action( 'template_redirect', function () use ( $replace_func, $param ) {
 			ob_start( function ( $buffer ) use ( $replace_func, $param ) {
 				$param[] = $buffer;
 
 				return call_user_func_array( $replace_func, $param );
 			} );
-		}, 999999 );
+		}, PHP_INT_MAX );
 	}
 }
