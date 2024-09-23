@@ -63,7 +63,7 @@ class Setting {
 					],
 					'default'  => 'wenpai',
 					'subtitle' => '是否启用市场加速',
-					'desc'     => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。可参考<a href="https://wp-china-yes.com/document/wordpress-marketplace-acceleration" target="_blank">节点选择说明</a>。',
+					'desc'     => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。可参考<a href="https://wp-china-yes.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -99,7 +99,7 @@ class Setting {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用头像加速',
-					'desc'     => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。（任何开发者均可在自己的产品中集成该服务，不局限于 WordPress）',
+					'desc'     => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wp-china-yes.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -227,7 +227,7 @@ class Setting {
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用后台广告屏蔽',
-					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，<a href="https://wp-china-yes.com/document/ad-blocking-for-developers " target="_blank">拿回您后台的控制权</a>。',
+					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，拿回您的<a href="https://wp-china-yes.com/document/ad-blocking-for-developers " target="_blank">后台控制权</a>。',
 						'wp-china-yes' ),
 				],
 				[
