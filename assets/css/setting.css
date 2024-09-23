@@ -16,6 +16,10 @@
     text-decoration: none;
 }
 
+.wp_china_yes-content a:active, a:focus, a:hover {
+    color: #2c3338;
+}
+
 .wp_china_yes-options {
     background-color: #fff;
     padding: 1%;
