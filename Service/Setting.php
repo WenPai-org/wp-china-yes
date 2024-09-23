@@ -352,16 +352,16 @@ class Setting {
 					'content' =>
 						<<<HTML
 <div class="card-body sponsor-logos">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/feibisi-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/shujue-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/upyun-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2024/07/haozi-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/wpsaas-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/lingding-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/weixiaoduo-logo-2020.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/modiqi-logo.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/kekechong-logo-1.png">
-	<img src="https://wp-china-yes.com/wp-content/uploads/2023/08/wenpai-logo@2X.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/feibisi-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/shujue-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/upyun-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/haozi-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/wpsaas-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/lingding-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/weixiaoduo-logo-2020.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/modiqi-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/kekechong-logo.png">
+	<img src="https://cravatar.cn/wp-content/uploads/2024/09/wenpai-logo@2X.png">
 </div>
 HTML,
 				],
