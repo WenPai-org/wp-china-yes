@@ -37,7 +37,7 @@ class Monitor {
 	 * 初始化
 	 */
 	public function init() {
-		if ( $this->settings['monitor'] != 'on' ) {
+		if ( $this->settings['monitor'] ) {
 			return;
 		}
 		// 检查应用市场可用性
@@ -104,51 +104,51 @@ class Monitor {
 	 */
 	public function maybe_check_admincdn() {
 		// 后台加速
-		if ( ! empty( $this->settings['admincdn']['admin'] ) ) {
+		if ( in_array( 'admin', $this->settings['admincdn'] ) ) {
 			$response = wp_remote_get( 'https://wpstatic.admincdn.com/6.4.3/wp-includes/js/wp-sanitize.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['admin'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'admin' ] ) );
 				$this->update_settings();
 			}
 		}
 		// 前台加速
-		if ( ! empty( $this->settings['admincdn']['frontend'] ) ) {
+		if ( in_array( 'frontend', $this->settings['admincdn'] ) ) {
 			$url      = network_site_url( '/wp-includes/js/wp-sanitize.min.js' );
 			$response = wp_remote_get( 'https://public.admincdn.com/' . $url );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['frontend'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'frontend' ] ) );
 				$this->update_settings();
 			}
 		}
 		// Google 字体
-		if ( ! empty( $this->settings['admincdn']['googlefonts'] ) ) {
+		if ( in_array( 'googlefonts', $this->settings['admincdn'] ) ) {
 			$response = wp_remote_get( 'https://googlefonts.admincdn.com/css?family=Roboto:400,700' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['googlefonts'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'googlefonts' ] ) );
 				$this->update_settings();
 			}
 		}
 		// Google 前端公共库
-		if ( ! empty( $this->settings['admincdn']['googleajax'] ) ) {
+		if ( in_array( 'googleajax', $this->settings['admincdn'] ) ) {
 			$response = wp_remote_get( 'https://googleajax.admincdn.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['googleajax'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'googleajax' ] ) );
 				$this->update_settings();
 			}
 		}
 		// CDNJS 前端公共库
-		if ( ! empty( $this->settings['admincdn']['cdnjs'] ) ) {
+		if ( in_array( 'cdnjs', $this->settings['admincdn'] ) ) {
 			$response = wp_remote_get( 'https://cdnjs.admincdn.com/jquery/3.7.1/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['cdnjs'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'cdnjs' ] ) );
 				$this->update_settings();
 			}
 		}
 		// jsDelivr 公共库
-		if ( ! empty( $this->settings['admincdn']['jsdelivr'] ) ) {
+		if ( in_array( 'jsdelivr', $this->settings['admincdn'] ) ) {
 			$response = wp_remote_get( 'https://jsd.admincdn.com/npm/jquery@3.7.1/dist/jquery.slim.min.js' );
 			if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-				unset( $this->settings['admincdn']['jsdelivr'] );
+				$this->settings['admincdn'] = array_values( array_diff( $this->settings['admincdn'], [ 'jsdelivr' ] ) );
 				$this->update_settings();
 			}
 		}

@@ -4,52 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "19512e097932a150b6ccc5f8044c62ed",
+    "content-hash": "46cf14a68ffba471ee1e2f603a301a9c",
     "packages": [
-        {
-            "name": "thetnb/wp-setting-api",
-            "version": "2.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/TheTNB/wp-setting-api.git",
-                "reference": "0e34224dfe0832fd3bf29e2e3c054a2aad603f84"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/TheTNB/wp-setting-api/zipball/0e34224dfe0832fd3bf29e2e3c054a2aad603f84",
-                "reference": "0e34224dfe0832fd3bf29e2e3c054a2aad603f84",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.6"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "TheTNB\\Setting\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-3.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "耗子",
-                    "email": "i@haozi.net"
-                }
-            ],
-            "description": "WordPress Setting API for developers",
-            "homepage": "https://github.com/thetnb/wp-setting-api",
-            "keywords": [
-                "wordpress"
-            ],
-            "support": {
-                "issues": "https://github.com/TheTNB/wp-setting-api/issues",
-                "source": "https://github.com/TheTNB/wp-setting-api/tree/2.0.2"
-            },
-            "time": "2024-03-08T07:11:27+00:00"
-        },
         {
             "name": "yahnis-elsts/plugin-update-checker",
             "version": "v5.4",

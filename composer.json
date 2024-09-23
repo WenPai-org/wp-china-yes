@@ -3,7 +3,6 @@
     "description": "WordPress Optimized Plugin for Mainland China",
     "type": "project",
     "require": {
-        "thetnb/wp-setting-api": "^2.0",
         "yahnis-elsts/plugin-update-checker": "^5.2"
     },
     "license": "MIT",
@@ -12,7 +11,8 @@
             "WenPai\\ChinaYes\\": "./"
         },
         "files": [
-            "helpers.php"
+            "helpers.php",
+            "framework/classes/setup.class.php"
         ]
     },
     "authors": [

@@ -39,7 +39,7 @@ class Super {
 					echo <<<HTML
 					<div class="wordpress-news hide-if-no-js">
 					<div class="rss-widget">
-					HTML;
+HTML;
 					wp_widget_rss_output( 'https://wptea.com/feed/', [
 						'items'        => 5,
 						'show_summary' => 1,
@@ -78,7 +78,7 @@ class Super {
 						  margin:0
 						}
 					</style>
-					HTML;
+HTML;
 				} );
 			} );
 			add_action( 'wp_network_dashboard_setup', function () {
@@ -89,7 +89,7 @@ class Super {
 					echo <<<HTML
 					<div class="wordpress-news hide-if-no-js">
 					<div class="rss-widget">
-					HTML;
+HTML;
 					wp_widget_rss_output( 'https://wptea.com/feed/', [
 						'items'        => 5,
 						'show_summary' => 1,
@@ -128,7 +128,7 @@ class Super {
 						  margin:0
 						}
 					</style>
-					HTML;
+HTML;
 				} );
 			} );
 		}
@@ -138,7 +138,7 @@ class Super {
 		 */
 		if ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			if (
-				! empty( $this->settings['admincdn']['admin'] ) &&
+				in_array( 'admin', (array) $this->settings['admincdn'] ) &&
 				! stristr( $GLOBALS['wp_version'], 'alpha' ) &&
 				! stristr( $GLOBALS['wp_version'], 'beta' ) &&
 				! stristr( $GLOBALS['wp_version'], 'RC' )
@@ -158,7 +158,7 @@ class Super {
 			/**
 			 * 前台静态加速
 			 */
-			if ( ! empty( $this->settings['admincdn']['frontend'] ) ) {
+			if ( in_array( 'frontend', (array) $this->settings['admincdn'] ) ) {
 				$this->page_str_replace( 'template_redirect', 'preg_replace', [
 					'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
 					'https://public.admincdn.com/$0'
@@ -168,7 +168,7 @@ class Super {
 			/**
 			 * Google 字体替换
 			 */
-			if ( ! empty( $this->settings['admincdn']['googlefonts'] ) ) {
+			if ( in_array( 'googlefonts', (array) $this->settings['admincdn'] ) ) {
 				$this->page_str_replace( 'init', 'str_replace', [
 					'fonts.googleapis.com',
 					'googlefonts.admincdn.com'
@@ -178,7 +178,7 @@ class Super {
 			/**
 			 * Google 前端公共库替换
 			 */
-			if ( ! empty( $this->settings['admincdn']['googleajax'] ) ) {
+			if ( in_array( 'googleajax', (array) $this->settings['admincdn'] ) ) {
 				$this->page_str_replace( 'init', 'str_replace', [
 					'ajax.googleapis.com',
 					'googleajax.admincdn.com'
@@ -188,7 +188,7 @@ class Super {
 			/**
 			 * CDNJS 前端公共库替换
 			 */
-			if ( ! empty( $this->settings['admincdn']['cdnjs'] ) ) {
+			if ( in_array( 'cdnjs', (array) $this->settings['admincdn'] ) ) {
 				$this->page_str_replace( 'init', 'str_replace', [
 					'cdnjs.cloudflare.com/ajax/libs',
 					'cdnjs.admincdn.com'
@@ -198,9 +198,9 @@ class Super {
 			/**
 			 * jsDelivr 前端公共库替换
 			 */
-			if ( ! empty( $this->settings['admincdn']['jsdelivr'] ) ) {
+			if ( in_array( 'jsdelivr', (array) $this->settings['admincdn'] ) ) {
 				$this->page_str_replace( 'init', 'str_replace', [
-					'cdn.jsdelivr.net',
+					'jsd.admincdn.com',
 					'jsd.admincdn.com'
 				] );
 			}
@@ -224,6 +224,85 @@ class Super {
 			add_action( 'init', function () {
 				wp_enqueue_style( 'windfonts-optimize', CHINA_YES_PLUGIN_URL . 'assets/css/fonts.css', [], CHINA_YES_VERSION );
 			} );
+		}
+		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'on' ) {
+			add_action( 'wp_head', [ $this, 'load_windfonts' ] );
+			add_action( 'admin_head', [ $this, 'load_windfonts' ] );
+		}
+		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'frontend' ) {
+			add_action( 'wp_head', [ $this, 'load_windfonts' ] );
+		}
+
+		/**
+		 * 广告拦截
+		 */
+		if ( ! empty( $this->settings['adblock'] ) && $this->settings['adblock'] == 'on' ) {
+			add_action( 'admin_head', [ $this, 'load_adblock' ] );
+		}
+	}
+
+	/**
+	 * 加载文风字体
+	 */
+	public function load_windfonts() {
+		echo <<<HTML
+		<link rel="preconnect" href="//cn.windfonts.com">
+		<!-- 此中文网页字体由文风字体（Windfonts）免费提供，您可以自由引用，请务必保留此授权许可标注 https://wenfeng.org/license -->
+HTML;
+
+		$loaded = [];
+		foreach ( (array) $this->settings['windfonts_list'] as $font ) {
+			if ( empty( $font['enable'] ) ) {
+				continue;
+			}
+			if ( empty( $font['family'] ) ) {
+				continue;
+			}
+			if ( in_array( $font['css'], $loaded ) ) {
+				continue;
+			}
+			echo sprintf( <<<HTML
+			<link rel="stylesheet" type="text/css" href="%s">
+			<style>
+			%s {
+				font-style: %s;
+				font-weight: %s;
+				font-family: '%s',sans-serif!important;
+			}
+			</style>
+HTML
+				,
+				$font['css'],
+				htmlspecialchars_decode( $font['selector'] ),
+				$font['style'],
+				$font['weight'],
+				$font['family']
+			);
+			$loaded[] = $font['css'];
+		}
+	}
+
+	/**
+	 * 加载广告拦截
+	 */
+	public function load_adblock() {
+		foreach ( (array) $this->settings['adblock_rule'] as $rule ) {
+			if ( empty( $rule['enable'] ) ) {
+				continue;
+			}
+			if ( empty( $rule['selector'] ) ) {
+				continue;
+			}
+			echo sprintf( <<<HTML
+			<style>
+			%s {
+				display: none!important;
+			}
+			</style>
+HTML
+				,
+				htmlspecialchars_decode( $rule['selector'] )
+			);
 		}
 	}
 

@@ -9,13 +9,15 @@ function get_settings() {
 	$settings = is_multisite() ? get_site_option( 'wp_china_yes' ) : get_option( 'wp_china_yes' );
 
 	return wp_parse_args( $settings, [
-		'store'     => 'wenpai',
-		'admincdn'  => [
-			'admin' => 'admin',
-		],
-		'cravatar'  => 'cn',
-		'windfonts' => 'off',
-		'adblock'   => 'off',
-		'monitor'   => 'on',
+		'store'          => 'wenpai',
+		'admincdn'       => [ 'admin' ],
+		'cravatar'       => 'cn',
+		'windfonts'      => 'off',
+		'windfonts_list' => [],
+		'adblock'        => 'off',
+		'adblock_rule'   => [],
+		'monitor'        => true,
+		'hide'           => false,
+		'custom_name'    => 'WP-China-Yes',
 	] );
 }
