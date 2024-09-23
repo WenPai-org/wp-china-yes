@@ -63,7 +63,7 @@ class Setting {
 					],
 					'default'  => 'wenpai',
 					'subtitle' => '是否启用市场加速',
-					'desc'     => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台',
+					'desc'     => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。可参考<a href="https://wp-china-yes.com/document/wordpress-marketplace-acceleration" target="_blank">节点选择说明</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -83,7 +83,7 @@ class Setting {
 						'admin' => 'admin',
 					],
 					'subtitle' => '是否启用萌芽加速',
-					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，请关注 adminCDN 项目',
+					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，查看<a href="https://wp-china-yes.com/document/admincdn" target="_blank">推荐设置</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -122,7 +122,7 @@ class Setting {
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用文风字体定制',
-					'desc'     => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>为您的网站增添无限活力。专为中文网页设计，旨在提升用户阅读体验和视觉享受',
+					'desc'     => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>为您的网站增添无限活力。专为中文网页设计，旨在提升用户阅读体验和视觉享受。新手使用请先查看<a href="https://wp-china-yes.com/document/chinese-fonts" target="_blank">字体使用说明</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -144,7 +144,7 @@ class Setting {
 							'type'     => 'text',
 							'title'    => __( '字体家族', 'wp-china-yes' ),
 							'subtitle' => '字体家族名称',
-							'desc'     => __( '填入从<a href="https://app.windfonts.com//" target="_blank">文风字体</a>获取的字体家族名称',
+							'desc'     => __( '填入从<a href="https://app.windfonts.com/" target="_blank">文风字体</a>获取的字体家族名称',
 								'wp-china-yes' ),
 							'default'  => 'wenfeng-syhtcjk',
 						],
@@ -153,7 +153,7 @@ class Setting {
 							'type'     => 'text',
 							'title'    => __( '字体链接', 'wp-china-yes' ),
 							'subtitle' => '字体 CSS 链接',
-							'desc'     => __( '填入从<a href="https://app.windfonts.com//" target="_blank">文风字体</a>获取的字体 CSS 链接',
+							'desc'     => __( '填入从<a href="https://app.windfonts.com/" target="_blank">文风字体</a>获取的字体 CSS 链接',
 								'wp-china-yes' ),
 							'default'  => 'https://cn.windfonts.com/wenfeng/fonts/syhtcjk/regular/web/index.css',
 							'validate' => 'csf_validate_url',
@@ -207,7 +207,7 @@ class Setting {
 				],
 				[
 					'type'    => 'content',
-					'content' => '默认适配规则跟随插件更新，插件更新后可删除字体重新添加以获取最新适配规则',
+					'content' => '默认<a href="https://wp-china-yes.com/document/add-html-tag" target="_blank">字体适配规则</a>跟随插件更新，插件更新后可删除字体重新添加以获取最新适配规则',
 				],
 			],
 		] );
@@ -227,7 +227,7 @@ class Setting {
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用后台广告屏蔽',
-					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息',
+					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，<a href="https://wp-china-yes.com/document/ad-blocking-for-developers " target="_blank">拿回您后台的控制权</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -274,7 +274,7 @@ class Setting {
 				],
 				[
 					'type'    => 'content',
-					'content' => '默认屏蔽规则跟随插件更新，插件更新后可删除规则重新添加以获取最新屏蔽规则',
+					'content' => '默认<a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">广告屏蔽规则</a>跟随插件更新，插件更新后可删除规则重新添加以获取更多<a href="https://wp-china-yes.com/adblocker" target="_blank">最新屏蔽规则</a>，出现异常，请尝试先停用规则<a href="https://wp-china-yes.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
 				],
 			],
 		] );
@@ -289,7 +289,7 @@ class Setting {
 					'default'  => true,
 					'title'    => '节点监控',
 					'subtitle' => '自动监控加速节点可用性',
-					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
+					'desc'     => __( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
 						'wp-china-yes' ),
 				],
 				[
@@ -298,7 +298,7 @@ class Setting {
 					'default'  => false,
 					'title'    => '隐藏设置',
 					'subtitle' => '隐藏插件设置入口',
-					'desc'     => __( '如果您不希望让客户知道本站启用了<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>插件及服务，可开启此选项',
+					'desc'     => __( '如果您不希望让客户知道本站启用了<a href="https://wp-china-yes.com/" target="_blank">文派叶子🍃（WP-China-Yes）</a>插件及服务，可开启此选项',
 						'wp-china-yes' ),
 				],
 				[
@@ -306,13 +306,13 @@ class Setting {
 					'type'     => 'text',
 					'title'    => '品牌白标',
 					'subtitle' => '自定义插件显示品牌名',
-					'desc'     => __( '专为 WordPress 建站服务商和代理机构提供的自定义品牌功能，输入您的品牌词启用后生效',
+					'desc'     => __( '专为 WordPress 建站服务商和代理机构提供的<a href="https://wp-china-yes.com/white-label" target="_blank">自定义品牌 OEM 功能</a>，输入您的品牌词启用后生效',
 						'wp-china-yes' ),
 					'default'  => "WP-China-Yes",
 				],
 				[
 					'type'    => 'content',
-					'content' => '启用隐藏设置前请务必保存当前设置页面 URL，否则您将无法再次进入插件设置页面',
+					'content' => '启用隐藏设置前请务必的<a href="https://wp-china-yes.com/document/hide-settings-page" target="_blank">保存或收藏</a>当前设置页面 URL，否则您将无法再次进入插件设置页面',
 				],
 			],
 		] );
@@ -323,11 +323,11 @@ class Setting {
 			'fields' => [
 				[
 					'type'    => 'heading',
-					'content' => '将您的 WordPress 接入本土生态体系，这将为您提供一个更贴近中国人使用习惯的 WordPress',
+					'content' => '文派叶子🍃 —— 开源 WordPress 中国网站加速器。',
 				],
 				[
 					'type'    => 'submessage',
-					'content' => '100% 开源代码，一起参与文派（WordPress）软件国产化进程，打造属于您自己的开源自助建站程序',
+					'content' => '100% 开源代码，一起参与文派（WordPress）软件国产化进程，打造属于您自己的开源自助建站程序。',
 				],
 				[
 					'type'    => 'subheading',
@@ -335,11 +335,15 @@ class Setting {
 				],
 				[
 					'type'    => 'content',
-					'content' => '文派叶子 🍃（WP-China-Yes）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。项目起源于 2019 年，专为解决困扰了中国互联网数十年的特色问题而存在。此为文派开源（WenPai.org）的一部分',
+					'content' => '文派叶子 🍃（WP-China-Yes）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。项目起源于 2019 年，专为解决困扰了中国互联网数十年的特色问题而存在。此为文派开源（WenPai.org）的一部分。<br><br>将您的 WordPress 接入本土生态体系，这将为您提供一个更贴近中国人使用习惯的 WordPress。',
 				],
 				[
 					'type'    => 'subheading',
 					'content' => '赞助商',
+				],
+				[
+					'type'    => 'submessage',
+					'content' => '特别感谢以下企业品牌对文派项目提供的资金资源，<a href="https://wp-china-yes.com/about/sponsor" target="_blank">期待社会各界参与</a>。',
 				],
 				[
 					'type'    => 'content',
@@ -362,6 +366,10 @@ HTML,
 				[
 					'type'    => 'subheading',
 					'content' => '开发者 & 贡献者',
+				],
+				[
+					'type'    => 'submessage',
+					'content' => '以下为对此项目做出过贡献和帮助的朋友，<a href="https://wp-china-yes.com/promotion-list" target="_blank">贡献您自己的力量</a>。',
 				],
 				[
 					'type'    => 'content',
