@@ -49,10 +49,14 @@ HTML;
 					</div>
 					<p class="community-events-footer">
 					<a href="https://wenpai.org/" target="_blank">文派开源</a>
-					 | 
+					 |
 					<a href="https://wenpai.org/support" target="_blank">支持论坛</a>
-					 | 
+					 |
 					<a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
+				   |
+		  		 <a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
+					 |
+					 <a href="https://wp-china-yes.com/document/news-source" target="_blank">自选新闻源</a>
 					</p>
 					<style>
 						#wenpai_tea .rss-widget {
@@ -76,6 +80,10 @@ HTML;
 						#wenpai_tea .rss-widget ul li {
 						  padding:4px 0;
 						  margin:0
+						}
+						#wenpai_tea .community-events-footer a {
+              line-height: 2;
+              padding: 0.5em;
 						}
 					</style>
 HTML;
@@ -99,11 +107,15 @@ HTML;
 					</div>
 					<p class="community-events-footer">
 					<a href="https://wenpai.org/" target="_blank">文派开源</a>
-					 | 
+					 |
 					<a href="https://wenpai.org/support" target="_blank">支持论坛</a>
-					 | 
-					<a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
-					</p>
+					 |
+					 <a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
+ 				   |
+ 		  		 <a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
+			  	 |
+			  	 <a href="https://wptea.com/document/news-source/" target="_blank">自选新闻源</a>
+			    </p>
 					<style>
 						#wenpai_tea .rss-widget {
 						  font-size:13px;
@@ -126,6 +138,10 @@ HTML;
 						#wenpai_tea .rss-widget ul li {
 						  padding:4px 0;
 						  margin:0
+						}
+						#wenpai_tea .community-events-footer a {
+							line-height: 2;
+							padding: 0.5em;
 						}
 					</style>
 HTML;
