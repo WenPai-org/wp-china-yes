@@ -17,6 +17,7 @@ class Base {
 		 */
 		add_filter( sprintf( '%splugin_action_links', is_multisite() ? 'network_admin_' : '' ), function ( $links, $plugin = '' ) {
 			$links[] = '<a target="_blank" href="https://translate.wenpai.org/projects/plugins/' . substr( $plugin, 0, strpos( $plugin, '/' ) ) . '/">参与翻译</a>';
+			$links[] = '<a target="_blank" href="https://wp-china-yes.com/plugins/' . substr( $plugin, 0, strpos( $plugin, '/' ) ) . '/">去广告</a>';
 
 			return $links;
 		}, 10, 2 );

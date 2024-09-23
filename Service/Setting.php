@@ -83,7 +83,7 @@ class Setting {
 						'admin' => 'admin',
 					],
 					'subtitle' => '是否启用萌芽加速',
-					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，查看<a href="https://wp-china-yes.com/document/admincdn" target="_blank">推荐设置</a>。',
+					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，请查看<a href="https://wp-china-yes.com/document/admincdn" target="_blank">推荐设置</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -235,7 +235,9 @@ class Setting {
 					'type'                   => 'group',
 					'title'                  => '规则列表',
 					'subtitle'               => '使用的广告屏蔽规则列表',
-					'desc'                   => '支持添加多条广告屏蔽规则',
+					'desc'                   => __( '支持添加多条<a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">广告屏蔽规则</a>',
+						'wp-china-yes' ),
+
 					'button_title'           => '添加规则',
 					'accordion_title_number' => true,
 					'dependency'             => [
@@ -274,7 +276,7 @@ class Setting {
 				],
 				[
 					'type'    => 'content',
-					'content' => '默认<a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">广告屏蔽规则</a>跟随插件更新，插件更新后可删除规则重新添加以获取更多<a href="https://wp-china-yes.com/adblocker" target="_blank">最新屏蔽规则</a>，出现异常，请尝试先停用规则<a href="https://wp-china-yes.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
+					'content' => '默认规则跟随插件更新，插件更新后可删除规则重新添加以<a href="https://wp-china-yes.com/adblocker" target="_blank">获取更多</a>最新屏蔽规则，出现异常，请尝试先停用规则<a href="https://wp-china-yes.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
 				],
 			],
 		] );
@@ -343,7 +345,7 @@ class Setting {
 				],
 				[
 					'type'    => 'submessage',
-					'content' => '特别感谢以下企业品牌对文派项目提供的资金资源，<a href="https://wp-china-yes.com/about/sponsor" target="_blank">期待社会各界参与</a>。',
+					'content' => '特别感谢以下企业品牌对文派项目提供的资金资源，同时<a href="https://wp-china-yes.com/about/sponsor" target="_blank">期待社会各界参与</a>。',
 				],
 				[
 					'type'    => 'content',
@@ -369,7 +371,7 @@ HTML,
 				],
 				[
 					'type'    => 'submessage',
-					'content' => '以下为对此项目做出过贡献和帮助的朋友，<a href="https://wp-china-yes.com/promotion-list" target="_blank">贡献您自己的力量</a>。',
+					'content' => '以下为对此项目提供过帮助的朋友，欢迎<a href="https://wp-china-yes.com/promotion-list" target="_blank">贡献您自己的力量</a>。',
 				],
 				[
 					'type'    => 'content',
