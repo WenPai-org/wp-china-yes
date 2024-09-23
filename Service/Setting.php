@@ -308,7 +308,7 @@ class Setting {
 					'type'     => 'text',
 					'title'    => '品牌白标',
 					'subtitle' => '自定义插件显示品牌名',
-					'desc'     => __( '专为 WordPress 建站服务商和代理机构提供的<a href="https://wp-china-yes.com/white-label" target="_blank">自定义品牌 OEM 功能</a>，输入您的品牌词启用后生效',
+					'desc'     => __( '专为 WordPress 建站服务商和代理机构提供的<a href="https://wp-china-yes.com/white-label" target="_blank">自定义品牌 OEM </a>功能，输入您的品牌词启用后生效',
 						'wp-china-yes' ),
 					'default'  => "WP-China-Yes",
 				],
@@ -377,6 +377,7 @@ HTML,
 					'type'    => 'content',
 					'content' =>
 						<<<HTML
+<div class="card-body contributors-name">
 <a href="https://www.ibadboy.net/" target="_blank">孙锡源</a> |
 <a href="https://github.com/devhaozi/" target="_blank">耗子</a> |
 <a href="https://github.com/Yulinn233/" target="_blank">Yulinn</a> |
@@ -388,6 +389,7 @@ HTML,
 <a href="https://bbs.weixiaoduo.com/users/feibisi/" target="_blank">诗语</a> |
 <a href="https://www.modiqi.com/" target="_blank">莫蒂奇</a> |
 <a href="https://bbs.weixiaoduo.com/users/weixiaoduo/" target="_blank">薇晓朵</a>
+</div>
 HTML,
 				]
 			],

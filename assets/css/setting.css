@@ -7,10 +7,21 @@
 .sponsor-logos img {
     flex-basis: calc(20% - 10px);
     max-width: 85px;
-    margin: 5px;
+    margin: 14px;
     height: auto;
 }
 
+.contributors-name {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 12px;
+    color: #dcdcde;
+}
+
+.contributors-name a{
+    line-height: 2;
+    padding: 0.5em;
+}
 .wp_china_yes-content a {
     color: #3858e9;
     text-decoration: none;
