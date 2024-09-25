@@ -4,6 +4,7 @@ namespace WenPai\ChinaYes\Service;
 
 defined( 'ABSPATH' ) || exit;
 
+use WP_Error;
 use function WenPai\ChinaYes\get_settings;
 
 /**
@@ -170,56 +171,11 @@ HTML;
 			}
 		}
 
+		/**
+		 * adminCDN
+		 */
 		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
-			/**
-			 * 前台静态加速
-			 */
-			if ( in_array( 'frontend', (array) $this->settings['admincdn'] ) ) {
-				$this->page_str_replace( 'template_redirect', 'preg_replace', [
-					'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
-					'https://public.admincdn.com/$0'
-				] );
-			}
-
-			/**
-			 * Google 字体替换
-			 */
-			if ( in_array( 'googlefonts', (array) $this->settings['admincdn'] ) ) {
-				$this->page_str_replace( 'init', 'str_replace', [
-					'fonts.googleapis.com',
-					'googlefonts.admincdn.com'
-				] );
-			}
-
-			/**
-			 * Google 前端公共库替换
-			 */
-			if ( in_array( 'googleajax', (array) $this->settings['admincdn'] ) ) {
-				$this->page_str_replace( 'init', 'str_replace', [
-					'ajax.googleapis.com',
-					'googleajax.admincdn.com'
-				] );
-			}
-
-			/**
-			 * CDNJS 前端公共库替换
-			 */
-			if ( in_array( 'cdnjs', (array) $this->settings['admincdn'] ) ) {
-				$this->page_str_replace( 'init', 'str_replace', [
-					'cdnjs.cloudflare.com/ajax/libs',
-					'cdnjs.admincdn.com'
-				] );
-			}
-
-			/**
-			 * jsDelivr 前端公共库替换
-			 */
-			if ( in_array( 'jsdelivr', (array) $this->settings['admincdn'] ) ) {
-				$this->page_str_replace( 'init', 'str_replace', [
-					'jsd.admincdn.com',
-					'jsd.admincdn.com'
-				] );
-			}
+			$this->load_admincdn();
 		}
 
 		/**
@@ -236,24 +192,93 @@ HTML;
 		/**
 		 * 文风字体
 		 */
-		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'optimize' ) {
-			add_action( 'init', function () {
-				wp_enqueue_style( 'windfonts-optimize', CHINA_YES_PLUGIN_URL . 'assets/css/fonts.css', [], CHINA_YES_VERSION );
-			} );
-		}
-		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'on' ) {
-			add_action( 'wp_head', [ $this, 'load_windfonts' ] );
-			add_action( 'admin_head', [ $this, 'load_windfonts' ] );
-		}
-		if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'frontend' ) {
-			add_action( 'wp_head', [ $this, 'load_windfonts' ] );
+		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+			if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] != 'off' ) {
+				$this->load_typography();
+			}
+			if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'optimize' ) {
+				add_action( 'init', function () {
+					wp_enqueue_style( 'windfonts-optimize', CHINA_YES_PLUGIN_URL . 'assets/css/fonts.css', [], CHINA_YES_VERSION );
+				} );
+			}
+			if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'on' ) {
+				add_action( 'wp_head', [ $this, 'load_windfonts' ] );
+				add_action( 'admin_head', [ $this, 'load_windfonts' ] );
+			}
+			if ( ! empty( $this->settings['windfonts'] ) && $this->settings['windfonts'] == 'frontend' ) {
+				add_action( 'wp_head', [ $this, 'load_windfonts' ] );
+			}
 		}
 
 		/**
 		 * 广告拦截
 		 */
-		if ( ! empty( $this->settings['adblock'] ) && $this->settings['adblock'] == 'on' ) {
-			add_action( 'admin_head', [ $this, 'load_adblock' ] );
+		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+			if ( ! empty( $this->settings['adblock'] ) && $this->settings['adblock'] == 'on' ) {
+				add_action( 'admin_head', [ $this, 'load_adblock' ] );
+			}
+		}
+
+		/**
+		 * 飞行模式
+		 */
+		if ( ! empty( $this->settings['plane'] ) && $this->settings['plane'] == 'on' ) {
+			$this->load_plane();
+		}
+	}
+
+	/**
+	 * 加载 adminCDN
+	 */
+	public function load_admincdn() {
+		/**
+		 * 前台静态加速
+		 */
+		if ( in_array( 'frontend', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
+				'https://public.admincdn.com/$0'
+			] );
+		}
+
+		/**
+		 * Google 字体替换
+		 */
+		if ( in_array( 'googlefonts', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'fonts.googleapis.com',
+				'googlefonts.admincdn.com'
+			] );
+		}
+
+		/**
+		 * Google 前端公共库替换
+		 */
+		if ( in_array( 'googleajax', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'ajax.googleapis.com',
+				'googleajax.admincdn.com'
+			] );
+		}
+
+		/**
+		 * CDNJS 前端公共库替换
+		 */
+		if ( in_array( 'cdnjs', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'cdnjs.cloudflare.com/ajax/libs',
+				'cdnjs.admincdn.com'
+			] );
+		}
+
+		/**
+		 * jsDelivr 前端公共库替换
+		 */
+		if ( in_array( 'jsdelivr', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'jsd.admincdn.com',
+				'jsd.admincdn.com'
+			] );
 		}
 	}
 
@@ -299,6 +324,127 @@ HTML
 	}
 
 	/**
+	 * 加载排印优化
+	 */
+	public function load_typography() {
+		// code from corner-bracket-lover plugin
+		if ( in_array( 'corner', (array) $this->settings['windfonts_typography'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'n’t',
+				'n&rsquo;t'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’s',
+				'&rsquo;s'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’m',
+				'&rsquo;m'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’re',
+				'&rsquo;re'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’ve',
+				'&rsquo;ve'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’d',
+				'&rsquo;d'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’ll',
+				'&rsquo;ll'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'“',
+				'&#12300;'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'”',
+				'&#12301;'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'‘',
+				'&#12302;'
+			] );
+			$this->page_str_replace( 'init', 'str_replace', [
+				'’',
+				'&#12303;'
+			] );
+		}
+		// code from space-lover plugin
+		if ( in_array( 'space', (array) $this->settings['windfonts_typography'] ) ) {
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~(\p{Han})([a-zA-Z0-9\p{Ps}\p{Pi}])(?![^<]*>)~u',
+				'\1 \2'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~([a-zA-Z0-9\p{Pe}\p{Pf}])(\p{Han})(?![^<]*>)~u',
+				'\1 \2'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~([!?‽:;,.%])(\p{Han})~u',
+				'\1 \2'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~(\p{Han})([@$#])~u',
+				'\1 \2'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~(&amp;?(?:amp)?;) (\p{Han})(?![^<]*>)~u',
+				'\1\2'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~(\p{Han})(<(?!ruby)[a-zA-Z]+?[^>]*?>)([a-zA-Z0-9\p{Ps}\p{Pi}@$#])~u',
+				'\1 \2\3'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~(\p{Han})(<\/(?!ruby)[a-zA-Z]+>)([a-zA-Z0-9])~u',
+				'\1\2 \3'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~([a-zA-Z0-9\p{Pe}\p{Pf}!?‽:;,.%])(<(?!ruby)[a-zA-Z]+?[^>]*?>)(\p{Han})~u',
+				'\1 \2\3'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~([a-zA-Z0-9\p{Ps}\p{Pi}!?‽:;,.%])(<\/(?!ruby)[a-zA-Z]+>)(\p{Han})~u',
+				'\1\2 \3'
+			] );
+			$this->page_str_replace( 'template_redirect', 'preg_replace', [
+				'~[ ]*([「」『』（）〈〉《》【】〔〕〖〗〘〙〚〛])[ ]*~u',
+				'\1'
+			] );
+		}
+		// code from quotmarks-replacer plugin
+		if ( in_array( 'punctuation', (array) $this->settings['windfonts_typography'] ) ) {
+			$qmr_work_tags = array(
+				'the_title',             // http://codex.wordpress.org/Function_Reference/the_title
+				'the_content',           // http://codex.wordpress.org/Function_Reference/the_content
+				'the_excerpt',           // http://codex.wordpress.org/Function_Reference/the_excerpt
+				// 'list_cats',          Deprecated. http://codex.wordpress.org/Function_Reference/list_cats
+				'single_post_title',     // http://codex.wordpress.org/Function_Reference/single_post_title
+				'comment_author',        // http://codex.wordpress.org/Function_Reference/comment_author
+				'comment_text',          // http://codex.wordpress.org/Function_Reference/comment_text
+				// 'link_name',          Deprecated.
+				// 'link_notes',         Deprecated.
+				'link_description',      // Deprecated, but still widely used.
+				'bloginfo',              // http://codex.wordpress.org/Function_Reference/bloginfo
+				'wp_title',              // http://codex.wordpress.org/Function_Reference/wp_title
+				'term_description',      // http://codex.wordpress.org/Function_Reference/term_description
+				'category_description',  // http://codex.wordpress.org/Function_Reference/category_description
+				'widget_title',          // Used by all widgets in themes
+				'widget_text'            // Used by all widgets in themes
+			);
+
+			foreach ( $qmr_work_tags as $qmr_work_tag ) {
+				remove_filter( $qmr_work_tag, 'wptexturize' );
+			}
+		}
+	}
+
+	/**
 	 * 加载广告拦截
 	 */
 	public function load_adblock() {
@@ -320,6 +466,27 @@ HTML
 				htmlspecialchars_decode( $rule['selector'] )
 			);
 		}
+	}
+
+	/**
+	 * 加载飞行模式
+	 */
+	public function load_plane() {
+		add_filter( 'pre_http_request', function ( $preempt, $parsed_args, $url ) {
+			foreach ( (array) $this->settings['plane_rule'] as $rule ) {
+				if ( empty( $rule['enable'] ) ) {
+					continue;
+				}
+				if ( empty( $rule['url'] ) ) {
+					continue;
+				}
+				if ( strpos( $url, $rule['url'] ) !== false ) {
+					return new WP_Error( 'http_request_not_executed', '无用 URL 已屏蔽访问' );
+				}
+			}
+
+			return $preempt;
+		}, PHP_INT_MAX, 3 );
 	}
 
 	/**

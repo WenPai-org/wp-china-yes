@@ -18,10 +18,11 @@
     color: #dcdcde;
 }
 
-.contributors-name a{
+.contributors-name a {
     line-height: 2;
     padding: 0.5em;
 }
+
 .wp_china_yes-content a {
     color: #3858e9;
     text-decoration: none;

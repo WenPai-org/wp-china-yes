@@ -126,6 +126,26 @@ class Setting {
 						'wp-china-yes' ),
 				],
 				[
+					'id'         => 'windfonts_typography',
+					'type'       => 'checkbox',
+					'title'      => __( '排印优化', 'wp-china-yes' ),
+					'inline'     => true,
+					'options'    => [
+						'corner'      => '直角括号',
+						'space'       => '文本空格',
+						'punctuation' => '标点显示',
+					],
+					'default'    => '',
+					'subtitle'   => '是否启用排印优化',
+					'desc'       => __( '排印优化可提升中文网页的视觉美感，适用于中文字体的网站。',
+						'wp-china-yes' ),
+					'dependency' => [
+						'windfonts',
+						'any',
+						'on,frontend,optimize',
+					],
+				],
+				[
 					'id'                     => 'windfonts_list',
 					'type'                   => 'group',
 					'title'                  => '字体列表',
@@ -193,7 +213,7 @@ class Setting {
 							'subtitle' => '字体应用元素',
 							'desc'     => __( '设置字体应用的元素（CSS 选择器）',
 								'wp-china-yes' ),
-							'default'  => 'a,p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,div:not([class*="star"]),label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class*="icon"])',
+							'default'  => 'a:not([class]),p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class])',
 							'sanitize' => false,
 						],
 						[
@@ -231,11 +251,11 @@ class Setting {
 						'wp-china-yes' ),
 				],
 				[
-					'id'                     => 'adblock_rule',
-					'type'                   => 'group',
-					'title'                  => '规则列表',
-					'subtitle'               => '使用的广告屏蔽规则列表',
-					'desc'                   => __( '支持添加多条<a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">广告屏蔽规则</a>',
+					'id'       => 'adblock_rule',
+					'type'     => 'group',
+					'title'    => '规则列表',
+					'subtitle' => '使用的广告屏蔽规则列表',
+					'desc'     => __( '支持添加多条<a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">广告屏蔽规则</a>',
 						'wp-china-yes' ),
 
 					'button_title'           => '添加规则',
@@ -278,6 +298,72 @@ class Setting {
 					'type'    => 'content',
 					'content' => '默认规则跟随插件更新，插件更新后可删除规则重新添加以<a href="https://wp-china-yes.com/adblocker" target="_blank">获取更多</a>最新屏蔽规则，出现异常，请尝试先停用规则<a href="https://wp-china-yes.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
 				],
+			],
+		] );
+
+		WP_CHINA_YES::createSection( $this->prefix, [
+			'title'  => '飞行模式',
+			'icon'   => 'fa fa-plane',
+			'fields' => [
+				[
+					'id'       => 'plane',
+					'type'     => 'radio',
+					'title'    => __( '飞行模式', 'wp-china-yes' ),
+					'inline'   => true,
+					'options'  => [
+						'on'  => '启用',
+						'off' => '不启用',
+					],
+					'default'  => 'off',
+					'subtitle' => '是否启用飞行模式',
+					'desc'     => __( '<a href="https://wp-china-yes.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，飞行模式可以屏蔽 WordPress 主题插件中国不能访问的服务 API 请求，加速网站前后台访问。注意：部分外部请求为产品更新检测，若屏蔽请定期手动检测。',
+						'wp-china-yes' ),
+				],
+				[
+					'id'       => 'plane_rule',
+					'type'     => 'group',
+					'title'    => '规则列表',
+					'subtitle' => '飞行模式使用的 URL 屏蔽规则列表',
+					'desc'     => __( '支持添加多条 <a href="https://wp-china-yes.com/document/advertising-blocking-rules" target="_blank">URL 屏蔽规则</a>',
+						'wp-china-yes' ),
+
+					'button_title'           => '添加规则',
+					'accordion_title_number' => true,
+					'dependency'             => [
+						'plane',
+						'any',
+						'on',
+					],
+					'fields'                 => [
+						[
+							'id'       => 'name',
+							'type'     => 'text',
+							'title'    => __( '规则名称', 'wp-china-yes' ),
+							'subtitle' => '自定义规则名称',
+							'desc'     => __( '自定义规则名称，方便识别',
+								'wp-china-yes' ),
+							'default'  => '默认规则',
+						],
+						[
+							'id'          => 'url',
+							'type'        => 'textarea',
+							'title'       => __( 'URL', 'wp-china-yes' ),
+							'subtitle'    => 'URL',
+							'desc'        => __( '设置需要屏蔽的 URL 关键词',
+								'wp-china-yes' ),
+							'default'     => '',
+							'placeholder' => 'example.com',
+							'sanitize'    => false,
+						],
+						[
+							'id'       => 'enable',
+							'type'     => 'switcher',
+							'title'    => __( '启用规则', 'wp-china-yes' ),
+							'subtitle' => '是否启用该规则',
+							'default'  => true,
+						],
+					],
+				]
 			],
 		] );
 

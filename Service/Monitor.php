@@ -17,6 +17,9 @@ class Monitor {
 
 	public function __construct() {
 		$this->settings = get_settings();
+		if ( $this->settings['monitor'] ) {
+			return;
+		}
 
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'wp_china_yes_maybe_check_store', [
@@ -37,9 +40,6 @@ class Monitor {
 	 * 初始化
 	 */
 	public function init() {
-		if ( $this->settings['monitor'] ) {
-			return;
-		}
 		// 检查应用市场可用性
 		if ( ! wp_next_scheduled( 'wp_china_yes_maybe_check_store' ) && $this->settings['store'] != 'off' ) {
 			wp_schedule_event( time(), 'hourly', 'wp_china_yes_maybe_check_store' );
