@@ -342,11 +342,11 @@ class Setting {
 							'subtitle' => '自定义规则名称',
 							'desc'     => __( '自定义规则名称，方便识别',
 								'wp-china-yes' ),
-							'default'  => '默认规则',
+							'default'  => '未命名规则',
 						],
 						[
 							'id'          => 'url',
-							'type'        => 'textarea',
+							'type'        => 'text',
 							'title'       => __( 'URL', 'wp-china-yes' ),
 							'subtitle'    => 'URL',
 							'desc'        => __( '设置需要屏蔽的 URL 关键词',
@@ -496,6 +496,13 @@ HTML,
 	 * 挂载设置页面
 	 */
 	public function admin_menu() {
+		// 自定义名称
+		add_filter( 'all_plugins', function ( $plugins ) {
+			$plugins['wp-china-yes/wp-china-yes.php']['Name'] = $this->settings['custom_name'];
+
+			return $plugins;
+		} );
+
 		// 插件页设置
 		add_filter( 'plugin_action_links', function ( $links, $file ) {
 			if ( 'wp-china-yes/wp-china-yes.php' !== $file ) {
