@@ -498,7 +498,9 @@ HTML,
 	public function admin_menu() {
 		// 自定义名称
 		add_filter( 'all_plugins', function ( $plugins ) {
-			$plugins['wp-china-yes/wp-china-yes.php']['Name'] = $this->settings['custom_name'];
+			if ( isset( $plugins['wp-china-yes/wp-china-yes.php'] ) ) {
+				$plugins['wp-china-yes/wp-china-yes.php']['Name'] = $this->settings['custom_name'];
+			}
 
 			return $plugins;
 		} );
