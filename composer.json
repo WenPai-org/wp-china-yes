@@ -5,7 +5,7 @@
     "require": {
         "yahnis-elsts/plugin-update-checker": "^5.2"
     },
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "autoload": {
         "psr-4": {
             "WenPai\\ChinaYes\\": "./"
