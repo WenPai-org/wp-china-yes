@@ -2,6 +2,13 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.7.1 - 2024-11-19
+
+1. 性能优化
+2. 修复监控无法关闭的问题
+
+**Full Changelog**: https://github.com/WenPai-org/wp-china-yes/compare/v3.6.5...v3.7.1
+
 ## v3.6.5 - 2024-08-23
 
 1. 优化 CLI 判断
