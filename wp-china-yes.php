@@ -4,7 +4,7 @@
  * Description: 文派叶子 🍃（WP-China-Yes）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。
  * Author: 文派开源
  * Author URI: https://wp-china-yes.com
- * Version: 3.7.0
+ * Version: 3.7.1
  * License: GPLv3 or later
  * Text Domain: wp-china-yes
  * Domain Path: /languages

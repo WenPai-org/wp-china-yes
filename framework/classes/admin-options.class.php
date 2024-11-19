@@ -346,7 +346,7 @@ if ( ! class_exists( 'WP_CHINA_YES_Options' ) ) {
       } else if ( $this->args['database'] === 'network' ) {
         update_site_option( $this->unique, $data );
       } else {
-        update_option( $this->unique, $data );
+        update_option( $this->unique, $data, true );
       }
 
       do_action( "wp_china_yes_{$this->unique}_saved", $data, $this );

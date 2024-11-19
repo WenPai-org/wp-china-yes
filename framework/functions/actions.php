@@ -115,7 +115,7 @@ if ( ! function_exists( 'wp_china_yes_import_ajax' ) ) {
     }
 
     // Success
-    update_option( $unique, $data );
+    update_option( $unique, $data, true );
 
     wp_send_json_success();
 

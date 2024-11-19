@@ -54,10 +54,10 @@ HTML;
 					<a href="https://wenpai.org/support" target="_blank">支持论坛</a>
 					 |
 					<a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
-				   |
-		  		 <a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
 					 |
-					 <a href="https://wp-china-yes.com/document/news-source" target="_blank">自选新闻源</a>
+					<a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
+					 |
+					<a href="https://wp-china-yes.com/document/news-source" target="_blank">自选新闻源</a>
 					</p>
 					<style>
 						#wenpai_tea .rss-widget {
@@ -83,8 +83,8 @@ HTML;
 						  margin:0
 						}
 						#wenpai_tea .community-events-footer a {
-              line-height: 2;
-              padding: 0.5em;
+						  line-height: 2;
+						  padding: 0.5em;
 						}
 					</style>
 HTML;

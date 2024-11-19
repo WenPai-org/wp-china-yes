@@ -5,7 +5,6 @@ namespace WenPai\ChinaYes;
 defined( 'ABSPATH' ) || exit;
 
 use WenPai\ChinaYes\Service\Base;
-use WenPai\ChinaYes\Service\Setting;
 
 class Plugin {
 
@@ -14,8 +13,9 @@ class Plugin {
 	 */
 	public function __construct() {
 		new Base();
-		new Setting();
-		add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
+		if ( is_admin() ) {
+			add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
+		}
 	}
 
 	/**
@@ -40,6 +40,15 @@ class Plugin {
 	public function plugins_loaded() {
 		load_plugin_textdomain( 'wp-china-yes', false, CHINA_YES_PLUGIN_PATH . 'languages' );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
+		/**
+		 * 插件列表页中所有插件增加「参与翻译」链接
+		 */
+		add_filter( sprintf( '%splugin_action_links', is_multisite() ? 'network_admin_' : '' ), function ( $links, $plugin = '' ) {
+			$links[] = '<a target="_blank" href="https://translate.wenpai.org/projects/plugins/' . substr( $plugin, 0, strpos( $plugin, '/' ) ) . '/">参与翻译</a>';
+			$links[] = '<a target="_blank" href="https://wp-china-yes.com/plugins/' . substr( $plugin, 0, strpos( $plugin, '/' ) ) . '/">去广告</a>';
+
+			return $links;
+		}, 10, 2 );
 	}
 
 	/**
@@ -47,9 +56,9 @@ class Plugin {
 	 */
 	public static function check() {
 		$notices = [];
-		if ( version_compare( PHP_VERSION, '5.6.0', '<' ) ) {
+		if ( version_compare( PHP_VERSION, '7.0.0', '<' ) ) {
 			deactivate_plugins( 'wp-china-yes/wp-china-yes.php' );
-			$notices[] = '<div class="notice notice-error"><p>' . sprintf( __( 'WP-China-Yes 插件需要 PHP 5.6.0 或更高版本，当前版本为 %s，插件已自动禁用。',
+			$notices[] = '<div class="notice notice-error"><p>' . sprintf( __( 'WP-China-Yes 插件需要 PHP 7.0.0 或更高版本，当前版本为 %s，插件已自动禁用。',
 					'wp-china-yes' ),
 					PHP_VERSION ) . '</p></div>';
 		}
@@ -70,7 +79,6 @@ class Plugin {
 			$notices[] = '<div class="notice notice-error is-dismissible">
 					<p><strong>' . __( '检测到不兼容的插件 Kill 429，已自动禁用！', 'wp-china-yes' ) . '</strong></p>
 				</div>';
-
 		}
 		// 代理服务器检测
 		if ( defined( 'WP_PROXY_HOST' ) || defined( 'WP_PROXY_PORT' ) ) {
