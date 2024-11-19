@@ -24,7 +24,7 @@ class Monitor {
 			// 站点网络下只在主站运行
 			if ( is_main_site() ) {
 				add_action( 'init', [ $this, 'init' ] );
-				add_action( 'wp_china_yes_monitor_hook', [
+				add_action( 'wp_china_yes_monitor', [
 					$this,
 					'run_monitor'
 				] );
@@ -39,7 +39,7 @@ class Monitor {
 	 */
 	public function init() {
 		if ( ! wp_next_scheduled( 'wp_china_yes_monitor' ) ) {
-			wp_schedule_event( time(), 'hourly', 'wp_china_yes_monitor_hook' );
+			wp_schedule_event( time(), 'hourly', 'wp_china_yes_monitor' );
 		}
 	}
 

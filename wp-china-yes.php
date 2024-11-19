@@ -19,7 +19,7 @@ namespace WenPai\ChinaYes;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CHINA_YES_VERSION', '3.7.0' );
+define( 'CHINA_YES_VERSION', '3.7.1' );
 define( 'CHINA_YES_PLUGIN_FILE', __FILE__ );
 define( 'CHINA_YES_PLUGIN_URL', plugin_dir_url( CHINA_YES_PLUGIN_FILE ) );
 define( 'CHINA_YES_PLUGIN_PATH', plugin_dir_path( CHINA_YES_PLUGIN_FILE ) );
