@@ -33,5 +33,5 @@
 
 ## 赞助商
 
-<a href="#"><img height="758" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
+<a href="#"><img height="516" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
 
