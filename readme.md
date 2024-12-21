@@ -16,14 +16,14 @@
 - [x] 优化 WordPress 后台加载速度
 - [x] 优化 WordPress 前台加载速度
 - [x] 移除后台无用请求与组件
-- [x] 替换 Gravatar 头像为[初认头像](https://cravatar.com/)
+- [x] 替换 Gravatar 头像为 Cravatar [初认头像](https://cravatar.com/)
 - [x] 优化 谷歌字体 加载速度
 - [x] 优化 谷歌前端库 加载速度
 - [x] 优化 CDNJS 加载速度
 - [x] 优化 Jsdelivr 加载速度
 - [x] 集成 WPMirror 镜像更新源
 - [x] 集成 Windfonts 中文网页 Webfonts [文风字体](https://windfonts.com)
-- [x] 集成 adminCDN 前端公共库[萌芽加速](https://admincdn.com)
+- [x] 集成 adminCDN 前端公共库 [萌芽加速](https://admincdn.com)
 - [x] 启用 飞行模式 可屏蔽外部 API 请求
 - [x] 启用 节点监控 可自动切换加速节点
 - [x] 启用 品牌白标 可自定义 OEM 插件品牌
