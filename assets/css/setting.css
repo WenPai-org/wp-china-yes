@@ -1,26 +1,64 @@
+#wpcontent {
+    padding-left: 0px;
+}
+#wpbody-content {
+    padding-bottom: 0px;
+}
+#wpfooter {
+    display: none;
+}
+
+
+@media only screen and (max-width: 782px) {
+    .wp_china_yes-nav-normal+.wp_china_yes-content {
+        margin-left: 0!important;
+    }
+    .wp_china_yes-header-inner h1 {
+        margin-bottom: 20px;
+    }
+    .auto-fold #wpcontent {
+        padding-left: 0px;
+    }
+    .wp_china_yes-field-text input {
+         width: 100%;
+    }
+}
+
+.wp-core-ui .button, .wp-core-ui .button-primary, .wp-core-ui .button-secondary {
+    border-radius: 1px;
+}
+
 .sponsor-logos {
     display: block;
     flex-wrap: wrap;
     justify-content: center;
+    margin: 24px 0;
+    grid-gap: 24px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: center;
 }
 
 .sponsor-logos img {
     flex-basis: calc(20% - 10px);
-    max-width: 85px;
-    margin: 14px;
+    max-width: 80px;
+    margin: 13px;
     height: auto;
 }
 
 .contributors-name {
     margin-top: 0;
     margin-bottom: 0;
-    padding: 12px;
+    padding: 20px 0;
     color: #dcdcde;
+    display: block;
+    flex-wrap: wrap;
+    display: flex;
+    grid-gap: 22px;
 }
 
-.contributors-name a {
-    line-height: 2;
-    padding: 0.5em;
+.wp_china_yes-content {
+    position: relative;
+    background-color: #f1f1f1;
 }
 
 .wp_china_yes-content a {
@@ -33,21 +71,67 @@
 }
 
 .wp_china_yes-options {
-    background-color: #fff;
-    padding: 1%;
+    background-color: #ffffff;
     border-radius: 10px;
     text-transform: none;
     line-height: 2;
-    box-shadow: 0 0.375rem 1.5rem 0 rgba(141, 153, 165, 0.13);
-    max-width: 1100px;
-    margin: 2rem auto;
+}
+
+.wp_china_yes-options {
+    margin-top: 0px;
+    margin-right: 0px;
+}
+
+.wp_china_yes-field.wp_china_yes-field-radio, .wp_china_yes-field-checkbox, .wp_china_yes-field-group, .wp_china_yes-field-switcher, .wp_china_yes-field-text {
+    padding: 8%;
+    background-color: #ffffff;
+    margin: 5% 0;
+    border-radius: 1px;
+    box-shadow: 0 0 0 1px #ccd0d4, 0 1px 1px 1px rgba(0, 0, 0, .04);
+}
+
+
+.wp_china_yes-section {
+    margin: 50px auto;
+    max-width: 1000px;
+    background-color: #f1f1f1;
+}
+
+.wp_china_yes-field {
+    position: relative;
+    border: 0px solid #ccd0d4;
+}
+
+.wp_china_yes-field+.wp_china_yes-field {
+    border-top: 0px solid #eee;
+}
+
+.wp_china_yes-field.wp_china_yes-field-content {
+    padding: 0px;
 }
 
 .wp_china_yes-section-title {
     padding: 20px 30px;
     background-color: #fff;
     border-top: 0 solid #f5f5f5;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 0px solid #eee;
+    box-shadow: 0 0 0 1px #ccd0d4, 0 1px 1px 1px rgba(0, 0, 0, .04);
+}
+
+.wp_china_yes-section-title h3 {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.wp_china_yes-section-title .wp_china_yes-section-icon {
+    margin-right: 10px;
+    width: 20px;
+    height: 24px;
+    line-height: 20px;
+    font-size: 20px;
+    text-align: center;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .wp_china_yes-field-subheading {
@@ -63,14 +147,18 @@
     background: #ffffff;
 }
 
+
 .wp_china_yes-theme-light .wp_china_yes-nav-background {
     background-color: #ffffff;
-    border-right: 1px solid #f5f5f5;
+    border-right: 1px solid #dddddd;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 .wp_china_yes-theme-light .wp_china_yes-footer {
     border-top: 1px solid #fff;
     background: #ffffff;
+    display: none;
 }
 
 .wp_china_yes-field-heading {
@@ -78,8 +166,46 @@
     background-color: #ffffff;
 }
 
+.wp_china_yes-nav-normal {
+    width: 205px;
+    padding-left: 20px;
+}
+
+.wp_china_yes-nav {
+    padding: 20px;
+}
+.wp_china_yes-nav-background {
+    width: 250px;
+}
+.wp_china_yes-nav ul li a {
+    font-size: 13px;
+    position: relative;
+    display: block;
+    padding: 10px 15px;
+    margin: 5px;
+    text-decoration: none;
+    transition-property: color, background;
+    transition-duration: .2s;
+    transition-timing-function: ease;
+}
+
+.wp_china_yes-nav .wp_china_yes-tab-icon {
+    margin-right: 10px;
+    width: 20px;
+    height: 24px;
+    line-height: 20px;
+    font-size: 20px;
+    text-align: center;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 .wp_china_yes-theme-light .wp_china_yes-nav ul li a {
     background-color: #ffffff;
+}
+.wp_china_yes-theme-light .wp_china_yes-nav ul li a:hover {
+    color: #3858e9;
+    background-color: #f1f1f1;
 }
 
 .wp_china_yes-submessage-normal {
@@ -87,15 +213,24 @@
     background-color: #ffffff;
 }
 
-.wp_china_yes-field + .wp_china_yes-field {
-    border-top: 1px solid #ffffff;
+
+.wp_china_yes-nav-normal+.wp_china_yes-content {
+    margin-left: 248px;
+}
+
+.wp_china_yes-search-all .wp_china_yes-content, .wp_china_yes-show-all .wp_china_yes-content {
+    margin-left: 0;
 }
 
 .wp_china_yes-theme-light .wp_china_yes-nav-normal > ul li a {
-    border-bottom: 1px solid #f5f5f5;
-    border-right: 1px solid #f5f5f5;
+    border-bottom: 0px solid #f5f5f5;
+    border-right: 0px solid #f5f5f5;
 }
-
+.wp_china_yes-theme-light .wp_china_yes-nav ul li .wp_china_yes-active {
+    color: #111;
+    background-color: #f5f5f7;
+    background: #f5f5f7;
+}
 .wp_china_yes-field-group .wp_china_yes-cloneable-header-icon {
     font-size: 10px;
 }
@@ -116,28 +251,37 @@
 .wp_china_yes-field-group .wp_china_yes-cloneable-title {
     border: 1px solid #ccd0d4;
     background-color: #ffffff;
-    border-radius: 8px;
+    border-radius: 1px;
 }
 
 .wp_china_yes-field-group .wp_china_yes-cloneable-content {
-    border: 0 solid #ffffff;
-    background-color: #ffffff;
+    padding: 0;
+    border-top: 1px solid #ffffff;
+}
+
+.wp_china_yes-field-group .wp_china_yes-cloneable-content>.wp_china_yes-field {
+    padding: 15px;
+    margin: 20px;
 }
 
 .wp_china_yes-sticky .wp_china_yes-header-inner {
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    border-bottom: 1px solid #dddddd;
+    background: #ffffff;
+}
+.wp_china_yes-sticky .wp_china_yes-header-inner {
+    position: fixed;
+    box-shadow: unset;
 }
 
 .wp_china_yes-warning-primary {
-    color: #fff !important;
-    border-color: #2c3338 !important;
-    background: #2c3338 !important;
+    color: #5e77ec !important;
+    border-color: #5e77ec !important;
+    background: #ffffff !important;
 }
 
 .wp_china_yes-warning-primary:focus, .wp_china_yes-warning-primary:hover {
-    border-color: #1d2327 !important;
-    background: #1d2327 !important;
+    border-color: #3858e9 !important;
+    background: #ffffff !important;
 }
 
 .wp_china_yes-field-switcher .wp_china_yes--switcher:not(.wp_china_yes--active) {
@@ -148,3 +292,139 @@
     margin-right: -2px;
     margin-bottom: -1px;
 }
+
+
+@media screen and (max-width: 600px) {
+.wpcy-about__grid {
+        grid-template-columns: 1fr!important;
+    }
+}
+
+
+span.wpcy-icon-inner {
+    line-height: 1px;
+    font-size: 28px;
+    color: #000000;
+}
+
+span.wpcy-icon-inner-list {
+    line-height: 0px;
+    font-size: 24px;
+    color: #000000;
+}
+
+.wpcy-about__grid {
+    margin: 24px auto;
+    display: grid;
+    grid-gap: 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wpcy-kit__grid {
+    margin: 24px auto;
+    display: grid;
+    grid-gap: 24px;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.column.wpcy-kit-banner {
+    padding: 6% 6% 3%!important;
+}
+
+.wpcy-about__grid .column {
+    padding: 10%;
+    background-color: #ffffff;
+    border-radius: 1px;
+    box-shadow: 0 0 0 1px #ccd0d4, 0 1px 1px 1px rgba(0, 0, 0, .04);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.wpcy-about__grid.columns-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.wpcy-about__grid.columns-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.wpcy-about__grid .column > svg {
+    width: 30px;
+    height: 30px;
+    margin-left: -3px;
+}
+
+.wpcy-buttons {
+    margin-top: 4px;
+    margin-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.wpcy-banner img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    margin-top: auto;
+    vertical-align: middle;
+}
+.components-button.has-icon {
+    justify-content: center;
+    min-width: 36px;
+    padding: 6px;
+}
+.components-button.has-icon.has-text {
+    gap: 4px;
+    justify-content: start;
+    padding-left: 8px;
+    padding-right: 12px;
+}
+
+.wpcy-about__list li a:not(:hover) {
+    text-decoration: none;
+}
+.components-button {
+    align-items: center;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    border-radius: 2px;
+    box-sizing: border-box;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    cursor: pointer;
+    display: inline-flex
+;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    height: 36px;
+    margin: 0;
+    padding: 6px 12px;
+    text-decoration: none;
+    transition: box-shadow .1s linear;
+}
+.components-button.button-link {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+    height: auto;
+    margin: 0;
+    outline: none;
+    padding: 0;
+    text-align: left;
+    text-decoration: underline;
+    transition-duration: .05s;
+    transition-property: border, background, color;
+    transition-timing-function: ease-in-out;
+}
+.components-button.button-primary {
+    display: inline-flex;
+    padding: 6px 12px;
+}
+
+.components-button.button-secondary {
+    background: #0000;
+    display: inline-flex;
+    padding: 6px 12px;
+}
+
