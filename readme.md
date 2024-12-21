@@ -33,12 +33,5 @@
 
 ## 赞助商
 
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/feibisi-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/shujue-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/upyun-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/wenpai-logo@2X.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/wpsaas-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/lingding-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/weixiaoduo-logo-2020.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/modiqi-logo.png"></a>
-<a href="#"><img height="80" src="https://wp-china-yes.com/wp-content/uploads/2023/08/kekechong-logo-1.png"></a>
+<a href="#"><img height="758" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
+
