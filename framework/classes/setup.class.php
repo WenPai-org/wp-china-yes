@@ -577,6 +577,10 @@ if ( ! class_exists( 'WP_CHINA_YES_Setup' ) ) {
         wp_enqueue_style( 'wp_china_yes-fa5-v4-shims', 'https://jsd.admincdn.com/npm/@fortawesome/fontawesome-free@5.15.4/css/v4-shims.min.css', array(), '5.15.5', 'all' );
       }
 
+      // Iconsax font icon loader
+      wp_enqueue_style( 'wp_china_yes-iconsax', 'https://jsd.admincdn.com/npm/iconsax-font-icon@1.1.0/dist/icons.min.css', array(), '1.1.0', 'all' );
+
+
       // Check for developer mode
       $min = ( self::$premium && SCRIPT_DEBUG ) ? '' : '.min';
 
