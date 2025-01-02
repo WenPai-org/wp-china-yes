@@ -90,6 +90,9 @@
     box-shadow: 0 0 0 1px #ccd0d4, 0 1px 1px 1px rgba(0, 0, 0, .04);
 }
 
+.wp_china_yes-field-checkbox .wp_china_yes--inline-list li, .wp_china_yes-field-radio .wp_china_yes--inline-list li {
+    margin-right: 20px;
+}
 
 .wp_china_yes-section {
     margin: 50px auto;

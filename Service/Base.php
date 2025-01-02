@@ -16,11 +16,13 @@ class Base {
 		new Super();
 		// 监控服务
 		new Monitor();
+		// 内存服务
+		new Memory();
 		// 更新服务
 		new Update();
 		if ( is_admin() ) {
-			// 设置服务
-			new Setting();
+		// 设置服务
+		new Setting();
 		}
 	}
 }

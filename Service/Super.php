@@ -55,9 +55,7 @@ HTML;
 					 |
 					<a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
 					 |
-					<a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
-					 |
-					<a href="https://wp-china-yes.com/document/news-source" target="_blank">自选新闻源</a>
+					<a href="https://wptea.com/newsletter/" target="_blank">订阅推送</a>
 					</p>
 					<style>
 						#wenpai_tea .rss-widget {
@@ -113,9 +111,7 @@ HTML;
 					 |
 					 <a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
  				   |
- 		  		 <a href="https://wptea.com/instructions-for-submission/" target="_blank">文章投稿</a>
-			  	 |
-			  	 <a href="https://wptea.com/document/news-source/" target="_blank">自选新闻源</a>
+			  	 <a href="https://wptea.com/newsletter/" target="_blank">订阅推送</a>
 			    </p>
 					<style>
 						#wenpai_tea .rss-widget {
@@ -276,11 +272,22 @@ HTML;
 		 */
 		if ( in_array( 'jsdelivr', (array) $this->settings['admincdn'] ) ) {
 			$this->page_str_replace( 'init', 'str_replace', [
-				'jsd.admincdn.com',
+				'cdn.jsdelivr.net',
+				'jsd.admincdn.com'
+			] );
+		}
+
+		/**
+		 * BootstrapCDN 前端公共库替换
+		 */
+		if ( in_array( 'bootstrapcdn', (array) $this->settings['admincdn'] ) ) {
+			$this->page_str_replace( 'init', 'str_replace', [
+				'maxcdn.bootstrapcdn.com',
 				'jsd.admincdn.com'
 			] );
 		}
 	}
+
 
 	/**
 	 * 加载文风字体
@@ -442,6 +449,44 @@ HTML
 				remove_filter( $qmr_work_tag, 'wptexturize' );
 			}
 		}
+		
+		    // 支持中文排版段首缩进 2em
+        if ( in_array( 'indent', (array) $this->settings['windfonts_typography'] ) ) {
+        add_action( 'wp_head', function () {
+            echo '<style>
+            .entry-content p {
+                text-indent: 2em;
+            }
+            .entry-content .wp-block-group p,
+            .entry-content .wp-block-columns p,
+            .entry-content .wp-block-media-text p,
+            .entry-content .wp-block-quote p {
+                text-indent: 0;
+            }
+
+            </style>';
+        } );
+     }
+		    // 支持中文排版两端对齐
+        if ( in_array( 'align', (array) $this->settings['windfonts_typography'] ) ) {
+        add_action( 'wp_head', function () {
+            echo '<style>
+            .entry-content p {
+                text-align: justify;
+            }
+            .entry-content .wp-block-group p,
+            .entry-content .wp-block-columns p,
+            .entry-content .wp-block-media-text p,
+            .entry-content .wp-block-quote p {
+                text-align: unset !important; 
+            }
+           .entry-content .wp-block-columns p.has-text-align-center {
+            text-align: center !important;
+            }
+            </style>';
+        } );
+     }		
+		
 	}
 
 	/**

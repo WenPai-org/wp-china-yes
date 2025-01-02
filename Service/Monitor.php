@@ -30,9 +30,7 @@ class Monitor {
 				] );
 			}
 		} else {
-			if ( wp_get_scheduled_event( 'wp_china_yes_monitor' ) ) {
-				wp_clear_scheduled_hook( 'wp_china_yes_monitor' );
-			}
+			wp_clear_scheduled_hook( 'wp_china_yes_monitor' );
 		}
 	}
 

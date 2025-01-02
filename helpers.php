@@ -20,6 +20,7 @@ function get_settings() {
 		'plane'                => 'off',
 		'plane_rule'           => [],
 		'monitor'              => true,
+		'memory'               => true,
 		'hide'                 => false,
 		'custom_name'          => 'WP-China-Yes',
 	] );

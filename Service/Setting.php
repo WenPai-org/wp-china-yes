@@ -25,6 +25,19 @@ class Setting {
 		self::admin_init();
 	}
 
+
+/**
+ * 动态获取设置页面的 URL
+ *
+ * @return string
+ */
+private function get_settings_page_url() {
+    if ( is_multisite() ) {
+        return network_admin_url( 'settings.php?page=wp-china-yes' );
+    }
+    return admin_url( 'options-general.php?page=wp-china-yes' );
+}
+
 	/**
 	 * 挂载设置项
 	 */
@@ -55,7 +68,7 @@ class Setting {
 					'type'    => 'content',
 					'content' =>
 						<<<HTML
-<div class="wp_china_yes-field wp_china_yes-field-content"><div class="wpcy-about__section"><div class="wpcy-about__grid"><div class="column wpcy-banner"><span class="wpcy-icon-inner"> <i class="icon icon-mirroring-screen"></i></span><h2>原生体验</h2><p>文派叶子🍃（WP-China-Yes）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。</p><div class="wpcy-buttons"><a href="options-general.php?page=wp-china-yes#tab=%e5%bb%ba%e7%ab%99%e5%a5%97%e4%bb%b6" class="components-button button-primary">获取 WP Deer 建站套件</a><a href="https://wenpai.org/" target="_blank" rel="noopener" class="components-button button-secondary">文派开源（WenPai.org）↗</a></div><img src="/wp-content/plugins/wp-china-yes/assets/images/website-banner.jpg" width="358" height="140" alt=""></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-link-21"></i> </span><h2>特色功能</h2><ul class="wpcy-about__list"><li><a href="options-general.php?page=wp-china-yes#tab=%e5%8a%a0%e9%80%9f%e8%ae%be%e7%bd%ae" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-folder-open"></i> </span>文派（WordPress）中国更新源</a></li><li><a href="options-general.php?page=wp-china-yes#tab=%e5%8a%a0%e9%80%9f%e8%ae%be%e7%bd%ae" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-colorfilter"></i> </span>前端公共资源库 CDN 加速</a></li><li><a href="options-general.php?page=wp-china-yes#tab=%e6%96%87%e9%a3%8e%e5%ad%97%e4%bd%93" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-language-square"></i> </span>中文网页字体</a></li><li><a href="options-general.php?page=wp-china-yes#tab=%e5%b9%bf%e5%91%8a%e5%b1%8f%e8%94%bd" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-eye-slash"></i> </span>后台广告拦截</a></li><li><a href="options-general.php?page=wp-china-yes#tab=%e9%a3%9e%e8%a1%8c%e6%a8%a1%e5%bc%8f" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-filter"></i> </span>外部 API 请求屏蔽</a></li><li><a href="options-general.php?page=wp-china-yes#tab=%e5%93%81%e7%89%8c%e7%99%bd%e6%a0%87" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-password-check"></i> </span>品牌 OEM 定制</a></li></ul><p>* 100% 兼容 WP 程序及发行分支版本，更多优秀插件待您体验。</p></div></div><div class="wpcy-about__grid columns-3"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-flash"></i></span><h2>网站加速</h2><p>优化加速插件多如牛毛，为何文派叶子如此与众不同？</p><a href="https://wpcy.com/acceleration" class="components-button button-link">进一步了解 ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-box-tick"></i></span><h2>翻译推送</h2><p>高质量翻译中文本地化翻译由文派开源官方提供，欢迎参与改进。</p><a href="https://wpcy.com/translate" class="components-button button-link">本地化改进 ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-broom"></i></span><h2>广告屏蔽</h2><p>呈现清爽整洁的网站后台，清除侵入式后台广告、无用信息。</p><a href="https://wpcy.com/ads" class="components-button button-link">获取广告规则 ↗</a></div></div><div class="wpcy-about__grid"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-sms-notification"></i></span><h2>加入我们</h2><p>关注文派茶馆 WPTEA.com 公众号以及订阅我们的时事通讯即可接收独家内容、提示和更新。</p><div class="wpcy-buttons"><a href="https://wptea.com/newsletter" target="_blank" rel="noopener" class="components-button button-secondary">订阅新闻 ↗</a></div></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-more-square"></i></span><h2>浏览更多</h2><ul class="wpcy-about__list"><li><a href="https://wpcy.com" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-global"></i> </span>文派叶子 🍃 （WPCY.com）</a></li><li><a href="https://wpcy.com/document" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-archive-book"></i> </span>快速入门指南</a></li><li><a href="https://wpcy.com/support/" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-message-notif"></i> </span>支持论坛</a></li><li><a href="https://space.bilibili.com/3546657484442062" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-video-square"></i> </span>Bilibili 官方频道</a></li><li><a href="https://wpcy.com/faqs" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-lifebuoy"></i> </span>常见问题 &amp; 故障排查…</a></li></ul></div></div></div><div class="clear"></div></div>
+<div class="wp_china_yes-field wp_china_yes-field-content"><div class="wpcy-about__section"><div class="wpcy-about__grid"><div class="column wpcy-banner"><span class="wpcy-icon-inner"> <i class="icon icon-mirroring-screen"></i></span><h2>原生体验</h2><p>文派叶子🍃（WP-China-Yes）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。</p><div class="wpcy-buttons"><a href="{$this->get_settings_page_url()}#tab=%e5%bb%ba%e7%ab%99%e5%a5%97%e4%bb%b6" class="components-button button-primary">获取 WP Deer 建站套件</a><a href="https://wenpai.org/" target="_blank" rel="noopener" class="components-button button-secondary">文派开源（WenPai.org）↗</a></div><img src="/wp-content/plugins/wp-china-yes/assets/images/website-banner.jpg" width="358" height="140" alt=""></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-link-21"></i> </span><h2>特色功能</h2><ul class="wpcy-about__list"><li><a href="{$this->get_settings_page_url()}#tab=%e5%8a%a0%e9%80%9f%e8%ae%be%e7%bd%ae" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-folder-open"></i> </span>文派（WordPress）中国更新源</a></li><li><a href="{$this->get_settings_page_url()}#tab=%e5%8a%a0%e9%80%9f%e8%ae%be%e7%bd%ae" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-colorfilter"></i> </span>前端公共资源库 CDN 加速</a></li><li><a href="{$this->get_settings_page_url()}#tab=%e6%96%87%e9%a3%8e%e5%ad%97%e4%bd%93" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-language-square"></i> </span>中文网页字体</a></li><li><a href="{$this->get_settings_page_url()}#tab=%e5%b9%bf%e5%91%8a%e5%b1%8f%e8%94%bd" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-eye-slash"></i> </span>后台广告拦截</a></li><li><a href="{$this->get_settings_page_url()}#tab=%e9%a3%9e%e8%a1%8c%e6%a8%a1%e5%bc%8f" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-filter"></i> </span>外部 API 请求屏蔽</a></li><li><a href="{$this->get_settings_page_url()}#tab=%e5%93%81%e7%89%8c%e7%99%bd%e6%a0%87" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-password-check"></i> </span>品牌 OEM 定制</a></li></ul><p>* 100% 兼容 WP 程序及分支发行版本，更多优秀插件待您体验。</p></div></div><div class="wpcy-about__grid columns-3"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-flash"></i></span><h2>网站加速</h2><p>优化加速插件多如牛毛，为何文派叶子如此与众不同？</p><a href="https://wpcy.com/acceleration" target="_blank" rel="noopener" class="components-button button-link">进一步了解 ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-box-tick"></i></span><h2>翻译推送</h2><p>高质量翻译中文本地化翻译由文派开源官方提供，欢迎参与改进。</p><a href="https://wpcy.com/translate" target="_blank" rel="noopener" class="components-button button-link">本地化改进 ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-broom"></i></span><h2>广告屏蔽</h2><p>呈现清爽整洁的网站后台，清除侵入式后台广告、无用信息。</p><a href="https://wpcy.com/ads" target="_blank" rel="noopener" class="components-button button-link">获取广告规则 ↗</a></div></div><div class="wpcy-about__grid"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-sms-notification"></i></span><h2>加入我们</h2><p>关注文派茶馆 WPTEA.com 公众号以及订阅我们的时事通讯即可接收独家内容、提示和更新。</p><div class="wpcy-buttons"><a href="https://wptea.com/newsletter" target="_blank" rel="noopener" class="components-button button-secondary">订阅新闻 ↗</a></div> <img src="/wp-content/plugins/wp-china-yes/assets/images/qr-banner.jpg" width="358" height="140" alt=""></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-more-square"></i></span><h2>浏览更多</h2><ul class="wpcy-about__list"><li><a href="https://wpcy.com" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-global"></i> </span>文派叶子 🍃 （WPCY.com）</a></li><li><a href="https://wpcy.com/document" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-archive-book"></i> </span>快速入门指南</a></li><li><a href="https://wpcy.com/support/" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-message-notif"></i> </span>支持论坛</a></li><li><a href="https://space.bilibili.com/3546657484442062" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-video-square"></i> </span>Bilibili 官方频道</a></li><li><a href="https://wpcy.com/faqs" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-lifebuoy"></i> </span>常见问题</a></li><li><a href="https://wpcy.com/document/website-backend-is-messy" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-warning-2"></i> </span>疑难故障排查…</a></li></li></ul></div></div></div><div class="clear"></div></div>
 HTML,
 				]
 			],
@@ -71,13 +84,13 @@ HTML,
 					'title'    => __( '应用市场', 'wp-china-yes' ),
 					'inline'   => true,
 					'options'  => [
+	            		'wenpai' => '文派开源',
 						'proxy'  => '官方镜像',
-						'wenpai' => '文派开源',
 						'off'    => '不启用'
 					],
 					'default'  => 'wenpai',
 					'subtitle' => '是否启用市场加速',
-					'desc'     => __( '<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
+					'desc'     => __( '<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -86,20 +99,36 @@ HTML,
 					'title'    => __( '萌芽加速', 'wp-china-yes' ),
 					'inline'   => true,
 					'options'  => [
-						'admin'       => '后台加速',
-						'frontend'    => '前台加速',
 						'googlefonts' => 'Google 字体',
 						'googleajax'  => 'Google 前端库',
 						'cdnjs'       => 'CDNJS 前端库',
-						'jsdelivr'    => 'jsDelivr 前端库'
+						'jsdelivr'    => 'jsDelivr 前端库',
+						'bootstrapcdn'   => 'Bootstrap 前端库'
 					],
 					'default'  => [
 						'admin' => 'admin',
 					],
 					'subtitle' => '是否启用萌芽加速',
-					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress 依赖的静态文件切换为公共资源，加快网站访问速度。您可按需启用需要加速的项目，更多细节控制和功能，请查看<a href="https://wpcy.com/document/admincdn" target="_blank">推荐设置</a>。',
+					'desc'     => __( '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress  插件依赖的静态文件切换为公共资源，解决卡顿、加载慢等问题。您可按需启用加速项目，更多细节控制和功能，请查看<a href="https://wpcy.com/document/admincdn" target="_blank">推荐设置</a>。',
 						'wp-china-yes' ),
 				],
+				[
+					'id'       => 'admincdn',
+					'type'     => 'checkbox',
+					'title'    => __( '文件加速', 'wp-china-yes' ),
+					'inline'   => true,
+					'options'  => [
+						'admin'       => '后台加速',
+						'frontend'    => '前台加速',
+					],
+					'default'  => [
+						'admin' => 'admin',
+					],
+					'subtitle' => '是否启用文件加速',
+					'desc'     => __( '专为 WordPress 系统内置依赖的静态资源进行加速，加快网站访问速度，如遇异常请停用对应选项。',
+						'wp-china-yes' ),
+				],
+				
 				[
 					'id'       => 'cravatar',
 					'type'     => 'radio',
@@ -148,10 +177,12 @@ HTML,
 						'corner'      => '直角括号',
 						'space'       => '文本空格',
 						'punctuation' => '标点显示',
+						'indent'      => '段首缩进',
+						'align'       => '两端对齐',
 					],
 					'default'    => '',
 					'subtitle'   => '是否启用排印优化',
-					'desc'       => __( '排印优化可提升中文网页的视觉美感，适用于中文字体的网站。',
+					'desc'       => __( '文风字体排印优化可提升中文网页的视觉美感，适用于正式内容的网站。',
 						'wp-china-yes' ),
 					'dependency' => [
 						'windfonts',
@@ -261,7 +292,7 @@ HTML,
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用后台广告屏蔽',
-					'desc'     => __( '<a href="https://wpcy.com/ads" target="_blank">文派叶子🍃（WP-China-Yes）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，拿回您的<a href="https://wpcy.com/document/ad-blocking-for-developers " target="_blank">后台控制权</a>。',
+					'desc'     => __( '<a href="https://wpcy.com/adblocker" target="_blank">文派叶子🍃（WPCY）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，拿回<a href="https://wpcy.com/document/ad-blocking-for-developers " target="_blank">后台控制权</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -360,10 +391,10 @@ HTML,
 						],
 						[
 							'id'          => 'url',
-							'type'        => 'text',
+							'type'        => 'textarea',
 							'title'       => __( 'URL', 'wp-china-yes' ),
 							'subtitle'    => 'URL',
-							'desc'        => __( '设置需要屏蔽的 URL 关键词',
+							'desc'        => __( '填入需要屏蔽的 URL 链接，一行一条，注意不要串行',
 								'wp-china-yes' ),
 							'default'     => '',
 							'placeholder' => 'example.com',
@@ -382,25 +413,64 @@ HTML,
 		] );
 
 		
-		WP_CHINA_YES::createSection( $this->prefix, [
-			'title'  => '节点监控',
-			'icon'   => 'icon icon-story',
-			'fields' => [
-				[
-					'id'       => 'monitor',
-					'type'     => 'switcher',
-					'default'  => true,
-					'title'    => '节点监控',
-					'subtitle' => '自动监控加速节点可用性',
-					'desc'     => __( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
-						'wp-china-yes' ),
-				],
-				[
-					'type'    => 'content',
-					'content' => '启用隐藏设置前请务必的<a href="https://wpcy.com/document/hide-settings-page" target="_blank">保存或收藏</a>当前设置页面 URL，否则您将无法再次进入插件设置页面',
-				],
-			],
-		] );
+WP_CHINA_YES::createSection( $this->prefix, [
+    'title'  => '脉云维护',
+    'icon'   => 'icon icon-story',
+    'fields' => [
+        [
+            'id'       => 'monitor',
+            'type'     => 'switcher',
+            'default'  => true,
+            'title'    => '节点监控',
+            'subtitle' => '自动监控加速节点可用性',
+            'desc'     => __( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
+                'wp-china-yes' ),
+        ],
+        [
+            'id'       => 'memory',
+            'type'     => 'switcher',
+            'default'  => true,
+            'title'    => '系统监控',
+            'subtitle' => '自动监控站点系统运行状态',
+            'desc'     => __( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
+                'wp-china-yes' ),
+        ],
+        [
+            'id'         => 'memory_display',
+            'type'       => 'checkbox',
+            'title'      => __( '显示参数', 'wp-china-yes' ),
+            'inline'     => true,
+            'options'    => [
+                'memory_usage'  => '内存使用量',
+                'wp_limit'     => 'WP内存限制',
+                'server_ip'    => '服务器IP',
+                'hostname'     => '主机名',
+                'os_info'      => '操作系统',
+                'php_info'     => 'PHP信息',
+                'cpu_usage'    => 'CPU使用率',
+                'debug_status' => '调试状态',
+                'mysql_version'=> 'MySQL版本'
+            ],
+            'default'    => [
+                'memory_usage',
+                'wp_limit',
+                'server_ip',
+                'os_info',
+                'php_info',
+                'cpu_usage',
+                'debug_status',
+                'mysql_version'
+            ],
+            'subtitle'   => '选择页脚要显示的信息',
+            'desc'       => __( '为网站维护人员提供参考依据，无需登录服务器即可查看相关信息参数','wp-china-yes' ),
+            'dependency' => ['memory', '==', 'true'],
+        ],
+        [
+            'type'    => 'content',
+            'content' => '启用隐藏设置前请务必的<a href="https://wpcy.com/document/hide-settings-page" target="_blank">保存或收藏</a>当前设置页面 URL，否则您将无法再次进入插件设置页面',
+        ],
+    ],
+] );
 
 		WP_CHINA_YES::createSection( $this->prefix, [
 			'title'  => '品牌白标',
@@ -448,7 +518,7 @@ HTML,
 					'type'    => 'content',
 					'content' =>
 						<<<HTML
-<div class="wp_china_yes-field wp_china_yes-field-content"><div class="wpcy-about__section"><div class="wpcy-about__grid columns-1"><div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-magic-star"></i></span><h2>开源建站</h2><p>文派寻鹿🦌（WP Deer）建站套件是由文派科技官方提供的企业建站产品集合，代码均为 100% GPL 开源，无任何加密隐藏。</p><div class="wpcy-buttons"><a href="https://wpcy.com/deer" target="_blank" rel="noopener" class="components-button button-primary">阅读《软件授权协议》 ↗</a></div></div></div><div class="wpcy-about__grid columns-3"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-flash"></i></span><h2>SEO 优化技巧</h2><a href="https://wpxyz.com/" class="components-button button-link">WPXYZ.com ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-box-tick"></i></span><h2>网站政策合规</h2><a href="https://wpicp.com" class="components-button button-link">WPICP.com ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-broom"></i></span><h2>软件开发工具</h2><a href="https://wpsdk.com/" class="components-button button-link">WPSDK.com ↗</a></div></div></div><div class="clear"></div></div>
+<div class="wp_china_yes-field wp_china_yes-field-content"><div class="wpcy-about__section"><div class="wpcy-about__grid columns-1"><div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-magic-star"></i></span><h2>开源建站</h2><p>文派寻鹿🦌（WP Deer）建站套件是由文派科技官方提供的企业建站产品集合，代码均为 100% GPL 开源，无任何加密隐藏。</p><div class="wpcy-buttons"><a href="https://wpcy.com/website" target="_blank" rel="noopener" class="components-button button-primary">阅读《软件授权协议》 ↗</a></div></div></div><div class="wpcy-about__grid columns-3"><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-flash"></i></span><h2>SEO 优化技巧</h2><a href="https://wpxyz.com/" target="_blank" rel="noopener"  class="components-button button-link">WPXYZ.com ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-box-tick"></i></span><h2>网站政策合规</h2><a href="https://wpicp.com"  target="_blank" rel="noopener" class="components-button button-link">WPICP.com ↗</a></div><div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-broom"></i></span><h2>软件开发工具</h2><a href="https://wpsdk.com/"  target="_blank" rel="noopener" class="components-button button-link">WPSDK.com ↗</a></div></div></div><div class="clear"></div></div>
 HTML,
 				]
 			],
@@ -468,9 +538,7 @@ HTML,
 <div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-archive-1"></i></span><h2>项目简介</h2><p>文派（WordPress）中国本土化项目始于 2019 年，由 文派叶子🍃（WPCY） 插件开启，其前身为 WP-China-Yes。
 
 </p><p>2023 年 5 月，文派科技完成对该项目的收购，并对其进行了全面的品牌重塑。</p><p></p>
-<div class="wpcy-buttons"><a href="https://wpcy.com/news" target="_blank" rel="noopener" class="components-button button-secondary">进一步了解 ↗</a><a href="https://wpcy.com/about/investor" target="_blank" rel="noopener" class="components-button button-secondary">
-
-文派开源（WenPai.org）↗</a></div></div><div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-lovely"></i></span><h2>赞助支持</h2><p>特别感谢以下企业品牌对文派项目提供的资金资源支持。早期伙伴未来有机会共享文派生态资源，期待社会各界参与。</p><div class="card-body sponsor-logos">
+<div class="wpcy-buttons"><a href="https://wpcy.com/about" target="_blank" rel="noopener" class="components-button button-secondary">关于 WPCY ↗</a><a href="https://wpcy.com/?p=726" target="_blank" rel="noopener" class="components-button button-secondary">进一步了解 ↗</a></div></div><div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-lovely"></i></span><h2>赞助支持</h2><p>特别感谢以下企业品牌对文派项目提供的资金资源支持。早期伙伴未来有机会共享文派生态资源，期待社会各界参与。</p><div class="card-body sponsor-logos">
 	<img src="https://cravatar.cn/wp-content/uploads/2024/09/feibisi-logo.png">
 	<img src="https://cravatar.cn/wp-content/uploads/2024/09/shujue-logo.png">
 	<img src="https://cravatar.cn/wp-content/uploads/2024/09/upyun-logo.png">
@@ -483,7 +551,7 @@ HTML,
 	<img src="https://cravatar.cn/wp-content/uploads/2024/09/wenpai-logo@2X.png">
 </div><div class="wpcy-buttons"><a href="https://wpcy.com/ecosystem" target="_blank" rel="noopener" class="components-button button-secondary">生态共建 ↗</a><a href="https://wpcy.com/about/investor" target="_blank" rel="noopener" class="components-button button-secondary">项目投资 ↗</a></div></div></div><div class="wpcy-about__grid columns-1"><div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-user-octagon"></i></span><h2>开发 &amp; 贡献者</h2><p>100% 开源代码，诚邀您一起参与文派 （WordPress） 软件国产化进程，打造属于自己的开源自助建站程序。</p><div class="card-body contributors-name">
 <a href="https://github.com/sunxiyuan" target="_blank">孙锡源</a><a href="https://github.com/devhaozi/" target="_blank">耗子</a><a href="https://github.com/Yulinn233/" target="_blank">Yulinn</a><a href="https://github.com/zhaofeng-shu33/" target="_blank">赵丰</a><a href="https://github.com/djl0415/" target="_blank">jialong Dong</a><a href="https://github.com/k99k5/" target="_blank">TigerKK</a><a href="https://github.com/xianyu125/" target="_blank">xianyu125</a><a href="https://github.com/ElliotHughes/" target="_blank">ElliotHughes</a><a href="https://bbs.weixiaoduo.com/users/feibisi/" target="_blank">诗语</a><a href="https://www.modiqi.com/" target="_blank">莫蒂奇</a><a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵</a><p></p>
-</div><div class="wpcy-buttons"><a href="https://wpcy.com/about/promoter" target="_blank" rel="noopener" class="components-button button-secondary">协助推广 ↗</a><a href="https://wpcy.com/about/investor" target="_blank" rel="noopener" class="components-button button-secondary">参与贡献 ↗</a></div></div></div></div><div class="clear"></div></div>
+</div><div class="wpcy-buttons"><a href="https://wpcy.com/about/promoter" target="_blank" rel="noopener" class="components-button button-secondary">推广名单 ↗</a><a href="https://github.com/WenPai-org/wp-china-yes" target="_blank" rel="noopener" class="components-button button-secondary">参与贡献 ↗</a></div></div></div></div><div class="clear"></div></div>
 HTML,
 				]
 			],
