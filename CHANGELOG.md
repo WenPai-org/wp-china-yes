@@ -2,6 +2,23 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.8 - 2025-02-05
+
+* 文派叶子 v3.8 重大更新！全新UI 设计更接近 WordPress 原生体验。
+
+1. 替换业务域名 WP-China-Yes.com 为新域名 WPCY.COM ；
+2. 修复 adminCDN 支持 jsDelivr 加速无效等问题；
+3. 新增 Bootstrap CDN 转接至 adminCDN 加速支持；
+4. 新增 Windfonts 中文排版优化：支持段首空格 2em；
+5. 新增 Windfonts 中文排版优化：支持文本内容对齐；
+6. 新增 [脉云维护] 菜单并支持WP系统状态监控，可在页脚位置显示内存、CPU用量等信息；
+7. 新增 [欢迎使用] 用户引导页面，更清晰的功能指导和简介。
+8. 新增 [建站工具] 文派·寻鹿建站套件展示页面，内容待完善。
+9. 优化 [萌芽加速] 设置，与 WordPress 程序端加速选项分离便于添加后续项目；
+10. 优化 [关于插件] 页面更简约的赞助商 Logo 和贡献者名单展示。
+11. 补充 changelog.txt 文本文件，跟随插件副本分发。
+12. 补充 copyright.txt 版权文件，跟随插件副本分发。
+
 ## v3.7.1 - 2024-11-19
 
 1. 性能优化
