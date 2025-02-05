@@ -46,3 +46,7 @@
 ## 赞助商
 
 <a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
+
+---
+
+**Copyright © 2025 · WPCY.COM , All Rights Reserved. 文派 （广州） 科技有限公司；**
