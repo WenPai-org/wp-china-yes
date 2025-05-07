@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WP-China-Yes
+ * Plugin Name: WPCY.COM
  * Description: 文派叶子 🍃（WP-China-Yes）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。
  * Author: 文派开源
  * Author URI: https://wpcy.com
