@@ -82,7 +82,7 @@
     margin-right: 0px;
 }
 
-.wp_china_yes-field.wp_china_yes-field-radio, .wp_china_yes-field-checkbox, .wp_china_yes-field-group, .wp_china_yes-field-switcher, .wp_china_yes-field-text {
+.wp_china_yes-field {
     padding: 8%;
     background-color: #ffffff;
     margin: 5% 0;
@@ -90,8 +90,30 @@
     box-shadow: 0 0 0 1px #ccd0d4, 0 1px 1px 1px rgba(0, 0, 0, .04);
 }
 
+.wp_china_yes-field.wp_china_yes-field-content {
+    padding: 0;
+    background-color: rgba(255, 255, 255, 0);
+    margin: 0;
+    border-radius: 0;
+    box-shadow: unset;
+}
 .wp_china_yes-field-checkbox .wp_china_yes--inline-list li, .wp_china_yes-field-radio .wp_china_yes--inline-list li {
     margin-right: 20px;
+}
+
+.wp_china_yes-copyright p {
+    font-size: 12px;
+    color: #999;
+}
+.wp_china_yes-copyright {
+    float: left;
+    margin-top: 25px;
+    margin-bottom: 35px;
+    text-align: center;
+    width: 100%;
+    font-size: 12px;
+    zoom: 90%;
+    
 }
 
 .wp_china_yes-section {
@@ -108,9 +130,8 @@
 .wp_china_yes-field+.wp_china_yes-field {
     border-top: 0px solid #eee;
 }
-
-.wp_china_yes-field.wp_china_yes-field-content {
-    padding: 0px;
+.wp_china_yes-field-fieldset .wp_china_yes-fieldset-content {
+    border: 0px solid #ccd0d4;
 }
 
 .wp_china_yes-section-title {

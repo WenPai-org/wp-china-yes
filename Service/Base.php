@@ -11,18 +11,38 @@ defined( 'ABSPATH' ) || exit;
  */
 class Base {
 
-	public function __construct() {
-		// 加速服务
-		new Super();
-		// 监控服务
-		new Monitor();
-		// 内存服务
-		new Memory();
-		// 更新服务
-		new Update();
-		if ( is_admin() ) {
-		// 设置服务
-		new Setting();
-		}
-	}
+    public function __construct() {
+        // 确保所有类文件都存在后再实例化
+        if (class_exists(__NAMESPACE__ . '\Super')) {
+            new Super();
+        }
+        
+        if (class_exists(__NAMESPACE__ . '\Monitor')) {
+            new Monitor();
+        }
+        
+        if (class_exists(__NAMESPACE__ . '\Memory')) {
+            new Memory();
+        }
+        
+        if (class_exists(__NAMESPACE__ . '\Update')) {
+            new Update();
+        }
+        
+        if (class_exists(__NAMESPACE__ . '\Database')) {
+            new Database();
+        }
+        
+        if (class_exists(__NAMESPACE__ . '\Acceleration')) {
+            new Acceleration();
+        }
+
+        if (class_exists(__NAMESPACE__ . '\Maintenance')) {
+            new Maintenance();
+        }
+
+        if ( is_admin() && class_exists(__NAMESPACE__ . '\Setting')) {
+            new Setting();
+        }
+    }
 }

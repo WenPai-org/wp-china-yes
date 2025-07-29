@@ -32,7 +32,7 @@ class Monitor {
 		} else {
 			wp_clear_scheduled_hook( 'wp_china_yes_monitor' );
 		}
-	}
+}
 
 	/**
 	 * 初始化
@@ -157,6 +157,7 @@ class Monitor {
 			}
 		}
 	}
+    
 
 	/**
 	 * 更新设置

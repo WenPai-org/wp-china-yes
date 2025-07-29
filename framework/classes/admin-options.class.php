@@ -497,9 +497,19 @@ if ( ! class_exists( 'WP_CHINA_YES_Options' ) ) {
         echo '<div class="wp_china_yes-header'. esc_attr( $sticky_class ) .'">';
         echo '<div class="wp_china_yes-header-inner">';
 
-          echo '<div class="wp_china_yes-header-left">';
-          echo '<h1>'. $this->args['framework_title'] .'</h1>';
-          echo '</div>';
+echo '<div class="wp_china_yes-header-left">';
+$hide_elements = !empty($this->options['hide_elements']) ? $this->options['hide_elements'] : [];
+if (!in_array('hide_logo', $hide_elements)) {
+    $logo_url = !empty($this->options['header_logo']['url']) ? $this->options['header_logo']['url'] : plugins_url('wp-china-yes/assets/images/wpcy-logo.png');
+    echo '<img src="' . esc_url($logo_url) . '" alt="WPCY Logo" class="wp-china-yes-logo" style="float: left; height: 26px; vertical-align: middle; margin-right: 10px;" />';
+}
+if (!in_array('hide_title', $hide_elements)) {
+    echo '<h1>'. $this->args['framework_title'] .'</h1>';
+}
+if (!in_array('hide_version', $hide_elements)) {
+    echo '<small> &nbsp; v' . CHINA_YES_VERSION . '</small>';
+}
+echo '</div>';
 
           echo '<div class="wp_china_yes-header-right">';
 
@@ -572,6 +582,12 @@ if ( ! class_exists( 'WP_CHINA_YES_Options' ) ) {
 
               echo '</ul>';
 
+              echo '<div class="wp_china_yes-copyright">';
+              echo '<p>Copyright © 2025 · WPCY.COM</p>';
+              echo '<p>文派叶子·生生不息</p>';
+              echo '</div>';
+
+
             echo '</div>';
 
           }
@@ -625,7 +641,12 @@ if ( ! class_exists( 'WP_CHINA_YES_Options' ) ) {
 
             echo '</div>';
 
+            echo '<div class="wp_china_yes-copyright">';
+            echo '<p>此服务由 文派开源（WenPai.org） 提供生态接入。</p>';
+            echo '</div>';
+
             echo '<div class="clear"></div>';
+
 
           echo '</div>';
 

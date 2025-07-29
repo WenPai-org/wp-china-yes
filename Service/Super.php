@@ -31,148 +31,152 @@ class Super {
 		/**
 		 * 添加「文派茶馆」小组件
 		 */
-		if ( is_admin() ) {
-			add_action( 'wp_dashboard_setup', function () {
-				global $wp_meta_boxes;
+if ( is_admin() ) {
+    add_action( 'wp_dashboard_setup', function () {
+        global $wp_meta_boxes;
 
-				unset( $wp_meta_boxes['dashboard']['side']['core']['dashboard_primary'] );
-				wp_add_dashboard_widget( 'wenpai_tea', '文派茶馆', function () {
-					echo <<<HTML
-					<div class="wordpress-news hide-if-no-js">
-					<div class="rss-widget">
+        unset( $wp_meta_boxes['dashboard']['side']['core']['dashboard_primary'] );
+        wp_add_dashboard_widget( 'wenpai_tea', '文派茶馆', function () {
+            $default_rss_url = 'https://wptea.com/feed/'; 
+            $custom_rss_url = $this->settings['custom_rss_url'] ?? ''; 
+            $refresh_interval = $this->settings['custom_rss_refresh'] ?? 3600; 
+
+            $rss_display_options = $this->settings['rss_display_options'] ?? ['show_date', 'show_summary', 'show_footer'];
+            if (!is_array($rss_display_options)) {
+                $rss_display_options = explode(',', $rss_display_options);
+            }
+
+            // 获取默认的 RSS 源内容
+            $default_rss = fetch_feed($default_rss_url);
+            $default_items = [];
+            if (!is_wp_error($default_rss)) {
+                $default_items = $default_rss->get_items(0, 5); 
+            }
+
+            $custom_items = [];
+            $custom_rss = null;
+            $custom_rss_latest_date = 0; 
+
+            if (!empty($custom_rss_url)) {
+                $transient_key = 'wenpai_tea_custom_rss_' . md5($custom_rss_url); 
+                $cached_custom_items = get_transient($transient_key);
+
+                if (false === $cached_custom_items) {
+                    $custom_rss = fetch_feed($custom_rss_url);
+                    if (!is_wp_error($custom_rss)) {
+                        $custom_items = $custom_rss->get_items(0, 2); 
+                        if (!empty($custom_items)) {
+                            $custom_rss_latest_date = $custom_items[0]->get_date('U'); 
+                        }
+
+                        set_transient($transient_key, $custom_items, $refresh_interval); 
+                    }
+                } else {
+                    $custom_items = $cached_custom_items;
+                    if (!empty($custom_items)) {
+                        $custom_rss_latest_date = $custom_items[0]->get_date('U'); 
+                    }
+                }
+            }
+
+            $three_days_ago = time() - (3 * 24 * 60 * 60);
+            if ($custom_rss_latest_date > $three_days_ago) {
+                $items = array_merge(array_slice($default_items, 0, 3), $custom_items); 
+            } else {
+                $items = array_slice($default_items, 0, 5);
+            }
+
+            if (is_wp_error($custom_rss)) {
+                $items = array_slice($default_items, 0, 5);
+            }
+
+            echo <<<HTML
+            <div class="wordpress-news hide-if-no-js">
+            <div class="rss-widget">
 HTML;
-					wp_widget_rss_output( 'https://wptea.com/feed/', [
-						'items'        => 5,
-						'show_summary' => 1,
-					] );
-					echo <<<HTML
-					</div>
-					</div>
-					<p class="community-events-footer">
-					<a href="https://wenpai.org/" target="_blank">文派开源</a>
-					 |
-					<a href="https://wenpai.org/support" target="_blank">支持论坛</a>
-					 |
-					<a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
-					 |
-					<a href="https://wptea.com/newsletter/" target="_blank">订阅推送</a>
-					</p>
-					<style>
-						#wenpai_tea .rss-widget {
-						  font-size:13px;
-						  padding:0 12px
-						}
-						#wenpai_tea .rss-widget:last-child {
-						  border-bottom:none;
-						  padding-bottom:8px
-						}
-						#wenpai_tea .rss-widget a {
-						  font-weight:400
-						}
-						#wenpai_tea .rss-widget span,
-						#wenpai_tea .rss-widget span.rss-date {
-						  color:#646970
-						}
-						#wenpai_tea .rss-widget span.rss-date {
-						  margin-left:12px
-						}
-						#wenpai_tea .rss-widget ul li {
-						  padding:4px 0;
-						  margin:0
-						}
-						#wenpai_tea .community-events-footer a {
-						  line-height: 2;
-						  padding: 0.5em;
-						}
-					</style>
+            foreach ($items as $item) {
+                echo '<div class="rss-item">';
+                echo '<a href="' . esc_url($item->get_permalink()) . '" target="_blank">' . esc_html($item->get_title()) . '</a>';
+                if (in_array('show_date', $rss_display_options)) {
+                    echo '<span class="rss-date">' . esc_html($item->get_date('Y.m.d')) . '</span>';
+                }
+                if (in_array('show_summary', $rss_display_options)) {
+                    echo '<div class="rss-summary">' . esc_html(wp_trim_words($item->get_description(), 45, '...')) . '</div>';
+                }
+                echo '</div>';
+            }
+            
+            echo <<<HTML
+            </div>
+            </div>
 HTML;
-				} );
-			} );
-			add_action( 'wp_network_dashboard_setup', function () {
-				global $wp_meta_boxes;
-
-				unset( $wp_meta_boxes['dashboard-network']['side']['core']['dashboard_primary'] );
-				wp_add_dashboard_widget( 'wenpai_tea', '文派茶馆', function () {
-					echo <<<HTML
-					<div class="wordpress-news hide-if-no-js">
-					<div class="rss-widget">
+            if (in_array('show_footer', $rss_display_options)) {
+                echo <<<HTML
+                <p class="community-events-footer">
+                <a href="https://wenpai.org/" target="_blank">文派开源</a>
+                 |
+                <a href="https://wenpai.org/support" target="_blank">支持论坛</a>
+                 |
+                <a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
+                 |
+                <a href="https://wptea.com/newsletter/" target="_blank">订阅推送</a>
+                </p>
 HTML;
-					wp_widget_rss_output( 'https://wptea.com/feed/', [
-						'items'        => 5,
-						'show_summary' => 1,
-					] );
-					echo <<<HTML
-					</div>
-					</div>
-					<p class="community-events-footer">
-					<a href="https://wenpai.org/" target="_blank">文派开源</a>
-					 |
-					<a href="https://wenpai.org/support" target="_blank">支持论坛</a>
-					 |
-					 <a href="https://translate.wenpai.org/" target="_blank">翻译平台</a>
- 				   |
-			  	 <a href="https://wptea.com/newsletter/" target="_blank">订阅推送</a>
-			    </p>
-					<style>
-						#wenpai_tea .rss-widget {
-						  font-size:13px;
-						  padding:0 12px
-						}
-						#wenpai_tea .rss-widget:last-child {
-						  border-bottom:none;
-						  padding-bottom:8px
-						}
-						#wenpai_tea .rss-widget a {
-						  font-weight:400
-						}
-						#wenpai_tea .rss-widget span,
-						#wenpai_tea .rss-widget span.rss-date {
-						  color:#646970
-						}
-						#wenpai_tea .rss-widget span.rss-date {
-						  margin-left:12px
-						}
-						#wenpai_tea .rss-widget ul li {
-						  padding:4px 0;
-						  margin:0
-						}
-						#wenpai_tea .community-events-footer a {
-							line-height: 2;
-							padding: 0.5em;
-						}
-					</style>
+            }
+            echo <<<HTML
+            <style>
+                    #wenpai_tea .rss-widget {
+        padding: 0 12px;
+    }
+    #wenpai_tea .rss-widget:last-child {
+        border-bottom: none;
+        padding-bottom: 8px;
+    }
+    #wenpai_tea .rss-item {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    #wenpai_tea .rss-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    #wenpai_tea .rss-item a {
+        text-decoration: none;
+        display: block;
+        margin-bottom: 5px;
+    }
+    #wenpai_tea .rss-date {
+        color: #666;
+        font-size: 12px;
+        display: block;
+        margin-bottom: 8px;
+    }
+    #wenpai_tea .rss-summary {
+        color: #444;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    #wenpai_tea .community-events-footer {
+        margin-top: 15px;
+        padding-top: 15px;
+        padding-bottom: 5px;
+        border-top: 1px solid #eee;
+        text-align: center;
+    }
+    #wenpai_tea .community-events-footer a {
+        text-decoration: none;
+        margin: 0 5px;
+    }
+    #wenpai_tea .community-events-footer a:hover {
+        text-decoration: underline;
+    }
+            </style>
 HTML;
-				} );
-			} );
-		}
-
-		/**
-		 * WordPress 核心静态文件链接替换
-		 */
-		if ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
-			if (
-				in_array( 'admin', (array) $this->settings['admincdn'] ) &&
-				! stristr( $GLOBALS['wp_version'], 'alpha' ) &&
-				! stristr( $GLOBALS['wp_version'], 'beta' ) &&
-				! stristr( $GLOBALS['wp_version'], 'RC' )
-			) {
-				// 禁用合并加载，以便于使用公共资源节点
-				global $concatenate_scripts;
-				$concatenate_scripts = false;
-
-				$this->page_str_replace( 'init', 'preg_replace', [
-					'~' . home_url( '/' ) . '(wp-admin|wp-includes)/(css|js)/~',
-					sprintf( 'https://wpstatic.admincdn.com/%s/$1/$2/', $GLOBALS['wp_version'] )
-				] );
-			}
-		}
-
-		/**
-		 * adminCDN
-		 */
-		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
-			$this->load_admincdn();
-		}
+        });
+    });
+}
 
 		/**
 		 * 初认头像
@@ -214,6 +218,14 @@ HTML;
 				add_action( 'admin_head', [ $this, 'load_adblock' ] );
 			}
 		}
+/**
+ * 通知管理
+ */
+if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+    if ( ! empty( $this->settings['notice_block'] ) && $this->settings['notice_block'] == 'on' ) {
+        add_action( 'admin_head', [ $this, 'load_notice_management' ] );
+    }
+}
 
 		/**
 		 * 飞行模式
@@ -223,70 +235,7 @@ HTML;
 		}
 	}
 
-	/**
-	 * 加载 adminCDN
-	 */
-	public function load_admincdn() {
-		/**
-		 * 前台静态加速
-		 */
-		if ( in_array( 'frontend', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'template_redirect', 'preg_replace', [
-				'#(?<=[(\"\'])(?:' . quotemeta( home_url() ) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#',
-				'https://public.admincdn.com/$0'
-			] );
-		}
 
-		/**
-		 * Google 字体替换
-		 */
-		if ( in_array( 'googlefonts', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'init', 'str_replace', [
-				'fonts.googleapis.com',
-				'googlefonts.admincdn.com'
-			] );
-		}
-
-		/**
-		 * Google 前端公共库替换
-		 */
-		if ( in_array( 'googleajax', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'init', 'str_replace', [
-				'ajax.googleapis.com',
-				'googleajax.admincdn.com'
-			] );
-		}
-
-		/**
-		 * CDNJS 前端公共库替换
-		 */
-		if ( in_array( 'cdnjs', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'init', 'str_replace', [
-				'cdnjs.cloudflare.com/ajax/libs',
-				'cdnjs.admincdn.com'
-			] );
-		}
-
-		/**
-		 * jsDelivr 前端公共库替换
-		 */
-		if ( in_array( 'jsdelivr', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'init', 'str_replace', [
-				'cdn.jsdelivr.net',
-				'jsd.admincdn.com'
-			] );
-		}
-
-		/**
-		 * BootstrapCDN 前端公共库替换
-		 */
-		if ( in_array( 'bootstrapcdn', (array) $this->settings['admincdn'] ) ) {
-			$this->page_str_replace( 'init', 'str_replace', [
-				'maxcdn.bootstrapcdn.com',
-				'jsd.admincdn.com'
-			] );
-		}
-	}
 
 
 	/**
@@ -470,6 +419,7 @@ HTML
 		    // 支持中文排版两端对齐
         if ( in_array( 'align', (array) $this->settings['windfonts_typography'] ) ) {
         add_action( 'wp_head', function () {
+            if ( is_single() ) { // 仅在文章页面生效
             echo '<style>
             .entry-content p {
                 text-align: justify;
@@ -480,38 +430,124 @@ HTML
             .entry-content .wp-block-quote p {
                 text-align: unset !important; 
             }
-           .entry-content .wp-block-columns p.has-text-align-center {
+           .entry-content .wp-block-columns .has-text-align-center {
             text-align: center !important;
             }
             </style>';
+            }
         } );
      }		
 		
 	}
 
-	/**
-	 * 加载广告拦截
-	 */
-	public function load_adblock() {
-		foreach ( (array) $this->settings['adblock_rule'] as $rule ) {
-			if ( empty( $rule['enable'] ) ) {
-				continue;
-			}
-			if ( empty( $rule['selector'] ) ) {
-				continue;
-			}
-			echo sprintf( <<<HTML
-			<style>
-			%s {
-				display: none!important;
-			}
-			</style>
-HTML
-				,
-				htmlspecialchars_decode( $rule['selector'] )
-			);
-		}
-	}
+/**
+ * 加载广告拦截
+ */
+public function load_adblock() {
+    if (empty($this->settings['adblock']) || $this->settings['adblock'] !== 'on') {
+        return;
+    }
+
+    // 处理广告拦截规则
+    foreach ( (array) $this->settings['adblock_rule'] as $rule ) {
+        if ( empty( $rule['enable'] ) || empty( $rule['selector'] ) ) {
+            continue;
+        }
+        echo sprintf( '<style>%s{display:none!important;}</style>',
+            htmlspecialchars_decode( $rule['selector'] )
+        );
+    }
+}
+
+
+/**
+ * 加载通知管理
+ */
+public function load_notice_management() {
+    // 首先检查是否启用通知管理功能
+    if (empty($this->settings['notice_block']) || $this->settings['notice_block'] !== 'on') {
+        return;
+    }
+
+    // 检查是否启用全局禁用
+    if (!empty($this->settings['disable_all_notices'])) {
+        $this->disable_all_notices();
+        echo '<style>.notice,.notice-error,.notice-warning,.notice-success,.notice-info,.updated,.error,.update-nag{display:none!important;}</style>';
+        return;
+    }
+
+    // 处理选择性禁用
+    $selected_notices = $this->settings['notice_control'] ?? [];
+    $notice_method = $this->settings['notice_method'] ?? 'hook';
+    
+    if (!empty($selected_notices)) {
+        // 处理钩子移除
+        if (in_array($notice_method, ['hook', 'both'])) {
+            $this->disable_selected_notices($selected_notices);
+        }
+
+        // 处理 CSS 隐藏
+        if (in_array($notice_method, ['css', 'both'])) {
+            $this->apply_notice_css($selected_notices);
+        }
+    }
+}
+
+/**
+ * 应用通知 CSS 隐藏
+ */
+private function apply_notice_css($selected_notices) {
+    $selectors = [];
+    foreach ($selected_notices as $type) {
+        switch ($type) {
+            case 'error':
+                $selectors[] = '.notice-error,.error';
+                break;
+            case 'warning':
+                $selectors[] = '.notice-warning';
+                break;
+            case 'success':
+                $selectors[] = '.notice-success,.updated';
+                break;
+            case 'info':
+                $selectors[] = '.notice-info';
+                break;
+            case 'core':
+                $selectors[] = '.update-nag';
+                break;
+        }
+    }
+    
+    if (!empty($selectors)) {
+        echo '<style>' . implode(',', $selectors) . '{display:none!important;}</style>';
+    }
+}
+
+/**
+ * 移除所有管理通知
+ */
+private function disable_all_notices() {
+    remove_all_actions('admin_notices');
+    remove_all_actions('all_admin_notices');
+    remove_all_actions('user_admin_notices');
+    remove_all_actions('network_admin_notices');
+}
+
+/**
+ * 禁用选定的通知类型
+ */
+private function disable_selected_notices($types) {
+    if (in_array('core', $types)) {
+        remove_action('admin_notices', 'update_nag', 3);
+        remove_action('admin_notices', 'maintenance_nag', 10);
+        add_filter('pre_site_transient_update_core', '__return_null');
+        add_filter('pre_site_transient_update_plugins', '__return_null');
+        add_filter('pre_site_transient_update_themes', '__return_null');
+    }
+    
+}
+
+
 
 	/**
 	 * 加载飞行模式

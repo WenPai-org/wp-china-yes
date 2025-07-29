@@ -3,26 +3,34 @@
 -----------------------------------------------------------------------------------------
 
 **Compliance Terms**  
-Everyone is free to use Wenpai open-source software. However, in China, when using Wenpai software, you must adhere to the GPL open-source license, respect the intellectual property rights of others, and prioritize compliance with Chinese laws in case of any conflicts.  
+Everyone is free to use WenPai open-source software.However, in China, when using WenPai software, 
+you must adhere to the GPL open-source license, respect the intellectual property rights of others,
+and prioritize compliance with Chinese laws in case of any conflicts.  
 
 **Fork Declaration**  
-To ensure the long-term availability of various Wenpai (WordPress) infrastructure components, individuals with the necessary capabilities are welcome to establish their own service sources or fork Wenpai Leaf 🍃 (WPCY) to create their own versions.  
+To ensure the long-term availability of various Wenpai (WordPress) infrastructure components, 
+individuals with the necessary capabilities are welcome to establish their own service sources
+or fork WenPai Leaf 🍃  WP-China-Yes (WPCY) to create their own versions.  
 
 **The Only Requirement:**  
-While strictly adhering to the GPL license, you must respect all lawful rights of Wenpai Technology, including (but not limited to) copyrights, trademarks, patents, intellectual property, goodwill, and more.  
+While strictly adhering to the GPL license, you must respect all lawful rights of WenPai Technology, 
+including (but not limited to) copyrights, trademarks, patents, intellectual property, goodwill, and more.  
 
 -----------------------------------------------------------------------------------------
 **版权所有 © 2025 年 文派（广州）科技有限公司**
 -----------------------------------------------------------------------------------------
 
 **合规条款**
-任何人都可以自由使用文派开源软件，但在中国，当您使用文派软件时，您应在遵守 GPL 开源协议的同时，尊重他人的知识产权，同时有违背中国法律的情况时皆以中国法律为准。
+任何人都可以自由使用文派开源软件，但在中国，当您使用文派软件时，您应在遵守 GPL 开源协议的同时，
+尊重他人的知识产权，同时有违背中国法律的情况时皆以中国法律为准。
 
 **分叉声明**
-为保障各项文派 （WordPress） 基础设施的长久可用性，欢迎有能力的人自建各类服务源以及分叉文派叶子🍃（WPCY）来制作您自己的版本；
+为保障各项文派 （WordPress） 基础设施的长久可用性，
+欢迎有能力的人自建各类服务源以及分叉文派叶子🍃（WPCY）来制作您自己的版本；
 
 **唯一要求：**
-在严格遵守 GPL 协议的前提下，尊重文派科技的各项合法权益，包括 （不限于） 版权、商标、专利、知识产权、商誉等…
+在严格遵守 GPL 协议的前提下，尊重文派科技的各项合法权益，
+包括 （不限于） 版权、商标、专利、知识产权、商誉等…
 
 
 

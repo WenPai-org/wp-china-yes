@@ -45,10 +45,6 @@ class Memory {
     // 转换为更直观的名称
     switch (strtolower($os)) {
         case 'linux':
-            if (file_exists('/etc/os-release')) {
-                $content = parse_ini_file('/etc/os-release');
-                return $content['PRETTY_NAME'] ?? 'Linux';
-            }
             return 'Linux';
         case 'darwin':
             return 'macOS';
@@ -152,8 +148,18 @@ class Memory {
      */
 public function add_footer($content) {
     $settings = get_settings();
-    // 确保 memory_display 是数组，如果不是则使用空数组
-    $display_options = is_array($settings['memory_display'] ?? []) ? $settings['memory_display'] : [];
+    
+    // 设置默认显示选项
+    $default_options = [
+        'memory_usage',
+        'wp_limit',
+        'server_ip',
+    ];
+    
+    // 如果设置为空或不是数组，使用默认选项
+    $display_options = isset($settings['memory_display']) && is_array($settings['memory_display']) 
+        ? $settings['memory_display'] 
+        : $default_options;
     
     // 如果 memory 设置未启用，直接返回原始内容
     if (empty($settings['memory'])) {
@@ -165,6 +171,7 @@ public function add_footer($content) {
     $this->os_info = $this->get_os_info();
 
     $footer_parts = [];
+
     
     // 内存使用量
     if (in_array('memory_usage', $display_options)) {
@@ -251,4 +258,16 @@ public function add_footer($content) {
             );
         }
     }
+    
+    
+	/**
+	 * 更新设置
+	 */
+	private function update_settings() {
+		if ( is_multisite() ) {
+			update_site_option( 'wp_china_yes', $this->settings );
+		} else {
+			update_option( 'wp_china_yes', $this->settings, true );
+		}
+	}
 }
