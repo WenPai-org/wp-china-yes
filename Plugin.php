@@ -12,6 +12,9 @@ class Plugin {
 	 * 创建插件实例
 	 */
 	public function __construct() {
+		// 尽早加载翻译文件
+		add_action( 'init', [ $this, 'load_textdomain' ] );
+		
 		new Base();
 		if ( is_admin() ) {
 			add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
@@ -35,10 +38,16 @@ class Plugin {
 	}
 
 	/**
+	 * 加载翻译文件
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain( 'wp-china-yes', false, dirname( plugin_basename( CHINA_YES_PLUGIN_FILE ) ) . '/languages' );
+	}
+
+	/**
 	 * 插件加载时执行
 	 */
 	public function plugins_loaded() {
-		load_plugin_textdomain( 'wp-china-yes', false, CHINA_YES_PLUGIN_PATH . 'languages' );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
 		/**
 		 * 插件列表页中所有插件增加「参与翻译」链接
@@ -55,6 +64,12 @@ class Plugin {
 	 * 插件兼容性检测函数
 	 */
 	public static function check() {
+		// 确保翻译文件已加载
+		if ( ! function_exists( 'load_plugin_textdomain' ) ) {
+			require_once ABSPATH . 'wp-includes/l10n.php';
+		}
+		load_plugin_textdomain( 'wp-china-yes', false, dirname( plugin_basename( CHINA_YES_PLUGIN_FILE ) ) . '/languages' );
+		
 		$notices = [];
 		if ( version_compare( PHP_VERSION, '7.0.0', '<' ) ) {
 			deactivate_plugins( 'wp-china-yes/wp-china-yes.php' );
