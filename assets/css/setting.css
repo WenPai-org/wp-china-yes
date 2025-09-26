@@ -9,18 +9,78 @@
 }
 
 
+@media only screen and (max-width: 1200px) {
+    .wp_china_yes-nav-normal {
+        width: 200px;
+    }
+    .wp_china_yes-nav-normal+.wp_china_yes-content {
+        margin-left: 200px;
+    }
+    .wp_china_yes-nav-background {
+        width: 200px;
+    }
+}
+
+@media only screen and (max-width: 960px) {
+    .wp_china_yes-field .wp_china_yes-title {
+        width: 30%;
+    }
+    .wp_china_yes-field .wp_china_yes-fieldset {
+        width: calc(70% - 20px);
+    }
+    .wpcy-about__grid.columns-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media only screen and (max-width: 782px) {
     .wp_china_yes-nav-normal+.wp_china_yes-content {
         margin-left: 0!important;
     }
+    .wp_china_yes-nav-normal {
+        position: fixed;
+        top: 32px;
+        left: -250px;
+        height: 100vh;
+        z-index: 9999;
+        transition: left 0.3s ease;
+        background: #fff;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .wp_china_yes-nav-normal.mobile-open {
+        left: 0;
+    }
+    .wp_china_yes-header-inner {
+        position: relative;
+        padding: 15px 20px;
+    }
     .wp_china_yes-header-inner h1 {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
+        font-size: 1.3em;
     }
     .auto-fold #wpcontent {
         padding-left: 0px;
     }
-    .wp_china_yes-field-text input {
-         width: 100%;
+    .wp_china_yes-field-text input,
+    .wp_china_yes-field-textarea textarea,
+    .wp_china_yes-field-select select {
+        width: 100%;
+        max-width: 100%;
+    }
+    .wp_china_yes-field .wp_china_yes-title {
+        width: 100%;
+        float: none;
+        margin-bottom: 10px;
+    }
+    .wp_china_yes-field .wp_china_yes-fieldset {
+        width: 100%;
+        float: none;
+    }
+    .wp_china_yes-field {
+        padding: 20px;
+    }
+    .wp_china_yes-section {
+        margin: 20px auto;
     }
 }
 
@@ -319,8 +379,62 @@
 
 
 @media screen and (max-width: 600px) {
-.wpcy-about__grid {
+    .wpcy-about__grid {
         grid-template-columns: 1fr!important;
+    }
+    .wp_china_yes-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .wp_china_yes-buttons .button {
+        margin: 2px 0;
+        text-align: center;
+    }
+    .sponsor-logos {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .sponsor-logos img {
+        max-width: 60px;
+        margin: 8px;
+    }
+    .wpcy-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .components-button {
+        justify-content: center;
+        padding: 8px 12px;
+        min-height: 40px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .wp_china_yes-header-inner {
+        padding: 10px 15px;
+    }
+    .wp_china_yes-header-inner h1 {
+        font-size: 1.2em;
+        line-height: 1.3;
+    }
+    .wp_china_yes-field {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    .wp_china_yes-section {
+        margin: 10px auto;
+        max-width: 100%;
+    }
+    .wp_china_yes-section-title {
+        padding: 15px 20px;
+    }
+    .sponsor-logos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .wpcy-about__grid .column {
+        padding: 6%;
+    }
+    .column.wpcy-kit-banner {
+        padding: 4% 4% 2%!important;
     }
 }
 
@@ -450,5 +564,58 @@ span.wpcy-icon-inner-list {
     background: #0000;
     display: inline-flex;
     padding: 6px 12px;
+}
+
+/* 移动端菜单按钮样式 */
+.wp_china_yes-mobile-menu-btn {
+    color: #333;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.wp_china_yes-mobile-menu-btn:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+
+/* 表单元素响应式优化 */
+@media screen and (max-width: 782px) {
+    .wp_china_yes-field-checkbox .wp_china_yes--inline-list li,
+    .wp_china_yes-field-radio .wp_china_yes--inline-list li {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+    
+    .wp_china_yes-field-button_set .wp_china_yes--buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .wp_china_yes-field-button_set .wp_china_yes--button {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        border-radius: 4px !important;
+        margin-left: 0 !important;
+    }
+    
+    .wp_china_yes-field-color > input {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .wp_china_yes-field-upload .button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* 平板设备优化 */
+@media screen and (min-width: 783px) and (max-width: 960px) {
+    .wp_china_yes-field-checkbox .wp_china_yes--inline-list li,
+    .wp_china_yes-field-radio .wp_china_yes--inline-list li {
+        margin-right: 10px;
+    }
 }
 

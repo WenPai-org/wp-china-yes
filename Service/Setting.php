@@ -6,6 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CHINA_YES;
 use function WenPai\ChinaYes\get_settings;
+use function WenPai\ChinaYes\Service\tr;
 
 /**
  * Class Setting
@@ -22,7 +23,7 @@ class Setting {
 		add_filter( 'wp_china_yes_fa4', '__return_true' );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
 		add_action( is_multisite() ? 'network_admin_menu' : 'admin_menu', [ $this, 'admin_menu' ] );
-		self::admin_init();
+		$this->admin_init();
 	}
 
 
@@ -52,7 +53,7 @@ private function get_settings_page_url() {
 			'show_bar_menu'      => false,
 			'show_sub_menu'      => false,
 			'show_search'        => false,
-			'show_reset_section' => false,
+			'show_reset_section' => true,
 			'footer_text'        => sprintf( '%s 设置', $this->settings['custom_name'] ),
 			'theme'              => 'light',
 			'enqueue_webfont'    => false,
@@ -88,7 +89,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'store',
 					'type'     => 'radio',
-					'title'    => __( '应用市场', 'wp-china-yes' ),
+					'title'    => '应用市场',
 					'inline'   => true,
 					'options'  => [
 	            		'wenpai' => '文派开源',
@@ -97,8 +98,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'wenpai',
 					'subtitle' => '是否启用市场加速',
-					'desc'     => __( '<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
-						'wp-china-yes' ),
+					'desc'     => '<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
 				],
 				[
 					'id'       => 'bridge',
@@ -106,8 +106,7 @@ private function get_settings_page_url() {
 					'default'  => true,
 					'title'    => '云桥更新',
 					'subtitle' => '是否启用更新加速',
-					'desc'     => __( '<a href="https://wpbridge.com" target="_blank">文派云桥（wpbridge）</a>托管更新和应用分发渠道，可解决因 WordPress 社区分裂导致的混乱、旧应用无法更新，频繁 API 请求拖慢网速等问题。',
-					'wp-china-yes' ),
+					'desc'     => '<a href="https://wpbridge.com" target="_blank">文派云桥（wpbridge）</a>托管更新和应用分发渠道，可解决因 WordPress 社区分裂导致的混乱、旧应用无法更新，频繁 API 请求拖慢网速等问题。',
 				],
 				[
 					'id'       => 'arkpress',
@@ -115,8 +114,7 @@ private function get_settings_page_url() {
 					'default'  => false,
 					'title'    => '联合存储库',
 					'subtitle' => '自动监控加速节点可用性',
-					'desc'     => __( '<a href="https://maiyun.org" target="_blank">ArkPress.org </a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
-					'wp-china-yes' ),
+					'desc'     => '<a href="https://maiyun.org" target="_blank">ArkPress.org </a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
 				],
 			],
 		] );
@@ -130,7 +128,7 @@ private function get_settings_page_url() {
             [
                 'id'       => 'admincdn_public',
                 'type'     => 'checkbox',
-                'title'    => __('萌芽加速', 'wp-china-yes'),
+                'title'    => '萌芽加速',
                 'inline'   => true,
                 'options'  => [
                     'googlefonts'    => 'Google 字体',
@@ -147,13 +145,12 @@ private function get_settings_page_url() {
                     'bootstrapcdn'   => '',
                 ],
                 'subtitle' => '是否启用萌芽加速',
-                'desc'     => __('<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress  插件依赖的静态文件切换为公共资源，解决卡顿、加载慢等问题。您可按需启用加速项目，更多细节控制和功能，请查看<a href="https://wpcy.com/document/admincdn" target="_blank">推荐设置</a>。',
-                    'wp-china-yes'),
+                'desc'     => '<a href="https://admincdn.com/" target="_blank">萌芽加速（adminCDN）</a>将 WordPress  插件依赖的静态文件切换为公共资源，解决卡顿、加载慢等问题。您可按需启用加速项目，更多细节控制和功能，请查看<a href="https://wpcy.com/document/admincdn" target="_blank">推荐设置</a>。',
             ],
             [
                 'id'       => 'admincdn_files',
                 'type'     => 'checkbox',
-                'title'    => __('文件加速', 'wp-china-yes'),
+                'title'    => '文件加速',
                 'inline'   => true,
                 'options'  => [
                     'admin'       => '后台加速',
@@ -168,13 +165,13 @@ private function get_settings_page_url() {
                     'sworg'       => '',
                 ],
                 'subtitle' => '是否启用文件加速',
-                'desc'     => __('专为 WordPress 系统内置依赖的静态资源进行加速，加快网站访问速度，如遇异常请停用对应选项。预览加速可在不切换应用市场时加速插件目录预览截图。',
-                    'wp-china-yes'),
+                'desc'     => tr('专为 WordPress 系统内置依赖的静态资源进行加速，加快网站访问速度，如遇异常请停用对应选项。预览加速可在不切换应用市场时加速插件目录预览截图。',
+					'wp-china-yes'),
             ],
             [
                 'id'       => 'admincdn_dev',
                 'type'     => 'checkbox',
-                'title'    => __('开发加速', 'wp-china-yes'),
+                'title'    => '开发加速',
                 'inline'   => true,
                 'options'  => [
                     'react'          => 'React 前端库',
@@ -191,8 +188,40 @@ private function get_settings_page_url() {
                     'tailwindcss'    => '',
                 ],
                 'subtitle' => '是否启用文件加速',
-                'desc'     => __('部分高级 WordPress 插件主题会包含最新前端资源，可在此勾选对应的 adminCDN 子库专项加速。',
-                    'wp-china-yes'),
+                'desc'     => tr('部分高级 WordPress 插件主题会包含最新前端资源，可在此勾选对应的 adminCDN 子库专项加速。',
+					'wp-china-yes'),
+            ],
+            [
+                'id'       => 'admincdn_version_enable',
+                'type'     => 'switcher',
+                'title'    => '版本控制',
+                'subtitle' => '是否启用版本控制功能',
+                'desc'     => tr('启用后可为CSS和JS文件自动添加版本号，解决浏览器缓存问题。',
+					'wp-china-yes'),
+                'default'  => false,
+                'class'    => 'wp_china_yes-field wp_china_yes-field-switcher',
+            ],
+            [
+                'id'       => 'admincdn_version',
+                'type'     => 'checkbox',
+                'title'    => '版本控制选项',
+                'inline'   => true,
+                'options'  => [
+                    'css'            => 'CSS文件版本控制',
+                    'js'             => 'JS文件版本控制',
+                    'disable_query'  => '禁用查询参数版本',
+                    'timestamp'      => '使用时间戳版本',
+                ],
+                'default'  => [
+                    'css'            => 'css',
+                    'js'             => 'js',
+                    'disable_query'  => '',
+                    'timestamp'      => 'timestamp',
+                ],
+                'subtitle' => '详细版本控制配置',
+                'desc'     => tr('自动为CSS和JS文件添加基于文件修改时间的版本号，解决浏览器缓存问题，确保用户获取最新资源。',
+					'wp-china-yes'),
+                'dependency' => ['admincdn_version_enable', '==', 'true'],
             ],
         ],
     ]);
@@ -206,7 +235,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'cravatar',
 					'type'     => 'radio',
-					'title'    => __( '初认头像', 'wp-china-yes' ),
+					'title'    => '初认头像',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -216,7 +245,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用头像加速',
-					'desc'     => __( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://cravatar.com/" target="_blank">初认头像（Cravatar）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -231,7 +260,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'windfonts',
 					'type'     => 'radio',
-					'title'    => __( '文风字体', 'wp-china-yes' ),
+					'title'    => '文风字体',
 					'inline'   => true,
 					'options'  => [
 						'on'       => '全局启用',
@@ -241,7 +270,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用文风字体定制',
-					'desc'     => __( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>为您的网站增添无限活力。专为中文网页设计，旨在提升用户阅读体验和视觉享受。新手使用请先查看<a href="https://wpcy.com/document/chinese-fonts" target="_blank">字体使用说明</a>。',
+					'desc'     => tr( '<a href="https://windfonts.com/" target="_blank">文风字体（Windfonts）</a>为您的网站增添无限活力。专为中文网页设计，旨在提升用户阅读体验和视觉享受。新手使用请先查看<a href="https://wpcy.com/document/chinese-fonts" target="_blank">字体使用说明</a>。',
 						'wp-china-yes' ),
 				],
 				[
@@ -249,7 +278,7 @@ private function get_settings_page_url() {
 					'type'                   => 'group',
 					'title'                  => '字体列表',
 					'subtitle'               => '使用的文风字体列表',
-					'desc'                   => '支持添加多个文风字体，并配置应用元素、字体权重大小',
+					'desc'                   => '支持添加多个文风字体，使用新的API接口格式，支持更灵活的字体配置',
 					'button_title'           => '添加字体',
 					'accordion_title_number' => true,
 					'dependency'             => [
@@ -261,56 +290,80 @@ private function get_settings_page_url() {
 						[
 							'id'       => 'family',
 							'type'     => 'text',
-							'title'    => __( '字体家族', 'wp-china-yes' ),
-							'subtitle' => '字体家族名称',
-							'desc'     => __( '填入从<a href="https://app.windfonts.com/" target="_blank">文风字体</a>获取的字体家族名称',
+							'title'    => '字体名称',
+							'subtitle' => '字体family参数',
+							'desc'     => tr( '支持多种格式：<br>• <code>FontName</code> - 基础字体名<br>• <code>FontName:wght@400;700</code> - 指定权重<br>• <code>FontName:lang@zh</code> - 指定语言<br>• <code>FontName:wght@400:lang@zh</code> - 同时指定权重和语言<br>详见<a href="https://app.windfonts.com/docs" target="_blank">API文档</a>',
 								'wp-china-yes' ),
-							'default'  => 'wenfeng-syhtcjk',
+							'default'  => 'cszt',
 						],
 						[
-							'id'       => 'css',
-							'type'     => 'text',
-							'title'    => __( '字体链接', 'wp-china-yes' ),
-							'subtitle' => '字体 CSS 链接',
-							'desc'     => __( '填入从<a href="https://app.windfonts.com/" target="_blank">文风字体</a>获取的字体 CSS 链接',
+							'id'       => 'subset',
+							'type'     => 'select',
+							'title'    => '字体子集',
+							'subtitle' => '字体变体（优先级高于权重）',
+							'options'  => [
+								''           => '不指定',
+								'regular'    => 'Regular',
+								'bold'       => 'Bold',
+								'light'      => 'Light',
+								'medium'     => 'Medium',
+								'semibold'   => 'Semibold',
+								'thin'       => 'Thin',
+								'extralight' => 'Extra Light',
+								'extrabold'  => 'Extra Bold',
+								'black'      => 'Black',
+							],
+							'default'  => 'regular',
+							'desc'     => tr( '直接指定字体变体，优先级大于权重设置',
 								'wp-china-yes' ),
-							'default'  => 'https://cn.windfonts.com/wenfeng/fonts/syhtcjk/regular/web/index.css',
-							'validate' => 'csf_validate_url',
+						],
+						[
+							'id'       => 'lang',
+							'type'     => 'select',
+							'title'    => '语言设置',
+							'subtitle' => '字体语言支持',
+							'options'  => [
+								''   => '不指定',
+								'zh' => '纯中文字符',
+							],
+							'desc'     => tr( '设置为"纯中文字符"时，字体样式只对中文字符生效',
+								'wp-china-yes' ),
 						],
 						[
 							'id'         => 'weight',
 							'type'       => 'number',
-							'title'      => __( '字体字重', 'wp-china-yes' ),
-							'subtitle'   => '字体字重大小',
-							'desc'       => __( '设置字体权重大小（字体粗细）',
+							'title'      => '字体字重',
+							'subtitle'   => '字体字重大小（当未指定subset时生效）',
+							'desc'       => tr( '设置字体权重大小（字体粗细），当指定了subset时此设置无效',
 								'wp-china-yes' ),
 							'default'    => 400,
 							'attributes' => [
 								'min'  => 100,
-								'max'  => 1000,
-								'step' => 10,
+								'max'  => 900,
+								'step' => 100,
 							],
 							'validate'   => 'csf_validate_numeric',
 						],
 						[
 							'id'       => 'style',
 							'type'     => 'select',
-							'title'    => __( '字体样式', 'wp-china-yes' ),
+							'title'    => '字体样式',
 							'subtitle' => '字体样式选择',
 							'options'  => [
 								'normal'  => '正常',
 								'italic'  => '斜体',
 								'oblique' => '倾斜',
 							],
-							'desc'     => __( '设置字体样式（正常、斜体、倾斜）',
+							'default'  => 'normal',
+							'desc'     => tr( '设置字体样式（正常、斜体、倾斜）',
 								'wp-china-yes' ),
 						],
 						[
 							'id'       => 'selector',
 							'type'     => 'textarea',
-							'title'    => __( '字体应用', 'wp-china-yes' ),
+							'title'    => '字体应用',
 							'subtitle' => '字体应用元素',
-							'desc'     => __( '设置字体应用的元素（CSS 选择器）',
+							'desc'     => tr( '设置字体应用的元素（CSS 选择器）',
 								'wp-china-yes' ),
 							'default'  => 'a:not([class]),p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class])',
 							'sanitize' => false,
@@ -318,16 +371,16 @@ private function get_settings_page_url() {
 						[
 							'id'       => 'enable',
 							'type'     => 'switcher',
-							'title'    => __( '启用字体', 'wp-china-yes' ),
+							'title'    => '启用字体',
 							'subtitle' => '是否启用该字体',
 							'default'  => true,
 						],
 					],
 				],
 				[
-					'id'         => 'windfonts_typography',
+					'id'         => 'windfonts_typography_cn',
 					'type'       => 'checkbox',
-					'title'      => __( '排印优化', 'wp-china-yes' ),
+					'title'      => '中文排印',
 					'inline'     => true,
 					'options'    => [
 						'corner'      => '直角括号',
@@ -337,26 +390,52 @@ private function get_settings_page_url() {
 						'align'       => '两端对齐',
 					],
 					'default'    => '',
-					'subtitle'   => '是否启用排印优化',
-					'desc'       => __( '文风字体排印优化可提升中文网页的视觉美感，适用于正式内容的网站。',
+					'subtitle'   => '是否启用中文排印优化',
+					'desc'       => tr( '文风字体中文排印优化可提升中文网页的视觉美感，适用于正式内容的网站。',
 						'wp-china-yes' ),
 				],
 				[
-					'id'         => 'windfonts_typography',
+					'id'         => 'windfonts_typography_en',
 					'type'       => 'checkbox',
-					'title'      => __( '英文美化', 'wp-china-yes' ),
+					'title'      => '英文排印',
 					'inline'     => true,
 					'options'    => [
-    					'align'       => '排版优化',
-						'corner'      => '去双空格',
-						'space'       => '避免孤行',
-						'punctuation' => '避免寡行',
-						'indent'      => '中英标点',
+    					'optimize'    => '排版优化',
+						'spacing'     => '去双空格',
+						'orphan'      => '避免孤行',
+						'widow'       => '避免寡行',
+						'punctuation' => '中英标点',
 					],
 					'default'    => '',
-					'subtitle'   => '是否启用英文美化',
-					'desc'       => __( 'Windfonts 英文优化可提升英文网页的视觉美感，适用于多语内容网站。',
+					'subtitle'   => '是否启用英文排印优化',
+					'desc'       => tr( 'Windfonts 英文排印优化可提升英文网页的视觉美感，适用于多语内容网站。',
 						'wp-china-yes' ),
+				],
+				[
+					'id'         => 'windfonts_reading_enable',
+					'type'       => 'switcher',
+					'title'      => 'RTL镜像测试',
+					'subtitle'   => '是否启用RTL镜像测试功能',
+					'desc'       => tr( '启用后可以帮助LTR语言使用者测试RTL网站布局效果。',
+						'wp-china-yes' ),
+					'default'    => false,
+					'class'      => 'wp_china_yes-field wp_china_yes-field-switcher',
+				],
+				[
+					'id'         => 'windfonts_reading',
+					'type'       => 'radio',
+					'title'      => 'RTL镜像模式',
+					'inline'     => true,
+					'options'    => [
+						'global'   => '全局启用',
+						'frontend' => '前台启用',
+						'off'      => '不启用',
+					],
+					'default'    => 'off',
+					'subtitle'   => 'RTL镜像测试模式选择',
+					'desc'       => tr( 'RTL镜像测试功能可以帮助LTR语言使用者测试RTL网站布局，通过水平镜像让RTL布局看起来像LTR。',
+						'wp-china-yes' ),
+					'dependency' => ['windfonts_reading_enable', '==', 'true'],
 				],
 			],
 		] );
@@ -370,7 +449,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'motucloud',
 					'type'     => 'radio',
-					'title'    => __( '墨图云集', 'wp-china-yes' ),
+					'title'    => '墨图云集',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -380,7 +459,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用墨图云集',
-					'desc'     => __( '<a href="https://motucloud.com/" target="_blank">墨图云集（MotuCloud）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://motucloud.com/" target="_blank">墨图云集（MotuCloud）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -395,7 +474,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'fewmail',
 					'type'     => 'radio',
-					'title'    => __( '飞秒邮箱', 'wp-china-yes' ),
+					'title'    => '飞秒邮箱',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -405,7 +484,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用飞秒邮箱',
-					'desc'     => __( '<a href="https://fewmail.com/" target="_blank">飞秒邮箱（FewMail）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://fewmail.com/" target="_blank">飞秒邮箱（FewMail）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -419,21 +498,66 @@ private function get_settings_page_url() {
 			'icon'   => 'icon icon-message-text',
 			'fields' => [
 				[
-					'id'       => 'wordyeah',
-					'type'     => 'radio',
-					'title'    => __( '无言会语', 'wp-china-yes' ),
-					'inline'   => true,
-					'options'  => [
-						'cn'       => '审核评论',
-						'global'   => '强化评论',
-						'ban'      => '禁用评论',
-						'off'      => '不启用'
-					],
-					'default'  => 'cn',
-					'subtitle' => '是否启用无言会语',
-					'desc'     => __( '<a href="https://wordyeah.com/" target="_blank">无言会语（WordYeah）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'id'       => 'comments_enable',
+					'type'     => 'switcher',
+					'title'    => '评论增强',
+					'subtitle' => '是否启用评论增强功能',
+					'desc'     => tr( '启用后可以使用角色徽章、表单验证、阿巴阿巴模式等评论增强功能。',
 						'wp-china-yes' ),
+					'default'  => false,
+					'class'    => 'wp_china_yes-field wp_china_yes-field-switcher',
 				],
+				[
+					'id'       => 'comments_role_badge',
+					'type'     => 'switcher',
+					'title'    => '角色徽章',
+					'subtitle' => '为评论作者显示角色标识',
+					'desc'     => tr( '在评论作者名称后显示用户角色徽章（管理员、编辑、作者等），提升评论区权威性。',
+						'wp-china-yes' ),
+					'default'  => true,
+					'dependency' => ['comments_enable', '==', 'true'],
+				],
+				[
+					'id'       => 'comments_remove_website',
+					'type'     => 'switcher',
+					'title'    => '移除网站字段',
+					'subtitle' => '从评论表单中移除网站URL字段',
+					'desc'     => tr( '移除评论表单中的网站字段，减少垃圾评论，简化表单填写。',
+						'wp-china-yes' ),
+					'default'  => false,
+					'dependency' => ['comments_enable', '==', 'true'],
+				],
+				[
+					'id'       => 'comments_validation',
+					'type'     => 'switcher',
+					'title'    => '评论验证',
+					'subtitle' => '启用前端表单验证',
+					'desc'     => tr( '对评论表单进行前端验证，确保评论内容质量，提升用户体验。',
+						'wp-china-yes' ),
+					'default'  => true,
+					'dependency' => ['comments_enable', '==', 'true'],
+				],
+				[
+					'id'       => 'comments_herp_derp',
+					'type'     => 'switcher',
+					'title'    => '阿巴阿巴模式',
+					'subtitle' => '启用阿巴阿巴模式',
+					'desc'     => tr( '提供阿巴阿巴模式切换按钮，可以模糊显示评论内容，增加趣味性。',
+						'wp-china-yes' ),
+					'default'  => false,
+					'dependency' => ['comments_enable', '==', 'true'],
+				],
+				[
+					'id'       => 'comments_sticky_moderate',
+					'type'     => 'switcher',
+					'title'    => '置顶审核',
+					'subtitle' => '启用置顶审核功能',
+					'desc'     => tr( '在后台评论管理中添加置顶审核功能，优化审核流程。',
+						'wp-china-yes' ),
+					'default'  => false,
+					'dependency' => ['comments_enable', '==', 'true'],
+				],
+
 			],
 		] );
     }
@@ -447,7 +571,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'bisheng',
 					'type'     => 'radio',
-					'title'    => __( '笔笙区块', 'wp-china-yes' ),
+					'title'    => '笔笙区块',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '审核评论',
@@ -457,7 +581,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用笔笙区块',
-					'desc'     => __( '<a href="https://ibisheng.com/" target="_blank">笔笙区块（Bisheng）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://ibisheng.com/" target="_blank">笔笙区块（Bisheng）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -473,7 +597,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'deerlogin',
 					'type'     => 'radio',
-					'title'    => __( '灯鹿用户', 'wp-china-yes' ),
+					'title'    => '灯鹿用户',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -482,7 +606,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用灯鹿用户',
-					'desc'     => __( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -497,19 +621,50 @@ private function get_settings_page_url() {
 			'icon'   => 'icon icon-chart-success',
 			'fields' => [
 				[
-					'id'       => 'waimao',
-					'type'     => 'radio',
-					'title'    => __( '灯鹿用户', 'wp-china-yes' ),
-					'inline'   => true,
-					'options'  => [
-						'cn'       => '默认线路',
-						'global'   => '国际线路',
-						'off'      => '不启用'
-					],
-					'default'  => 'cn',
-					'subtitle' => '是否启用灯鹿用户',
-					'desc'     => __( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
-						'wp-china-yes' ),
+					'id'       => 'waimao_enable',
+					'type'     => 'switcher',
+					'title'    => '跨飞外贸',
+					'subtitle' => '启用外贸网站优化功能',
+					'default'  => false,
+					'desc'     => '启用后可以使用专为外贸网站设计的语言切换和优化功能。',
+				],
+				[
+					'id'       => 'waimao_language_split',
+					'type'     => 'switcher',
+					'title'    => '前后台语言分离',
+					'subtitle' => '允许前台和后台使用不同语言',
+					'dependency' => ['waimao_enable', '==', 'true'],
+					'default'  => false,
+					'desc'     => '启用后，后台将使用个人资料中的语言设置，前台使用WordPress系统语言设置。',
+				],
+				[
+					'id'       => 'waimao_admin_language',
+					'type'     => 'select',
+					'title'    => '后台语言',
+					'subtitle' => '设置后台管理界面语言',
+					'dependency' => ['waimao_language_split', '==', 'true'],
+					'options'  => $this->get_available_languages(),
+					'default'  => $this->get_current_admin_language(),
+					'desc'     => '选择后台管理界面使用的语言，将应用到当前用户的个人资料设置。',
+				],
+				[
+					'id'       => 'waimao_frontend_language',
+					'type'     => 'select',
+					'title'    => '前台语言',
+					'subtitle' => '设置前台网站语言',
+					'dependency' => ['waimao_language_split', '==', 'true'],
+					'options'  => $this->get_available_languages(),
+					'default'  => $this->get_current_frontend_language(),
+					'desc'     => '选择前台网站使用的语言，将应用到WordPress系统语言设置。',
+				],
+				[
+					'id'       => 'waimao_auto_detect',
+					'type'     => 'switcher',
+					'title'    => '自动语言检测',
+					'subtitle' => '根据访客浏览器语言自动切换',
+					'dependency' => ['waimao_language_split', '==', 'true'],
+					'default'  => false,
+					'desc'     => '启用后，前台将根据访客的浏览器语言偏好自动选择合适的语言显示。',
 				],
 			],
 		] );
@@ -525,7 +680,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'woocn',
 					'type'     => 'radio',
-					'title'    => __( 'Woo电商', 'wp-china-yes' ),
+					'title'    => 'Woo电商',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -534,7 +689,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用灯鹿用户',
-					'desc'     => __( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -551,7 +706,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'lelms',
 					'type'     => 'radio',
-					'title'    => __( '乐尔达思', 'wp-china-yes' ),
+					'title'    => '乐尔达思',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -560,7 +715,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用乐尔达思',
-					'desc'     => __( '<a href="https://lelms.com/" target="_blank">乐尔达思（LeLMS）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://lelms.com/" target="_blank">乐尔达思（LeLMS）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -577,7 +732,7 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'wapuu',
 					'type'     => 'radio',
-					'title'    => __( '瓦普文创', 'wp-china-yes' ),
+					'title'    => '瓦普文创',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -586,7 +741,7 @@ private function get_settings_page_url() {
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用瓦普文创',
-					'desc'     => __( '<a href="https://wapuu.com/" target="_blank">瓦普文创（Wapuu）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://wapuu.com/" target="_blank">瓦普文创（Wapuu）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -602,7 +757,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'       => 'adblock',
             'type'     => 'radio',
-            'title'    => __( '广告拦截', 'wp-china-yes' ),
+            'title'    => '广告拦截',
             'inline'   => true,
             'options'  => [
                 'on'  => '启用',
@@ -610,7 +765,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             ],
             'default'  => 'off',
             'subtitle' => '是否启用后台广告拦截',
-            'desc'     => __( '<a href="https://wpcy.com/adblocker" target="_blank">文派叶子🍃（WPCY.COM）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，拿回<a href="https://wpcy.com/document/ad-blocking-for-developers " target="_blank">后台控制权</a>。',
+            'desc'     => tr( '<a href="https://wpcy.com/adblocker" target="_blank">文派叶子🍃（WPCY.COM）</a>独家特色功能，让您拥有清爽整洁的 WordPress 后台，清除各类常用插件侵入式后台广告、通知及无用信息，拿回<a href="https://wpcy.com/document/ad-blocking-for-developers " target="_blank">后台控制权</a>。',
                 'wp-china-yes' ),
         ],
         [
@@ -618,7 +773,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'type'     => 'group',
             'title'    => '规则列表',
             'subtitle' => '使用的广告拦截规则列表',
-            'desc'     => __( '默认规则跟随插件更新，插件更新后可删除规则重新添加以<a href="https://wpcy.com/adblocker" target="_blank">获取更多</a>最新拦截规则，出现异常，请尝试先停用规则<a href="https://wpcy.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
+            'desc'     => tr( '默认规则跟随插件更新，插件更新后可删除规则重新添加以<a href="https://wpcy.com/adblocker" target="_blank">获取更多</a>最新拦截规则，出现异常，请尝试先停用规则<a href="https://wpcy.com/document/troubleshooting-ad-blocking" target="_blank">排查原因</a>。',
                 'wp-china-yes' ),
             'button_title'           => '添加规则',
             'accordion_title_number' => true,
@@ -631,18 +786,18 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 [
                     'id'       => 'name',
                     'type'     => 'text',
-                    'title'    => __( '规则名称', 'wp-china-yes' ),
+                    'title'    => '规则名称',
                     'subtitle' => '自定义规则名称',
-                    'desc'     => __( '自定义规则名称，方便识别',
+                    'desc'     => tr( '自定义规则名称，方便识别',
                         'wp-china-yes' ),
                     'default'  => '默认规则',
                 ],
                 [
                     'id'       => 'selector',
                     'type'     => 'textarea',
-                    'title'    => __( '应用元素', 'wp-china-yes' ),
+                    'title'    => '应用元素',
                     'subtitle' => '规则应用元素',
-                    'desc'     => __( '设置规则应用的广告元素（CSS 选择器）',
+                    'desc'     => tr( '设置规则应用的广告元素（CSS 选择器）',
                         'wp-china-yes' ),
                     'default'  => '.wpseo_content_wrapper',
                     'sanitize' => false,
@@ -650,7 +805,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 [
                     'id'       => 'enable',
                     'type'     => 'switcher',
-                    'title'    => __( '启用规则', 'wp-china-yes' ),
+                    'title'    => '启用规则',
                     'subtitle' => '是否启用该规则',
                     'default'  => true,
                 ],
@@ -669,7 +824,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'       => 'notice_block',
             'type'     => 'radio',
-            'title'    => __('通知管理', 'wp-china-yes'),
+            'title'    => '通知管理',
             'inline'   => true,
             'options'  => [
                 'on'  => '启用',
@@ -677,12 +832,12 @@ WP_CHINA_YES::createSection( $this->prefix, [
             ],
             'default'  => 'off',
             'subtitle' => '是否启用后台通知管理',
-            'desc'     => __('管理和控制 WordPress 后台各类通知的显示。', 'wp-china-yes'),
+            'desc'     => '管理和控制 WordPress 后台各类通知的显示。',
         ],
         [
             'id'         => 'disable_all_notices',
             'type'       => 'switcher',
-            'title'      => __('禁用所有通知', 'wp-china-yes'),
+            'title'      => '禁用所有通知',
             'subtitle'   => '一键禁用所有后台通知',
             'default'    => false,
             'dependency' => ['notice_block', '==', 'on'],
@@ -690,10 +845,10 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'         => 'notice_control',
             'type'       => 'checkbox',
-            'title'      => __('选择性禁用', 'wp-china-yes'),
+            'title'      => '选择性禁用',
             'inline'     => true,
             'subtitle'   => '选择需要禁用的通知类型',
-            'desc'       => __('可以按住 Ctrl/Command 键进行多选', 'wp-china-yes'),
+            'desc'       => '可以按住 Ctrl/Command 键进行多选',
             'chosen'     => true,
             'multiple'   => true,
             'options'    => [
@@ -709,7 +864,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'         => 'notice_method',
             'type'       => 'radio',
-            'title'      => __('禁用方式', 'wp-china-yes'),
+            'title'      => '禁用方式',
             'inline'     => true,
             'options'    => [
                 'hook'  => '移除钩子（推荐）',
@@ -733,7 +888,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 				[
 					'id'       => 'plane',
 					'type'     => 'radio',
-					'title'    => __( '飞行模式', 'wp-china-yes' ),
+					'title'    => '飞行模式',
 					'inline'   => true,
 					'options'  => [
 						'on'  => '启用',
@@ -741,7 +896,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 					],
 					'default'  => 'off',
 					'subtitle' => '是否启用飞行模式',
-					'desc'     => __( '飞行模式可屏蔽 WordPress 插件主题在中国无法访问的 API 请求，加速网站前后台访问。注：部分外部请求为产品更新检测，若已屏蔽请定期检测。',
+					'desc'     => tr( '飞行模式可屏蔽 WordPress 插件主题在中国无法访问的 API 请求，加速网站前后台访问。注：部分外部请求为产品更新检测，若已屏蔽请定期检测。',
 						'wp-china-yes' ),
 				],
 				[
@@ -749,7 +904,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 					'type'     => 'group',
 					'title'    => '规则列表',
 					'subtitle' => '飞行模式使用的 URL 屏蔽规则列表',
-					'desc'     => __( '支持添加多条 <a href="https://wpcy.com/document/advertising-blocking-rules" target="_blank">URL 屏蔽规则</a>',
+					'desc'     => tr( '支持添加多条 <a href="https://wpcy.com/document/advertising-blocking-rules" target="_blank">URL 屏蔽规则</a>',
 						'wp-china-yes' ),
 					'button_title'           => '添加规则',
 					'accordion_title_number' => true,
@@ -762,18 +917,18 @@ WP_CHINA_YES::createSection( $this->prefix, [
 						[
 							'id'       => 'name',
 							'type'     => 'text',
-							'title'    => __( '规则名称', 'wp-china-yes' ),
+							'title'    => '规则名称',
 							'subtitle' => '自定义规则名称',
-							'desc'     => __( '自定义规则名称，方便识别',
+							'desc'     => tr( '自定义规则名称，方便识别',
 								'wp-china-yes' ),
 							'default'  => '未命名规则',
 						],
 						[
 							'id'          => 'url',
 							'type'        => 'textarea',
-							'title'       => __( 'URL', 'wp-china-yes' ),
+							'title'       => 'URL',
 							'subtitle'    => 'URL',
-							'desc'        => __( '填入需要屏蔽的 URL 链接，一行一条，注意不要串行',
+							'desc'        => tr( '填入需要屏蔽的 URL 链接，一行一条，注意不要串行',
 								'wp-china-yes' ),
 							'default'     => '',
 							'placeholder' => 'example.com',
@@ -782,7 +937,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 						[
 							'id'       => 'enable',
 							'type'     => 'switcher',
-							'title'    => __( '启用规则', 'wp-china-yes' ),
+							'title'    => '启用规则',
 							'subtitle' => '是否启用该规则',
 							'default'  => true,
 						],
@@ -803,7 +958,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'default'  => true,
             'title'    => '节点监控',
             'subtitle' => '自动监控加速节点可用性',
-            'desc'     => __( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
+            'desc'     => tr( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
                 'wp-china-yes' ),
         ],
         [
@@ -812,13 +967,13 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'default'  => true,
             'title'    => '系统监控',
             'subtitle' => '自动监控系统运行状态',
-            'desc'     => __( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
+            'desc'     => tr( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
                 'wp-china-yes' ),
         ],
         [
             'id'         => 'memory_display',
             'type'       => 'checkbox',
-            'title'      => __( '显示参数', 'wp-china-yes' ),
+            'title'      => '显示参数',
             'inline'     => true,
             'options'    => [
                 'memory_usage'  => '内存使用量',
@@ -838,7 +993,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 'php_info',
             ],
             'subtitle'   => '选择页脚要显示的信息',
-            'desc'       => __( '为网站维护人员提供参考依据，无需登录服务器即可查看相关信息参数','wp-china-yes' ),
+            'desc'       => '为网站维护人员提供参考依据，无需登录服务器即可查看相关信息参数',
             'dependency' => ['memory', '==', 'true'],
         ],
         [
@@ -847,13 +1002,13 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'default'  => true,
             'title'    => '站点监控',
             'subtitle' => '自动监控站点运行状态',
-            'desc'     => __( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
+            'desc'     => tr( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
                 'wp-china-yes' ),
         ],
         [
             'id'         => 'disk_display',
             'type'       => 'checkbox',
-            'title'      => __( '显示参数', 'wp-china-yes' ),
+            'title'      => '显示参数',
             'inline'     => true,
             'options'    => [
                 'disk_usage'     => '磁盘用量',
@@ -870,7 +1025,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 'admin_num',
             ],
             'subtitle'   => '选择概览要显示的信息',
-            'desc'       => __( '为网站管理人员提供参考依据，进入后台仪表盘即可查看相关信息参数','wp-china-yes' ),
+            'desc'       => '为网站管理人员提供参考依据，进入后台仪表盘即可查看相关信息参数',
             'dependency' => ['disk', '==', 'true'],
         ],
 [
@@ -879,7 +1034,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
     'default'  => false,
     'title'    => '启用维护模式',
     'subtitle' => '启用或禁用网站维护模式',
-    'desc'     => __( '启用后，网站将显示维护页面，只有管理员可以访问。', 'wp-china-yes' ),
+    'desc'     => '启用后，网站将显示维护页面，只有管理员可以访问。',
 ],
 [
     'id'         => 'maintenance_settings',
@@ -920,7 +1075,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 				[
 					'id'       => 'yoodefender',
 					'type'     => 'radio',
-					'title'    => __( '雨滴安全', 'wp-china-yes' ),
+					'title'    => '雨滴安全',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -929,24 +1084,24 @@ WP_CHINA_YES::createSection( $this->prefix, [
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用雨滴安全',
-					'desc'     => __( '<a href="https://yoodefender.com/" target="_blank">雨滴安全（YooDefender）</a>安全设置可以帮助增强 WordPress 的安全性，请根据实际需求启用相关选项。更多选项请安装 WPBan 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://yoodefender.com/" target="_blank">雨滴安全（YooDefender）</a>安全设置可以帮助增强 WordPress 的安全性，请根据实际需求启用相关选项。更多选项请安装 WPBan 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],    
         [
             'id'       => 'disallow_file_edit',
             'type'     => 'switcher',
-            'title'    => __( '禁用文件编辑', 'wp-china-yes' ),
+            'title'    => '禁用文件编辑',
             'subtitle' => '禁用 WordPress 后台的主题和插件编辑器',
             'default'  => true,
-            'desc'     => __( '启用后，用户无法通过 WordPress 后台编辑主题和插件文件。', 'wp-china-yes' ),
+            'desc'     => '启用后，用户无法通过 WordPress 后台编辑主题和插件文件。',
         ],
         [
             'id'       => 'disallow_file_mods',
             'type'     => 'switcher',
-            'title'    => __( '禁用文件修改', 'wp-china-yes' ),
+            'title'    => '禁用文件修改',
             'subtitle' => '禁止用户安装、更新或删除主题和插件',
             'default'  => false,
-            'desc'     => __( '启用后，用户无法通过 WordPress 后台安装、更新或删除主题和插件。', 'wp-china-yes' ),
+            'desc'     => '启用后，用户无法通过 WordPress 后台安装、更新或删除主题和插件。',
         ],
     ],
 ] );
@@ -959,49 +1114,49 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'       => 'performance',
             'type'     => 'switcher',
-            'title'    => __( '性能优化', 'wp-china-yes' ),
+            'title'    => '性能优化',
             'subtitle' => '是否启用性能优化',
             'default'  => true,
-            'desc'     => __( '性能优化设置可以帮助提升 WordPress 的运行效率，请根据服务器配置合理调整。', 'wp-china-yes' ),
+            'desc'     => '性能优化设置可以帮助提升 WordPress 的运行效率，请根据服务器配置合理调整。',
         ],
 
         [
             'id'       => 'wp_memory_limit',
             'type'     => 'text',
-            'title'    => __( '内存限制', 'wp-china-yes' ),
+            'title'    => '内存限制',
             'subtitle' => '设置 WordPress 内存限制',
             'default'  => '40M',
-            'desc'     => __( '设置 WordPress 的内存限制，例如 64M、128M、256M 等。', 'wp-china-yes' ),
+            'desc'     => '设置 WordPress 的内存限制，例如 64M、128M、256M 等。',
     'dependency' => ['performance', '==', 'true'],
 
         ],
         [
             'id'       => 'wp_max_memory_limit',
             'type'     => 'text',
-            'title'    => __( '后台内存限制', 'wp-china-yes' ),
+            'title'    => '后台内存限制',
             'subtitle' => '设置 WordPress 后台内存限制',
             'default'  => '256M',
-            'desc'     => __( '设置 WordPress 后台的内存限制，例如 128M、256M、512M 等。', 'wp-china-yes' ),
+            'desc'     => '设置 WordPress 后台的内存限制，例如 128M、256M、512M 等。',
     'dependency' => ['performance', '==', 'true'],
 
         ],
         [
             'id'       => 'wp_post_revisions',
             'type'     => 'number',
-            'title'    => __( '文章修订版本', 'wp-china-yes' ),
+            'title'    => '文章修订版本',
             'subtitle' => '控制文章修订版本的数量',
             'default'  => -1, // -1 表示启用所有修订版本
-            'desc'     => __( '设置为 0 禁用修订版本，或设置为一个固定值（如 5）限制修订版本数量。', 'wp-china-yes' ),
+            'desc'     => '设置为 0 禁用修订版本，或设置为一个固定值（如 5）限制修订版本数量。',
     'dependency' => ['performance', '==', 'true'],
 
         ],
         [
             'id'       => 'autosave_interval',
             'type'     => 'number',
-            'title'    => __( '自动保存间隔', 'wp-china-yes' ),
+            'title'    => '自动保存间隔',
             'subtitle' => '设置文章自动保存的时间间隔（秒）',
             'default'  => 60,
-            'desc'     => __( '设置文章自动保存的时间间隔，默认是 60 秒。', 'wp-china-yes' ),
+            'desc'     => '设置文章自动保存的时间间隔，默认是 60 秒。',
     'dependency' => ['performance', '==', 'true'],
 
         ],
@@ -1020,7 +1175,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'type'     => 'text',
             'title'    => '品牌白标',
             'subtitle' => '自定义插件显示品牌名',
-            'desc'     => __( '专为 WordPress 建站服务商和代理机构提供的<a href="https://wpcy.com/white-label" target="_blank">自定义品牌 OEM </a>功能，输入您的品牌词启用后生效', 'wp-china-yes' ),
+            'desc'     => '专为 WordPress 建站服务商和代理机构提供的<a href="https://wpcy.com/white-label" target="_blank">自定义品牌 OEM </a>功能，输入您的品牌词启用后生效',
             'default'  => "文派叶子",
         ],
         [
@@ -1029,8 +1184,24 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'title'    => '品牌 Logo',
             'subtitle' => '自定义插件显示品牌 Logo',
             'library'  => 'image',
+            'preview'  => true,
+            'preview_size' => 'thumbnail',
+            'preview_width' => 120,
+            'preview_height' => 120,
+            'button_title' => '上传 Logo',
+            'remove_title' => '移除 Logo',
+            'placeholder' => '未选择 Logo',
             'desc'     => '上传或选择媒体库的图片作为品牌 Logo',
-            'default'  => ['url' => plugins_url('wp-china-yes/assets/images/wpcy-logo.png')], // 设置默认 Logo
+            'default'  => [
+                'url' => plugins_url('wp-china-yes/assets/images/wpcy-logo.png'),
+                'id' => 0,
+                'width' => 120,
+                'height' => 120,
+                'thumbnail' => plugins_url('wp-china-yes/assets/images/wpcy-logo.png'),
+                'alt' => '文派叶子 Logo',
+                'title' => '文派叶子',
+                'description' => '文派叶子默认Logo'
+            ],
         ],
 				[
 					'id'       => 'hide_option',
@@ -1038,7 +1209,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 					'default'  => false,
 					'title'    => '隐藏设置',
 					'subtitle' => '隐藏插件设置信息',
-					'desc'     => __( '如果您不希望让客户知道本站启用了<a href="https://wpcy.com/" target="_blank">文派叶子🍃（WPCY.COM）</a>插件及服务，可开启此选项。',
+					'desc'     => tr( '如果您不希望让客户知道本站启用了<a href="https://wpcy.com/" target="_blank">文派叶子🍃（WPCY.COM）</a>插件及服务，可开启此选项。',
 						'wp-china-yes' ),
 				],
 
@@ -1046,19 +1217,39 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 'id'         => 'hide_elements',
                 'type'       => 'checkbox',
                 'title'      => '隐藏元素',
-                'subtitle'   => '选择需要隐藏的元素',
-                'desc'     => __( '注意：启用[隐藏菜单]前请务必<a href="https://wpcy.com/document/hide-settings-page" target="_blank">保存或收藏</a>当前设置页面 URL，否则将无法再次进入插件页面', 'wp-china-yes' ),
+                'subtitle'   => '选择需要隐藏的界面元素',
+                'desc'       => '隐藏插件界面中的品牌相关元素，提升白标效果',
                 'inline'     => true, 
                 'options'    => [
-                    'hide_logo'    => '隐藏 Logo',
-                    'hide_title'   => '隐藏插件名',
-                    'hide_version' => '隐藏版本号',
-                    'hide_copyright'    => '隐藏版权',
-                    'hide_menu'    => '隐藏菜单',
+                    'hide_logo'      => '隐藏 Logo',
+                    'hide_title'     => '隐藏插件名',
+                    'hide_version'   => '隐藏版本号',
+                    'hide_copyright' => '隐藏版权信息',
                 ],
-                'default'    => [], // 默认不隐藏任何元素
-                'dependency' => ['hide_option', '==', 'true'], // 只有在 hide 为 true 时显示
+                'default'    => [],
+                'dependency' => ['hide_option', '==', 'true'],
             ],
+             [
+                 'id'       => 'hide_menu_confirm',
+                 'type'     => 'checkbox',
+                 'title'    => '隐藏菜单确认',
+                 'subtitle' => '⚠️ 危险操作：请先保存访问URL',
+                 'desc'     => '当前页面URL：<code>' . (is_multisite() ? network_admin_url('settings.php?page=wp-china-yes') : admin_url('options-general.php?page=wp-china-yes')) . '</code><br>隐藏菜单后只能通过此URL访问设置页面',
+                 'options'  => [
+                     'confirmed' => '我已保存URL并了解风险，确认要隐藏菜单'
+                 ],
+                 'default'  => [],
+                 'dependency' => ['hide_option', '==', 'true'],
+             ],
+             [
+                 'id'       => 'hide_menu',
+                 'type'     => 'switcher',
+                 'title'    => '隐藏菜单',
+                 'subtitle' => '从WordPress后台菜单中隐藏插件入口',
+                 'desc'     => '启用后插件菜单将从后台消失，只能通过直接URL访问',
+                 'default'  => false,
+                 'dependency' => ['hide_menu_confirm|confirmed', '==', 'confirmed'],
+             ],
                  [
             'id'       => 'enable_custom_rss',
             'type'     => 'switcher',
@@ -1073,6 +1264,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'title'    => '自定义 RSS 源',
             'subtitle' => '添加自定义 RSS 新闻源',
             'desc'     => '请输入有效的 RSS Feed URL，长期无更新时会恢复显示默认新闻源。',
+            'default'  => 'https://one.weixiaoduo.com/feed',
             'dependency' => ['enable_custom_rss', '==', true]
         ],
         [
@@ -1086,7 +1278,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
                 '14400' => '4小时',
                 '28800' => '8小时'
             ],
-            'default'  => '3600',
+            'default'  => '14400',
             'dependency' => ['enable_custom_rss', '==', true]
         ],
         [
@@ -1112,100 +1304,123 @@ WP_CHINA_YES::createSection( $this->prefix, [
 			'title'  => '其他设置',
 			'icon'   => 'icon icon-setting',
 			'fields' => [
-        [
-            'id'       => 'enable_debug',
-            'type'     => 'switcher',
-            'title'    => __( '调试模式', 'wp-china-yes' ),
-            'subtitle' => '启用或禁用调试模式',
-            'default'  => false,
-            'desc'     => __( '启用后，WordPress 将显示 PHP 错误、警告和通知。临时使用完毕后，请保持禁用此选项。', 'wp-china-yes' ),
-        ],
-        [
-            'id'         => 'debug_options',
-            'type'       => 'checkbox',
-            'title'      => __( '调试选项', 'wp-china-yes' ),
-            'subtitle'   => '选择要启用的调试功能',
-            'dependency' => [ 'enable_debug', '==', 'true' ],
-            'options'    => [
-                'wp_debug_log'      => 'WP_DEBUG_LOG 记录日志',
-                'wp_debug_display'  => 'WP_DEBUG_DISPLAY 页面显示调试信息',
-                'script_debug'      => 'SCRIPT_DEBUG 加载未压缩的前端资源',
-                'save_queries'      => 'SAVEQUERIES 记录数据库查询 ',
-            ],
-            'default'    => [
-                'wp_debug_log' => true,
-            ],
-            'desc'       => __( '注意：调试模式仅适用于开发和测试环境，不建议在生产环境中长时间启用。选择要启用的调试功能，适用于开发和测试环境。', 'wp-china-yes' ),
-        ],
-        [
-            'id'       => 'enable_db_tools',
-            'type'     => 'switcher',
-            'title'    => __( '数据库工具', 'wp-china-yes' ),
-            'subtitle' => '启用或禁用数据库工具',
-            'default'  => false,
-            'desc'     => __( '启用后，您可以在下方访问数据库修复工具。定期使用完毕后，请保持禁用此选项。', 'wp-china-yes' ),
-        ],
-        [
-            'id'         => 'db_tools_link',
-            'type'       => 'content',
-            'title'      => __( '数据库修复工具', 'wp-china-yes' ),
-            'subtitle'   => '打开数据库修复工具',
-            'dependency' => [ 'enable_db_tools', '==', 'true' ],
-            'content'    => '<a class="button button-primary" href="' . esc_url( admin_url( 'maint/repair.php' ) ) . '" target="_blank">' . esc_html__( '打开数据库修复工具', 'wp-china-yes' ) . '</a>',
-        ],
-[
-    'id'       => 'enable_sections',
-    'type'     => 'switcher',
-    'title'    => '高级定制',
-    'subtitle' => '启用或禁用功能选项卡',
-    'default'  => true,
-    'desc'     => __( '启用后，您可以在下方选用文派叶子功能，特别提醒：禁用对应功能后再次启用需重新设置。', 'wp-china-yes' ),
-],
-[
-    'id'       => 'enabled_sections',
-    'type'     => 'checkbox',
-    'title'    => '功能选项卡',
-    'subtitle' => '选择要显示的功能选项卡',
-    'inline'   => true,
-    'options'  => [
-        'store'     => '应用市场',
-        'admincdn'  => '萌芽加速',
-        'cravatar'  => '初认头像',
-        'windfonts' => '文风字体',
-        'motucloud' => '墨图云集',
-        'fewmail'   => '飞秒邮箱',
-        'wordyeah'  => '无言会语',
-        'blocks'    => '笔笙区块',
-        'deerlogin' => '灯鹿用户',
-        'waimao'    => '跨飞外贸',
-        'woocn'     => 'Woo电商',
-        'lelms'     => '乐尔达思',
-        'wapuu'     => '瓦普文创',
-        'adblock'   => '广告拦截',
-        'notice'    => '通知管理',
-        'plane'     => '飞行模式',
-        'monitor'   => '脉云维护',
-        'forums'    => '赛博论坛',
-        'monitor'   => '脉云维护',
-        'forms'     => '重力表单',
-        'panel'     => '天控面板',
-        'security'  => '雨滴安全',
-        'domain'    => '蛋叮域名',
-        'performance' => '性能优化',
-        'brand'     => '品牌白标',
-        'sms'       => '竹莺短信',
-        'chat'      => '点洽客服',
-        'translate' => '文脉翻译',
-        'ecosystem' => '生态系统',
-        'deer'      => '建站套件',
-        'docs'      => '帮助文档',
-        'about'     => '关于插件',
-        'welcome'   => '欢迎使用'
-    ],
-    'default'  => ['welcome', 'store', 'admincdn', 'cravatar', 'other', 'about'],
-    'desc'     => '选择要在设置页面显示的功能选项卡，未选择的选项卡将被隐藏',
-    'dependency' => ['enable_sections', '==', 'true'], 
-]
+				[
+					'id'       => 'enable_db_tools',
+					'type'     => 'switcher',
+					'title'    => '数据库工具',
+					'subtitle' => '启用数据库维护功能',
+					'default'  => false,
+					'desc'     => '启用后可访问WordPress内置的数据库修复工具。使用前请备份数据库。',
+				],
+				[
+					'id'         => 'db_tools_link',
+					'type'       => 'content',
+					'title'      => '数据库修复工具',
+					'subtitle'   => '访问WordPress数据库修复工具',
+					'dependency' => [ 'enable_db_tools', '==', 'true' ],
+					'content'    => '
+						<div class="wp_china_yes-notice wp_china_yes-notice-warning">
+							<p><strong>重要提醒</strong>：使用数据库修复工具前请务必备份数据库！</p>
+							<p><a class="button button-primary" href="' . esc_url( admin_url( 'maint/repair.php' ) ) . '" target="_blank">打开数据库修复工具</a></p>
+							<p><small>此工具将在新窗口中打开，修复完成后建议关闭此功能。</small></p>
+						</div>
+					',
+				],
+				[
+					'id'       => 'enable_sections',
+					'type'     => 'switcher',
+					'title'    => '功能模块管理',
+					'subtitle' => '启用自定义功能选项卡',
+					'default'  => true,
+					'desc'     => '启用后可自定义显示的功能模块。注意：禁用功能后重新启用需要重新配置相关设置。',
+				],
+				[
+					'id'       => 'quick_select',
+					'type'     => 'button_set',
+					'title'    => '快速选择',
+					'subtitle' => '一键选择常用配置方案',
+					'dependency' => ['enable_sections', '==', 'true'],
+					'multiple' => false,
+					'options'  => [
+						'recommended' => '推荐配置',
+						'minimal'     => '最小配置',
+						'full'        => '完整配置',
+						'custom'      => '自定义配置',
+					],
+					'default'  => 'custom',
+					'desc'     => '选择预设配置方案，或选择"自定义配置"进行个性化设置。',
+				],
+				[
+					'id'       => 'enabled_sections',
+					'type'     => 'checkbox',
+					'title'    => '功能选项卡',
+					'subtitle' => '选择要显示的功能模块',
+					'dependency' => ['enable_sections', '==', 'true'],
+					'inline'   => true,
+					'options'  => [
+						'welcome'     => '欢迎使用',
+						'store'       => '应用市场',
+						'admincdn'    => '萌芽加速',
+						'cravatar'    => '初认头像',
+						'windfonts'   => '文风字体',
+						'motucloud'   => '墨图云集',
+						'fewmail'     => '飞秒邮箱',
+						'wordyeah'    => '无言会语',
+						'blocks'      => '笔笙区块',
+						'deerlogin'   => '灯鹿用户',
+						'waimao'      => '跨飞外贸',
+						'woocn'       => 'Woo电商',
+						'lelms'       => '乐尔达思',
+						'wapuu'       => '瓦普文创',
+						'adblock'     => '广告拦截',
+						'notice'      => '通知管理',
+						'plane'       => '飞行模式',
+						'monitor'     => '脉云维护',
+						'forums'      => '赛博论坛',
+						'forms'       => '重力表单',
+						'panel'       => '天控面板',
+						'security'    => '雨滴安全',
+						'domain'      => '蛋叮域名',
+						'performance' => '性能优化',
+						'brand'       => '品牌白标',
+						'sms'         => '竹莺短信',
+						'chat'        => '点洽客服',
+						'translate'   => '文脉翻译',
+						'ecosystem'   => '生态系统',
+						'deer'        => '建站套件',
+						'docs'        => '帮助文档',
+						'about'       => '关于插件',
+						'other'       => '其他设置'
+					],
+					'default'  => ['welcome', 'store', 'admincdn', 'cravatar', 'wordyeah', 'other', 'about'],
+					'desc'     => '选择要显示的功能模块，取消勾选的模块将在设置页面中隐藏。',
+				],
+				[
+					'type'    => 'content',
+					'dependency' => ['enable_sections', '==', 'true'],
+					'content' => '
+						<script>
+						jQuery(document).ready(function($) {
+							var presets = {
+								recommended: ["welcome", "store", "admincdn", "cravatar", "windfonts", "performance", "other", "about"],
+								minimal: ["welcome", "store", "admincdn", "cravatar", "other", "about"],
+								full: ["welcome", "store", "admincdn", "cravatar", "windfonts", "motucloud", "fewmail", "wordyeah", "blocks", "deerlogin", "waimao", "woocn", "lelms", "wapuu", "adblock", "notice", "plane", "monitor", "forums", "forms", "panel", "security", "domain", "performance", "brand", "sms", "chat", "translate", "ecosystem", "deer", "docs", "about", "other"]
+							};
+							
+							$("input[name=\\"wp_china_yes[quick_select]\\"]").on("change", function() {
+								var selectedPreset = $(this).val();
+								if (presets[selectedPreset]) {
+									var checkboxes = $("input[name=\\"wp_china_yes[enabled_sections][]\\"]");
+									checkboxes.prop("checked", false);
+									$.each(presets[selectedPreset], function(index, value) {
+										$("input[name=\\"wp_china_yes[enabled_sections][]\\"][value=\\"" + value + "\\"]").prop("checked", true);
+									});
+								}
+							});
+						});
+						</script>
+					',
+				],
 
 		],
 		] );
@@ -1238,7 +1453,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 				[
 					'id'       => 'docs',
 					'type'     => 'radio',
-					'title'    => __( '帮助文档', 'wp-china-yes' ),
+					'title'    => '帮助文档',
 					'inline'   => true,
 					'options'  => [
 						'cn'       => '默认线路',
@@ -1247,7 +1462,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 					],
 					'default'  => 'cn',
 					'subtitle' => '是否启用灯鹿用户',
-					'desc'     => __( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
+					'desc'     => tr( '<a href="https://deerlogin.com/" target="_blank">灯鹿用户（DeerLogin）</a>Gravatar 在中国的完美替代方案，您可以在 Cravatar.com 上传头像，更多选项请安装 WPAavatar 插件。可自选<a href="https://wpcy.com/document/gravatar-alternatives" target="_blank">加速线路</a>。',
 						'wp-china-yes' ),
 				],
 			],
@@ -1270,9 +1485,38 @@ WP_CHINA_YES::createSection( $this->prefix, [
 				]
 			],
 		] );
+		}
+
+		// 备份选项功能
+		WP_CHINA_YES::createSection( $this->prefix, [
+			'title'  => '备份选项',
+			'icon'   => 'icon icon-download',
+			'fields' => [
+				[
+					'type'    => 'content',
+					'content' => '
+						<div class="wpcy-about__section">
+							<div class="wpcy-about__grid columns-1">
+								<div class="column wpcy-kit-banner">
+									<span class="wpcy-icon-inner"><i class="icon icon-info-circle"></i></span>
+									<h2>使用说明</h2>
+									<p><strong>导出设置：</strong>点击"导出"按钮将当前所有插件配置保存为JSON文件，文件会自动下载到您的电脑。</p>
+									<p><strong>导入设置：</strong>选择之前导出的JSON备份文件，点击"导入"按钮恢复所有设置。</p>
+								</div>
+							</div>
+						</div>
+					',
+				],
+				[
+					'type'    => 'backup',
+					'title'   => '备份与恢复操作',
+					'subtitle' => '导出当前设置或导入之前保存的配置文件',
+					'desc'    => '使用上方说明进行备份和恢复操作，确保数据安全。',
+				]
+			],
+		] );
 
 	}
-		}		
 		
 	/**
 	 * 加载后台资源
@@ -1305,11 +1549,44 @@ WP_CHINA_YES::createSection( $this->prefix, [
 				return $links;
 			}
 			$settings_link = '<a href="' . add_query_arg( array( 'page' => 'wp-china-yes' ),
-					is_multisite() ? 'settings.php' : 'options-general.php' ) . '">' . esc_html__( '设置',
-					'wp-china-yes' ) . '</a>';
+					is_multisite() ? 'settings.php' : 'options-general.php' ) . '">' . esc_html( tr( '设置',
+					'wp-china-yes' ) ) . '</a>';
 			array_unshift( $links, $settings_link );
 
 			return $links;
 		}, 10, 2 );
+	}
+
+	/**
+	 * 获取WordPress可用语言列表
+	 */
+	private function get_available_languages() {
+		require_once ABSPATH . 'wp-admin/includes/translation-install.php';
+		
+		$languages = wp_get_available_translations();
+		$language_options = [
+			'' => 'English (United States)'
+		];
+		
+		foreach ( $languages as $locale => $language ) {
+			$language_options[ $locale ] = $language['native_name'];
+		}
+		
+		return $language_options;
+	}
+
+	/**
+	 * 获取当前后台语言设置
+	 */
+	private function get_current_admin_language() {
+		$user_locale = get_user_meta( get_current_user_id(), 'locale', true );
+		return $user_locale ?: get_locale();
+	}
+
+	/**
+	 * 获取当前前台语言设置
+	 */
+	private function get_current_frontend_language() {
+		return get_option( 'WPLANG', '' );
 	}
 }

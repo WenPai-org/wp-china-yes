@@ -57,7 +57,7 @@ class Maintenance {
             $items['media'] = sprintf(
                 '<a href="%s" class="stat-item"><span class="dashicons dashicons-format-gallery"></span> %s</a>',
                 admin_url('upload.php'),
-                sprintf(_n('%d 个媒体', '%d 个媒体', $media_count), $media_count)
+                sprintf('%d 个媒体', $media_count)
             );
         }
 
@@ -67,7 +67,7 @@ class Maintenance {
             $items['admins'] = sprintf(
                 '<a href="%s" class="stat-item"><span class="dashicons dashicons-shield-alt"></span> %s</a>',
                 admin_url('users.php?role=administrator'),
-                sprintf(_n('%d 个管理员', '%d 个管理员', $admin_count), $admin_count)
+                sprintf('%d 个管理员', $admin_count)
             );
         }
 
@@ -77,7 +77,7 @@ class Maintenance {
             $items['users'] = sprintf(
                 '<a href="%s" class="stat-item"><span class="dashicons dashicons-groups"></span> %s</a>',
                 admin_url('users.php'),
-                sprintf(_n('%d 个用户', '%d 个用户', $total_users), $total_users)
+                sprintf('%d 个用户', $total_users)
             );
         }
 

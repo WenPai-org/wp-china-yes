@@ -67,8 +67,8 @@ if ( ! class_exists( 'WP_CHINA_YES_Setup' ) ) {
       // Init action
       do_action( 'wp_china_yes_init' );
 
-      // Setup textdomain
-      self::textdomain();
+      // Setup textdomain on init action
+      add_action( 'init', array( 'WP_CHINA_YES_Setup', 'textdomain' ) );
 
       add_action( 'after_setup_theme', array( 'WP_CHINA_YES', 'setup' ) );
       add_action( 'init', array( 'WP_CHINA_YES', 'setup' ) );

@@ -24,12 +24,14 @@ class Avatar {
      * 初始化初认头像功能
      */
     private function init() {
-        if (!empty($this->settings['cravatar'])) {
+        if (!empty($this->settings['cravatar']) && $this->settings['cravatar'] !== 'off') {
             add_filter('user_profile_picture_description', [$this, 'set_user_profile_picture_for_cravatar'], 1);
             add_filter('avatar_defaults', [$this, 'set_defaults_for_cravatar'], 1);
             add_filter('um_user_avatar_url_filter', [$this, 'get_cravatar_url'], 1);
             add_filter('bp_gravatar_url', [$this, 'get_cravatar_url'], 1);
             add_filter('get_avatar_url', [$this, 'get_cravatar_url'], 1);
+            
+            add_action('wp_head', [$this, 'add_avatar_preconnect'], 1);
         }
     }
 
@@ -93,6 +95,23 @@ class Avatar {
             return '<a href="https://weavatar.com" target="_blank">您可以在 WeAvatar 修改您的资料图片</a>';
         } else {
             return '<a href="https://cravatar.com" target="_blank">您可以在初认头像修改您的资料图片</a>';
+        }
+    }
+
+    public function add_avatar_preconnect() {
+        switch ($this->settings['cravatar']) {
+            case 'cn':
+                echo '<link rel="dns-prefetch" href="//cn.cravatar.com">' . "\n";
+                echo '<link rel="preconnect" href="https://cn.cravatar.com" crossorigin>' . "\n";
+                break;
+            case 'global':
+                echo '<link rel="dns-prefetch" href="//en.cravatar.com">' . "\n";
+                echo '<link rel="preconnect" href="https://en.cravatar.com" crossorigin>' . "\n";
+                break;
+            case 'weavatar':
+                echo '<link rel="dns-prefetch" href="//weavatar.com">' . "\n";
+                echo '<link rel="preconnect" href="https://weavatar.com" crossorigin>' . "\n";
+                break;
         }
     }
 }

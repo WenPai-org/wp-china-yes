@@ -61,9 +61,9 @@ class Memory {
      */
     private function get_debug_status() {
         if (defined('WP_DEBUG') && true === WP_DEBUG) {
-            return '<strong><font color="#F60">' . __('WP_DEBUG', 'wp-china-yes') . '</font></strong>';
+            return '<strong><font color="#F60">WP_DEBUG</font></strong>';
         }
-        return '<span style="text-decoration: line-through;">' . __('WP_DEBUG', 'wp-china-yes') . '</span>';
+        return '<span style="text-decoration: line-through;">WP_DEBUG</span>';
     }
 
     /**
@@ -140,7 +140,7 @@ class Memory {
      */
     private function check_wp_limit() {
         $memory = $this->format_wp_limit(WP_MEMORY_LIMIT);
-        return $memory ? size_format($memory) : __('N/A', 'wp-china-yes');
+        return $memory ? size_format($memory) : 'N/A';
     }
 
     /**
@@ -176,9 +176,9 @@ public function add_footer($content) {
     // 内存使用量
     if (in_array('memory_usage', $display_options)) {
         $footer_parts[] = sprintf('%s: %s %s %s MB (<span style="%s">%s%%</span>)',
-            __('Memory', 'wp-china-yes'),
+            'Memory',
             $this->memory['usage'],
-            __('of', 'wp-china-yes'),
+            'of',
             $this->memory['limit'],
             $this->memory['color'],
             $this->memory['percent']
@@ -188,7 +188,7 @@ public function add_footer($content) {
     // WP内存限制
     if (in_array('wp_limit', $display_options)) {
         $footer_parts[] = sprintf('%s: %s',
-            __('WP LIMIT', 'wp-china-yes'),
+            'WP LIMIT',
             $this->check_wp_limit()
         );
     }
@@ -250,10 +250,10 @@ public function add_footer($content) {
             wp_die(
                 sprintf(
                     '<h1>%s</h1><p>%s</p>',
-                    __('插件无法激活：PHP 版本过低', 'wp-china-yes'),
-                    __('请升级 PHP 至 7.0 或更高版本。', 'wp-china-yes')
+                    '插件无法激活：PHP 版本过低',
+                    '请升级 PHP 至 7.0 或更高版本。'
                 ),
-                __('PHP 版本错误', 'wp-china-yes'),
+                'PHP 版本错误',
                 ['back_link' => true]
             );
         }

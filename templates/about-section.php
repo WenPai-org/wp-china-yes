@@ -5,7 +5,7 @@
     <div class="wpcy-about__grid columns-1">
         <div class="column wpcy-kit-banner"><span class="wpcy-icon-inner"> <i class="icon icon-archive-1"></i></span>
             <h2>项目简介</h2>
-            <p>文派（WordPress）中国本土化项目始于 2019 年，由 文派叶子🍃（WPCY） 插件开启，其前身为 WP-China-Yes。
+            <p>文派（WordPress）中国本土化项目始于 2019 年，由 文派叶子🍃（WPCY.COM） 插件开启，其前身为 WP-China-Yes。
 
             </p>
             <p>2023 年 4 月，文派科技完成对该项目的收购，并对其进行了全面的品牌重塑。</p>
@@ -16,16 +16,16 @@
             <h2>赞助支持</h2>
             <p>特别感谢以下企业品牌对文派项目提供的资金资源支持。早期伙伴未来有机会共享文派生态资源，期待社会各界参与。</p>
             <div class="card-body sponsor-logos">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/feibisi-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/shujue-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/upyun-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/haozi-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/wpsaas-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/lingding-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/weixiaoduo-logo-2020.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/modiqi-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/kekechong-logo.png">
-                <img src="https://cravatar.cn/wp-content/uploads/2024/09/wenpai-logo@2X.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/feibisi-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/shujue-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/upyun-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/haozi-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/wpsaas-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/lingding-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/weixiaoduo-logo-2020.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/modiqi-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/kekechong-logo.png">
+                <img src="https://cn.cravatar.com/wp-content/uploads/2024/09/wenpai-logo@2X.png">
             </div>
             <div class="wpcy-buttons"><a href="https://wpcy.com/ecosystem" target="_blank" rel="noopener" class="components-button button-secondary">生态共建 ↗</a><a href="https://wpcy.com/about/investor" target="_blank" rel="noopener" class="components-button button-secondary">项目投资 ↗</a></div>
         </div>

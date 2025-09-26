@@ -5,7 +5,7 @@
         <div class="wpcy-about__grid">
             <div class="column wpcy-banner"><span class="wpcy-icon-inner"> <i class="icon icon-mirroring-screen"></i></span>
                 <h2>原生体验</h2>
-                <p>文派叶子🍃（WP-China-Yes）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。</p>
+                <p>文派叶子🍃（WPCY.COM）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。</p>
                 <div class="wpcy-buttons"><a href="<?php echo $settings_page_url; ?>#tab=%e5%bb%ba%e7%ab%99%e5%a5%97%e4%bb%b6" class="components-button button-primary">获取 WP Deer 建站套件</a><a href="https://wenpai.org/" target="_blank" rel="noopener" class="components-button button-secondary">文派开源（WenPai.org）↗</a></div>
                 <img
                 src="/wp-content/plugins/wp-china-yes/assets/images/website-banner.jpg" width="358" height="140" alt=""></div>
@@ -42,9 +42,9 @@
             class="column"><span class="wpcy-icon-inner"> <i class="icon icon-more-square"></i></span>
                 <h2>浏览更多</h2>
                 <ul class="wpcy-about__list">
-                    <li><a href="https://wpcy.com" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-global"></i> </span>文派叶子 🍃 （WPCY.com）</a></li>
+                    <li><a href="https://wpcy.com" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-global"></i> </span>文派叶子 🍃 （WPCY.COM）</a></li>
                     <li><a href="https://wpcy.com/document" target="_blank" rel="noopener" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-archive-book"></i> </span>快速入门指南</a></li>
-                    <li><a href="https://wpcy.com/support/" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-message-notif"></i> </span>支持论坛</a></li>
+                    <li><a href="https://wpcy.com/community/" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-message-notif"></i> </span>官方社区</a></li>
                     <li><a href="https://space.bilibili.com/3546657484442062" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-video-square"></i> </span>Bilibili 官方频道</a></li>
                     <li><a href="https://wpcy.com/faqs" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-lifebuoy"></i> </span>常见问题</a></li>
                     <li><a href="https://wpcy.com/document/website-backend-is-messy" target="_blank" rel="noopener noreferrer" class="components-button button-link has-text has-icon"><span class="wpcy-icon-inner-list"> <i class="icon icon-warning-2"></i> </span>疑难故障排查…</a></li>

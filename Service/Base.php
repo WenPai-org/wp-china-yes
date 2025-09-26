@@ -11,38 +11,51 @@ defined( 'ABSPATH' ) || exit;
  */
 class Base {
 
+    private $services = [];
+
     public function __construct() {
-        // 确保所有类文件都存在后再实例化
-        if (class_exists(__NAMESPACE__ . '\Super')) {
-            new Super();
-        }
-        
-        if (class_exists(__NAMESPACE__ . '\Monitor')) {
-            new Monitor();
-        }
-        
-        if (class_exists(__NAMESPACE__ . '\Memory')) {
-            new Memory();
-        }
-        
-        if (class_exists(__NAMESPACE__ . '\Update')) {
-            new Update();
-        }
-        
-        if (class_exists(__NAMESPACE__ . '\Database')) {
-            new Database();
-        }
-        
-        if (class_exists(__NAMESPACE__ . '\Acceleration')) {
-            new Acceleration();
+        $this->init_services();
+    }
+
+    private function init_services() {
+        $core_services = [
+            'Super',
+            'Monitor', 
+            'Memory',
+            'Update',
+            'Database',
+            'Acceleration',
+            'Avatar',
+            'Fonts',
+            'Comments',
+            'Media',
+            'Performance',
+            'Maintenance'
+        ];
+
+        foreach ($core_services as $service) {
+            $this->load_service($service);
         }
 
-        if (class_exists(__NAMESPACE__ . '\Maintenance')) {
-            new Maintenance();
+        if (is_admin()) {
+            $this->load_service('Setting');
+            $this->load_service('Adblock');
         }
+    }
 
-        if ( is_admin() && class_exists(__NAMESPACE__ . '\Setting')) {
-            new Setting();
+    private function load_service($service_name) {
+        $class_name = __NAMESPACE__ . '\\' . $service_name;
+        
+        if (class_exists($class_name)) {
+            try {
+                $this->services[$service_name] = new $class_name();
+            } catch (\Exception $e) {
+                error_log("WP-China-Yes: Failed to load service {$service_name}: " . $e->getMessage());
+            }
         }
+    }
+
+    public function get_service($service_name) {
+        return $this->services[$service_name] ?? null;
     }
 }
