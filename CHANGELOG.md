@@ -2,6 +2,16 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.9 - 2026-02-15
+
+### 新增
+- 集成文派云桥客户端 v2.1（站点健康上报 + 更新降级策略）
+- 站点健康上报：每日自动上报站点环境信息到文派云桥，含 WooCommerce 扩展数据
+- 多级降级策略：当云桥不可用时自动降级到 WordPress.org 原始源
+- 站点唯一标识：UUID v4 格式，用于灰度发布分组
+- 受「云桥更新」设置开关控制，可随时关闭
+
+
 ## v3.8 - 2025-02-05
 
 * 文派叶子 v3.8 重大更新！全新UI 设计更接近 WordPress 原生体验。

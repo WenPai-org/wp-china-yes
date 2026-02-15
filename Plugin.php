@@ -29,6 +29,29 @@ class Plugin {
 				echo '<div class="notice notice-error"><p>WP-China-Yes initialization error: ' . esc_html( $e->getMessage() ) . '</p></div>';
 			});
 		}
+
+		// 加载文派云桥客户端（站点健康上报 + 更新降级策略）
+		$this->init_bridge_client();
+	}
+
+	/**
+	 * 初始化文派云桥客户端。
+	 *
+	 * 受 bridge 设置开关控制，默认启用。
+	 * 包含站点健康上报（每日遥测）和多级降级策略（Bridge → WordPress.org → 缓存）。
+	 */
+	private function init_bridge_client() {
+		$settings = \WenPai\ChinaYes\get_settings();
+
+		if ( empty( $settings['bridge'] ) ) {
+			return;
+		}
+
+		$bridge_client = CHINA_YES_PLUGIN_PATH . 'client/wenpai-bridge-client.php';
+
+		if ( file_exists( $bridge_client ) ) {
+			require_once $bridge_client;
+		}
 	}
 
 	/**
