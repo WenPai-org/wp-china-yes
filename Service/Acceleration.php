@@ -298,6 +298,11 @@ class Acceleration {
             !stristr($GLOBALS['wp_version'], 'beta') &&
             !stristr($GLOBALS['wp_version'], 'RC')) {
             
+            // 镜像不可用时直接返回：此时关闭脚本合并只会变慢而没有任何收益
+            if (!$this->mirror_usable('wpstatic.admincdn.com')) {
+                return;
+            }
+
             global $concatenate_scripts;
             $concatenate_scripts = false;
 
@@ -311,7 +316,8 @@ class Acceleration {
      * 准备前台替换规则
      */
     private function prepare_frontend_replacements() {
-        if (in_array('frontend', (array) $this->settings['admincdn_files'])) {
+        if (in_array('frontend', (array) $this->settings['admincdn_files'])
+            && $this->mirror_usable('public.admincdn.com')) {
             $pattern = '#(?<=[(\"\'])(?:' . quotemeta(home_url()) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#';
             $this->regex_patterns[$pattern] = 'https://public.admincdn.com/$0';
         }
@@ -330,7 +336,8 @@ class Acceleration {
         ];
 
         foreach ($public_libraries as $key => $replacement) {
-            if (in_array($key, (array) $this->settings['admincdn_public'])) {
+            if (in_array($key, (array) $this->settings['admincdn_public'])
+                && $this->mirror_usable($replacement[1])) {
                 $this->replacements[$replacement[0]] = $replacement[1];
             }
         }
@@ -349,10 +356,24 @@ class Acceleration {
         ];
 
         foreach ($dev_libraries as $key => $replacement) {
-            if (in_array($key, (array) $this->settings['admincdn_dev'])) {
+            if (in_array($key, (array) $this->settings['admincdn_dev'])
+                && $this->mirror_usable($replacement[1])) {
                 $this->replacements[$replacement[0]] = $replacement[1];
             }
         }
+    }
+
+    /**
+     * 镜像端点当前是否可用 —— 不可用就不替换，保留原始公共 CDN 链接。
+     *
+     * 加速服务挂掉时不应该把站点资源一起带死：把可用的公共 CDN 换成
+     * 已失效的镜像，比不加速更糟。详见 Service/MirrorHealth.php。
+     *
+     * @param string $target 替换目标（可能带路径）
+     * @return bool
+     */
+    private function mirror_usable($target) {
+        return MirrorHealth::is_healthy(MirrorHealth::host_of($target));
     }
 
     /**
@@ -372,6 +393,12 @@ class Acceleration {
      * 准备Emoji替换规则
      */
     private function prepare_emoji_replacements() {
+        // 守卫必须在 remove_action 之前：镜像不可用时若先摘掉 WP 自带的 emoji
+        // 处理再指向死链，等于既拿掉了核心行为又没有替代品。
+        if (!$this->mirror_usable('jsd.admincdn.com')) {
+            return;
+        }
+
         remove_action('wp_head', 'print_emoji_detection_script', 7);
         remove_action('admin_print_scripts', 'print_emoji_detection_script');
         remove_action('wp_print_styles', 'print_emoji_styles');
@@ -403,6 +430,10 @@ class Acceleration {
      * 准备WordPress.org资源替换规则
      */
     private function prepare_sworg_replacements() {
+        if (!$this->mirror_usable('ts.wenpai.net')) {
+            return;
+        }
+
         $this->replacements['ts.w.org'] = 'ts.wenpai.net';
 
         add_filter('theme_screenshot_url', function ($url) {
