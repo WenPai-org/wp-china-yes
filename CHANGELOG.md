@@ -2,6 +2,23 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## 未发布
+
+### 修复
+- **加速镜像不可用时不再把站点资源一起带死**：`admincdn` 各镜像端点新增健康检测
+  （`Service/MirrorHealth.php`），端点不可用时跳过替换、保留原始公共 CDN 链接，
+  端点恢复后自动重新启用，并在后台提示当前回退状态。
+  此前替换是无条件的字符串/正则替换，镜像故障会导致站点前端 JS/CSS/字体大面积 404 ——
+  把可用的公共 CDN 换成失效镜像，比不加速更糟。
+- **emoji 替换的守卫前置**：此前先 `remove_action` 摘掉 WP 自带 emoji 处理再指向镜像，
+  镜像失效时等于既拿掉核心行为又没有替代品，现改为镜像不可用则完全不接管。
+- **后台加速在镜像不可用时不再无谓关闭脚本合并**（`$concatenate_scripts`），此前有损无益。
+- **修复两处无开关控制的硬编码 CDN 依赖**：`framework/fields/map`（leaflet）与
+  `framework/fields/code_editor`（codemirror）此前硬编码 `jsd.admincdn.com`，
+  不受任何加速开关控制，镜像故障会直接让插件自己的设置界面失效。
+  现经 `field_cdn_base()` 取址，不可用时回退到 `cdn.jsdmirror.com`
+  （国内可达；`cdn.jsdelivr.net` 自 2021-12 ICP 吊销后国内基本不可用）。
+
 ## v3.9 - 2026-02-15
 
 ### 新增

@@ -24,6 +24,8 @@ class Base {
             'Memory',
             'Update',
             'Database',
+            // 必须在 Acceleration 之前：后者构造时即读取镜像健康状态
+            'MirrorHealth',
             'Acceleration',
             'Avatar',
             'Fonts',
