@@ -83,3 +83,34 @@ function clear_settings_cache() {
 	static $cached_settings = null;
 	$cached_settings = null;
 }
+
+/**
+ * 取字段资源的 CDN 基址：镜像可用则用镜像，否则回退到备用来源。
+ *
+ * 用于 framework/fields/* 里那些【无开关控制】的硬编码 CDN 依赖
+ * （map 的 leaflet、code_editor 的 codemirror）。这些资源服务于插件
+ * 自己的设置界面，镜像挂掉会直接让我们的后台 UI 失效，且与用户是否
+ * 开启加速无关，所以必须有回退。
+ *
+ * 回退目标选用国内可达的 jsDelivr 镜像（cdn.jsdmirror.com），
+ * 而不是 cdn.jsdelivr.net —— 后者自 2021-12 ICP 被吊销后国内基本不可用。
+ *
+ * @since 3.9.3
+ * @param string $mirror   首选基址，例如 https://jsd.admincdn.com/npm/
+ * @param string $fallback 备用基址，例如 https://cdn.jsdmirror.com/npm/
+ * @return string
+ */
+function field_cdn_base( $mirror, $fallback ) {
+	$host = \WenPai\ChinaYes\Service\MirrorHealth::host_of( $mirror );
+
+	$base = \WenPai\ChinaYes\Service\MirrorHealth::is_healthy( $host ) ? $mirror : $fallback;
+
+	/**
+	 * 允许站点自定义字段资源基址（例如改用自建镜像）。
+	 *
+	 * @param string $base     实际生效的基址
+	 * @param string $mirror   首选基址
+	 * @param string $fallback 备用基址
+	 */
+	return apply_filters( 'wp_china_yes_field_cdn_base', $base, $mirror, $fallback );
+}

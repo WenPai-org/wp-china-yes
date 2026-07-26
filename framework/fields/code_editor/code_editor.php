@@ -15,6 +15,15 @@ if ( ! class_exists( 'WP_CHINA_YES_Field_code_editor' ) ) {
 
     public function __construct( $field, $value = '', $unique = '', $where = '', $parent = '' ) {
       parent::__construct( $field, $value, $unique, $where, $parent );
+
+      // 同 map 字段：codemirror 服务于插件自己的代码编辑器字段，
+      // 无开关控制，镜像挂掉即失效，必须回退。
+      if ( function_exists( '\WenPai\ChinaYes\field_cdn_base' ) ) {
+        $this->cdn_url = \WenPai\ChinaYes\field_cdn_base(
+          'https://jsd.admincdn.com/npm/codemirror@',
+          'https://cdn.jsdmirror.com/npm/codemirror@'
+        );
+      }
     }
 
     public function render() {
