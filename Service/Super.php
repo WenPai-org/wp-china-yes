@@ -115,6 +115,15 @@ class Super {
 	 */
 	const MIRROR_PROBE_PATH = '/plugin/classic-editor.zip';
 
+	/**
+	 * 安装包的最小合理体积（字节）。
+	 *
+	 * 有镜像会以 `200` + 正确内容类型返回一个**十几字节的空壳**
+	 * （实例：`lib.baomitu.com` 返回 200 但 size 只有 14 字节）。
+	 * 只看状态码和内容类型仍会把这种上游判成健康，所以必须验体积。
+	 */
+	const MIRROR_MIN_PACKAGE_BYTES = 1024;
+
 	public function filter_wordpress_org( $preempt, $parsed_args, $url ) {
 		$host = wp_parse_url( $url, PHP_URL_HOST );
 		
@@ -217,7 +226,44 @@ class Super {
 			return false;
 		}
 
+		// 体积校验：有镜像会以 200 + 正确内容类型返回十几字节的空壳。
+		$total = self::parse_total_bytes( $response );
+
+		if ( null !== $total && $total < self::MIRROR_MIN_PACKAGE_BYTES ) {
+			return false;
+		}
+
 		return true;
+	}
+
+	/**
+	 * 从响应头取资源总体积。
+	 *
+	 * 探测带了 `Range: bytes=0-0`，所以正常情况下拿到的是 `206` +
+	 * `content-range: bytes 0-0/87533` —— 总体积在斜杠之后，
+	 * 而 `content-length` 此时是 1，不能直接用。
+	 * 若上游忽略 Range 而返回 200，则退回读 `content-length`。
+	 *
+	 * @return int|null 取不到时返回 null（此时不因体积判不可用，避免过度拒绝）
+	 */
+	private static function parse_total_bytes( $response ): ?int {
+		$range = (string) wp_remote_retrieve_header( $response, 'content-range' );
+
+		if ( '' !== $range && false !== strpos( $range, '/' ) ) {
+			$total = substr( $range, strpos( $range, '/' ) + 1 );
+
+			if ( is_numeric( $total ) ) {
+				return (int) $total;
+			}
+		}
+
+		$length = wp_remote_retrieve_header( $response, 'content-length' );
+
+		if ( '' !== $length && is_numeric( $length ) ) {
+			return (int) $length;
+		}
+
+		return null;
 	}
 
 	public function set_user_profile_picture_for_cravatar( $description ) {

@@ -107,6 +107,15 @@ namespace {
 	ok( isset( $GLOBALS['last_args']['headers']['Range'] ), '带 Range 头，不下载整个安装包' );
 	ok( ! empty( $GLOBALS['last_args']['_wp_china_yes'] ), '标记自身请求，避免被本过滤器再次改写' );
 
+	echo "\n== 体积校验：200 + 正确内容类型但只有十几字节的空壳，也必须判不可用 ==\n";
+	// 实例：lib.baomitu.com 返回 200 但 size 只有 14 字节（modiqi 实测）
+	ok( ! probe_with( array( 'code' => 206, 'headers' => array( 'content-type' => 'application/zip', 'content-range' => 'bytes 0-0/14' ) ) ), '206 + content-range 总体积 14B => 不可用' );
+	ok( probe_with( array( 'code' => 206, 'headers' => array( 'content-type' => 'application/zip', 'content-range' => 'bytes 0-0/87533' ) ) ), '206 + 总体积 87533B => 可用' );
+	ok( ! probe_with( array( 'code' => 200, 'headers' => array( 'content-type' => 'application/octet-stream', 'content-length' => '14' ) ) ), '200 + content-length 14B（上游忽略 Range）=> 不可用' );
+	ok( probe_with( array( 'code' => 200, 'headers' => array( 'content-type' => 'application/octet-stream', 'content-length' => '38489' ) ) ), '200 + content-length 38489B => 可用' );
+	ok( probe_with( array( 'code' => 206, 'headers' => array( 'content-type' => 'application/zip' ) ) ), '无体积头时不因体积判不可用（避免过度拒绝）' );
+	ok( ! probe_with( array( 'code' => 200, 'headers' => array( 'content-type' => 'application/zip', 'content-range' => 'bytes 0-0/1023' ) ) ), '恰好低于阈值(1023B) => 不可用' );
+
 	echo "\n== 状态缓存：不能每次请求都去探测 ==\n";
 	$GLOBALS['transients'] = array();
 	$GLOBALS['http_calls'] = 0;
