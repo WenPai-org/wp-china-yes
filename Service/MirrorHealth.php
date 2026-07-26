@@ -65,8 +65,6 @@ class MirrorHealth {
 			'googlefonts.admincdn.com' => '/css2?family=Roboto:wght@400',
 			// wpstatic：替换形态是 /{wp_version}/wp-admin|wp-includes/css|js/...
 			'wpstatic.admincdn.com'    => '/' . $wp_version . '/wp-admin/css/common.min.css',
-			// public：替换形态是站点内的 wp-content|wp-includes 资源路径
-			'public.admincdn.com'      => '/wp-includes/js/jquery/jquery.min.js',
 			// ts：替换 ts.w.org，形态为 /wp-content/themes/{slug}/screenshot.png
 			'ts.wenpai.net'            => '/wp-content/themes/twentytwentyfour/screenshot.png',
 		] );

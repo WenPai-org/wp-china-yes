@@ -153,14 +153,15 @@ private function get_settings_page_url() {
                 'title'    => '文件加速',
                 'inline'   => true,
                 'options'  => [
+                    // 'frontend'（前台加速）已于 3.9.3 废弃移除：
+                    // public.admincdn.com 是共享端点，不可能持有各站自有的
+                    // wp-content 内容，详见 Service/Acceleration.php 的废弃说明。
                     'admin'       => '后台加速',
-                    'frontend'    => '前台加速',
                     'emoji'       => 'Emoji加速',
                     'sworg'       => '预览加速',
                 ],
                 'default'  => [
                     'admin'       => 'admin',
-                    'frontend'    => '',
                     'emoji'       => 'emoji',
                     'sworg'       => '',
                 ],

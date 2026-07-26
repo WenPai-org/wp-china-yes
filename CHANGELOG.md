@@ -4,6 +4,15 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
+### 移除
+- **废弃并移除「前台加速」（`public.admincdn.com`）**。该功能把站点自己的
+  `/wp-content|/wp-includes` 路径整体改写到一个共享端点，但 **`wp-content` 是站点自有内容**
+  （主题、插件、上传文件），共享端点不可能持有各站的这些文件 —— 结果要么 404，要么更糟：
+  返回别的站的同名文件，使站点静默加载到不属于它的 CSS/JS/图片。**返回错内容比返回 404 更有害。**
+  `wp-includes` 部分（核心文件、各站相同）本可保留，但已由「后台加速」覆盖，无需第二条链路。
+  该选项此前**默认关闭**，绝大多数站点不受影响；已启用的站点在后台访问时自动摘除该项
+  （`Service/Migration.php`），其余加速项不受影响。
+
 ### 修复
 - **加速镜像不可用时不再把站点资源一起带死**：`admincdn` 各镜像端点新增健康检测
   （`Service/MirrorHealth.php`），端点不可用时跳过替换、保留原始公共 CDN 链接，
