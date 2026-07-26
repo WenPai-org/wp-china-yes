@@ -105,12 +105,36 @@ $down = MirrorHealth::unhealthy_hosts();
 sort( $down );
 ok( $down === [ 'cdnjs.admincdn.com', 'jsd.admincdn.com' ], '只列出被标 down 的（实得：' . implode( ',', $down ) . '）' );
 
-echo "\n== 探测目标必须用真实资源路径而非根路径 ==\n";
+echo "\n== 探测路径必须是插件实际生成的形态 ==\n";
+$GLOBALS['wp_version'] = '6.8';
 $targets = MirrorHealth::probe_targets();
-ok( isset( $targets['cdnjs.admincdn.com'] ) && $targets['cdnjs.admincdn.com'] !== '/', 'cdnjs 探测路径不是根路径' );
-ok( isset( $targets['jsd.admincdn.com'] ) && $targets['jsd.admincdn.com'] !== '/', 'jsd 探测路径不是根路径' );
+
+// 没有任何端点可以用根路径探测：反代型端点根路径常返 302/404，会给出错误结论
+foreach ( $targets as $host => $path ) {
+	ok( '/' !== $path, "{$host} 探测路径不是根路径" );
+}
+
+// cdnjs 的替换把 /ajax/libs 前缀吃掉了，所以本端点路径【不带】该前缀。
+// 这条曾经写错（照抄了上游约定），导致探测的是一个与实际使用不同的路径。
+ok( strpos( $targets['cdnjs.admincdn.com'], '/ajax/libs/' ) !== 0, 'cdnjs 路径不带 /ajax/libs 前缀（替换时已被吃掉）' );
+ok( $targets['cdnjs.admincdn.com'] === '/jquery/3.7.1/jquery.min.js', 'cdnjs 路径与替换后形态一致' );
+
+// googleajax 替换 ajax.googleapis.com，其路径本身就带 /ajax/libs
+ok( strpos( $targets['googleajax.admincdn.com'], '/ajax/libs/' ) === 0, 'googleajax 路径带 /ajax/libs 前缀' );
+
 ok( strpos( $targets['jsd.admincdn.com'], '/npm/' ) === 0, 'jsd 用 jsDelivr 的 /npm/ 路径约定' );
-ok( strpos( $targets['cdnjs.admincdn.com'], '/ajax/libs/' ) === 0, 'cdnjs 用 /ajax/libs/ 路径约定' );
+
+// public 的替换形态是站点内资源路径；用根路径探测会因 302 被误判为健康
+ok( strpos( $targets['public.admincdn.com'], '/wp-includes/' ) === 0, 'public 路径是站点内资源形态' );
+
+// wpstatic 形态含 WordPress 版本号，必须随运行时版本变化
+ok( strpos( $targets['wpstatic.admincdn.com'], '/6.8/wp-admin/' ) === 0, 'wpstatic 路径含 wp_version 前缀' );
+$GLOBALS['wp_version'] = '6.9';
+$t2 = MirrorHealth::probe_targets();
+ok( strpos( $t2['wpstatic.admincdn.com'], '/6.9/wp-admin/' ) === 0, 'wpstatic 路径随 wp_version 变化' );
+
+// ts 的替换形态是主题截图路径
+ok( strpos( $targets['ts.wenpai.net'], '/wp-content/themes/' ) === 0, 'ts 路径是主题截图形态' );
 
 echo "\n---- {$pass} passed, {$fail} failed ----\n";
 exit( $fail > 0 ? 1 : 0 );

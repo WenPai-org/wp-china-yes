@@ -7,10 +7,9 @@ defined('ABSPATH') || exit;
 /**
  * 镜像端点健康检测 —— 加速不可用时不要把站点资源一起带死。
  *
- * 背景：2026-07-26 admincdn 的 6 个镜像子域全部故障（反代上游失效），
- * 而替换逻辑是无条件的字符串/正则替换，于是插件把本来可用的公共 CDN
- * 链接换成了已失效的镜像，站点前端 JS/CSS/字体大面积 404 ——
- * 这个方向的失败比不加速更糟。
+ * 背景：加速替换原先是无条件的字符串/正则替换，一旦镜像端点故障，
+ * 插件就会把本来可用的公共 CDN 链接换成已失效的镜像地址，
+ * 站点前端 JS/CSS/字体大面积 404 —— 这个方向的失败比不加速更糟。
  *
  * 设计取舍：
  * - 资源是【浏览器】加载的，WP 的 http_response 钩子看不到，
@@ -45,21 +44,31 @@ class MirrorHealth {
 	/**
 	 * 各镜像端点的规范探测路径。
 	 *
-	 * 必须用【该端点真实存在的资源路径】，不能用根路径 ——
-	 * 反代站的根路径本来就可能 404，用它探测会把好的判成坏的。
+	 * 必须用【插件实际生成的 URL 形态】，不能用根路径、也不能用上游的路径约定：
+	 * - 反代型端点的根路径本来就可能 404 或 302，用它探测会把坏的判成好的
+	 *   （public.admincdn.com 根路径 302 但真实资源路径 403，正是这种情况）
+	 * - 各端点的路径前缀不一定与上游一致（见 cdnjs 的注释），
+	 *   用上游约定去探测会得到与实际使用不同的结论
 	 *
 	 * @return array<string,string> host => path
 	 */
 	public static function probe_targets(): array {
+		$wp_version = isset( $GLOBALS['wp_version'] ) ? $GLOBALS['wp_version'] : '6.8';
+
 		return apply_filters( 'wp_china_yes_mirror_probe_targets', [
-			'cdnjs.admincdn.com'       => '/ajax/libs/jquery/3.7.1/jquery.min.js',
+			// cdnjs：替换规则是 cdnjs.cloudflare.com/ajax/libs => cdnjs.admincdn.com，
+			// 前缀 /ajax/libs 被吃掉了，所以本端点的实际路径【不带】该前缀。
+			'cdnjs.admincdn.com'       => '/jquery/3.7.1/jquery.min.js',
 			'jsd.admincdn.com'         => '/npm/jquery@3.7.1/dist/jquery.min.js',
+			// googleajax：替换 ajax.googleapis.com，其路径本身就是 /ajax/libs/...
 			'googleajax.admincdn.com'  => '/ajax/libs/jquery/3.7.1/jquery.min.js',
 			'googlefonts.admincdn.com' => '/css2?family=Roboto:wght@400',
-			'wpstatic.admincdn.com'    => '/images/core/emoji/14.0.0/svg/1f600.svg',
-			'public.admincdn.com'      => '/',
-			// 主题截图镜像，替换 ts.w.org，失效则主题预览图全裂
-			'ts.wenpai.net'            => '/',
+			// wpstatic：替换形态是 /{wp_version}/wp-admin|wp-includes/css|js/...
+			'wpstatic.admincdn.com'    => '/' . $wp_version . '/wp-admin/css/common.min.css',
+			// public：替换形态是站点内的 wp-content|wp-includes 资源路径
+			'public.admincdn.com'      => '/wp-includes/js/jquery/jquery.min.js',
+			// ts：替换 ts.w.org，形态为 /wp-content/themes/{slug}/screenshot.png
+			'ts.wenpai.net'            => '/wp-content/themes/twentytwentyfour/screenshot.png',
 		] );
 	}
 
