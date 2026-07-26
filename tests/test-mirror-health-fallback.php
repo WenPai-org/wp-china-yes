@@ -77,7 +77,6 @@ $real_targets = [
 	'jsd.admincdn.com/npm/tailwindcss'      => 'jsd.admincdn.com',
 	'jsd.admincdn.com/npm/@twemoji/api/dist' => 'jsd.admincdn.com',
 	'wpstatic.admincdn.com'                 => 'wpstatic.admincdn.com',
-	'public.admincdn.com'                   => 'public.admincdn.com',
 	'ts.wenpai.net'                         => 'ts.wenpai.net',
 ];
 foreach ( $real_targets as $target => $expected ) {
@@ -124,8 +123,8 @@ ok( strpos( $targets['googleajax.admincdn.com'], '/ajax/libs/' ) === 0, 'googlea
 
 ok( strpos( $targets['jsd.admincdn.com'], '/npm/' ) === 0, 'jsd 用 jsDelivr 的 /npm/ 路径约定' );
 
-// public 的替换形态是站点内资源路径；用根路径探测会因 302 被误判为健康
-ok( strpos( $targets['public.admincdn.com'], '/wp-includes/' ) === 0, 'public 路径是站点内资源形态' );
+// public.admincdn.com 于 3.9.3 随「前台加速」一并废弃，不应再出现在探测表里
+ok( ! isset( $targets['public.admincdn.com'] ), 'public 已从探测目标移除（前台加速已废弃）' );
 
 // wpstatic 形态含 WordPress 版本号，必须随运行时版本变化
 ok( strpos( $targets['wpstatic.admincdn.com'], '/6.8/wp-admin/' ) === 0, 'wpstatic 路径含 wp_version 前缀' );
