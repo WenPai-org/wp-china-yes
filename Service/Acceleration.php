@@ -56,10 +56,6 @@ class Acceleration {
             $this->prepare_admin_replacements();
         }
 
-        if ($this->has_frontend_acceleration()) {
-            $this->prepare_frontend_replacements();
-        }
-
         if ($this->has_public_library_acceleration()) {
             $this->prepare_public_library_replacements();
         }
@@ -79,14 +75,6 @@ class Acceleration {
     private function has_admin_acceleration() {
         return !empty($this->settings['admincdn']) && 
                in_array('admin', (array) $this->settings['admincdn']);
-    }
-
-    /**
-     * 检查是否启用前台加速
-     */
-    private function has_frontend_acceleration() {
-        return !empty($this->settings['admincdn_files']) && 
-               in_array('frontend', (array) $this->settings['admincdn_files']);
     }
 
     /**
@@ -313,15 +301,21 @@ class Acceleration {
     }
 
     /**
-     * 准备前台替换规则
+     * 前台加速（public.admincdn.com）已于 3.9.3 废弃并移除。
+     *
+     * 原实现把站点自己的 /wp-content|/wp-includes 路径整体改写到该共享端点：
+     *   $this->regex_patterns[$pattern] = 'https://public.admincdn.com/$0';
+     *
+     * 但 wp-content 是**站点自有内容**（主题、插件、上传文件），一个共享端点
+     * 不可能持有各站的这些文件。它要么 404，要么更糟 —— 返回别的站的同名文件，
+     * 使站点静默加载到不属于它的 CSS/JS/图片。返回错内容比返回 404 更有害。
+     *
+     * wp-includes 部分（核心文件、各站相同）本可保留，但它与 wp-admin 一起
+     * 已由「后台加速」（wpstatic）覆盖，无需第二条链路。
+     *
+     * 该选项此前默认关闭，故绝大多数站点不受影响；已启用的站点由
+     * Service/Migration.php 的 migrate_deprecate_frontend_acceleration() 自动摘除。
      */
-    private function prepare_frontend_replacements() {
-        if (in_array('frontend', (array) $this->settings['admincdn_files'])
-            && $this->mirror_usable('public.admincdn.com')) {
-            $pattern = '#(?<=[(\"\'])(?:' . quotemeta(home_url()) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#';
-            $this->regex_patterns[$pattern] = 'https://public.admincdn.com/$0';
-        }
-    }
 
     /**
      * 准备公共库替换规则
