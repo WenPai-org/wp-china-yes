@@ -52,7 +52,10 @@ namespace {
 	function is_admin() { return false; }
 	function wp_doing_cron() { return false; }
 	function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); }
-	function wp_remote_request() { return array(); }
+	function wp_remote_request( $url = '', $args = array() ) {
+		$GLOBALS['last_request_url'] = $url;
+		return array();
+	}
 	function esc_html__( $t ) { return $t; }
 }
 
@@ -115,6 +118,44 @@ namespace {
 	ok( probe_with( array( 'code' => 200, 'headers' => array( 'content-type' => 'application/octet-stream', 'content-length' => '38489' ) ) ), '200 + content-length 38489B => 可用' );
 	ok( probe_with( array( 'code' => 206, 'headers' => array( 'content-type' => 'application/zip' ) ) ), '无体积头时不因体积判不可用（避免过度拒绝）' );
 	ok( ! probe_with( array( 'code' => 200, 'headers' => array( 'content-type' => 'application/zip', 'content-range' => 'bytes 0-0/1023' ) ) ), '恰好低于阈值(1023B) => 不可用' );
+
+	echo "\n== 探测必须打**安装包主机**，不能打元数据主机 ==\n";
+	// 3.9 重构把两台主机合并成一个域名，`/plugin/*.zip` 打到元数据主机是永久 404，
+	// 会把本来可用的镜像永久判成不可用，等于静默关掉整个加速功能。
+	probe_with( array( 'code' => 206, 'headers' => array( 'content-type' => 'application/zip' ) ) );
+	ok( strpos( (string) $GLOBALS['last_url'], Super::MIRROR_PACKAGE_ORIGIN ) === 0, '探测目标是安装包主机 ' . Super::MIRROR_PACKAGE_ORIGIN );
+	ok( strpos( (string) $GLOBALS['last_url'], Super::MIRROR_API_ORIGIN . '/plugin/' ) !== 0, '探测不打元数据主机（该路径在那里是永久 404）' );
+	ok( Super::MIRROR_API_ORIGIN !== Super::MIRROR_PACKAGE_ORIGIN, '元数据源与安装包源是两个不同主机' );
+
+	echo "\n== 改写按来源主机分流：元数据走 API 源，安装包走包源 ==\n";
+	function rewritten_url( string $url ): string {
+		$GLOBALS['transients']       = array( Super::MIRROR_STATE_KEY => 'up' );
+		$GLOBALS['last_request_url'] = '';
+		( new Super() )->filter_wordpress_org( false, array(), $url );
+
+		return (string) $GLOBALS['last_request_url'];
+	}
+
+	ok(
+		rewritten_url( 'https://downloads.wordpress.org/plugin/classic-editor.zip' ) === Super::MIRROR_PACKAGE_ORIGIN . '/plugin/classic-editor.zip',
+		'downloads.wordpress.org 的安装包 => 包源（3.9 曾错写成元数据源，导致 JSON 404）'
+	);
+	ok(
+		rewritten_url( 'https://downloads.wordpress.org/translation/core/6.5/zh_CN.zip' ) === Super::MIRROR_PACKAGE_ORIGIN . '/translation/core/6.5/zh_CN.zip',
+		'downloads.wordpress.org 的语言包 => 包源'
+	);
+	ok(
+		rewritten_url( 'https://api.wordpress.org/plugins/update-check/1.1/' ) === Super::MIRROR_API_ORIGIN . '/plugins/update-check/1.1/',
+		'api.wordpress.org 的元数据 => 元数据源'
+	);
+	ok(
+		rewritten_url( 'https://api.wordpress.org/plugins/info/1.2/?action=query_plugins' ) === Super::MIRROR_API_ORIGIN . '/plugins/info/1.2/?action=query_plugins',
+		'查询串被保留'
+	);
+	ok(
+		'' === rewritten_url( 'https://example.com/plugin/foo.zip' ),
+		'非 WordPress.org 主机不改写'
+	);
 
 	echo "\n== 状态缓存：不能每次请求都去探测 ==\n";
 	$GLOBALS['transients'] = array();

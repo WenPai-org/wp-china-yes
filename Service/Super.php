@@ -107,11 +107,29 @@ class Super {
 	const MIRROR_PROBE_TIMEOUT = 3;
 
 	/**
+	 * 元数据镜像源。只出 API，不提供安装包。
+	 *
+	 * 对应上游 `api.wordpress.org`。
+	 */
+	const MIRROR_API_ORIGIN = 'https://api.wenpai.net';
+
+	/**
+	 * 安装包镜像源。与元数据源是**两台独立主机**，不可互换。
+	 *
+	 * 对应上游 `downloads.wordpress.org`。把包请求发到元数据源会得到
+	 * WP REST 的 JSON 404，而不是安装包。
+	 */
+	const MIRROR_PACKAGE_ORIGIN = 'https://downloads.wenpai.net';
+
+	/**
 	 * 镜像探测用的规范路径。
 	 *
 	 * 必须用**真实安装包路径**，不能用根路径或 API 路径 ——
 	 * 镜像的 API 半边可能正常（`plugins/info` 返回 200）而包下载半边是 404，
 	 * 用 API 路径探测会把坏的判成好的。
+	 *
+	 * 探测目标主机是 `MIRROR_PACKAGE_ORIGIN`：这条路径只在安装包主机上存在，
+	 * 打到元数据主机上是永久 404，会把可用的镜像永久判成不可用。
 	 */
 	const MIRROR_PROBE_PATH = '/plugin/classic-editor.zip';
 
@@ -143,11 +161,14 @@ class Super {
 		$path = wp_parse_url( $url, PHP_URL_PATH );
 		$query = wp_parse_url( $url, PHP_URL_QUERY );
 
-		if ( $this->settings['store'] == 'cn' ) {
-			$mirror_url = 'https://api.wenpai.net' . $path;
-		} else {
-			$mirror_url = 'https://api.wenpai.net' . $path;
-		}
+		// 元数据与安装包在拓扑上是**两台独立主机**，不能合并到一个域名：
+		// `api.wenpai.net` 只出 API（元数据），安装包/语言包由 `downloads.wenpai.net` 出。
+		// 3.9 的重构把两者都写成 `api.wenpai.net`，导致所有 `package` 链接
+		// 落到不提供安装包的主机上，返回 WP REST 的 JSON 404 —— 插件/主题
+		// 装不上也更新不了。此处按来源主机分别映射，恢复 3.8.x 的正确拓扑。
+		$mirror_url = ( 'downloads.wordpress.org' === $host )
+			? self::MIRROR_PACKAGE_ORIGIN . $path
+			: self::MIRROR_API_ORIGIN . $path;
 
 		if ( $query ) {
 			$mirror_url .= '?' . $query;
@@ -198,7 +219,7 @@ class Super {
 	 */
 	private static function probe_mirror(): bool {
 		$response = wp_remote_get(
-			'https://api.wenpai.net' . self::MIRROR_PROBE_PATH,
+			self::MIRROR_PACKAGE_ORIGIN . self::MIRROR_PROBE_PATH,
 			array(
 				'timeout'     => self::MIRROR_PROBE_TIMEOUT,
 				'redirection' => 2,
