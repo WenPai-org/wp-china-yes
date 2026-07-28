@@ -2,6 +2,18 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## 未发布
+
+### 修复
+- **WordPress.org 镜像不可用时不再阻断插件/主题的安装与更新**。`filter_wordpress_org()`
+  会把 `api.wordpress.org` 与 `downloads.wordpress.org` 的请求改写到自家镜像，而该替换
+  **默认开启**（`store` 默认为 `wenpai`）。镜像一旦不能提供安装包，站点的插件/主题
+  **搜索、信息查询、安装、更新下载会全链路失效** —— 把可用的上游换成不可用的镜像，
+  比不加速糟得多。现在改写前先确认镜像确实能提供安装包，不能则原样走 WordPress.org。
+  镜像恢复后自动重新启用加速。
+  探测判据同时看**状态码与内容类型**：镜像故障时会以 `application/json`
+  （`{"code":"rest_no_route"}`）或主题化 HTML 的 404 应答，光看状态码会把坏的判成好的。
+
 ## v3.9 - 2026-02-15
 
 ### 新增
