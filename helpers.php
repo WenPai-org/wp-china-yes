@@ -29,8 +29,8 @@ function get_settings() {
 		'windfonts'            => 'off',
 		'windfonts_list'       => [
 			[
-				'family'   => 'cszt',
-				'subset'   => 'regular',
+				'family'   => 'wenfeng-hcszt',
+				'subset'   => 'full',
 				'lang'     => '',
 				'weight'   => 400,
 				'style'    => 'normal',

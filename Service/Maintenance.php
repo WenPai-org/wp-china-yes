@@ -14,7 +14,7 @@ class Maintenance {
         
         // 维护模式检查
         if (!empty($this->settings['maintenance_mode'])) {
-            add_action('template_redirect', [$this, 'check_maintenance_mode']);
+            add_action('template_redirect', [$this, 'check_maintenance_mode'], 1);
             add_action('admin_bar_menu', [$this, 'add_admin_bar_notice'], 100);
         }
 
@@ -31,7 +31,7 @@ class Maintenance {
     // 添加 CSS 样式
     public function add_admin_css() {
         $screen = get_current_screen();
-        if ($screen->id === 'dashboard') {
+        if ($screen && $screen->id === 'dashboard') {
             echo '<style>
                 #dashboard_right_now .stat-item span.dashicons {
                     margin: 0 3px 0 -25px;
@@ -82,8 +82,10 @@ class Maintenance {
         }
 
         // 磁盘使用统计
-        $disk_info = $this->get_disk_usage_info();
-        if (in_array('disk_usage', $display_options)) {
+        $show_disk_usage = in_array('disk_usage', $display_options, true);
+        $show_disk_limit = in_array('disk_limit', $display_options, true);
+        $disk_info       = ($show_disk_usage || $show_disk_limit) ? $this->get_disk_usage_info() : null;
+        if ($show_disk_usage && $disk_info) {
             $items['disk_usage'] = sprintf(
                 '<span class="stat-item"><span class="dashicons dashicons-database"></span> 磁盘用量：%s / %s</span>',
                 size_format($disk_info['used']),
@@ -91,7 +93,7 @@ class Maintenance {
             );
         }
 
-        if (in_array('disk_limit', $display_options)) {
+        if ($show_disk_limit && $disk_info && $disk_info['total'] > 0) {
             $items['disk_free'] = sprintf(
                 '<span class="stat-item"><span class="dashicons dashicons-chart-area"></span> 剩余空间：%s (%s%%)</span>',
                 size_format($disk_info['free']),
@@ -118,6 +120,9 @@ class Maintenance {
             $upload_dir = wp_upload_dir();
             $disk_total = disk_total_space($upload_dir['basedir']);
             $disk_free = disk_free_space($upload_dir['basedir']);
+            if (false === $disk_total || false === $disk_free) {
+                return null;
+            }
             $disk_used = $disk_total - $disk_free;
 
             $disk_info = [
@@ -131,6 +136,54 @@ class Maintenance {
     }
 
     public function record_last_login($user_login, $user) {
-        update_user_meta($user->ID, 'last_login', time());
+        if ($user instanceof \WP_User) {
+            update_user_meta($user->ID, 'last_login', time());
+        }
+    }
+
+    /**
+     * Show the maintenance response only to anonymous front-end visitors.
+     */
+    public function check_maintenance_mode() {
+        if (
+            'cli' === PHP_SAPI ||
+            current_user_can('manage_options') ||
+            is_admin() ||
+            wp_doing_ajax() ||
+            (defined('REST_REQUEST') && REST_REQUEST)
+        ) {
+            return;
+        }
+
+        $maintenance_settings = is_array($this->settings['maintenance_settings'] ?? null)
+            ? $this->settings['maintenance_settings']
+            : [];
+        $title   = $maintenance_settings['maintenance_title'] ?? '网站维护中';
+        $heading = $maintenance_settings['maintenance_heading'] ?? '网站维护中';
+        $message = $maintenance_settings['maintenance_message'] ?? '网站正在进行例行维护，请稍后访问。感谢您的理解与支持！';
+
+        $output = sprintf(
+            '<style>body{background:#f1f1f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.maintenance-wrapper{max-width:800px;margin:100px auto;padding:50px 20px;text-align:center;background:#fff;border-radius:5px;box-shadow:0 1px 3px rgba(0,0,0,.1)}.maintenance-wrapper h1{font-size:36px;color:#333}.maintenance-wrapper h2{font-size:24px;color:#666}.maintenance-message{font-size:16px;line-height:1.6;color:#555}</style><div class="maintenance-wrapper"><h1>%s</h1><h2>%s</h2><div class="maintenance-message">%s</div></div>',
+            esc_html($heading),
+            esc_html($title),
+            wp_kses_post($message)
+        );
+
+        wp_die($output, esc_html($title), [
+            'response'  => 503,
+            'back_link' => false,
+        ]);
+    }
+
+    public function add_admin_bar_notice($wp_admin_bar) {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $wp_admin_bar->add_node([
+            'id'    => 'maintenance-mode-notice',
+            'title' => '<span style="color:#d63638">维护模式已启用</span>',
+            'href'  => admin_url('options-general.php?page=wp-china-yes'),
+        ]);
     }
 }

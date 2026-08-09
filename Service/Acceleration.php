@@ -511,7 +511,7 @@ class Acceleration {
             return $src;
         }
 
-        $timestamp_version = filemtime($file_path) ?: filemtime(utf8_decode($file_path));
+        $timestamp_version = filemtime($file_path);
         if (!$timestamp_version) {
             return $src;
         }

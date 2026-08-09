@@ -32,6 +32,13 @@ jobs:
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y zip rsync
       - run: bash scripts/build-release.sh
+      - name: Verify release contents
+        run: |
+          unzip -tq dist/wp-china-yes-*.zip
+          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$)'; then
+            echo 'Release archive contains build-only files.' >&2
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: wp-china-yes-release

@@ -18,11 +18,17 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 - 修复飞行模式保存 `url`、运行时读取 `domain` 的字段不一致；匹配改为精确主机或子域名，不再使用任意子串匹配。
 - 停用会在短暂网络故障后静默改写用户设置的旧节点 Monitor；性能优化与系统页脚信息对新安装默认关闭。
 - PHP 运行时要求与插件头统一为 7.4，兼容信息更新为实际验证目标 WordPress 7.0。
+- 修复维护模式注册了不存在的方法而导致前台和后台 PHP Fatal；管理员、REST 与 AJAX 请求保持可用。
+- 修复服务器内存信息在 `plugins_loaded` 之后再次注册同名钩子而始终不生效，并正确处理无限内存限制。
+- 修复评论置顶 AJAX 处理器只在评论列表页面加载、实际 AJAX 请求返回 `0` 的问题。
+- 移除 PHP 8 专用字符串函数和已废弃的 `utf8_decode()`，维持声明的 PHP 7.4 兼容性。
 
 ### 发布
 - 新增 PHP 7.4–8.4 CI、独立测试入口和包含 Composer 依赖的可重复 ZIP 打包脚本。
 - 插件列表操作链接只作用于 WPCY 自身，不再修改所有插件的操作链接。
 - 发现可能冲突的旧插件时只提示管理员，不再自动停用其他插件。
+- 修复当前 WordPress 后台产生的 jQuery `keydown()`、`isArray()` 废弃警告。
+- 修复 Git worktree 构建时发布包夹带 `.git`、`composer.json` 和 `composer.lock`。
 
 ### 移除
 - **废弃并移除「前台加速」（`public.admincdn.com`）**。该功能把站点自己的
@@ -55,6 +61,8 @@ All notable changes to `WP-China-Yes` will be documented in this file.
   不受任何加速开关控制，镜像故障会直接让插件自己的设置界面失效。
   现经 `field_cdn_base()` 取址，不可用时回退到 `cdn.jsdmirror.com`
   （国内可达；`cdn.jsdelivr.net` 自 2021-12 ICP 吊销后国内基本不可用）。
+- **修复文风字体接口失效**：旧默认字体与 `regular/bold/...` 子集参数已被当前接口移除，
+  现在使用有效字体族与 `en/zh/zh-common/full` 字符集，并取消会强制触发 CORS 校验的属性。
 
 ## v3.9 - 2026-02-15
 

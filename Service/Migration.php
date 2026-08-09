@@ -97,8 +97,11 @@ class Migration {
 	}
 
 	public function migrate_windfonts_settings() {
-		$current_settings = get_option( 'wp_china_yes', [] );
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
 		$needs_migration = false;
+		$legacy_subsets = [ 'regular', 'bold', 'light', 'medium', 'semibold', 'thin', 'extralight', 'extrabold', 'black' ];
 
 		if ( ! empty( $current_settings['windfonts_list'] ) ) {
 			foreach ( $current_settings['windfonts_list'] as $index => $font ) {
@@ -107,11 +110,24 @@ class Migration {
 					$current_settings['windfonts_list'][$index] = $migrated_font;
 					$needs_migration = true;
 				}
+
+				if ( 'cszt' === ( $current_settings['windfonts_list'][$index]['family'] ?? '' ) ) {
+					$current_settings['windfonts_list'][$index]['family'] = 'wenfeng-hcszt';
+					$needs_migration = true;
+				}
+
+				if ( in_array( $current_settings['windfonts_list'][$index]['subset'] ?? '', $legacy_subsets, true ) ) {
+					$current_settings['windfonts_list'][$index]['subset'] = 'full';
+					$needs_migration = true;
+				}
 			}
 		}
 
 		if ( $needs_migration ) {
-			update_option( 'wp_china_yes', $current_settings );
+			is_multisite()
+				? update_site_option( 'wp_china_yes', $current_settings )
+				: update_option( 'wp_china_yes', $current_settings );
+			\WenPai\ChinaYes\clear_settings_cache();
 		}
 	}
 
@@ -138,7 +154,7 @@ class Migration {
 			$css_url = $old_font['css'];
 			
 			if ( strpos( $css_url, 'syhtcjk' ) !== false ) {
-				return 'cszt';
+					return 'wenfeng-hcszt';
 			}
 			
 			if ( preg_match( '/fonts\/([^\/]+)\//', $css_url, $matches ) ) {
@@ -146,46 +162,12 @@ class Migration {
 			}
 		}
 
-		return 'cszt';
+		return 'wenfeng-hcszt';
 	}
 
 	private function extract_subset_from_old_config( $old_font ) {
-		if ( isset( $old_font['css'] ) ) {
-			$css_url = $old_font['css'];
-			
-			if ( strpos( $css_url, '/regular/' ) !== false ) {
-				return 'regular';
-			}
-			if ( strpos( $css_url, '/bold/' ) !== false ) {
-				return 'bold';
-			}
-			if ( strpos( $css_url, '/light/' ) !== false ) {
-				return 'light';
-			}
-			if ( strpos( $css_url, '/medium/' ) !== false ) {
-				return 'medium';
-			}
-		}
-
-		if ( isset( $old_font['weight'] ) ) {
-			$weight = intval( $old_font['weight'] );
-			if ( $weight <= 200 ) {
-				return 'thin';
-			} elseif ( $weight <= 300 ) {
-				return 'light';
-			} elseif ( $weight <= 500 ) {
-				return 'regular';
-			} elseif ( $weight <= 600 ) {
-				return 'medium';
-			} elseif ( $weight <= 700 ) {
-				return 'semibold';
-			} elseif ( $weight <= 800 ) {
-				return 'bold';
-			} else {
-				return 'black';
-			}
-		}
-
-		return 'regular';
+		// The current API accepts only en/zh/zh-common/full character sets.
+		// Legacy values described a font weight and now yield HTTP 400.
+		return 'full';
 	}
 }

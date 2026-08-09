@@ -79,6 +79,7 @@ class Comments {
 
         add_action('admin_enqueue_scripts', [$this, 'enqueue_sticky_moderate_scripts']);
         add_filter('comment_row_actions', [$this, 'add_sticky_moderate_actions'], 10, 2);
+        add_action('wp_ajax_sticky_moderate_comment', [$this, 'handle_sticky_moderate_ajax']);
     }
 
     private $user_role = '';
@@ -210,7 +211,7 @@ class Comments {
             wp_die('评论内容至少需要20个字符。', '评论验证失败', ['back_link' => true]);
         }
 
-        if (str_contains($commentdata['comment_content'], 'href=')) {
+        if (false !== strpos($commentdata['comment_content'], 'href=')) {
             wp_die('评论中不允许包含活动链接，请返回编辑。', '评论验证失败', ['back_link' => true]);
         }
 
@@ -371,8 +372,6 @@ class Comments {
                 });
             });
         ');
-
-        add_action('wp_ajax_sticky_moderate_comment', [$this, 'handle_sticky_moderate_ajax']);
     }
 
     public function add_sticky_moderate_actions($actions, $comment) {
