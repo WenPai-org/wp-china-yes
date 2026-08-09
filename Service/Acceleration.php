@@ -45,7 +45,8 @@ class Acceleration {
     private function should_enable() {
         return !empty($this->settings['admincdn']) || 
                !empty($this->settings['admincdn_files']) || 
-               !empty($this->settings['admincdn_public']);
+               !empty($this->settings['admincdn_public']) ||
+			   !empty($this->settings['admincdn_dev']);
     }
 
     /**

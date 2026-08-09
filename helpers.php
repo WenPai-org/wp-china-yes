@@ -6,13 +6,18 @@ defined( 'ABSPATH' ) || exit;
 
 // 获取插件设置
 function get_settings() {
-	static $cached_settings = null;
-	
-	if ($cached_settings === null) {
-		$settings = is_multisite() ? get_site_option( 'wp_china_yes' ) : get_option( 'wp_china_yes' );
-		$cached_settings = wp_parse_args( $settings, [
+	if ( ! isset( $GLOBALS['wp_china_yes_settings_cache'] ) ) {
+		$raw_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', false )
+			: get_option( 'wp_china_yes', false );
+		$settings_exists = false !== $raw_settings;
+		$settings        = is_array( $raw_settings ) ? $raw_settings : [];
+
+		$GLOBALS['wp_china_yes_settings_cache'] = wp_parse_args( $settings, [
 		'store'                => 'wenpai',
 		'bridge'               => true,
+		'telemetry'            => false,
+		'telemetry_site_url'   => false,
 		'arkpress'             => false,
 		'admincdn'             => [ 'admin' ],
 		'admincdn_public'      => [ 'googlefonts' ],
@@ -61,8 +66,9 @@ function get_settings() {
 		'adblock_rule'         => [],
 		'plane'                => 'off',
 		'plane_rule'           => [],
-		'monitor'              => true,
-		'memory'               => true,
+		'monitor'              => false,
+		'memory'               => false,
+		'performance'          => false,
 		'hide'                 => false,
 		'custom_name'          => 'WP-China-Yes',
 		'enabled_sections'     => [ 'welcome', 'store', 'admincdn', 'cravatar', 'other', 'about' ],
@@ -73,15 +79,32 @@ function get_settings() {
 		'custom_rss_url'       => '',
 		'custom_rss_refresh'   => 3600,
 		'rss_display_options'  => [ 'show_date', 'show_summary', 'show_footer' ],
-		] );
+			] );
+
+		$array_keys = [
+			'admincdn', 'admincdn_public', 'admincdn_files', 'admincdn_dev',
+			'admincdn_version', 'windfonts_list', 'windfonts_typography_cn',
+			'windfonts_typography_en', 'adblock_rule', 'plane_rule',
+			'enabled_sections', 'rss_display_options',
+		];
+		foreach ( $array_keys as $key ) {
+			if ( ! is_array( $GLOBALS['wp_china_yes_settings_cache'][ $key ] ) ) {
+				$GLOBALS['wp_china_yes_settings_cache'][ $key ] = [];
+			}
+		}
+
+		// Do not silently re-enable admin rewriting when an existing settings
+		// record intentionally omits this key.
+		if ( $settings_exists && ! array_key_exists( 'admincdn', $settings ) ) {
+			$GLOBALS['wp_china_yes_settings_cache']['admincdn'] = [];
+		}
 	}
-	
-	return $cached_settings;
+
+	return $GLOBALS['wp_china_yes_settings_cache'];
 }
 
 function clear_settings_cache() {
-	static $cached_settings = null;
-	$cached_settings = null;
+	unset( $GLOBALS['wp_china_yes_settings_cache'] );
 }
 
 /**

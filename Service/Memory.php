@@ -25,8 +25,7 @@ class Memory {
     if (!empty($settings['memory'])) {
         add_action('plugins_loaded', [$this, 'initialize']);
     }
-    register_activation_hook(CHINA_YES_PLUGIN_FILE, [$this, 'check_php_version']);
-}
+	}
 
     /**
      * 初始化插件
@@ -245,13 +244,13 @@ public function add_footer($content) {
      * 检查 PHP 版本
      */
     public function check_php_version() {
-        if (version_compare(PHP_VERSION, '7.0', '<')) {
+        if (version_compare(PHP_VERSION, '7.4.0', '<')) {
             deactivate_plugins(plugin_basename(CHINA_YES_PLUGIN_FILE));
             wp_die(
                 sprintf(
                     '<h1>%s</h1><p>%s</p>',
                     '插件无法激活：PHP 版本过低',
-                    '请升级 PHP 至 7.0 或更高版本。'
+					'请升级 PHP 至 7.4 或更高版本。'
                 ),
                 'PHP 版本错误',
                 ['back_link' => true]

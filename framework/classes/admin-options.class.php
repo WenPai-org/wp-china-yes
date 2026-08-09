@@ -203,6 +203,10 @@ if ( ! class_exists( 'WP_CHINA_YES_Options' ) ) {
     // set options
     public function set_options( $ajax = false ) {
 
+	  if ( ! current_user_can( $this->args['menu_capability'] ) ) {
+		return false;
+	  }
+
       // XSS ok.
       // No worries, This "POST" requests is sanitizing in the below foreach. see #L337 - #L341
       $response  = ( $ajax && ! empty( $_POST['data'] ) ) ? json_decode( wp_unslash( trim( $_POST['data'] ) ), true ) : $_POST;

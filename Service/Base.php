@@ -19,8 +19,8 @@ class Base {
 
     private function init_services() {
         $core_services = [
+            'Migration',
             'Super',
-            'Monitor', 
             'Memory',
             'Update',
             'Database',
@@ -30,6 +30,7 @@ class Base {
             'Avatar',
             'Fonts',
             'Comments',
+            'Language',
             'Media',
             'Performance',
             'Maintenance'

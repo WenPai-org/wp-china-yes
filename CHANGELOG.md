@@ -4,6 +4,26 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
+## v3.9.3 - 2026-08-09
+
+### 安全与隐私
+- 设置导入、导出、重置只允许管理员操作固定的 `wp_china_yes` option；评论置顶接口补充 `moderate_comments` 权限与参数校验。
+- 匿名运行数据改为默认关闭、明确选择加入；默认不发送站点 URL，并停止收集订单、用户、商品、配送区域、主题模板等业务数据。
+- 数据库工具不再在普通插件加载阶段定义 `WP_ALLOW_REPAIR`，避免公开数据库修复入口。
+
+### 稳定性
+- 每个服务只由 `Service/Base.php` 初始化一次，修复 Fonts、Comments、Avatar、Adblock 等重复挂钩。
+- 修复设置 option 损坏或数组字段变成字符串时的 PHP 8 类型错误，并使设置缓存可以真正清除。
+- 保留 `jquery-migrate`，避免主题和插件依赖链在 WordPress 核心升级后断裂。
+- 修复飞行模式保存 `url`、运行时读取 `domain` 的字段不一致；匹配改为精确主机或子域名，不再使用任意子串匹配。
+- 停用会在短暂网络故障后静默改写用户设置的旧节点 Monitor；性能优化与系统页脚信息对新安装默认关闭。
+- PHP 运行时要求与插件头统一为 7.4，兼容信息更新为实际验证目标 WordPress 7.0。
+
+### 发布
+- 新增 PHP 7.4–8.4 CI、独立测试入口和包含 Composer 依赖的可重复 ZIP 打包脚本。
+- 插件列表操作链接只作用于 WPCY 自身，不再修改所有插件的操作链接。
+- 发现可能冲突的旧插件时只提示管理员，不再自动停用其他插件。
+
 ### 移除
 - **废弃并移除「前台加速」（`public.admincdn.com`）**。该功能把站点自己的
   `/wp-content|/wp-includes` 路径整体改写到一个共享端点，但 **`wp-content` 是站点自有内容**

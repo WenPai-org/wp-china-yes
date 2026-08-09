@@ -17,11 +17,12 @@ class Language {
 
 	public function __construct() {
 		$this->settings = get_settings();
+		if ( ! $this->is_enabled( $this->settings['waimao_enable'] ?? false ) ) {
+			return;
+		}
 
-		if ( $this->is_enabled( $this->settings['waimao_enable'] ?? false ) ) {
-			if ( $this->is_enabled( $this->settings['waimao_language_split'] ?? false ) ) {
-				$this->init_language_split();
-			}
+		if ( $this->is_enabled( $this->settings['waimao_language_split'] ?? false ) ) {
+			$this->init_language_split();
 		}
 
 		add_action( 'wp_china_yes_wp_china_yes_save_after', [ $this, 'apply_language_settings' ] );

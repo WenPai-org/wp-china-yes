@@ -14,6 +14,41 @@ class Migration {
 		$this->settings = get_settings();
 		add_action( 'admin_init', [ $this, 'migrate_windfonts_settings' ] );
 		add_action( 'admin_init', [ $this, 'migrate_deprecate_frontend_acceleration' ] );
+		add_action( 'admin_init', [ $this, 'migrate_plane_rule_schema' ] );
+		add_action( 'admin_init', [ $this, 'remove_legacy_monitor_schedule' ] );
+	}
+
+	/** Convert the broken 3.9 `url` plane rule field to the runtime `domain` key. */
+	public function migrate_plane_rule_schema() {
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
+
+		if ( ! is_array( $current_settings ) || empty( $current_settings['plane_rule'] ) ) {
+			return;
+		}
+
+		$changed = false;
+		foreach ( $current_settings['plane_rule'] as &$rule ) {
+			if ( is_array( $rule ) && empty( $rule['domain'] ) && ! empty( $rule['url'] ) ) {
+				$rule['domain'] = $rule['url'];
+				unset( $rule['url'] );
+				$changed = true;
+			}
+		}
+		unset( $rule );
+
+		if ( $changed ) {
+			is_multisite()
+				? update_site_option( 'wp_china_yes', $current_settings )
+				: update_option( 'wp_china_yes', $current_settings, true );
+			\WenPai\ChinaYes\clear_settings_cache();
+		}
+	}
+
+	/** The old monitor changed user settings after transient network failures. */
+	public function remove_legacy_monitor_schedule() {
+		wp_clear_scheduled_hook( 'wp_china_yes_monitor' );
 	}
 
 	/**
@@ -26,7 +61,9 @@ class Migration {
 	 * 该选项此前默认关闭，因此绝大多数站点此迁移是空操作。
 	 */
 	public function migrate_deprecate_frontend_acceleration() {
-		$current_settings = get_option( 'wp_china_yes', [] );
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
 
 		if ( ! is_array( $current_settings ) || empty( $current_settings['admincdn_files'] ) ) {
 			return;
@@ -50,7 +87,9 @@ class Migration {
 		);
 
 		$current_settings['admincdn_files'] = $files;
-		update_option( 'wp_china_yes', $current_settings );
+		is_multisite()
+			? update_site_option( 'wp_china_yes', $current_settings )
+			: update_option( 'wp_china_yes', $current_settings, true );
 
 		if ( function_exists( '\WenPai\ChinaYes\clear_settings_cache' ) ) {
 			\WenPai\ChinaYes\clear_settings_cache();

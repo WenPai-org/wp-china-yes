@@ -6,11 +6,6 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
 use function WenPai\ChinaYes\get_settings;
-use WenPai\ChinaYes\Service\Widget;
-use WenPai\ChinaYes\Service\Language;
-use WenPai\ChinaYes\Service\Migration;
-use WenPai\ChinaYes\Service\Fonts;
-use WenPai\ChinaYes\Service\Comments;
 
 class Super {
 
@@ -25,26 +20,6 @@ class Super {
 			}
 		}
 
-		new Widget();
-		new Language();
-		new Migration();
-		new Fonts();
-		new Comments();
-
-		if ( ! empty( $this->settings['cravatar'] ) ) {
-			add_filter( 'user_profile_picture_description', [ $this, 'set_user_profile_picture_for_cravatar' ], 1 );
-			add_filter( 'avatar_defaults', [ $this, 'set_defaults_for_cravatar' ], 1 );
-			add_filter( 'um_user_avatar_url_filter', [ $this, 'get_cravatar_url' ], 1 );
-			add_filter( 'bp_gravatar_url', [ $this, 'get_cravatar_url' ], 1 );
-			add_filter( 'get_avatar_url', [ $this, 'get_cravatar_url' ], 1 );
-		}
-
-		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
-			if ( ! empty( $this->settings['adblock'] ) && $this->settings['adblock'] == 'on' ) {
-				add_action( 'admin_head', [ $this, 'load_adblock' ] );
-			}
-		}
-
 		if ( ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			if ( ! empty( $this->settings['notice_block'] ) && $this->settings['notice_block'] == 'on' ) {
 				add_action( 'admin_head', [ $this, 'load_notice_management' ] );
@@ -53,20 +28,6 @@ class Super {
 
 		if ( ! empty( $this->settings['plane'] ) && $this->settings['plane'] == 'on' ) {
 			$this->load_plane();
-		}
-	}
-
-	public function load_adblock() {
-		if (empty($this->settings['adblock']) || $this->settings['adblock'] !== 'on') {
-			return;
-		}
-
-		foreach ( (array) $this->settings['adblock_rule'] as $rule ) {
-			if ( empty( $rule['enable'] ) || empty( $rule['selector'] ) ) {
-				continue;
-			}
-
-			echo sprintf( '<style>%s { display: none !important; }</style>', esc_html( $rule['selector'] ) );
 		}
 	}
 
@@ -79,19 +40,46 @@ class Super {
 	}
 
 	public function load_plane() {
+		$domains = [];
+
 		foreach ( (array) $this->settings['plane_rule'] as $rule ) {
-			if ( empty( $rule['enable'] ) || empty( $rule['domain'] ) ) {
+			$raw_domains = $rule['domain'] ?? ( $rule['url'] ?? '' );
+			if ( empty( $rule['enable'] ) || empty( $raw_domains ) ) {
 				continue;
 			}
 
-			add_filter( 'pre_http_request', function ( $preempt, $parsed_args, $url ) use ( $rule ) {
-				$host = wp_parse_url( $url, PHP_URL_HOST );
-				if ( strpos( $host, $rule['domain'] ) !== false ) {
+			foreach ( preg_split( '/[\r\n,]+/', (string) $raw_domains ) as $entry ) {
+				$entry = trim( strtolower( $entry ) );
+				if ( '' === $entry ) {
+					continue;
+				}
+
+				$domain = wp_parse_url(
+					false === strpos( $entry, '://' ) ? 'https://' . $entry : $entry,
+					PHP_URL_HOST
+				);
+				if ( $domain ) {
+					$domains[] = rtrim( strtolower( $domain ), '.' );
+				}
+			}
+		}
+
+		$domains = array_values( array_unique( $domains ) );
+		if ( empty( $domains ) ) {
+			return;
+		}
+
+		add_filter( 'pre_http_request', function ( $preempt, $parsed_args, $url ) use ( $domains ) {
+			$host = rtrim( strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ), '.' );
+			foreach ( $domains as $domain ) {
+				$is_subdomain = strlen( $host ) > strlen( $domain )
+					&& substr( $host, -strlen( $domain ) - 1 ) === '.' . $domain;
+				if ( $host === $domain || $is_subdomain ) {
 					return new WP_Error( 'http_request_failed', 'Blocked by plane mode' );
 				}
-				return $preempt;
-			}, 10, 3 );
-		}
+			}
+			return $preempt;
+		}, 10, 3 );
 	}
 
 	/** @var string 镜像可用性 transient key */
