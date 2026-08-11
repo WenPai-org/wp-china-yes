@@ -1,0 +1,35 @@
+# Copyright (C) 2026 文派开源
+# This file is distributed under the GPLv3 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WPCY.COM 3.9.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wp-china-yes\n"
+"POT-Creation-Date: 2026-08-12 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: wp-china-yes\n"
+"X-Generator: WP-CLI 2.12.0\n"
+
+#. Plugin Name of the plugin
+#: wp-china-yes.php
+msgid "WPCY.COM"
+msgstr ""
+
+#. Description of the plugin
+#: wp-china-yes.php
+msgid "文派叶子 🍃（WPCY.COM）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。"
+msgstr ""
+
+#. Author of the plugin
+#: wp-china-yes.php
+msgid "文派开源"
+msgstr ""
+
+#. Author URI of the plugin
+#: wp-china-yes.php
+msgid "https://wpcy.com"
+msgstr ""
