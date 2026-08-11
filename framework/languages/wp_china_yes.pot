@@ -404,6 +404,10 @@ msgstr ""
 msgid "None"
 msgstr ""
 
+#: framework/fields/checkbox/checkbox.php:23
+msgid "Check/Uncheck All"
+msgstr ""
+
 #: framework/fields/dimensions/dimensions.php:22
 msgid "width"
 msgstr ""

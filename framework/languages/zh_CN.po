@@ -403,6 +403,10 @@ msgstr "凸出"
 msgid "None"
 msgstr "无"
 
+#: framework/fields/checkbox/checkbox.php:23
+msgid "Check/Uncheck All"
+msgstr "勾选/取消勾选全部"
+
 #: framework/fields/dimensions/dimensions.php:22
 msgid "width"
 msgstr "宽度"

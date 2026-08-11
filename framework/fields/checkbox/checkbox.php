@@ -20,7 +20,7 @@ if ( ! class_exists( 'WP_CHINA_YES_Field_checkbox' ) ) {
         'inline'         => false,
         'query_args'     => array(),
         'check_all'      => false,
-        'check_all_text' => esc_html__( 'Check/Uncheck All' ),
+        'check_all_text' => esc_html__( 'Check/Uncheck All', 'wp_china_yes' ),
       ) );
 
       $inline_class = ( $args['inline'] ) ? ' class="wp_china_yes--inline-list"' : '';
