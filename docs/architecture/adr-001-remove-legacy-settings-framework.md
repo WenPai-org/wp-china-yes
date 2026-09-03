@@ -22,19 +22,18 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 管理界面采用：
 
-1. WordPress Settings API + 服务器渲染，用于本地连接设置、诊断和隐私；
-2. `@wordpress/components` 的独立小型应用，仅用于文派服务页（站点绑定、权益、用量）；
-3. WordPress REST API 只服务文派服务页和明确需要的异步操作；
-4. Site Health 输出连接和环境诊断；
-5. WP-CLI 提供可自动化的状态、诊断、配置和刷新命令。
+1. 管理界面是一个整站 React 应用（见 ADR-002），外加一个服务端渲染的恢复页；不再使用旧框架，也不复制任何通用设置框架。
+2. REST API `wpcy/v1` 服务 React 应用与小工具桥接。
+3. Site Health 输出连接和环境诊断；
+4. WP-CLI 提供可自动化的状态、诊断、配置和刷新命令。
 
 ## 约束
 
 - 新代码不得 `require` 或 Composer autoload `framework/`；
 - 新设置不得写入 `wp_china_yes`；
 - 新字段必须在 `Config/Schema` 定义，界面只消费 schema，不自创业务默认值；
-- 无 JavaScript 时，本地设置仍可读取和保存；
-- CDN 页面 JavaScript 失败不能影响其他后台页面；
+- 无 JavaScript 时，恢复页仍可关闭全部改写与模块；
+- React 应用加载失败时，恢复页入口必须仍可达（菜单项由 PHP 注册）；
 - 管理页面只使用 WordPress 样式语义，不重新造通用表单组件库；
 - 所有写操作必须检查 capability、nonce、schema 和 scope；
 - 删除功能不能以“隐藏 section”代替，必须从注册、设置、迁移和宣传中删除；
@@ -65,7 +64,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 ### 整个后台全部改成 React SPA
 
-否决。连接开关和隐私设置不需要 SPA；会增加构建、无障碍、兼容和 REST 权限面。仅 CDN 实时状态页需要小型应用。
+**2026-09-03 推翻**：因小工具容器、权益配额、公告使四页中三页为动态内容，且产品方倾向站点编辑器风格原生界面，改为整站 React；保留恢复页作为无 JS 逃生口。原否决理由（构建、无障碍、REST 权限面）转为 ADR-002 的约束。
 
 ### 引入另一个第三方设置框架
 
@@ -92,11 +91,13 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 - 生产 ZIP 不含 `framework/`；
 - 首方代码搜索不到 `WP_CHINA_YES::createSection` 和旧全局字段类；
-- 本地设置在禁用 JavaScript时可保存；
-- CDN JavaScript/REST 失败不影响连接设置页；
+- 恢复页在禁用 JavaScript 时可关闭全部改写；
+- React 应用加载失败时，恢复页入口仍可达；
 - Plugin Check、PHPCS、PHPStan、WordPress 矩阵和浏览器测试通过；
 - 3.x 升级 dry-run、执行和回滚均有固定 fixtures。
 
 ## 修订记录
 
 2026-09-03 与 linuxjoy 定稿对齐。
+
+2026-09-03（晚）按定稿 §7.5a-D 修订：决策 1、2 合并为整站 React 应用 + 服务端渲染恢复页；REST `wpcy/v1` 服务 React 与小工具桥接；无 JS 约束仅对恢复页成立；原「否决全 SPA」推翻，理由转入 ADR-002。
