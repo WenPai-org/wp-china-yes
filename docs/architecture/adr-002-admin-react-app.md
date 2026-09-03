@@ -18,13 +18,15 @@ ADR-001 原决策把后台拆成两套：本地设置走 Settings API 服务端�
 
 ### React 应用
 
-- 技术栈：`@wordpress/components` + `@wordpress/data` + `@wordpress/api-fetch`。
-- 页面骨架仿站点编辑器：左导航 / 顶栏 / 内容区。`@wordpress/interface` 可用则用，否则自建等价布局，**不引入第三方 UI 库**。
+- 技术栈：`@wordpress/components` + `@wordpress/data` + `@wordpress/api-fetch`，列表（权益、公告、驻留记录、小工具）用 `@wordpress/dataviews`（在 wp-scripts 下从 `@wordpress/dataviews/wp` 导入），设置表单用 DataForm。官方插件页教程已从手写控件转到这两套，跟着走才是"站点编辑器同一套交互"，不只是长得像。
+- 页面骨架：普通 `add_menu_page` 页内的 React 应用，布局层用 `@wordpress/admin-ui` 的 `<Page>`（隔离在单独布局组件里，接受其 2.0 提案带来的大版本变动）。**不用 `@wordpress/interface` 做壳**（官方文档仍标 experimental、明示可能 drastic breaking）。**不引入第三方 UI 库**。
+- 命令面板：用 `@wordpress/commands` 注册跳到概览 / 文派服务 / 诊断 / 恢复页的命令（WP 7.0 起 ⌘K 在全后台可用）。
+- 与 OpenStation（`desktop-mode` 插件，Automattic 维护、用户 opt-in 的多窗口后台壳）的关系：叶子只是普通后台页，用户开启 OpenStation 时自然成为一扇窗口；**不检测、不排斥、不模仿**，不做第二套窗口管理器。依据：`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md`。
 - 状态管理：`@wordpress/data` store `wpcy/admin`。
 - 所有数据经 REST 命名空间 `wpcy/v1`（见 `docs/specs/rest-api.md`）。
 - `wp_localize_script` / `wp_add_inline_script` 只传 nonce、REST root、当前用户能力、初始设置快照。
 - 构建：`@wordpress/scripts`；发布包带编译产物；源码进仓。
-- token 只覆盖 `--wp-admin-theme-color` 系列与 Phosphor 图标。
+- token 只覆盖 `--wp-admin-theme-color` 系列与 Phosphor 图标。WP 7.1 起的 Design System token（`--wpds-*`、`@wordpress/theme` 的 `ThemeProvider`）在 4.x 评估接入，4.0 不绑死其变量名。
 
 四页名称不变：
 

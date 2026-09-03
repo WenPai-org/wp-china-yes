@@ -46,7 +46,15 @@
 
 ### WP Abilities API
 
-4.x 可对接，4.0 不依赖。
+4.x 可对接，4.0 不依赖。对接方式：把每个工具 manifest 的 `permissions[]` 映射成 `wpcy/*` abilities，供 MCP Adapter、Command Palette 与未来 Core agent 发现（WP 7.0 已有 Client-Side Abilities，MCP Adapter 0.6+ 要求 WP 6.9+）。
+
+### OpenStation（`desktop-mode` 插件）的窗口模型 / App Framework
+
+不采用为依赖或蓝本。核实（`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md` §1、§4.2）：OpenStation 是 Automattic 维护、用户 opt-in 的 wp-admin 多窗口壳，**不是 Core**；其窗口是同域 chromeless iframe + 类型化 postMessage，App Framework 是 PHP 声明的服务端渲染窗口且标 Experimental。与本 ADR 的差别在内容来源（同域后台页 vs 跨域文派托管页）、隔离模型（chromeless vs `sandbox=`）、声明方式（`openstation_register_window()` vs 服务端签名 manifest）、分发（改插件 vs 改托管页）。**兼容**：用户开启 OpenStation 时叶子服务页成为一扇窗口，容器内的沙箱 iframe 照常工作（双层 iframe）。**不为像它而改 manifest，不注册 OpenStation 窗口作为 4.0 前提。**
+
+### Interactivity API / Script Modules 作为小工具运行时
+
+否决。二者面向前台区块（`data-wp-*` 指令、ESM import map），不是跨域后台 iframe 的容器；小工具若将来改为同域 block 再议。
 
 ## 后果
 
