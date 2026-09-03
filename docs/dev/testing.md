@@ -102,14 +102,12 @@ bash scripts/build-release.sh
 unzip -tq dist/wp-china-yes-*.zip
 ```
 
-以下待 M1 脚手架落地：
-
 ```bash
 composer lint
 composer analyse
-vendor/bin/phpunit --testsuite Unit
+vendor/bin/phpunit --testsuite unit
 vendor/bin/phpunit --testsuite Integration   # 或 wp-env 内跑
-npm run lint
+npm run lint:js
 npm run test:e2e          # Playwright
 composer audit
 npm audit

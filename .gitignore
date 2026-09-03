@@ -1,4 +1,7 @@
 .idea
-vendor
-node_modules
-dist
+vendor/
+node_modules/
+dist/
+build/
+.phpunit.result.cache
+.phpcs-cache

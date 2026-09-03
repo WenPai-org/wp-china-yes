@@ -1,12 +1,29 @@
 {
-  "name": "wp-china-yes-development",
-  "private": true,
-  "devDependencies": {
-    "@wordpress/env": "11.12.0"
-  },
-  "scripts": {
-    "env:start": "wp-env start",
-    "env:stop": "wp-env stop",
-    "test:wordpress": "bash tests/wordpress-smoke.sh"
-  }
+	"name": "wp-china-yes-development",
+	"private": true,
+	"devDependencies": {
+		"@wordpress/env": "11.12.0",
+		"@wordpress/scripts": "^34.2.0"
+	},
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint:js": "wp-scripts lint-js src/Admin/app",
+		"lint:css": "wp-scripts lint-style src/Admin/app",
+		"format": "wp-scripts format src/Admin/app",
+		"format:check": "wp-scripts format --check src/Admin/app",
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop",
+		"test:wordpress": "bash tests/wordpress-smoke.sh"
+	},
+	"dependencies": {
+		"@wordpress/admin-ui": "^2.9.0",
+		"@wordpress/api-fetch": "^7.54.0",
+		"@wordpress/commands": "^1.54.0",
+		"@wordpress/components": "^40.0.0",
+		"@wordpress/data": "^10.54.0",
+		"@wordpress/dataviews": "^18.1.0",
+		"@wordpress/element": "^8.6.0",
+		"@wordpress/i18n": "^6.27.0"
+	}
 }
