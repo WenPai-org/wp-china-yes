@@ -39,7 +39,7 @@
 | M1-04 | Connectivity/WordPressOrg | M1-02, M1-03 | B | 元数据源与包源分离、失败回原上游、状态码+类型+体积校验、状态缓存 TTL；**行为对齐 3.9.3 `tests/test-wporg-mirror-fallback.php` 与 `test-mirror-health-fallback.php` 的全部断言** | 把这两份 3.x 测试的场景改写为 PHPUnit 并全过；旧测试仍过 |
 | M1-05 | Connectivity/PublicAssets + Avatar | M1-02, M1-03 | B | 公共库白名单替换（节点故障保留原 URL）、Emoji 可选、Cravatar cn/global/off | 单元：白名单外不改写；节点不可用不改写；头像三种模式 |
 | M1-06 | Diagnostics + Site Health + WP-CLI | M1-04, M1-05 | C | 连接诊断（目标、结果、延迟、最近检查、建议）、Site Health 段、`wp wpcy status|doctor|config export|import` | wp-env 集成：CLI 输出 JSON schema；Site Health 段出现 |
-| M1-07 | REST `wpcy/v1` 基础 + 恢复页 | M1-03, M1-06 | C | `/settings` `/network-settings` `/diagnostics` `/diagnostics/run` `/recovery`；PHP 恢复页 `?page=wpcy-recovery` | 按 `docs/specs/rest-api.md`；权限/nonce/schema 校验测试；恢复页无 JS 可关全部改写（wp-env 断言） |
+| M1-07 | REST `wpcy/v1` 基础 + 恢复页 | M1-03, M1-06 | C'（M1-06 合并后） | `/settings` `/network-settings` `/diagnostics` `/diagnostics/run` `/recovery`；PHP 恢复页 `?page=wpcy-recovery` | 按 `docs/specs/rest-api.md`；权限/nonce/schema 校验测试；恢复页无 JS 可关全部改写（wp-env 断言） |
 | M1-08 | 后台 React 应用（外壳 + 三页） | M1-07 | D | `src/Admin/app/`：store `wpcy/admin`、`<Page>` 布局、四页路由、命令面板注册；概览（公告占位）、连接优化（DataForm）、诊断（DataViews）；文派服务页占位 | 按 `docs/design/admin-ui-spec.md` 与原型；`npm run build` 体积 ≤ 300KB gz；键盘可达 |
 | M1-09 | Telemetry + DataResidency（记录模式） | M1-02, M1-03 | B | `src/Telemetry`（移植 `client/class-site-health.php` 全部字段，常开无开关）；`src/Privacy/DataResidency`：内置基线 ruleset JSON、验签（测试公钥）、**只实现 `record` 与 `ignore`**，`reroute` 代码在但 `enabled_when=ingest_ready` 探测为假时不启用 | 报文与 3.9.3 `tests/test-telemetry*.php` 字段一致；B 档记录不含正文/查询串；A 档在 ingest 不可达时不改写 |
 | M1-10 | e2e（Playwright） | M1-08 | — | 四页 + 恢复页 + 命令面板；CI `e2e` job（wp-env） | 全绿；截图存 `tests/e2e/__screenshots__` |
@@ -85,3 +85,14 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 ## 4. 待定项跟踪（M0 遗留，不阻塞 M1）
 
 见 `docs/4.0-rewrite-plan.md` §12 与各 spec 的「待定（M0）」；统筹在 M2 开工前逐条关闭。
+
+已由统筹关闭（2026-09-04，起草任务书时暴露）：
+
+| 项 | 决定 |
+|----|------|
+| 3.x `cravatar = weavatar` | 4.0 `connectivity.avatar` 枚举**保留** `weavatar`（`cravatar_cn` / `cravatar_global` / `weavatar` / `off`），按 `docs/4.0-rewrite-plan.md` §7.2 原表映射，不改用户头像源。`docs/specs/config-schema.md` 已补。 |
+| 3.x `adblock` | `off` → `modules.notice_control=false`；其它值 → `true`；`adblock_rule` 自定规则**不迁**（4.0 规则由 wpcy.com 下发），迁移报告记 `ignored`。 |
+| 3.x 显式清空的 `admincdn*` 数组 | 视为用户明确选择，迁成空数组，**不**回填 schema 默认五项。 |
+| 3.x `windfonts_list` | 迁入 `integrations.windfonts.fonts[]`（`family` / `subset` / `selector` / `enable`），迁移时对 API 字体目录重新校验，目录里不存在的条目记 `ignored`。`docs/specs/config-schema.md` 已补 `integrations.windfonts` 结构。 |
+| 提交前缀 | 允许列表补 `feat(diagnostics): `、`feat(integrations): `、`feat(residency): `。 |
+| M1-06 / M1-07 并行 | M1-07 依赖 M1-06，改为 M1-06 合并后再派。 |

@@ -53,7 +53,7 @@
         },
         "avatar": {
           "type": "string",
-          "enum": ["cravatar_cn", "cravatar_global", "off"],
+          "enum": ["cravatar_cn", "cravatar_global", "weavatar", "off"],
           "default": "cravatar_cn"
         }
       }
@@ -65,6 +65,34 @@
       "properties": {
         "notice_control": { "type": "boolean", "default": true },
         "windfonts": { "type": "boolean", "default": false }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "windfonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fonts": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["family", "selector"],
+                "properties": {
+                  "family":   { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" },
+                  "subset":   { "type": "string", "enum": ["full", "sc", "tc", "latin"], "default": "full" },
+                  "selector": { "type": "string", "maxLength": 200 },
+                  "enable":   { "type": "boolean", "default": true }
+                }
+              },
+              "default": []
+            }
+          }
+        }
       }
     },
     "diagnostics": {
