@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文派叶子 · 恢复模式</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <div class="prototype-note">05-recovery.html · admin-ui-spec §3.5 · 恢复模式页</div>
+  <div id="wpadminbar"><span class="ab-site">example.com</span></div>
+  <nav id="adminmenu" aria-label="后台菜单">
+    <ul>
+      <li><span class="menu-placeholder">仪表盘</span></li>
+      <li><span class="menu-placeholder">文章</span></li>
+      <li><span class="menu-placeholder">媒体</span></li>
+      <li>
+        <div class="wp-menu-name">
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+          <span>文派叶子</span>
+        </div>
+        <ul class="wp-submenu">
+          <li><a href="01-overview.html">概览</a></li>
+          <li><a href="02-connect.html">连接优化</a></li>
+          <li><a href="03-services-unbound.html">文派服务</a></li>
+          <li><a href="04-diagnose.html">诊断</a></li>
+        </ul>
+      </li>
+      <li><span class="menu-placeholder">插件</span></li>
+    </ul>
+  </nav>
+  <div id="wpcontent">
+    <div class="wrap">
+      <h1>
+        <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false" style="vertical-align:-3px"><circle cx="128" cy="128" r="40" fill="none" stroke="currentColor" stroke-width="16"/><circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-width="16"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M128 32v56M128 168v56M32 128h56M168 128h56"/></svg>
+        文派叶子 · 恢复模式
+      </h1>
+      <p>如果后台样式错乱或站点无法访问，可在此一键停用所有 URL 改写与模块。此页不依赖 JavaScript。</p>
+      <form method="post" action="#">
+        <p class="form-row">
+          <button type="submit" class="button button-primary">关闭全部 URL 改写</button>
+          <button type="submit" class="button button-secondary">停用全部模块</button>
+        </p>
+      </form>
+      <p><a href="01-overview.html">返回概览</a></p>
+
+      <section class="recovery-state" aria-labelledby="recovery-on-heading">
+        <h2 id="recovery-on-heading">已在恢复模式</h2>
+        <h1>
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false" style="vertical-align:-3px"><circle cx="128" cy="128" r="40" fill="none" stroke="currentColor" stroke-width="16"/><circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-width="16"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M128 32v56M128 168v56M32 128h56M168 128h56"/></svg>
+          文派叶子 · 恢复模式
+        </h1>
+        <div class="notice notice-success" role="status">
+          <p>恢复模式已开启</p>
+          <p class="notice-actions"><button type="submit" class="button button-secondary">退出恢复模式</button></p>
+        </div>
+        <p>如果后台样式错乱或站点无法访问，可在此一键停用所有 URL 改写与模块。此页不依赖 JavaScript。</p>
+        <form method="post" action="#">
+          <p class="form-row">
+            <button type="submit" class="button button-primary">关闭全部 URL 改写</button>
+            <button type="submit" class="button button-secondary">停用全部模块</button>
+          </p>
+        </form>
+        <p><a href="01-overview.html">返回概览</a></p>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

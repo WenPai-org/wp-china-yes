@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>概览 · 文派叶子</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <div class="prototype-note">01b-overview-attention.html · admin-ui-spec §3.1 · 恢复模式 + 需要处理</div>
+  <div id="wpadminbar"><span class="ab-site">example.com</span></div>
+  <nav id="adminmenu" aria-label="后台菜单">
+    <ul>
+      <li><span class="menu-placeholder">仪表盘</span></li>
+      <li><span class="menu-placeholder">文章</span></li>
+      <li><span class="menu-placeholder">媒体</span></li>
+      <li>
+        <div class="wp-menu-name">
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+          <span>文派叶子</span>
+        </div>
+        <ul class="wp-submenu">
+          <li class="current"><a class="current" href="01b-overview-attention.html">概览</a></li>
+          <li><a href="02-connect.html">连接优化</a></li>
+          <li><a href="03-services-unbound.html">文派服务</a></li>
+          <li><a href="04-diagnose.html">诊断</a></li>
+        </ul>
+      </li>
+      <li><span class="menu-placeholder">插件</span></li>
+    </ul>
+  </nav>
+  <div id="wpcontent">
+    <header class="wpcy-page-header">
+      <h1>
+        <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+        概览
+      </h1>
+    </header>
+    <main class="wpcy-page-body">
+      <div class="notice notice-warning" role="status">
+        <p>恢复模式已开启：全部 URL 改写与模块已停用。</p>
+        <p class="notice-actions"><button type="button" class="button button-secondary">退出恢复模式</button></p>
+      </div>
+
+      <section class="section" aria-labelledby="line-status-heading">
+        <h2 id="line-status-heading" class="sr-only">线路状态</h2>
+        <div class="card-row">
+          <article class="card">
+            <h2>WordPress.org 源</h2>
+            <p class="card-kicker">更新与安装包</p>
+            <p class="card-status">
+              <span class="status"><span class="status-dot is-danger" aria-hidden="true"></span>不可用</span>
+            </p>
+            <p class="card-meta">最近检查 8 分钟前 · 延迟 —</p>
+            <p class="card-actions"><a class="button button-secondary" href="04-diagnose.html">详情</a></p>
+          </article>
+          <article class="card">
+            <h2>公共库与头像</h2>
+            <p class="card-kicker">前端资源</p>
+            <p class="card-status">部分回退</p>
+            <p class="card-meta">jsDelivr</p>
+            <p class="card-actions"><a class="button button-secondary" href="02-connect.html">设置</a></p>
+          </article>
+          <article class="card">
+            <h2>文派服务</h2>
+            <p class="card-kicker">站点绑定</p>
+            <p class="card-status">
+              <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>已绑定</span>
+            </p>
+            <p class="card-meta">可用权益 2 项</p>
+            <p class="card-actions"><a class="button button-secondary" href="03b-services-bound.html">前往</a></p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="attention-heading">
+        <h2 id="attention-heading">需要处理</h2>
+        <ul class="attention-list">
+          <li>
+            <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-label="提醒" role="img"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M128 24 24 216h208z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M128 104v48M128 176v8"/></svg>
+            <span class="attention-text">Windfonts 本月配额已用尽，已切回原始字体源。</span>
+            <a class="button button-secondary button-small" href="03b-services-bound.html">查看权益</a>
+          </li>
+          <li>
+            <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-label="故障" role="img"><circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-width="16"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M128 80v56M128 168v8"/></svg>
+            <span class="attention-text">WordPress.org 源不可用，更新与安装包已暂停。</span>
+            <a class="button button-secondary button-small" href="04-diagnose.html">详情</a>
+          </li>
+          <li>
+            <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-label="升级" role="img"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M48 208h160M128 176V48M80 96l48-48 48 48"/></svg>
+            <span class="attention-text">文派叶子有可用升级。</span>
+            <a class="button button-secondary button-small" href="https://wpcy.com/go/update">查看升级</a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" aria-labelledby="ann-heading">
+        <h2 id="ann-heading">公告</h2>
+        <ul class="announcements">
+          <li>
+            <a class="ann-title" href="https://example.com/announcements/wp-68-upgrade" target="_blank" rel="noopener noreferrer">WordPress 6.8 中文站点升级备忘</a>
+            <span class="ann-source">文派茶馆</span>
+            <time class="ann-date" datetime="2026-09-02">2026-09-02</time>
+            <button type="button" class="ann-dismiss" aria-label="关闭">×</button>
+          </li>
+          <li>
+            <a class="ann-title" href="https://example.com/announcements/summer-window" target="_blank" rel="noopener noreferrer">主题夏季维护窗口通知</a>
+            <span class="ann-source">薇晓朵</span>
+            <time class="ann-date" datetime="2026-08-28">2026-08-28</time>
+            <button type="button" class="ann-dismiss" aria-label="关闭">×</button>
+          </li>
+          <li>
+            <a class="ann-title" href="https://example.com/announcements/connect-notes" target="_blank" rel="noopener noreferrer">连接优化常见问题</a>
+            <span class="ann-source">文派茶馆</span>
+            <time class="ann-date" datetime="2026-08-20">2026-08-20</time>
+            <button type="button" class="ann-dismiss" aria-label="关闭">×</button>
+          </li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
