@@ -84,7 +84,7 @@
                 "required": ["family", "selector"],
                 "properties": {
                   "family":   { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" },
-                  "subset":   { "type": "string", "enum": ["full", "sc", "tc", "latin"], "default": "full" },
+                  "subset":   { "type": "string", "enum": ["full", "zh", "zh-common", "en"], "default": "full" },
                   "selector": { "type": "string", "maxLength": 200 },
                   "enable":   { "type": "boolean", "default": true }
                 }
