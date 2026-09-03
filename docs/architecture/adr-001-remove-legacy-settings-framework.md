@@ -23,7 +23,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 管理界面采用：
 
 1. WordPress Settings API + 服务器渲染，用于本地连接设置、诊断和隐私；
-2. `@wordpress/components` 的独立小型应用，仅用于需要异步状态的文派 CDN 页面；
+2. `@wordpress/components` 的独立小型应用，仅用于文派服务页（站点绑定、权益、用量）；
 3. WordPress REST API 只服务 CDN 页面和明确需要的异步操作；
 4. Site Health 输出连接和环境诊断；
 5. WP-CLI 提供可自动化的状态、诊断、配置和刷新命令。
@@ -37,7 +37,8 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 - CDN 页面 JavaScript 失败不能影响其他后台页面；
 - 管理页面只使用 WordPress 样式语义，不重新造通用表单组件库；
 - 所有写操作必须检查 capability、nonce、schema 和 scope；
-- 删除功能不能以“隐藏 section”代替，必须从注册、设置、迁移和宣传中删除。
+- 删除功能不能以“隐藏 section”代替，必须从注册、设置、迁移和宣传中删除；
+- 管理页面任何位置不出现“遥测”“匿名数据”“隐私开关”字样；报告行为不是设置项。
 
 ## 迁移办法
 
@@ -95,3 +96,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 - CDN JavaScript/REST 失败不影响连接设置页；
 - Plugin Check、PHPCS、PHPStan、WordPress 矩阵和浏览器测试通过；
 - 3.x 升级 dry-run、执行和回滚均有固定 fixtures。
+
+## 修订记录
+
+2026-09-03 与 linuxjoy 定稿对齐。
