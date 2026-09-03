@@ -45,7 +45,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 1. 新建 `src/`、新 bootstrap 路径和新 option；
 2. 新内核实现免费连接能力；
-3. 原生管理页面接管新 option；
+3. React 后台应用（经 `wpcy/v1` REST）与恢复页接管新 option；
 4. 迁移器只读 3.x option 并输出 dry-run；
 5. 真实升级和回滚矩阵通过；
 6. 确认生产代码无旧 framework 引用；
@@ -84,7 +84,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 - 4.0 不能直接复用全部 3.x 字段；
 - 必须编写迁移器和升级说明；
-- CDN 页面仍需维护一套小型 JavaScript 构建；
+- 后台 React 应用需要维护一套 `@wordpress/scripts` 构建链与 e2e 测试（见 ADR-002）；
 - 3.9.x 需要单独维持有限 LTS 期间。
 
 ## 验收
