@@ -171,13 +171,13 @@ JS：
 - Composer：只有生产依赖进发布包（`composer install --no-dev`，见现有 `scripts/build-release.sh`）
 - npm：**只** `devDependencies`（现状 `package.json` 已如此：仅 `@wordpress/env`）。运行时 JS 由 `@wordpress/scripts` 编进发布包，不把 `node_modules` 打进 ZIP
 
-### 提交前本地检查（建议脚本名，待 M1 脚手架落地）
+### 提交前本地检查
 
 ```bash
 composer lint          # PHPCS
 composer analyse       # PHPStan
-npm run lint           # ESLint via @wordpress/scripts
+npm run lint:js        # ESLint via @wordpress/scripts
 npm run format:check   # Prettier
 ```
 
-在这些脚本进 `composer.json` / `package.json` 之前，用 M1 文档里的等价命令；3.9.x 线继续 `bash tests/run-tests.sh`。
+3.9.x 线继续 `bash tests/run-tests.sh`。

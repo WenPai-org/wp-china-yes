@@ -21,21 +21,56 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: bash tests/run-tests.sh
 
-  package:
+  quality:
     runs-on: ubuntu-latest
-    needs: php
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer lint
+      - run: composer analyse
+      - run: composer test:unit
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:js
+      - run: npm run format:check
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: build/
+
+  package:
+    runs-on: ubuntu-latest
+    needs: [php, quality, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - run: sudo apt-get update && sudo apt-get install -y zip rsync
+      - run: npm ci && npm run build
       - run: bash scripts/build-release.sh
       - name: Verify release contents
         run: |
           unzip -tq dist/wp-china-yes-*.zip
-          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$)'; then
+          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/)'; then
             echo 'Release archive contains build-only files.' >&2
             exit 1
           fi

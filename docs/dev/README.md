@@ -15,6 +15,8 @@
 
 代理协议：[agents.md](agents.md)，仓根入口 [`AGENTS.md`](../../AGENTS.md)。
 
+本地一键检查：`composer check && npm run lint:js && npm run build`
+
 产品合同不在本目录：先读 [`docs/4.0-rewrite-plan.md`](../4.0-rewrite-plan.md)，再读 `docs/architecture/adr-00*.md` 与相关 `docs/specs/*`。
 
 ## 4.0 与 3.9.x

@@ -1,0 +1,15 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - framework
+        - client
+        - Service
+        - src/Admin/app
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    reportUnmatchedIgnoredErrors: false

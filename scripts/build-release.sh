@@ -22,6 +22,18 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'docs/' \
   --exclude 'vendor/' \
   --exclude 'node_modules/' \
+  --exclude 'src/Admin/app/' \
+  --exclude 'webpack.config.js' \
+  --exclude '.eslintrc.js' \
+  --exclude '.eslintignore' \
+  --exclude '.prettierrc.js' \
+  --exclude '.prettierignore' \
+  --exclude '.editorconfig' \
+  --exclude '.nvmrc' \
+  --exclude 'phpcs.xml.dist' \
+  --exclude 'phpstan.neon.dist' \
+  --exclude 'phpunit.xml.dist' \
+  --exclude '.grok-context/' \
   --exclude 'package.json' \
   --exclude 'package-lock.json'
 
