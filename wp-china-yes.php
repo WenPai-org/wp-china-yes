@@ -4,7 +4,7 @@
  * Description: 文派叶子 🍃（WPCY.COM）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。
  * Author: 文派开源
  * Author URI: https://wpcy.com
- * Version: 3.9.0
+ * Version: 3.9.2
  * License: GPLv3 or later
  * Text Domain: wp-china-yes
  * Domain Path: /languages
@@ -19,14 +19,19 @@ namespace WenPai\ChinaYes;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CHINA_YES_VERSION', '3.9.0' );
+define( 'CHINA_YES_VERSION', '3.9.2' );
 define( 'CHINA_YES_PLUGIN_FILE', __FILE__ );
 define( 'CHINA_YES_PLUGIN_URL', plugin_dir_url( CHINA_YES_PLUGIN_FILE ) );
 define( 'CHINA_YES_PLUGIN_PATH', plugin_dir_path( CHINA_YES_PLUGIN_FILE ) );
 
 if (file_exists(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')) {
     $settings = is_multisite() ? get_site_option('wp_china_yes') : get_option('wp_china_yes');
-    
+
+    // 序列化损坏防护：非数组不处理（防止 PHP 8.1+ TypeError on string offset access）
+    if ( ! is_array( $settings ) ) {
+        $settings = [];
+    }
+
     if (!empty($settings)) {
         if (!defined('WP_MEMORY_LIMIT') && !empty($settings['wp_memory_limit'])) {
             define('WP_MEMORY_LIMIT', $settings['wp_memory_limit']);
@@ -53,8 +58,8 @@ if (file_exists(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')) {
     require_once(CHINA_YES_PLUGIN_PATH . 'Service/LazyTranslation.php');
     \WenPai\ChinaYes\Service\TranslationManager::getInstance();
     
-    // 包含测试文件（仅在开发环境）
-    if (defined('WP_DEBUG') && WP_DEBUG) {
+    // 包含测试文件（仅在开发环境且文件存在）
+    if (defined('WP_DEBUG') && WP_DEBUG && file_exists(CHINA_YES_PLUGIN_PATH . 'test-translation.php')) {
         require_once(CHINA_YES_PLUGIN_PATH . 'test-translation.php');
     }
     

@@ -32,9 +32,7 @@ class Performance {
         remove_action('wp_head', 'wp_shortlink_wp_head');
         remove_action('wp_head', 'adjacent_posts_rel_link_wp_head');
         
-        if (!is_admin()) {
-            wp_deregister_script('jquery-migrate');
-        }
+        // 保留 jquery-migrate，避免 WordPress 7.0+ 的 jQuery 依赖链断裂。
         
         add_filter('xmlrpc_enabled', '__return_false');
         

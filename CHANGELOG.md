@@ -2,6 +2,19 @@
 
 All notable changes to `WP-China-Yes` will be documented in this file.
 
+## v3.9.2 - 2026-05-21
+
+### 修复
+- 保留前台 `jquery-migrate`，不再在 `init` 阶段反注册，避免 WordPress 7.0+ 的 `jquery` 依赖链断裂
+- 修复后台/前台页面 `Uncaught ReferenceError: jQuery is not defined` 与 `WP_Scripts::add` 相关告警
+
+## v3.9.1 - 2026-05-21
+
+### 修复
+- 修复 options 序列化数据损坏时 adminCDN 替换规则异常导致后台 jQuery 加载失败的 bug（wptea.com WP 7.0 升级后触发）
+- get_settings() 增加 is_array() 校验，阻止损坏数据进入 wp_parse_args query-string 解析
+- Acceleration 消除全部 (array) 强转，改用 is_array() 守卫做类型安全检查
+
 ## v3.9 - 2026-02-15
 
 ### 新增

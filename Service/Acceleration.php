@@ -77,16 +77,18 @@ class Acceleration {
      * 检查是否启用管理后台加速
      */
     private function has_admin_acceleration() {
-        return !empty($this->settings['admincdn']) && 
-               in_array('admin', (array) $this->settings['admincdn']);
+        return !empty($this->settings['admincdn']) &&
+               is_array($this->settings['admincdn']) &&
+               in_array('admin', $this->settings['admincdn']);
     }
 
     /**
      * 检查是否启用前台加速
      */
     private function has_frontend_acceleration() {
-        return !empty($this->settings['admincdn_files']) && 
-               in_array('frontend', (array) $this->settings['admincdn_files']);
+        return !empty($this->settings['admincdn_files']) &&
+               is_array($this->settings['admincdn_files']) &&
+               in_array('frontend', $this->settings['admincdn_files']);
     }
 
     /**
@@ -111,9 +113,10 @@ class Acceleration {
      * 检查是否启用特殊功能
      */
     private function has_special_features() {
-        return !empty($this->settings['admincdn_files']) && 
-               (in_array('emoji', (array) $this->settings['admincdn_files']) || 
-                in_array('sworg', (array) $this->settings['admincdn_files']));
+        return !empty($this->settings['admincdn_files']) &&
+               is_array($this->settings['admincdn_files']) &&
+               (in_array('emoji', $this->settings['admincdn_files']) ||
+                in_array('sworg', $this->settings['admincdn_files']));
     }
 
     /**
@@ -293,7 +296,7 @@ class Acceleration {
             return;
         }
 
-        if (in_array('admin', (array) $this->settings['admincdn']) &&
+        if (is_array($this->settings['admincdn']) && in_array('admin', $this->settings['admincdn']) &&
             !stristr($GLOBALS['wp_version'], 'alpha') &&
             !stristr($GLOBALS['wp_version'], 'beta') &&
             !stristr($GLOBALS['wp_version'], 'RC')) {
@@ -311,7 +314,7 @@ class Acceleration {
      * 准备前台替换规则
      */
     private function prepare_frontend_replacements() {
-        if (in_array('frontend', (array) $this->settings['admincdn_files'])) {
+        if (is_array($this->settings['admincdn_files']) && in_array('frontend', $this->settings['admincdn_files'])) {
             $pattern = '#(?<=[(\"\'])(?:' . quotemeta(home_url()) . ')?/(?:((?:wp-content|wp-includes)[^\"\')]+\.(css|js)[^\"\')]+))(?=[\"\')])#';
             $this->regex_patterns[$pattern] = 'https://public.admincdn.com/$0';
         }
@@ -330,7 +333,7 @@ class Acceleration {
         ];
 
         foreach ($public_libraries as $key => $replacement) {
-            if (in_array($key, (array) $this->settings['admincdn_public'])) {
+            if (in_array($key, is_array($this->settings['admincdn_public']) ? $this->settings['admincdn_public'] : [])) {
                 $this->replacements[$replacement[0]] = $replacement[1];
             }
         }
@@ -349,7 +352,7 @@ class Acceleration {
         ];
 
         foreach ($dev_libraries as $key => $replacement) {
-            if (in_array($key, (array) $this->settings['admincdn_dev'])) {
+            if (in_array($key, is_array($this->settings['admincdn_dev']) ? $this->settings['admincdn_dev'] : [])) {
                 $this->replacements[$replacement[0]] = $replacement[1];
             }
         }
@@ -359,11 +362,11 @@ class Acceleration {
      * 准备特殊功能替换规则
      */
     private function prepare_special_replacements() {
-        if (in_array('emoji', (array) $this->settings['admincdn_files'])) {
+        if (is_array($this->settings['admincdn_files']) && in_array('emoji', $this->settings['admincdn_files'])) {
             $this->prepare_emoji_replacements();
         }
 
-        if (in_array('sworg', (array) $this->settings['admincdn_files'])) {
+        if (is_array($this->settings['admincdn_files']) && in_array('sworg', $this->settings['admincdn_files'])) {
             $this->prepare_sworg_replacements();
         }
     }
@@ -440,8 +443,8 @@ class Acceleration {
             return;
         }
 
-        $version_settings = (array) $this->settings['admincdn_version'];
-        
+        $version_settings = is_array($this->settings['admincdn_version']) ? $this->settings['admincdn_version'] : [];
+
         if (empty($version_settings)) {
             return;
         }
@@ -459,8 +462,8 @@ class Acceleration {
      * 版本控制过滤器
      */
     public function version_filter($src) {
-        $version_settings = (array) $this->settings['admincdn_version'];
-        
+        $version_settings = is_array($this->settings['admincdn_version']) ? $this->settings['admincdn_version'] : [];
+
         $url_parts = wp_parse_url($src);
         
         if (!isset($url_parts['path'])) {

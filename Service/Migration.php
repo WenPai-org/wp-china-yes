@@ -17,6 +17,9 @@ class Migration {
 
 	public function migrate_windfonts_settings() {
 		$current_settings = get_option( 'wp_china_yes', [] );
+		if ( ! is_array( $current_settings ) ) {
+			$current_settings = [];
+		}
 		$needs_migration = false;
 
 		if ( ! empty( $current_settings['windfonts_list'] ) ) {

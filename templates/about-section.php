@@ -35,10 +35,7 @@
             <h2>开发 &amp; 贡献者</h2>
             <p>100% 开源代码，诚邀您一起参与文派 （WordPress） 软件国产化进程，打造属于自己的开源自助建站程序。</p>
             <div class="card-body contributors-name">
-                <a href="https://github.com/sunxiyuan" target="_blank">孙锡源</a><a href="https://github.com/devhaozi/" target="_blank">耗子</a><a href="https://github.com/Yulinn233/" target="_blank">Yulinn</a><a href="https://github.com/zhaofeng-shu33/" target="_blank">赵丰</a>
-                <a
-                href="https://github.com/djl0415/" target="_blank">jialong Dong</a><a href="https://github.com/k99k5/" target="_blank">TigerKK</a><a href="https://github.com/xianyu125/" target="_blank">xianyu125</a><a href="https://github.com/ElliotHughes/" target="_blank">ElliotHughes</a><a href="https://bbs.weixiaoduo.com/users/feibisi/"
-                    target="_blank">诗语</a><a href="https://www.modiqi.com/" target="_blank">莫蒂奇</a><a href="https://www.weixiaoduo.com/" target="_blank">薇晓朵</a>
+                孙锡源、耗子、Yulinn、赵丰、jialong Dong、TigerKK、xianyu125、ElliotHughes、诗语、莫蒂奇、薇晓朵
                     <p></p>
             </div>
             <div class="wpcy-buttons"><a href="https://wpcy.com/about/promoter" target="_blank" rel="noopener" class="components-button button-secondary">推广名单 ↗</a><a href="https://github.com/WenPai-org/wp-china-yes" target="_blank" rel="noopener" class="components-button button-secondary">参与贡献 ↗</a></div>

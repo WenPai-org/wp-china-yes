@@ -225,6 +225,9 @@ class Language {
 		if ( $this->is_enabled( $this->settings['waimao_enable'] ?? false ) ) {
 			if ( $this->is_enabled( $this->settings['waimao_language_split'] ?? false ) ) {
 				$current_settings = get_option( 'wp_china_yes', [] );
+				if ( ! is_array( $current_settings ) ) {
+					$current_settings = [];
+				}
 				$current_settings['waimao_frontend_language'] = $new_value;
 				update_option( 'wp_china_yes', $current_settings );
 			}
@@ -239,6 +242,9 @@ class Language {
 			if ( $this->is_enabled( $this->settings['waimao_enable'] ?? false ) ) {
 				if ( $this->is_enabled( $this->settings['waimao_language_split'] ?? false ) ) {
 					$current_settings = get_option( 'wp_china_yes', [] );
+					if ( ! is_array( $current_settings ) ) {
+						$current_settings = [];
+					}
 					$current_settings['waimao_admin_language'] = $meta_value;
 					update_option( 'wp_china_yes', $current_settings );
 				}
@@ -253,6 +259,9 @@ class Language {
 		if ( $this->is_enabled( $this->settings['waimao_enable'] ?? false ) ) {
 			if ( $this->is_enabled( $this->settings['waimao_language_split'] ?? false ) ) {
 				$current_settings = get_option( 'wp_china_yes', [] );
+				if ( ! is_array( $current_settings ) ) {
+					$current_settings = [];
+				}
 				$needs_update = false;
 
 				$wp_frontend_lang = get_option( 'WPLANG', '' );

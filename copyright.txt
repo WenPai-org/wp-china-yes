@@ -1,26 +1,26 @@
 -----------------------------------------------------------------------------------------
-**Copyright © 2025 WenPai.cn (Guangzhou) Technology Co., Ltd.**  
+**Copyright © 2026 WenPai.cn (Guangzhou) Technology Co., Ltd.**
 -----------------------------------------------------------------------------------------
 
-**Compliance Terms**  
-Everyone is free to use WenPai open-source software. However, in China, when using WenPai software, 
+**Compliance Terms**
+Everyone is free to use WenPai open-source software. However, in China, when using WenPai software,
 you must adhere to the GPL v3 (or later) open-source license, respect the intellectual property rights of others,
-and prioritize compliance with Chinese laws in case of any conflicts.  
+and prioritize compliance with Chinese laws in case of any conflicts.
 
-**Fork Declaration**  
-To ensure the long-term availability of various WenPai (WordPress) infrastructure components, 
+**Fork Declaration**
+To ensure the long-term availability of various WenPai (WordPress) infrastructure components,
 individuals with the necessary capabilities are welcome to establish their own service sources
-or fork WenPai Leaf 🍃 (WPCY.COM) to create their own versions.  
+or fork WenPai Leaf 🍃 (WPCY.COM) to create their own versions.
 
-**The Only Requirement:**  
-While strictly adhering to the GPL v3 (or later) license, you must respect all lawful rights of WenPai Technology, 
-including (but not limited to) copyrights, trademarks, patents, intellectual property, goodwill, and more.  
+**The Only Requirement:**
+While strictly adhering to the GPL v3 (or later) license, you must respect all lawful rights of WenPai Technology,
+including (but not limited to) copyrights, trademarks, patents, intellectual property, goodwill, and more.
 
-**Disclaimer:**  
-This software is provided "as is" without warranty of any kind, express or implied.  
+**Disclaimer:**
+This software is provided "as is" without warranty of any kind, express or implied.
 
 -----------------------------------------------------------------------------------------
-**版权所有 © 2025 年 文派（广州）科技有限公司**
+**版权所有 © 2026 年 文派（广州）科技有限公司**
 -----------------------------------------------------------------------------------------
 
 **合规条款**

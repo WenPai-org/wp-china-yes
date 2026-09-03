@@ -9,7 +9,13 @@ function get_settings() {
 	static $cached_settings = null;
 	
 	if ($cached_settings === null) {
-		$settings = is_multisite() ? get_site_option( 'wp_china_yes' ) : get_option( 'wp_china_yes' );
+		$raw_settings = is_multisite() ? get_site_option( 'wp_china_yes', false ) : get_option( 'wp_china_yes', false );
+		$settings_exists = false !== $raw_settings;
+
+		// 防止序列化损坏导致非数组值传入 wp_parse_args（会触发 query-string 解析，
+		// 把数组字段变成字符串，进而导致 CDN 替换规则生成空值）。
+		$settings = is_array( $raw_settings ) ? $raw_settings : [];
+
 		$cached_settings = wp_parse_args( $settings, [
 		'store'                => 'wenpai',
 		'bridge'               => true,
@@ -74,6 +80,10 @@ function get_settings() {
 		'custom_rss_refresh'   => 3600,
 		'rss_display_options'  => [ 'show_date', 'show_summary', 'show_footer' ],
 		] );
+
+		if ( $settings_exists && is_array( $raw_settings ) && ! array_key_exists( 'admincdn', $raw_settings ) ) {
+			$cached_settings['admincdn'] = [];
+		}
 	}
 	
 	return $cached_settings;

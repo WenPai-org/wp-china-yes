@@ -6,7 +6,7 @@
             <div class="column wpcy-banner"><span class="wpcy-icon-inner"> <i class="icon icon-mirroring-screen"></i></span>
                 <h2>原生体验</h2>
                 <p>文派叶子🍃（WPCY.COM）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。</p>
-                <div class="wpcy-buttons"><a href="<?php echo $settings_page_url; ?>#tab=%e5%bb%ba%e7%ab%99%e5%a5%97%e4%bb%b6" class="components-button button-primary">获取 WP Deer 建站套件</a><a href="https://wenpai.org/" target="_blank" rel="noopener" class="components-button button-secondary">文派开源（WenPai.org）↗</a></div>
+                <div class="wpcy-buttons"><a href="<?php echo $settings_page_url; ?>#tab=%e5%bb%ba%e7%ab%99%e5%a5%97%e4%bb%b6" class="components-button button-primary">获取建站套件</a><a href="https://wenpai.org/" target="_blank" rel="noopener" class="components-button button-secondary">文派开源（WenPai.org）↗</a></div>
                 <img
                 src="/wp-content/plugins/wp-china-yes/assets/images/website-banner.jpg" width="358" height="140" alt=""></div>
             <div class="column"><span class="wpcy-icon-inner"> <i class="icon icon-link-21"></i> </span>

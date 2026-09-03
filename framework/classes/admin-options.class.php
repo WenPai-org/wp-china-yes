@@ -583,7 +583,7 @@ echo '</div>';
               echo '</ul>';
 
               echo '<div class="wp_china_yes-copyright">';
-              echo '<p>Copyright © 2025 · WPCY.COM</p>';
+              echo '<p>Copyright © 2026 · WPCY.COM</p>';
               echo '<p>文派叶子·生生不息</p>';
               echo '</div>';
 

@@ -52,7 +52,7 @@ class ModernSetting {
                         ],
                         'default'  => 'wenpai',
                         'subtitle' => '是否启用市场加速',
-                        'desc'     => '<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。<a href="https://wpmirror.com/" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
+                        'desc'     => '<a href="https://wenpai.org/" target="_blank">文派开源（WenPai.org）</a>中国境内自建托管仓库，同时集成文派翻译平台。<a href="https://wpcy.com/mirror" target="_blank">官方加速源（WPMirror）</a>直接从 .org 反代至大陆分发；可参考<a href="https://wpcy.com/document/wordpress-marketplace-acceleration" target="_blank">源站说明</a>。',
                     ],
                     [
                         'id'       => 'bridge',
@@ -60,7 +60,7 @@ class ModernSetting {
                         'default'  => true,
                         'title'    => '云桥更新',
                         'subtitle' => '是否启用更新加速',
-                        'desc'     => '<a href="https://wpbridge.com" target="_blank">文派云桥（wpbridge）</a>托管更新和应用分发渠道，可解决因 WordPress 社区分裂导致的混乱、旧应用无法更新，频繁 API 请求拖慢网速等问题。',
+                        'desc'     => '<a href="https://wpcy.com/bridge" target="_blank">文派云桥（wpbridge）</a>托管更新和应用分发渠道，可解决因 WordPress 社区分裂导致的混乱、旧应用无法更新，频繁 API 请求拖慢网速等问题。',
                     ],
                     [
                         'id'       => 'arkpress',
@@ -68,7 +68,7 @@ class ModernSetting {
                         'default'  => false,
                         'title'    => '联合存储库',
                         'subtitle' => '自动监控加速节点可用性',
-                        'desc'     => '<a href="https://maiyun.org" target="_blank">ArkPress.org </a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
+                        'desc'     => '<a href="https://wpcy.com/arkpress" target="_blank">ArkPress.org </a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
                     ],
                 ],
             ] );
