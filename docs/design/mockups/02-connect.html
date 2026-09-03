@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>连接优化 · 文派叶子</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <div class="prototype-note">02-connect.html · admin-ui-spec §3.2 · DataForm 四组（字体未绑定禁用）</div>
+  <div id="wpadminbar"><span class="ab-site">example.com</span></div>
+  <nav id="adminmenu" aria-label="后台菜单">
+    <ul>
+      <li><span class="menu-placeholder">仪表盘</span></li>
+      <li><span class="menu-placeholder">文章</span></li>
+      <li><span class="menu-placeholder">媒体</span></li>
+      <li>
+        <div class="wp-menu-name">
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+          <span>文派叶子</span>
+        </div>
+        <ul class="wp-submenu">
+          <li><a href="01-overview.html">概览</a></li>
+          <li class="current"><a class="current" href="02-connect.html">连接优化</a></li>
+          <li><a href="03-services-unbound.html">文派服务</a></li>
+          <li><a href="04-diagnose.html">诊断</a></li>
+        </ul>
+      </li>
+      <li><span class="menu-placeholder">插件</span></li>
+    </ul>
+  </nav>
+  <div id="wpcontent">
+    <header class="wpcy-page-header">
+      <h1>
+        <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M80 72V32M144 72V32M72 72h80v48a40 40 0 0 1-80 0zM112 160v48M40 40l24 24M216 40l-24 24"/></svg>
+        连接优化
+      </h1>
+      <div class="wpcy-page-actions">
+        <button type="button" class="button button-primary" disabled>保存</button>
+      </div>
+    </header>
+    <main class="wpcy-page-body">
+      <form class="dataform" aria-label="连接优化">
+        <fieldset>
+          <legend>WordPress.org 源</legend>
+          <div class="field">
+            <label class="radio"><input type="radio" name="connectivity.wordpress_org" checked> 自动（推荐）</label>
+            <label class="radio"><input type="radio" name="connectivity.wordpress_org"> 关闭</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>公共前端库</legend>
+          <div class="field-row">
+            <label class="checkbox"><input type="checkbox" name="connectivity.public_assets[]" checked> Google Fonts</label>
+            <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span>
+          </div>
+          <div class="field-row">
+            <label class="checkbox"><input type="checkbox" name="connectivity.public_assets[]" checked> Google Ajax</label>
+            <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span>
+          </div>
+          <div class="field-row">
+            <label class="checkbox"><input type="checkbox" name="connectivity.public_assets[]" checked> CDNJS</label>
+            <span class="status"><span class="status-dot is-warning" aria-hidden="true"></span>已回原始上游</span>
+          </div>
+          <div class="field-row">
+            <label class="checkbox"><input type="checkbox" name="connectivity.public_assets[]" checked> jsDelivr</label>
+            <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span>
+          </div>
+          <div class="field-row">
+            <label class="checkbox"><input type="checkbox" name="connectivity.public_assets[]" checked> Emoji</label>
+            <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>头像</legend>
+          <div class="field">
+            <label class="radio"><input type="radio" name="connectivity.avatar" checked> Cravatar 中国</label>
+            <label class="radio"><input type="radio" name="connectivity.avatar"> Cravatar 国际</label>
+            <label class="radio"><input type="radio" name="connectivity.avatar"> 关闭</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>字体</legend>
+          <div class="toggle is-disabled">
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span>Windfonts</span>
+          </div>
+          <p class="help">绑定后可用配额</p>
+        </fieldset>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

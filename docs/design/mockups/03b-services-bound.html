@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文派服务 · 文派叶子</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <div class="prototype-note">03b-services-bound.html · admin-ui-spec §3.3 · 已绑定</div>
+  <div id="wpadminbar"><span class="ab-site">example.com</span></div>
+  <nav id="adminmenu" aria-label="后台菜单">
+    <ul>
+      <li><span class="menu-placeholder">仪表盘</span></li>
+      <li><span class="menu-placeholder">文章</span></li>
+      <li><span class="menu-placeholder">媒体</span></li>
+      <li>
+        <div class="wp-menu-name">
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+          <span>文派叶子</span>
+        </div>
+        <ul class="wp-submenu">
+          <li><a href="01-overview.html">概览</a></li>
+          <li><a href="02-connect.html">连接优化</a></li>
+          <li class="current"><a class="current" href="03b-services-bound.html">文派服务</a></li>
+          <li><a href="04-diagnose.html">诊断</a></li>
+        </ul>
+      </li>
+      <li><span class="menu-placeholder">插件</span></li>
+    </ul>
+  </nav>
+  <div id="wpcontent">
+    <header class="wpcy-page-header">
+      <h1>
+        <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><rect x="40" y="40" width="72" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="16"/><rect x="144" y="40" width="72" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="16"/><rect x="40" y="144" width="72" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="16"/><rect x="144" y="144" width="72" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="16"/></svg>
+        文派服务
+      </h1>
+    </header>
+    <main class="wpcy-page-body">
+      <section class="section" aria-labelledby="bind-heading">
+        <h2 id="bind-heading">站点绑定</h2>
+        <article class="card">
+          <p class="card-status">
+            <span class="status"><span class="status-dot is-success" aria-hidden="true"></span>已绑定</span>
+          </p>
+          <p class="card-meta">站点标识 a4f8c21b · 绑定时间 2026-08-12 09:14</p>
+          <p class="card-actions"><button type="button" class="button button-destructive">解除绑定</button></p>
+        </article>
+      </section>
+
+      <section class="section" aria-labelledby="ent-heading">
+        <h2 id="ent-heading">权益与配额</h2>
+        <div class="dataviews-table-wrap">
+          <table class="dataviews-table">
+            <thead>
+              <tr>
+                <th scope="col">服务</th>
+                <th scope="col">状态</th>
+                <th scope="col">本期用量</th>
+                <th scope="col">重置时间</th>
+                <th scope="col">动作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>MotuSnap</td>
+                <td><span class="status"><span class="status-dot is-available" aria-hidden="true"></span>可用</span></td>
+                <td>
+                  <div class="quota">
+                    <span class="quota-bar" aria-hidden="true"><span style="width:37%"></span></span>
+                    <span class="quota-label">37/100</span>
+                  </div>
+                </td>
+                <td>2026-10-01 00:00</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Windfonts</td>
+                <td><span class="status"><span class="status-dot is-warning" aria-hidden="true"></span>本期已用尽</span></td>
+                <td>
+                  <div class="quota">
+                    <span class="quota-bar is-exhausted" aria-hidden="true"><span style="width:100%"></span></span>
+                    <span class="quota-label">100/100</span>
+                  </div>
+                </td>
+                <td>2026-10-01 00:00</td>
+                <td><a class="button button-secondary button-small" href="https://wpcy.com/go/windfonts" target="_blank" rel="noopener noreferrer">获取</a></td>
+              </tr>
+              <tr>
+                <td>文派翻译</td>
+                <td><span class="status"><span class="status-dot is-neutral" aria-hidden="true"></span>已到期</span></td>
+                <td>
+                  <div class="quota">
+                    <span class="quota-bar is-expired" aria-hidden="true"><span style="width:0%"></span></span>
+                    <span class="quota-label">0/50</span>
+                  </div>
+                </td>
+                <td>—</td>
+                <td><a class="button button-secondary button-small" href="https://wpcy.com/go/translate" target="_blank" rel="noopener noreferrer">获取</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="apps-heading">
+        <h2 id="apps-heading">小工具</h2>
+        <div class="dataviews-grid">
+          <article class="app-card">
+            <div class="app-icon" aria-label="图标占位"></div>
+            <h3>站点体检</h3>
+            <p>检查站点健康与连接状态。</p>
+          </article>
+          <article class="app-card">
+            <span class="app-badge is-get">获取</span>
+            <div class="app-icon" aria-label="图标占位"></div>
+            <h3>图片压缩</h3>
+            <p>按需压缩媒体库图片。</p>
+          </article>
+          <article class="app-card">
+            <span class="app-badge is-expired">已到期</span>
+            <div class="app-icon" aria-label="图标占位"></div>
+            <h3>备份助手</h3>
+            <p>只读查看已有备份记录。</p>
+          </article>
+          <article class="app-card">
+            <span class="app-badge is-offline">离线</span>
+            <div class="app-icon" aria-label="图标占位"></div>
+            <h3>日志查看</h3>
+            <p>小工具目录暂时不可达。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

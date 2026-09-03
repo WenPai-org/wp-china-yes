@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>诊断 · 文派叶子</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <div class="prototype-note">04-diagnose.html · admin-ui-spec §3.4 · 连接检查（默认 Tab）</div>
+  <div id="wpadminbar"><span class="ab-site">example.com</span></div>
+  <nav id="adminmenu" aria-label="后台菜单">
+    <ul>
+      <li><span class="menu-placeholder">仪表盘</span></li>
+      <li><span class="menu-placeholder">文章</span></li>
+      <li><span class="menu-placeholder">媒体</span></li>
+      <li>
+        <div class="wp-menu-name">
+          <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" d="M32 216s72-24 88-152c88 16 104 88 104 128-96 0-192 24-192 24z"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M32 216c64-40 96-96 88-152"/></svg>
+          <span>文派叶子</span>
+        </div>
+        <ul class="wp-submenu">
+          <li><a href="01-overview.html">概览</a></li>
+          <li><a href="02-connect.html">连接优化</a></li>
+          <li><a href="03-services-unbound.html">文派服务</a></li>
+          <li class="current"><a class="current" href="04-diagnose.html">诊断</a></li>
+        </ul>
+      </li>
+      <li><span class="menu-placeholder">插件</span></li>
+    </ul>
+  </nav>
+  <div id="wpcontent">
+    <header class="wpcy-page-header">
+      <h1>
+        <svg class="icon" width="20" height="20" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="56" fill="none" stroke="currentColor" stroke-width="16"/><path fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" d="M140 140l76 76M72 100h56M100 72v56"/></svg>
+        诊断
+      </h1>
+      <div class="wpcy-page-actions">
+        <button type="button" class="button button-primary">立即检查</button>
+      </div>
+    </header>
+    <main class="wpcy-page-body">
+      <div class="tablist" role="tablist" aria-label="诊断">
+        <button type="button" role="tab" aria-selected="true" aria-controls="panel-connect" id="tab-connect">连接检查</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="panel-notices" id="tab-notices" tabindex="-1">被隐藏的通知</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="panel-hosts" id="tab-hosts" tabindex="-1">出站主机记录</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="panel-data" id="tab-data" tabindex="-1">数据与恢复</button>
+      </div>
+
+      <section class="tab-panel" role="tabpanel" id="panel-connect" aria-labelledby="tab-connect">
+        <div class="dataviews-table-wrap">
+          <table class="dataviews-table">
+            <thead>
+              <tr>
+                <th scope="col">目标</th>
+                <th scope="col">结果</th>
+                <th scope="col">延迟</th>
+                <th scope="col">最近检查</th>
+                <th scope="col">建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>WordPress.org API</td>
+                <td><span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span></td>
+                <td>42 ms</td>
+                <td>3 分钟前</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>更新与安装包</td>
+                <td><span class="status"><span class="status-dot is-warning" aria-hidden="true"></span>已回原始上游</span></td>
+                <td>890 ms</td>
+                <td>3 分钟前</td>
+                <td>国内镜像不可达，已改走原始上游。</td>
+              </tr>
+              <tr>
+                <td>Cravatar</td>
+                <td><span class="status"><span class="status-dot is-success" aria-hidden="true"></span>国内镜像正常</span></td>
+                <td>28 ms</td>
+                <td>3 分钟前</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>文派服务</td>
+                <td><span class="status"><span class="status-dot is-danger" aria-hidden="true"></span>不可用</span></td>
+                <td>—</td>
+                <td>8 分钟前</td>
+                <td>暂时无法连接，稍后重试。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tab-panel" role="tabpanel" id="panel-notices" aria-labelledby="tab-notices" hidden>
+        <p class="help">核心更新、安全与站点健康通知永不隐藏</p>
+      </section>
+      <section class="tab-panel" role="tabpanel" id="panel-hosts" aria-labelledby="tab-hosts" hidden>
+        <p class="help">主机表由文派发布，用户不可编辑</p>
+      </section>
+      <section class="tab-panel" role="tabpanel" id="panel-data" aria-labelledby="tab-data" hidden></section>
+
+      <div class="other-tabs">
+        <h2>其它 Tab 内容</h2>
+
+        <section class="tab-block" aria-labelledby="other-notices">
+          <h3 id="other-notices">被隐藏的通知</h3>
+          <p class="help">核心更新、安全与站点健康通知永不隐藏</p>
+          <div class="dataviews-table-wrap">
+            <table class="dataviews-table">
+              <thead>
+                <tr>
+                  <th scope="col">来源插件</th>
+                  <th scope="col">匹配规则</th>
+                  <th scope="col">首次隐藏</th>
+                  <th scope="col">次数</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Example SEO</td>
+                  <td>营销横幅</td>
+                  <td>2026-07-14 11:02</td>
+                  <td>18</td>
+                </tr>
+                <tr>
+                  <td>Example Cache</td>
+                  <td>评分邀请</td>
+                  <td>2026-08-01 09:40</td>
+                  <td>4</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tab-block" aria-labelledby="other-hosts">
+          <h3 id="other-hosts">出站主机记录</h3>
+          <p class="help">主机表由文派发布，用户不可编辑</p>
+          <div class="dataviews-table-wrap">
+            <table class="dataviews-table">
+              <thead>
+                <tr>
+                  <th scope="col">主机</th>
+                  <th scope="col">数据类别</th>
+                  <th scope="col">次数</th>
+                  <th scope="col">最近时间</th>
+                  <th scope="col">处置</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>api.example.com</td>
+                  <td>更新检查</td>
+                  <td>126</td>
+                  <td>2026-09-03 18:22</td>
+                  <td><span class="status"><span class="status-dot is-success" aria-hidden="true"></span>已改道国内</span></td>
+                </tr>
+                <tr>
+                  <td>fonts.example.com</td>
+                  <td>前端资源</td>
+                  <td>37</td>
+                  <td>2026-09-03 17:04</td>
+                  <td><span class="status"><span class="status-dot is-warning" aria-hidden="true"></span>记录中</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tab-block" aria-labelledby="other-data">
+          <h3 id="other-data">数据与恢复</h3>
+          <p class="form-row">
+            <button type="button" class="button button-secondary">导出诊断报告</button>
+          </p>
+          <h4>按小工具导出/删除数据</h4>
+          <div class="dataviews-table-wrap">
+            <table class="dataviews-table">
+              <thead>
+                <tr>
+                  <th scope="col">工具</th>
+                  <th scope="col">条目数</th>
+                  <th scope="col">大小</th>
+                  <th scope="col">动作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>站点体检</td>
+                  <td>12</td>
+                  <td>48 KB</td>
+                  <td>
+                    <button type="button" class="button button-small">导出</button>
+                    <button type="button" class="button button-small button-destructive">删除</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>备份助手</td>
+                  <td>3</td>
+                  <td>1.2 MB</td>
+                  <td>
+                    <button type="button" class="button button-small">导出</button>
+                    <button type="button" class="button button-small button-destructive">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="form-row">
+            <a class="button is-destructive" href="05-recovery.html">进入恢复模式</a>
+          </p>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

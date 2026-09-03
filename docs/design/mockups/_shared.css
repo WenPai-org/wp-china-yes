@@ -1,0 +1,925 @@
+/**
+ * 文派叶子 4.0 后台 HTML 原型 · 精简 wp-admin 近似样式
+ *
+ * 只覆盖强调色一组变量（admin-ui-spec §5）：
+ *   --wp-admin-theme-color:            #02b930  (semantic.accent.primary)
+ *   --wp-admin-theme-color-darker-10:  #03d537  (semantic.accent.primaryHover)
+ *
+ * 状态色 #00a32a / #dba617 / #d63638 是 wp-admin 默认占位，
+ * 待 brand token 补独立的 status.success / warning / danger。
+ * 成功态圆点不得使用品牌绿（§1 第 3 条）。
+ */
+
+:root {
+  --wp-admin-theme-color: #02b930;
+  --wp-admin-theme-color-darker-10: #03d537;
+  --wpcy-status-success: #00a32a;
+  --wpcy-status-warning: #dba617;
+  --wpcy-status-danger: #d63638;
+  --wpcy-status-neutral: #787c82;
+  --wpcy-adminbar-bg: #1d2327;
+  --wpcy-menu-bg: #1d2327;
+  --wpcy-menu-text: #f0f0f1;
+  --wpcy-content-bg: #f0f0f1;
+  --wpcy-surface: #fff;
+  --wpcy-text: #1e1e1e;
+  --wpcy-text-muted: #646970;
+  --wpcy-border: #c3c4c7;
+  --wpcy-border-subtle: #dcdcde;
+  --wpcy-adminbar-h: 32px;
+  --wpcy-note-h: 24px;
+  --wpcy-menu-w: 160px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--wpcy-text);
+  background: var(--wpcy-content-bg);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--wp-admin-theme-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--wp-admin-theme-color-darker-10);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--wp-admin-theme-color);
+  outline-offset: 2px;
+}
+
+/* —— 原型说明条（在 #wpadminbar 之上） —— */
+.prototype-note {
+  height: var(--wpcy-note-h);
+  line-height: var(--wpcy-note-h);
+  background: #6c7781;
+  color: #fff;
+  font-size: 12px;
+  padding: 0 12px;
+  letter-spacing: 0.01em;
+}
+
+/* —— 顶栏 32px —— */
+#wpadminbar {
+  height: var(--wpcy-adminbar-h);
+  background: var(--wpcy-adminbar-bg);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+#wpadminbar .ab-site {
+  opacity: 0.9;
+}
+
+/* —— 左侧菜单 160px —— */
+#adminmenu {
+  position: fixed;
+  top: calc(var(--wpcy-note-h) + var(--wpcy-adminbar-h));
+  left: 0;
+  bottom: 0;
+  width: var(--wpcy-menu-w);
+  background: var(--wpcy-menu-bg);
+  color: var(--wpcy-menu-text);
+  overflow-y: auto;
+  padding: 8px 0 24px;
+}
+
+#adminmenu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#adminmenu .menu-placeholder {
+  display: block;
+  margin: 4px 8px;
+  height: 28px;
+  background: #2c3338;
+  color: #8c8f94;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 28px;
+  padding: 0 10px;
+}
+
+#adminmenu .wp-menu-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #fff;
+}
+
+#adminmenu .wp-submenu {
+  margin: 0;
+  padding: 0 0 8px;
+  background: #2c3338;
+}
+
+#adminmenu .wp-submenu a {
+  display: block;
+  padding: 6px 12px 6px 20px;
+  color: #c3c4c7;
+  font-size: 13px;
+}
+
+#adminmenu .wp-submenu a:hover {
+  color: #fff;
+  background: #3c434a;
+}
+
+#adminmenu .wp-submenu a.current,
+#adminmenu .wp-submenu li.current > a {
+  color: #fff;
+  font-weight: 600;
+  background: var(--wp-admin-theme-color);
+}
+
+#adminmenu .icon {
+  flex-shrink: 0;
+}
+
+/* —— 内容区 —— */
+#wpcontent {
+  margin-left: var(--wpcy-menu-w);
+  min-height: calc(100vh - var(--wpcy-note-h) - var(--wpcy-adminbar-h));
+}
+
+/* @wordpress/admin-ui <Page> 顶栏近似 */
+.wpcy-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--wpcy-surface);
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+}
+
+.wpcy-page-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.wpcy-page-header .icon {
+  color: var(--wpcy-text);
+}
+
+.wpcy-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wpcy-page-body {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* WP 原生 .wrap（恢复页） */
+.wrap {
+  max-width: 1080px;
+  margin: 10px auto 0;
+  padding: 0 20px 40px;
+}
+
+.wrap h1 {
+  font-size: 23px;
+  font-weight: 400;
+  margin: 0;
+  padding: 9px 0 4px;
+  line-height: 1.3;
+}
+
+.wrap > p {
+  font-size: 14px;
+  color: var(--wpcy-text);
+}
+
+/* —— Notice 四色 —— */
+.notice {
+  position: relative;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--wpcy-border-subtle);
+  border-left-width: 4px;
+  background: var(--wpcy-surface);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.notice p {
+  margin: 0 0 8px;
+}
+
+.notice p:last-child {
+  margin-bottom: 0;
+}
+
+.notice-info {
+  border-left-color: #72aee6;
+  background: #f0f6fc;
+}
+
+.notice-warning {
+  border-left-color: var(--wpcy-status-warning);
+  background: #fcf9e8;
+}
+
+.notice-success {
+  border-left-color: var(--wpcy-status-success);
+  background: #edfaef;
+}
+
+.notice-error {
+  border-left-color: var(--wpcy-status-danger);
+  background: #fcf0f1;
+}
+
+.notice .notice-actions {
+  margin-top: 8px;
+}
+
+/* —— Buttons —— */
+.button,
+button.button {
+  display: inline-block;
+  appearance: none;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 2.15384615;
+  min-height: 30px;
+  padding: 0 10px;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid var(--wpcy-border);
+  background: #f6f7f7;
+  color: #2c3338;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.button:hover,
+button.button:hover {
+  background: #f0f0f1;
+  border-color: #8c8f94;
+  color: #1e1e1e;
+}
+
+.button-primary,
+.button.button-primary {
+  background: var(--wp-admin-theme-color);
+  border-color: var(--wp-admin-theme-color);
+  color: #fff;
+}
+
+.button-primary:hover,
+.button.button-primary:hover {
+  background: var(--wp-admin-theme-color-darker-10);
+  border-color: var(--wp-admin-theme-color-darker-10);
+  color: #fff;
+}
+
+.button-secondary,
+.button.button-secondary {
+  background: #f6f7f7;
+  border-color: var(--wpcy-border);
+  color: #2c3338;
+}
+
+.button-destructive,
+.button.is-destructive {
+  background: #fff;
+  border-color: var(--wpcy-status-danger);
+  color: var(--wpcy-status-danger);
+}
+
+.button-destructive:hover,
+.button.is-destructive:hover {
+  background: var(--wpcy-status-danger);
+  border-color: var(--wpcy-status-danger);
+  color: #fff;
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.button-small {
+  min-height: 26px;
+  line-height: 2;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+/* —— Card（@wordpress/components Card 近似） —— */
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wpcy-text-muted);
+}
+
+.card .card-kicker {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--wpcy-text);
+}
+
+.card .card-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card .card-meta {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--wpcy-text-muted);
+}
+
+.card .card-actions {
+  margin-top: 8px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section > h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* —— 状态圆点（双编码：圆点 + 文字） —— */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.is-available {
+  background: var(--wp-admin-theme-color);
+}
+
+.status-dot.is-success {
+  background: var(--wpcy-status-success);
+}
+
+.status-dot.is-warning {
+  background: var(--wpcy-status-warning);
+}
+
+.status-dot.is-danger {
+  background: var(--wpcy-status-danger);
+}
+
+.status-dot.is-neutral {
+  background: var(--wpcy-status-neutral);
+}
+
+/* —— 表格（DataViews 表格布局近似） —— */
+.dataviews-table-wrap {
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+  border-radius: 2px;
+  overflow: auto;
+}
+
+table.dataviews-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--wpcy-surface);
+}
+
+.dataviews-table th,
+.dataviews-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+  vertical-align: middle;
+}
+
+.dataviews-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wpcy-text-muted);
+  background: #f6f7f7;
+}
+
+.dataviews-table tbody tr:hover {
+  background: #f6f7f7;
+}
+
+.dataviews-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.empty-state {
+  background: var(--wpcy-surface);
+  border: 1px dashed var(--wpcy-border);
+  border-radius: 2px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--wpcy-text-muted);
+}
+
+/* —— 网格（DataViews 网格布局近似） —— */
+.dataviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.app-card {
+  position: relative;
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+  border-radius: 2px;
+  padding: 16px;
+  min-height: 140px;
+}
+
+.app-card .app-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #dcdcde;
+  margin-bottom: 8px;
+}
+
+.app-card h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--wpcy-text-muted);
+}
+
+.app-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.app-badge.is-get {
+  background: #fcf9e8;
+  color: #614200;
+  border: 1px solid var(--wpcy-status-warning);
+}
+
+.app-badge.is-expired,
+.app-badge.is-offline {
+  background: #f0f0f1;
+  color: var(--wpcy-status-neutral);
+  border: 1px solid var(--wpcy-border);
+}
+
+/* —— 进度条 —— */
+.quota {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.quota-bar {
+  display: block;
+  height: 6px;
+  background: #dcdcde;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.quota-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--wp-admin-theme-color);
+}
+
+.quota-bar.is-exhausted > span {
+  background: var(--wpcy-status-warning);
+}
+
+.quota-bar.is-expired > span {
+  background: var(--wpcy-status-neutral);
+}
+
+.quota-label {
+  font-size: 12px;
+  color: var(--wpcy-text-muted);
+}
+
+/* —— TabPanel —— */
+.tablist {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+  margin-bottom: 16px;
+  background: var(--wpcy-surface);
+  padding: 0 8px;
+}
+
+.tablist [role="tab"] {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--wpcy-text-muted);
+  cursor: default;
+}
+
+.tablist [role="tab"][aria-selected="true"] {
+  color: var(--wpcy-text);
+  font-weight: 600;
+  border-bottom-color: var(--wp-admin-theme-color);
+}
+
+.tab-panel {
+  background: transparent;
+}
+
+.other-tabs {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--wpcy-border);
+}
+
+.other-tabs > h2 {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--wpcy-text-muted);
+  font-weight: 600;
+}
+
+.other-tabs .tab-block {
+  margin-bottom: 32px;
+}
+
+.other-tabs .tab-block > h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+/* —— DataForm —— */
+.dataform {
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+  border-radius: 2px;
+}
+
+.dataform fieldset {
+  margin: 0;
+  padding: 20px 24px;
+  border: 0;
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+}
+
+.dataform fieldset:last-child {
+  border-bottom: 0;
+}
+
+.dataform legend {
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.field {
+  margin: 8px 0;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--wpcy-text-muted);
+}
+
+.radio,
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.radio input,
+.checkbox input {
+  margin: 0;
+}
+
+/* ToggleControl 近似 */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #9ea1a7;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.toggle.is-on .toggle-track {
+  background: var(--wp-admin-theme-color);
+}
+
+.toggle.is-on .toggle-track::after {
+  left: 18px;
+}
+
+.toggle.is-disabled {
+  opacity: 0.5;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--wpcy-border);
+  border-top-color: var(--wp-admin-theme-color);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* Snackbar */
+.components-snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #1e1e1e;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  z-index: 20;
+}
+
+/* 需要处理列表 */
+.attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+}
+
+.attention-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+}
+
+.attention-list li:last-child {
+  border-bottom: 0;
+}
+
+.attention-list .attention-text {
+  flex: 1;
+}
+
+/* 公告 */
+.announcements {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--wpcy-surface);
+  border: 1px solid var(--wpcy-border-subtle);
+}
+
+.announcements li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--wpcy-border-subtle);
+}
+
+.announcements li:last-child {
+  border-bottom: 0;
+}
+
+.announcements .ann-title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.announcements .ann-source {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f0f0f1;
+  border-radius: 2px;
+  color: var(--wpcy-text-muted);
+  white-space: nowrap;
+}
+
+.announcements .ann-date {
+  font-size: 12px;
+  color: var(--wpcy-text-muted);
+  white-space: nowrap;
+}
+
+.announcements .ann-dismiss {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--wpcy-text-muted);
+  cursor: default;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px;
+}
+
+/* 小工具容器 */
+.app-return {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-return a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-sandbox {
+  border: 2px dashed var(--wpcy-border);
+  background: #fff;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wpcy-text-muted);
+  font-size: 16px;
+  border-radius: 2px;
+}
+
+/* 恢复页分区 */
+.recovery-state {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px dashed var(--wpcy-border);
+}
+
+.recovery-state > h2 {
+  font-size: 13px;
+  color: var(--wpcy-text-muted);
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.muted {
+  color: var(--wpcy-text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 782px) {
+  .card-row {
+    grid-template-columns: 1fr;
+  }
+
+  #adminmenu {
+    width: 36px;
+  }
+
+  #adminmenu .wp-menu-name span,
+  #adminmenu .wp-submenu,
+  #adminmenu .menu-placeholder {
+    display: none;
+  }
+
+  #wpcontent {
+    margin-left: 36px;
+  }
+
+  .wpcy-page-body {
+    padding: 16px;
+  }
+}
