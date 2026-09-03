@@ -13,6 +13,10 @@
 - 任何"收不收数据 / 默认开不开 / 删不删功能"的判断不在任务里做；对照 `docs/4.0-rewrite-plan.md` §12，不符就停并写进报告。
 - 3.x 运行代码在 M4 之前**必须继续能跑**：`composer test:legacy`（29 个独立测试）是每个任务的固定门禁。
 - 服务端尚未就位的能力（云桥 ingest、license-server 绑定、生产签名密钥、`apps.wpcy.com` 索引、公告聚合端点）：**模块存在、对 mock 开发、默认不启用**。不等服务端。
+- **运行环境分工**（沿用文派 2026-08-18 既定分工，见 linuxjoy `docs/tools/wordpress-studio/wenpai-playbook.md`）：
+  - **本地开发、代理自测、里程碑出口演示、3.9.3 升级烟测 → WordPress Studio**（开发机 wenpai VM 的 `studio` CLI；Mac 也有 Studio 1.15）。4.0 站点固定为 `~/Studio/wpcy-40`（插件目录 symlink 到任务 worktree），命令一律 `studio start --path ~/Studio/wpcy-40 --skip-browser`、`studio wp --path ~/Studio/wpcy-40 <wp-cli>`、`studio stop --path …`。需要多站点或 MySQL 场景另起 `~/Studio/wpcy-40-ms` / `wpcy-40-mysql`（Studio 支持 MySQL 运行时，参照既有 `m31-mysql` 站）。Playwright 本地跑时 `BASE_URL` 指向 Studio 站。
+  - **CI（GitHub Actions）→ 保留 wp-env**：Actions 跑不了 Studio；`.wp-env.json` 与 `tests/wordpress-smoke.sh` 只作为 CI 门闸存在，任何人不在本地用 wp-env。Playwright 在 CI 里指向 wp-env。
+  - 任务书里凡写"wp-env 断言"的，代理在本地用 Studio 执行同样的 `wp` 命令即可，语义一致。
 
 ## 1. 里程碑
 
