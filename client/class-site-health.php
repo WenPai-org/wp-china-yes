@@ -292,11 +292,22 @@ class WenPai_Bridge_Site_Health {
 	private static function get_users_count(): int {
 		$count = get_transient( 'wpcy_users_count' );
 		if ( false === $count ) {
-			$count = count_users();
-			$count = isset( $count['total_users'] ) ? (int) $count['total_users'] : 0;
+			$counts = self::count_users_once();
+			$count  = isset( $counts['total_users'] ) ? (int) $counts['total_users'] : 0;
 			set_transient( 'wpcy_users_count', $count, DAY_IN_SECONDS );
 		}
 		return (int) $count;
+	}
+
+	/** @var array|null 本次请求内 count_users() 的结果，避免大站上跑两遍 usermeta 聚合。 */
+	private static $user_counts = null;
+
+	private static function count_users_once(): array {
+		if ( null === self::$user_counts ) {
+			$counts            = count_users();
+			self::$user_counts = is_array( $counts ) ? $counts : [];
+		}
+		return self::$user_counts;
 	}
 
 	/**
@@ -377,6 +388,9 @@ class WenPai_Bridge_Site_Health {
 		}
 
 		global $wpdb;
+		if ( ! $wpdb ) {
+			return null;
+		}
 
 		$data = [
 			'wc_version'    => defined( 'WC_VERSION' ) ? WC_VERSION : '',
@@ -495,7 +509,7 @@ class WenPai_Bridge_Site_Health {
 			return $cached;
 		}
 
-		$user_count = count_users();
+		$user_count = self::count_users_once();
 		$roles      = [];
 
 		if ( isset( $user_count['avail_roles'] ) && is_array( $user_count['avail_roles'] ) ) {
@@ -565,6 +579,11 @@ class WenPai_Bridge_Site_Health {
 
 		$post = get_post( $page_id );
 		if ( ! $post || empty( $post->post_content ) ) {
+			return false;
+		}
+
+		// has_block() 是 WP 5.0 才有的；插件仍声明 4.9。
+		if ( ! function_exists( 'has_block' ) ) {
 			return false;
 		}
 

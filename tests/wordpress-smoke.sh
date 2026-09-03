@@ -13,8 +13,10 @@ npx wp-env run cli wp eval '$settings = \WenPai\ChinaYes\get_settings(); if ( ! 
 
 # The daily compatibility report has no switch: it must be scheduled even when
 # the bridge update channel is off and legacy telemetry flags are stored as false.
-npx wp-env run cli wp eval 'update_option( "wp_china_yes", [ "store" => "off", "bridge" => false, "telemetry" => false, "telemetry_site_url" => false, "admincdn" => [], "admincdn_public" => [], "admincdn_files" => [], "admincdn_dev" => [], "cravatar" => "off" ] );'
-npx wp-env run cli wp eval 'do_action( "init" ); if ( ! wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "compatibility report not scheduled" ); }'
+# Clear any event left by earlier bootstraps first, so the assertion below can
+# only be satisfied by the fresh bootstrap that follows the option change.
+npx wp-env run cli wp eval 'wp_clear_scheduled_hook( "wpcy_daily_telemetry" ); update_option( "wp_china_yes", [ "store" => "off", "bridge" => false, "telemetry" => false, "telemetry_site_url" => false, "admincdn" => [], "admincdn_public" => [], "admincdn_files" => [], "admincdn_dev" => [], "cravatar" => "off" ] ); if ( wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "cron clear failed" ); }'
+npx wp-env run cli wp eval 'if ( ! wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "compatibility report not scheduled with bridge=false" ); }'
 
 # Maintenance callbacks must exist; 3.9.2 registered methods that were absent
 # from the autoloaded class and caused fatal errors on both front and admin.
