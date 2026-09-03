@@ -24,7 +24,7 @@ WP-China-Yes 4.0 不加载、不复制、不渐进封装旧 `framework/`。
 
 1. WordPress Settings API + 服务器渲染，用于本地连接设置、诊断和隐私；
 2. `@wordpress/components` 的独立小型应用，仅用于文派服务页（站点绑定、权益、用量）；
-3. WordPress REST API 只服务 CDN 页面和明确需要的异步操作；
+3. WordPress REST API 只服务文派服务页和明确需要的异步操作；
 4. Site Health 输出连接和环境诊断；
 5. WP-CLI 提供可自动化的状态、诊断、配置和刷新命令。
 
