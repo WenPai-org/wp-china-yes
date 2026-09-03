@@ -1,0 +1,149 @@
+{
+  "_fixture": {
+    "plugin_version": "3.9.3",
+    "scope": "site",
+    "captured": "2026-09-03",
+    "source": "文派/菲比斯自有生产站，域名已脱敏"
+  },
+  "wp_china_yes": {
+    "store": "wenpai",
+    "bridge": "1",
+    "arkpress": "",
+    "admincdn_public": [],
+    "admincdn_files": [],
+    "admincdn_dev": [],
+    "admincdn_version_enable": false,
+    "admincdn_version": [],
+    "cravatar": "cn",
+    "windfonts": "on",
+    "windfonts_list": [
+      {
+        "family": "wenfeng-albbpht",
+        "subset": "regular",
+        "lang": "",
+        "weight": "400",
+        "style": "normal",
+        "selector": "a:not([class]),p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class])",
+        "enable": "1"
+      },
+      {
+        "family": "wenfeng-syhtcjk",
+        "subset": "regular",
+        "lang": "",
+        "weight": "400",
+        "style": "normal",
+        "selector": "a:not([class]),p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class])",
+        "enable": "0"
+      },
+      {
+        "family": "wenfeng-ibmps",
+        "subset": "regular",
+        "lang": "",
+        "weight": "400",
+        "style": "normal",
+        "selector": "a:not([class]),p,h1,h2,h3,h4,h5,h6,ul,ol,li,button,blockquote,pre,code,table,th,td,label,b,i:not([class]),em,small,strong,sub,sup,ins,del,mark,abbr,dfn,span:not([class])",
+        "enable": "0"
+      }
+    ],
+    "windfonts_typography_cn": "",
+    "windfonts_typography_en": "",
+    "windfonts_reading_enable": "",
+    "windfonts_reading": "off",
+    "motucloud": "cn",
+    "fewmail": "cn",
+    "comments_enable": "",
+    "comments_role_badge": "1",
+    "comments_remove_website": "",
+    "comments_validation": "1",
+    "comments_herp_derp": "",
+    "comments_sticky_moderate": "",
+    "adblock": "on",
+    "adblock_rule": [
+      {
+        "name": "默认规则",
+        "selector": "#yoast-seo-settings &gt; div &gt; div.yst-p-4.min-\\[783px\\]\\:yst-p-8.yst-flex.yst-gap-4 &gt; div &gt; div.xl\\:yst-max-w-3xl.xl\\:yst-fixed.xl\\:yst-right-8.xl\\:yst-w-\\[16rem\\],#yoast-seo-support &gt; div &gt; div &gt; div &gt; div,#yoast-seo-settings &gt; div &gt; div.yst-p-4.min-\\[783px\\]\\:yst-p-8.yst-flex.yst-gap-4 &gt; div &gt; div.yst-grow.yst-space-y-6.yst-mb-8.xl\\:yst-mb-0 &gt; div,#yoast-helpscout-beacon,span.yoast-badge.yoast-premium-badge,.yst-root .yst-badge--upsell,.yst-root .yst-button--upsell,.switch-container.premium-upsell .yoast-button,#sidebar-container.wpseo_content_cell,.yoast_premium_upsell,.yoast-button-upsell,.card.card-small .yoast-button-upsell,li#wp-admin-bar-wpseo-get-premium,li#wp-admin-bar-wpseo-page-academy,li#wp-admin-bar-wpseo-licenses,li#wp-admin-bar-wpseo-workouts,li#wp-admin-bar-wpseo-frontend-inspector,li#wp-admin-bar-wpseo-get-premium,div#webinar-promo-notification,.gUwNgH,.yoast-notification.notice.notice-warning.is-dismissible,.yoast-promo-extension .yoast-button-container,.yoast-seo-premium-extension,#button-webinar-seo-dashboard,#yoast-seo-dashboard-widget .wordpress-feed",
+        "enable": "1"
+      }
+    ],
+    "notice_block": "off",
+    "disable_all_notices": "",
+    "notice_control": "",
+    "notice_method": "hook",
+    "plane": "on",
+    "plane_rule": "",
+    "monitor": "0",
+    "memory": "1",
+    "memory_display": [
+      "memory_usage",
+      "wp_limit",
+      "server_ip",
+      "debug_status",
+      "php_info"
+    ],
+    "disk": "1",
+    "disk_display": [
+      "disk_usage",
+      "disk_limit",
+      "media_num",
+      "admin_num",
+      "user_num"
+    ],
+    "maintenance_mode": "0",
+    "maintenance_settings": {
+      "maintenance_title": "网站维护中",
+      "maintenance_heading": "网站维护中",
+      "maintenance_message": "网站正在进行例行维护，请稍后访问。感谢您的理解与支持！"
+    },
+    "performance": "0",
+    "wp_memory_limit": "1024M",
+    "wp_max_memory_limit": "512M ",
+    "wp_post_revisions": "",
+    "autosave_interval": "",
+    "custom_name": "文派叶子",
+    "header_logo": {
+      "url": "https://example.com/wp-content/uploads/logo.png",
+      "id": "893",
+      "width": "275",
+      "height": "275",
+      "thumbnail": "https://example.com/wp-content/uploads/logo.png",
+      "alt": "",
+      "title": "wptea-fav",
+      "description": ""
+    },
+    "hide_option": "0",
+    "hide_elements": "",
+    "hide_menu_confirm": "",
+    "hide_menu": "",
+    "enable_custom_rss": "1",
+    "custom_rss_url": "https://one.weixiaoduo.com/feed",
+    "custom_rss_refresh": "28800",
+    "rss_display_options": [
+      "show_date",
+      "show_summary",
+      "show_footer"
+    ],
+    "enable_db_tools": "0",
+    "db_tools_link": "",
+    "enable_sections": "1",
+    "quick_select": "custom",
+    "enabled_sections": [
+      "welcome",
+      "store",
+      "admincdn",
+      "cravatar",
+      "windfonts",
+      "motucloud",
+      "fewmail",
+      "wordyeah",
+      "adblock",
+      "notice",
+      "plane",
+      "monitor",
+      "performance",
+      "brand",
+      "deer",
+      "about"
+    ],
+    "admincdn": []
+  }
+}

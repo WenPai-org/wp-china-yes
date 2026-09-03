@@ -1,0 +1,35 @@
+{
+  "_fixture": {
+    "plugin_version": "3.8",
+    "scope": "site",
+    "captured": "2026-09-03",
+    "source": "文派/菲比斯自有生产站，域名已脱敏"
+  },
+  "wp_china_yes": {
+    "store": "off",
+    "admincdn": [
+      "admin"
+    ],
+    "cravatar": "cn",
+    "windfonts": "optimize",
+    "windfonts_typography": "",
+    "windfonts_list": "",
+    "adblock": "off",
+    "adblock_rule": "",
+    "plane": "off",
+    "plane_rule": "",
+    "monitor": "0",
+    "memory": "1",
+    "memory_display": [
+      "memory_usage",
+      "wp_limit",
+      "hostname",
+      "php_info",
+      "cpu_usage",
+      "debug_status",
+      "mysql_version"
+    ],
+    "custom_name": "叶子",
+    "hide": ""
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_fixture": {
+    "plugin_version": "3.6.2",
+    "scope": "site",
+    "captured": "2026-09-03",
+    "source": "文派/菲比斯自有生产站，域名已脱敏"
+  },
+  "wp_china_yes": {
+    "store": "off",
+    "admincdn": [],
+    "cravatar": "weavatar",
+    "windfonts": "off",
+    "adblock": "off"
+  }
+}
