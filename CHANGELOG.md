@@ -8,7 +8,7 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ### 安全与隐私
 - 设置导入、导出、重置只允许管理员操作固定的 `wp_china_yes` option；评论置顶接口补充 `moderate_comments` 权限与参数校验。
-- 匿名运行数据改为默认关闭、明确选择加入；默认不发送站点 URL，并停止收集订单、用户、商品、配送区域、主题模板等业务数据。
+- 每日兼容性报告不再受「云桥更新」开关影响，始终随插件运行；「云桥更新」只控制更新通道降级。
 - 数据库工具不再在普通插件加载阶段定义 `WP_ALLOW_REPAIR`，避免公开数据库修复入口。
 
 ### 稳定性

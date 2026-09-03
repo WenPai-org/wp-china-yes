@@ -37,15 +37,9 @@ class Plugin {
 	/**
 	 * 初始化文派云桥客户端。
 	 *
-	 * 受 bridge 设置开关控制。更新降级与遥测使用独立开关；遥测默认关闭。
+	 * 站点身份与每日兼容性报告始终加载；`bridge` 开关只控制更新通道降级策略（见客户端文件）。
 	 */
 	private function init_bridge_client() {
-		$settings = \WenPai\ChinaYes\get_settings();
-
-		if ( empty( $settings['bridge'] ) ) {
-			return;
-		}
-
 		$bridge_client = CHINA_YES_PLUGIN_PATH . 'client/wenpai-bridge-client.php';
 
 		if ( file_exists( $bridge_client ) ) {

@@ -9,11 +9,12 @@ npx wp-env run cli wp eval 'if ( "3.9.3" !== CHINA_YES_VERSION ) { throw new Exc
 
 # A damaged option must not make plugin bootstrap or get_settings() crash.
 npx wp-env run cli wp option update wp_china_yes corrupted-string
-npx wp-env run cli wp eval '$settings = \WenPai\ChinaYes\get_settings(); if ( ! is_array( $settings ) || ! empty( $settings["telemetry"] ) ) { throw new Exception( "settings guard or telemetry default failed" ); }'
+npx wp-env run cli wp eval '$settings = \WenPai\ChinaYes\get_settings(); if ( ! is_array( $settings ) ) { throw new Exception( "settings guard failed" ); }'
 
-# Telemetry is opt-in and must not leave a legacy cron event scheduled.
-npx wp-env run cli wp cron event run wpcy_daily_telemetry --due-now || true
-npx wp-env run cli wp eval 'if ( wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "telemetry scheduled without consent" ); }'
+# The daily compatibility report has no switch: it must be scheduled even when
+# the bridge update channel is off and legacy telemetry flags are stored as false.
+npx wp-env run cli wp eval 'update_option( "wp_china_yes", [ "store" => "off", "bridge" => false, "telemetry" => false, "telemetry_site_url" => false, "admincdn" => [], "admincdn_public" => [], "admincdn_files" => [], "admincdn_dev" => [], "cravatar" => "off" ] );'
+npx wp-env run cli wp eval 'do_action( "init" ); if ( ! wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "compatibility report not scheduled" ); }'
 
 # Maintenance callbacks must exist; 3.9.2 registered methods that were absent
 # from the autoloaded class and caused fatal errors on both front and admin.
@@ -37,4 +38,4 @@ npx wp-env run cli wp eval 'update_option( "wp_china_yes", [ "store" => "off", "
 npx wp-env run cli wp eval '$metadata = apply_filters( "wp_generate_attachment_metadata", [] ); if ( [] !== $metadata ) { throw new Exception( "empty media metadata changed" ); }'
 
 npx wp-env run cli wp plugin deactivate wp-china-yes
-echo "WordPress activation, maintenance, memory, fonts, language, media and telemetry smoke tests passed."
+echo "WordPress activation, maintenance, memory, fonts, language, media and compatibility-report smoke tests passed."

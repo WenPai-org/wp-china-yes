@@ -29,12 +29,6 @@ class WenPai_Bridge_Site_Health {
 	/** @var string 端点 */
 	const ENDPOINT = 'https://updates.wenpai.net/api/v1/telemetry';
 
-	/** @var string 开关 option key */
-	const ENABLED_KEY = 'wpcy_telemetry_enabled';
-
-	/** @var string 站点 URL 上报开关 option key */
-	const SITE_URL_KEY = 'wpcy_telemetry_send_site_url';
-
 	/** @var string 数据格式版本 */
 	const TELEMETRY_VERSION = '2.1';
 
@@ -51,11 +45,6 @@ class WenPai_Bridge_Site_Health {
 	public static function init(): void {
 		add_action( self::CRON_HOOK, [ __CLASS__, 'send_report' ] );
 
-		if ( ! self::is_enabled() ) {
-			self::deactivate();
-			return;
-		}
-
 		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			$delay = wp_rand( 0, 6 * HOUR_IN_SECONDS );
 			wp_schedule_single_event( time() + $delay, self::CRON_HOOK );
@@ -66,11 +55,6 @@ class WenPai_Bridge_Site_Health {
 	 * 发送健康检查报告。
 	 */
 	public static function send_report(): void {
-		if ( ! self::is_enabled() ) {
-			self::deactivate();
-			return;
-		}
-
 		$today     = gmdate( 'Y-m-d' );
 		$last_sent = get_transient( 'wpcy_telemetry_last_sent' );
 		if ( $last_sent === $today ) {
@@ -114,64 +98,30 @@ class WenPai_Bridge_Site_Health {
 	 * @return array 报告数组
 	 */
 	private static function collect_report(): array {
-		$settings = self::plugin_settings();
 		$report = [
 			'site_uuid'          => WenPai_Bridge_Site_Identity::get_uuid(),
-			'site_url'           => ! empty( $settings['telemetry_site_url'] ) ? home_url() : '',
+			'site_url'           => home_url(),
 			'wp_version'         => get_bloginfo( 'version' ),
 			'php_version'        => PHP_VERSION,
 			'mysql_version'      => self::get_mysql_version(),
 			'is_multisite'       => is_multisite(),
+			'active_theme'       => get_stylesheet(),
 			'locale'             => get_locale(),
+			'server_software'    => isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( $_SERVER['SERVER_SOFTWARE'] ) : '',
 			'wpcy_version'       => defined( 'CHINA_YES_VERSION' ) ? CHINA_YES_VERSION : 'unknown',
 			'telemetry_version'  => self::TELEMETRY_VERSION,
-			'plugins'            => self::get_active_plugin_versions(),
+			'plugins'            => self::get_plugin_list(),
+			'platform'           => self::get_platform_info(),
+			'themes'             => self::get_theme_list(),
+			'translations'       => self::get_translations(),
 		];
 
+		$wc_data = self::get_woocommerce_data();
+		if ( $wc_data !== null ) {
+			$report['woocommerce'] = $wc_data;
+		}
+
 		return $report;
-	}
-
-	/** Return the explicit plugin telemetry preference. */
-	private static function is_enabled(): bool {
-		$settings = self::plugin_settings();
-		return ! empty( $settings['telemetry'] );
-	}
-
-	private static function plugin_settings(): array {
-		if ( function_exists( '\\WenPai\\ChinaYes\\get_settings' ) ) {
-			$settings = \WenPai\ChinaYes\get_settings();
-			return is_array( $settings ) ? $settings : [];
-		}
-		return [];
-	}
-
-	/** Only active plugin slugs and versions are needed for compatibility analysis. */
-	private static function get_active_plugin_versions(): array {
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
-		$plugins        = get_plugins();
-		$active_plugins = (array) get_option( 'active_plugins', [] );
-		if ( is_multisite() ) {
-			$active_plugins = array_unique( array_merge(
-				$active_plugins,
-				array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) )
-			) );
-		}
-
-		$result = [];
-		foreach ( $active_plugins as $file ) {
-			if ( ! isset( $plugins[ $file ] ) ) {
-				continue;
-			}
-			$slug = dirname( $file );
-			$result[] = [
-				'slug'    => '.' === $slug ? basename( $file, '.php' ) : $slug,
-				'version' => isset( $plugins[ $file ]['Version'] ) ? $plugins[ $file ]['Version'] : '',
-			];
-		}
-		return $result;
 	}
 
 	/**
@@ -434,6 +384,8 @@ class WenPai_Bridge_Site_Health {
 			'base_location' => '',
 			'is_ssl'        => is_ssl(),
 			'hpos_enabled'  => self::is_hpos_enabled(),
+			// 商店是否仍向 WooCommerce.com 开着用量追踪（数据驻留改道的前置观察项）
+			'allow_tracking' => get_option( 'woocommerce_allow_tracking', 'no' ) === 'yes',
 		];
 
 		// 商店位置
@@ -656,7 +608,7 @@ class WenPai_Bridge_Site_Health {
 	 * 注册次日 Cron（带随机延迟）。
 	 */
 	private static function schedule_next(): void {
-		if ( self::is_enabled() && ! wp_next_scheduled( self::CRON_HOOK ) ) {
+		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			$tomorrow = strtotime( 'tomorrow midnight' );
 			$delay    = wp_rand( 0, 6 * HOUR_IN_SECONDS );
 			wp_schedule_single_event( $tomorrow + $delay, self::CRON_HOOK );

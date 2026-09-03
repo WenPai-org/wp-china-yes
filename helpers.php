@@ -16,8 +16,6 @@ function get_settings() {
 		$GLOBALS['wp_china_yes_settings_cache'] = wp_parse_args( $settings, [
 		'store'                => 'wenpai',
 		'bridge'               => true,
-		'telemetry'            => false,
-		'telemetry_site_url'   => false,
 		'arkpress'             => false,
 		'admincdn'             => [ 'admin' ],
 		'admincdn_public'      => [ 'googlefonts' ],
