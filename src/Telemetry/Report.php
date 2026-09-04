@@ -514,10 +514,9 @@ final class Report {
 		$orders_table = $wpdb->prefix . 'wc_orders';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe before HPOS aggregate.
 		if ( $data['hpos_enabled'] && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $orders_table ) ) ) {
-			$orders_table_sql = function_exists( 'esc_sql' ) ? esc_sql( $orders_table ) : $orders_table;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce HPOS order-status aggregates for the compatibility report.
 			$order_counts = $wpdb->get_results(
-				"SELECT status, COUNT(*) as cnt FROM {$orders_table_sql} GROUP BY status" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix + esc_sql.
+				$wpdb->prepare( 'SELECT status, COUNT(*) AS cnt FROM %i GROUP BY status', $orders_table ) // %i identifier placeholder (WP 6.2+); 4.0 kernel requires 6.5.
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce CPT order-status aggregates for the compatibility report.
