@@ -13,15 +13,15 @@ use Composer\Autoload\ClassLoader;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Confirms the 4.0 Composer map is live and Core\Plugin is not shipped yet.
+ * Confirms the 4.0 Composer map is live and Core\Plugin is autoloadable.
  */
 class SmokeTest extends TestCase {
 
 	/**
-	 * Core\Plugin is absent and src/ is on the PSR-4 prefix list.
+	 * Core\Plugin is present and src/ is on the PSR-4 prefix list.
 	 */
 	public function test_scaffold_autoload() {
-		$this->assertFalse( class_exists( 'WenPai\\ChinaYes\\Core\\Plugin' ) );
+		$this->assertTrue( class_exists( 'WenPai\\ChinaYes\\Core\\Plugin' ) );
 
 		$paths = array();
 		foreach ( ClassLoader::getRegisteredLoaders() as $loader ) {

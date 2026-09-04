@@ -52,6 +52,11 @@ if (file_exists(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')) {
     }
     
     require_once(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php');
+
+    if ( defined( 'WPCY_KERNEL' ) && 'v4' === WPCY_KERNEL ) {
+        \WenPai\ChinaYes\Core\Plugin::boot();
+        return;
+    }
     
     // 初始化翻译管理器
     require_once(CHINA_YES_PLUGIN_PATH . 'Service/TranslationManager.php');
