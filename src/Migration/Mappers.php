@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Mappers {
 
 	/**
-	 * 3.x admincdn_files / admincdn_dev tokens still in the 4.0 whitelist.
+	 * 3.x admincdn_public / admincdn_files / admincdn_dev tokens still in the 4.0 whitelist.
 	 *
 	 * @var array<string, string>
 	 */
@@ -115,9 +115,10 @@ final class Mappers {
 					$kept[]                                    = $key;
 					break;
 
+				case 'admincdn_public':
 				case 'admincdn_files':
 				case 'admincdn_dev':
-					// Applied once when either key is present; both stay kept.
+					// Applied once when any of the three keys is present; present keys stay kept.
 					break;
 
 				case 'cravatar':
@@ -193,8 +194,19 @@ final class Mappers {
 			}
 		}
 
-		if ( array_key_exists( 'admincdn_files', $legacy ) || array_key_exists( 'admincdn_dev', $legacy ) ) {
-			$settings['connectivity']['public_assets'] = $this->map_public_assets( $legacy );
+		if ( array_key_exists( 'admincdn_public', $legacy )
+			|| array_key_exists( 'admincdn_files', $legacy )
+			|| array_key_exists( 'admincdn_dev', $legacy )
+		) {
+			$mapped                                    = $this->map_public_assets( $legacy );
+			$settings['connectivity']['public_assets'] = $mapped['assets'];
+			foreach ( $mapped['unknown'] as $token ) {
+				$ignored[]                 = $token;
+				$ignored_reasons[ $token ] = 'unsupported_whitelist';
+			}
+			if ( array_key_exists( 'admincdn_public', $legacy ) ) {
+				$kept[] = 'admincdn_public';
+			}
 			if ( array_key_exists( 'admincdn_files', $legacy ) ) {
 				$kept[] = 'admincdn_files';
 			}
@@ -267,35 +279,43 @@ final class Mappers {
 	}
 
 	/**
-	 * Merge admincdn_files + admincdn_dev onto the 4.0 public_assets enum.
+	 * Merge admincdn_public ∪ admincdn_files ∪ admincdn_dev onto the 4.0 public_assets enum.
 	 *
-	 * Present keys with an empty (or fully unsupported) list become [].
-	 * That is an explicit choice, not a cue to refill schema defaults.
+	 * Output follows Schema::PUBLIC_ASSETS order. Present keys with an empty
+	 * (or fully unsupported) list become []. That is an explicit choice, not a
+	 * cue to refill schema defaults. Unknown tokens are returned for ignored.
 	 *
 	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
-	 * @return array<int, string>
+	 * @return array{assets: array<int, string>, unknown: array<int, string>}
 	 */
 	private function map_public_assets( array $legacy ): array {
 		$tokens = array_merge(
+			$this->as_token_list( $legacy['admincdn_public'] ?? array() ),
 			$this->as_token_list( $legacy['admincdn_files'] ?? array() ),
 			$this->as_token_list( $legacy['admincdn_dev'] ?? array() )
 		);
 
-		$out  = array();
-		$seen = array();
+		$wanted  = array();
+		$unknown = array();
 		foreach ( $tokens as $token ) {
 			if ( ! isset( self::PUBLIC_ASSET_MAP[ $token ] ) ) {
+				$unknown[] = $token;
 				continue;
 			}
-			$mapped = self::PUBLIC_ASSET_MAP[ $token ];
-			if ( isset( $seen[ $mapped ] ) ) {
-				continue;
-			}
-			$seen[ $mapped ] = true;
-			$out[]           = $mapped;
+			$wanted[ self::PUBLIC_ASSET_MAP[ $token ] ] = true;
 		}
 
-		return $out;
+		$assets = array();
+		foreach ( Schema::PUBLIC_ASSETS as $asset ) {
+			if ( isset( $wanted[ $asset ] ) ) {
+				$assets[] = $asset;
+			}
+		}
+
+		return array(
+			'assets'  => $assets,
+			'unknown' => array_values( array_unique( $unknown ) ),
+		);
 	}
 
 	/**
@@ -381,7 +401,7 @@ final class Mappers {
 	/**
 	 * CSF checkbox / list → list of non-empty string tokens.
 	 *
-	 * @param mixed $value admincdn_files or admincdn_dev.
+	 * @param mixed $value admincdn_public, admincdn_files, or admincdn_dev.
 	 * @return array<int, string>
 	 */
 	private function as_token_list( $value ): array {

@@ -197,6 +197,35 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
+	 * Only admincdn_public present: googlefonts/cdnjs map; files/dev absent.
+	 */
+	public function test_public_assets_from_admincdn_public_only() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'admincdn_public' => array( 'googlefonts', 'cdnjs' ),
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertSame( array( 'google_fonts', 'cdnjs' ), $report->settings()['connectivity']['public_assets'] );
+		$this->assertContains( 'admincdn_public', $report->kept() );
+		$this->assertNotContains( 'admincdn_public', $report->ignored() );
+	}
+
+	/**
+	 * All three admincdn_public / files / dev keys missing → schema default five items.
+	 */
+	public function test_public_assets_default_when_admincdn_keys_absent() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store' => 'off',
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertSame( Schema::PUBLIC_ASSETS, $report->settings()['connectivity']['public_assets'] );
+		$this->assertCount( 5, $report->settings()['connectivity']['public_assets'] );
+	}
+
+	/**
 	 * CLI dry-run / execute / rollback JSON contracts.
 	 */
 	public function test_cli_dry_run_execute_rollback() {
@@ -328,7 +357,7 @@ class FixturesTest extends TestCase {
 			case 'single-3.8-02.json':
 				return array( 'store', 'cravatar', 'windfonts', 'adblock' );
 			case 'single-3.9.3-03.json':
-				return array( 'store', 'admincdn_files', 'admincdn_dev', 'cravatar', 'windfonts', 'windfonts_list', 'adblock' );
+				return array( 'store', 'admincdn_public', 'admincdn_files', 'admincdn_dev', 'cravatar', 'windfonts', 'windfonts_list', 'adblock' );
 			case 'multisite-3.7.1-04.json':
 			case 'multisite-3.8-05.json':
 			case 'multisite-3.8-06.json':
