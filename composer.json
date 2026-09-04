@@ -1,60 +1,65 @@
 {
-	"name": "wenpai-org/wp-china-yes",
-	"description": "WordPress Optimized Plugin for Mainland China",
-	"type": "project",
-	"require": {
-		"php": ">=7.4",
-		"yahnis-elsts/plugin-update-checker": "^5.2"
-	},
-	"require-dev": {
-		"squizlabs/php_codesniffer": "^3",
-		"wp-coding-standards/wpcs": "^3",
-		"dealerdirect/phpcodesniffer-composer-installer": "^1",
-		"phpstan/phpstan": "^2",
-		"szepeviktor/phpstan-wordpress": "^2",
-		"php-stubs/wordpress-stubs": "^6",
-		"phpunit/phpunit": "^9"
-	},
-	"license": "GPL-3.0-or-later",
-	"autoload": {
-		"psr-4": {
-			"WenPai\\ChinaYes\\": [
-				"src/",
-				"./"
-			]
-		},
-		"files": [
-			"autoload-guard.php",
-			"helpers.php",
-			"framework/classes/setup.class.php"
-		]
-	},
-	"authors": [
-		{
-			"name": "耗子",
-			"email": "i@haozi.net"
-		}
-	],
-	"config": {
-		"optimize-autoloader": true,
-		"platform": {
-			"php": "7.4.33"
-		},
-		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
-	},
-	"scripts": {
-		"lint": "phpcs",
-		"lint:fix": "phpcbf",
-		"analyse": "phpstan analyse --memory-limit=1G",
-		"test:unit": "phpunit",
-		"test:legacy": "bash tests/run-tests.sh",
-		"check": [
-			"@lint",
-			"@analyse",
-			"@test:unit",
-			"@test:legacy"
-		]
-	}
+    "name": "wenpai-org/wp-china-yes",
+    "description": "WordPress Optimized Plugin for Mainland China",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "yahnis-elsts/plugin-update-checker": "^5.2"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3",
+        "wp-coding-standards/wpcs": "^3",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1",
+        "phpstan/phpstan": "^2",
+        "szepeviktor/phpstan-wordpress": "^2",
+        "php-stubs/wordpress-stubs": "^6",
+        "phpunit/phpunit": "^9"
+    },
+    "license": "GPL-3.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "WenPai\\ChinaYes\\": [
+                "src/",
+                "./"
+            ]
+        },
+        "files": [
+            "autoload-guard.php",
+            "helpers.php",
+            "framework/classes/setup.class.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "耗子",
+            "email": "i@haozi.net"
+        }
+    ],
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.4.33"
+        },
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "test:unit": "phpunit",
+        "test:legacy": "bash tests/run-tests.sh",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test:unit",
+            "@test:legacy"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WenPai\\ChinaYes\\Tests\\": "tests/"
+        }
+    }
 }
