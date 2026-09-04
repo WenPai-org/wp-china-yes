@@ -109,6 +109,15 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: npm ci
       - run: npm run build
+      # Plugin Check 必须扫发布包而不是仓库检出（检出里有 .npmrc/.eslintrc.js 等开发文件，会被判 hidden_files）。
+      - name: Build release package for Plugin Check
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq zip rsync unzip
+          bash scripts/build-release.sh
+          rm -rf .plugin-check-pkg && mkdir -p .plugin-check-pkg
+          unzip -q dist/wp-china-yes-*.zip -d .plugin-check-pkg
+          printf '{ "plugins": [ "./.plugin-check-pkg/wp-china-yes" ] }\n' > .wp-env.override.json
       - run: npx wp-env start
       # 3.x 旧代码（framework/Service/client/templates/assets 与根部旧文件）在 M4-01 物理删除前排除；
       # 本 job 只守 4.0 代码。M4-01 删旧时把这些排除项撤掉。

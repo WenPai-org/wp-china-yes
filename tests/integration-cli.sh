@@ -16,7 +16,8 @@ raw = sys.stdin.read()
 start = raw.find("{")
 if start < 0:
     raise SystemExit("stdout has no JSON object")
-data = json.loads(raw[start:])
+# wp-env prefixes/suffixes its own status lines; decode only the first JSON object.
+data, _end = json.JSONDecoder().raw_decode(raw[start:])
 if not isinstance(data.get("targets"), list):
     raise SystemExit("JSON missing targets array")
 print("keys:", ",".join(sorted(data.keys())))
