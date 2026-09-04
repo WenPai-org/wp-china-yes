@@ -40,12 +40,23 @@ final class MirrorHealth {
 	private $set_transient;
 
 	/**
-	 * Wire optional transient accessors for unit tests.
+	 * Host => healthy overrides consulted before transients (unit tests, forced states).
 	 *
-	 * @param callable|null $get_transient Transient reader. Defaults to get_transient().
-	 * @param callable|null $set_transient Transient writer. Defaults to set_transient().
+	 * @var array<string, bool>
+	 */
+	private $overrides = array();
+
+	/**
+	 * Wire optional transient accessors, or pass a host => healthy map for tests.
+	 *
+	 * @param callable|array<string,bool>|null $get_transient Transient reader, or a host => bool override map.
+	 * @param callable|null                    $set_transient Transient writer. Defaults to set_transient().
 	 */
 	public function __construct( $get_transient = null, $set_transient = null ) {
+		if ( is_array( $get_transient ) ) {
+			$this->overrides = $get_transient;
+			$get_transient   = null;
+		}
 		$this->get_transient = null !== $get_transient ? $get_transient : 'get_transient';
 		$this->set_transient = null !== $set_transient ? $set_transient : 'set_transient';
 	}
@@ -100,7 +111,15 @@ final class MirrorHealth {
 	 * @param string $host Mirror host, e.g. jsd.admincdn.com.
 	 */
 	public function is_healthy( string $host ): bool {
+		if ( array_key_exists( $host, $this->overrides ) ) {
+			return (bool) $this->overrides[ $host ];
+		}
+
 		if ( '' === $host ) {
+			return true;
+		}
+
+		if ( 'get_transient' === $this->get_transient && ! function_exists( 'get_transient' ) ) {
 			return true;
 		}
 
