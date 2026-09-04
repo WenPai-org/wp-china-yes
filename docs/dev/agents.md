@@ -110,3 +110,5 @@ Codex 8 月方案的**产品判断**不再单独作为决策来源。工程判�
 | **并发启动用独立命令** | 用 `&` 在一条 shell 里起两路，外层 shell 结束时子进程被回收 | 每路一条后台命令 |
 | **权限模式** | `--permission-mode plan` 只出计划不执行；`--deny 'MultiEdit(*)'` 是未知工具名会直接报错退出 | 读写任务用 `--always-approve` + `--deny 'Bash(git push:*)'` 等；只读审查再加 `--deny 'Edit(*)' --deny 'Write(*)'` |
 | **报告只在最后一次性输出** | plain 输出模式下中途文件只有一两行，容易误判「卡住」 | 看 worktree 里 `git status` 与会话 events 判断进度，不看报告字节数 |
+| **合并后的 `main` 必须重跑门禁，分支各自绿不等于合起来绿** | M1-02 与 M1-03 各自 CI 绿，合并后 `quality` 红：测试替身类靠 PSR-4 根映射 `./` 解析，macOS 不分大小写能找到 `tests/`，Linux CI 找不到 | 合并后在 `main` 跑 `composer check`；`composer.json` 加 `autoload-dev`；写测试替身类必须能被 `autoload-dev` 解析 |
+| **别用脚本重写整份 JSON** | 统筹用 Python 重写 `composer.json`，缩进从制表符变空格，下一次合并整文件冲突 | 用保留格式的方式改一处；改完 `git diff` 看是否只有目标行变 |
