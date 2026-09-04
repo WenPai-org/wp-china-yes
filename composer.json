@@ -25,7 +25,8 @@
 		},
 		"files": [
 			"autoload-guard.php",
-			"helpers.php"
+			"helpers.php",
+			"src/Cli/wp-cli.php"
 		]
 	},
 	"authors": [
@@ -53,7 +54,9 @@
 			"phpunit --testsuite config",
 			"phpunit --testsuite connectivity",
 			"phpunit --testsuite telemetry",
-			"phpunit --testsuite privacy"
+			"phpunit --testsuite privacy",
+			"phpunit --testsuite diagnostics",
+			"phpunit --testsuite cli"
 		],
 		"test:legacy": "bash tests/run-tests.sh",
 		"check": [

@@ -59,7 +59,59 @@
 
 ### `/diagnostics`、`/diagnostics/run`
 
-- 结果对象字段（目标、结果、延迟、最近检查时间、修复建议）与诊断模块合同一致。**待定（M0）**：结果 JSON 的逐字段 schema 由 `Diagnostics` 模块作者在 M0 补进本文或独立附件。
+GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一轮检查并返回同一形状。路由在 M1-07 挂载。结果对象由 `Diagnostics\Checker` 冻结，M1-07 原样返回。
+
+响应 JSON：
+
+```json
+{
+  "targets": [
+    {
+      "target": "downloads.wenpai.net",
+      "result": "ok",
+      "latency_ms": 42,
+      "checked_at": "2026-09-04T12:00:00Z",
+      "suggestion": null
+    }
+  ]
+}
+```
+
+`targets` 项 schema（draft 2020-12）：
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["target", "result", "latency_ms", "checked_at", "suggestion"],
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "人读名，如 downloads.wenpai.net / cdnjs.admincdn.com"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["ok", "fallback", "down"],
+      "description": "界面映射：国内镜像正常 / 已回原始上游 / 不可用"
+    },
+    "latency_ms": {
+      "type": ["integer", "null"],
+      "description": "探测耗时（毫秒）；未测得时为 null"
+    },
+    "checked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO 8601"
+    },
+    "suggestion": {
+      "type": ["string", "null"],
+      "description": "仅 result 不为 ok 时有值；ok 时必须为 null"
+    }
+  }
+}
+```
+
+探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com` / `weavatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
 
 ### `/residency/ruleset`
 
