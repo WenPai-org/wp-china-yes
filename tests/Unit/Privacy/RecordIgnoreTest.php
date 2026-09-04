@@ -36,18 +36,35 @@ class RecordIgnoreTest extends TestCase {
 
 	/**
 	 * Built-in baseline verifies with the test public key.
-	 *
-	 * Skipped: TEST_PUBLIC_KEY's private key is not in the repository.
-	 * M1-05b removed api.wordpress.org from A-tier; the file still carries
-	 * the M1-09 signature and must not be forged.
 	 */
 	public function test_baseline_verifies() {
 		$ruleset = new Ruleset();
-		if ( ! $ruleset->verified() ) {
-			$this->markTestSkipped( 'Test private key is not in the repository; baseline cannot be re-signed after removing api.wordpress.org.' );
-		}
 		$this->assertTrue( $ruleset->verified() );
 		$this->assertSame( 1, $ruleset->version() );
+	}
+
+	/**
+	 * Changing any payload byte invalidates the signature.
+	 */
+	public function test_tampered_payload_fails_verification() {
+		$src = dirname( __DIR__, 3 ) . '/src/Privacy/rulesets/baseline.json';
+		$raw = file_get_contents( $src ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local shipped ruleset.
+		$this->assertIsString( $raw );
+
+		$decoded = json_decode( $raw, true );
+		$this->assertIsArray( $decoded );
+		$decoded['issued_at'] = '1999-01-01T00:00:00Z';
+
+		$tmp = tempnam( sys_get_temp_dir(), 'wpcy-rs-' );
+		$this->assertNotFalse( $tmp );
+		file_put_contents( $tmp, json_encode( $decoded ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.WP.AlternativeFunctions.json_encode_json_encode -- temp tampered payload.
+
+		try {
+			$ruleset = new Ruleset( $tmp );
+			$this->assertFalse( $ruleset->verified() );
+		} finally {
+			unlink( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- temp tampered payload.
+		}
 	}
 
 	/**
@@ -195,7 +212,7 @@ class RecordIgnoreTest extends TestCase {
 	}
 
 	/**
-	 * Baseline without Ed25519 (private key is not in the repository).
+	 * Baseline loaded without Ed25519 verification (host-table tests).
 	 */
 	private function unsigned_ruleset(): Ruleset {
 		return new Ruleset( null, null, false );

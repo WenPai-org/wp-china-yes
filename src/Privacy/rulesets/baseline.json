@@ -1,5 +1,5 @@
 {
-    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B). api.wordpress.org is owned by Connectivity, not this table. Signature is the M1-09 payload and will not verify until the test private key is available to re-sign.",
+    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B). api.wordpress.org is owned by Connectivity, not this table.",
     "issued_at": "2026-09-03T00:00:00Z",
     "ruleset_version": 1,
     "tiers": {
@@ -41,5 +41,6 @@
             }
         ]
     },
-    "signature": "9onR6CyAM1yCC4sOzc4pNTuvk8iluxyfhT4D7owJEUSJ8Jth8DrE/uCYZXcmsgiHcFlzAmUHx4usf4ovSdCzCQ=="
+    "kid": "wpcy-ruleset-2026",
+    "signature": "1dLWpZw0F4D/+ZYxHWQc6q5Fp4CmTByF4bl0Q5zT72ZScqxyyunaZV9rwi4dzF5jsau90xyRH/EUBsgx9u7aAw=="
 }

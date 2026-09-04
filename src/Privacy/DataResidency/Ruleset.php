@@ -17,18 +17,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Loads the built-in ruleset JSON, verifies Ed25519, and matches hosts.
  *
- * Test public key only (M0). Whether this key is shared with apps is 待定（M0）.
+ * TEST ONLY public key (M0). One test key, two kid values
+ * (wpcy-ruleset-2026, wpcy-apps-2026). Production keys are not in this repository.
  */
 final class Ruleset {
 
 	/**
 	 * TEST ONLY Ed25519 public key (Base64). Not a production key.
 	 *
-	 * Whether this key is shared with apps is 待定（M0, security/release）.
+	 * One test key for kid values wpcy-ruleset-2026 and wpcy-apps-2026.
+	 * Production keys are generated on feicode-prod (linuxjoy 定稿 §7.5b-3).
 	 *
 	 * @since 4.0.0
 	 */
-	public const TEST_PUBLIC_KEY = 'e6iOLle4wuq3DT03nPZdTpd0pnZnMFacntY6iID1BcQ=';
+	public const TEST_PUBLIC_KEY = 'qwZGapsafpxFs2zFK4RZ+HHDEuZeP9ImXvi6T+YkMpQ=';
+
+	/**
+	 * TEST ONLY public keys by kid. Same key for both kids until production keys exist.
+	 *
+	 * @since 4.0.0
+	 * @var array<string, string>
+	 */
+	private const KEYS_BY_KID = array(
+		'wpcy-ruleset-2026' => self::TEST_PUBLIC_KEY,
+		'wpcy-apps-2026'    => self::TEST_PUBLIC_KEY,
+	);
 
 	/**
 	 * Path prefixes on api.wordpress.org that belong to tier A (M0 whitelist).
@@ -250,16 +263,27 @@ final class Ruleset {
 	/**
 	 * Verify Ed25519 over the canonical payload.
 	 *
+	 * When the payload has a non-empty `kid`, the matching public key is used.
+	 * Unknown kid fails closed. Missing kid uses the constructor public key.
+	 *
+	 * @since 4.0.0
+	 *
 	 * @param array<string, mixed> $payload   Document without signature.
 	 * @param string               $signature Base64 signature.
+	 * @return bool
 	 */
 	private function verify( array $payload, string $signature ): bool {
 		if ( ! function_exists( 'sodium_crypto_sign_verify_detached' ) ) {
 			return false;
 		}
 
+		$public_key = $this->resolve_public_key( $payload );
+		if ( '' === $public_key ) {
+			return false;
+		}
+
 		try {
-			$pk  = sodium_base642bin( $this->public_key, SODIUM_BASE64_VARIANT_ORIGINAL );
+			$pk  = sodium_base642bin( $public_key, SODIUM_BASE64_VARIANT_ORIGINAL );
 			$sig = sodium_base642bin( $signature, SODIUM_BASE64_VARIANT_ORIGINAL );
 		} catch ( \SodiumException $e ) {
 			unset( $e );
@@ -272,6 +296,26 @@ final class Ruleset {
 		}
 
 		return sodium_crypto_sign_verify_detached( $sig, $message, $pk );
+	}
+
+	/**
+	 * Public key for this payload: kid map when `kid` is present, else constructor key.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $payload Document without signature.
+	 * @return string Base64 public key, or empty when kid is unknown.
+	 */
+	private function resolve_public_key( array $payload ): string {
+		if ( ! isset( $payload['kid'] ) || ! is_string( $payload['kid'] ) || '' === $payload['kid'] ) {
+			return $this->public_key;
+		}
+
+		if ( ! isset( self::KEYS_BY_KID[ $payload['kid'] ] ) ) {
+			return '';
+		}
+
+		return self::KEYS_BY_KID[ $payload['kid'] ];
 	}
 
 	/**
