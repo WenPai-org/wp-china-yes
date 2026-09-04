@@ -35,5 +35,6 @@ $checker = new \WenPai\ChinaYes\Diagnostics\Checker( null, null, null, $config )
 \WP_CLI::add_command( 'wpcy status', new \WenPai\ChinaYes\Cli\StatusCommand( $checker, $config ) );
 \WP_CLI::add_command( 'wpcy doctor', new \WenPai\ChinaYes\Cli\DoctorCommand( $checker, $config ) );
 \WP_CLI::add_command( 'wpcy config', new \WenPai\ChinaYes\Cli\ConfigCommand( $config ) );
+\WP_CLI::add_command( 'wpcy migrate', new \WenPai\ChinaYes\Cli\MigrateCommand() );
 
 ( new \WenPai\ChinaYes\Diagnostics\SiteHealth( $checker ) )->register();

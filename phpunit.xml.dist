@@ -40,5 +40,8 @@
 		<testsuite name="rest">
 			<directory>tests/Unit/Rest</directory>
 		</testsuite>
+		<testsuite name="migration">
+			<directory>tests/Unit/Migration</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>
