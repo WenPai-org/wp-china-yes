@@ -248,7 +248,9 @@ class PermissionsTest extends TestCase {
 		$this->assertContains( '/diagnostics', $routes );
 		$this->assertContains( '/diagnostics/run', $routes );
 		$this->assertContains( '/recovery', $routes );
-		$this->assertNotContains( '/binding', $routes );
+		$this->assertContains( '/binding', $routes );
+		$this->assertContains( '/binding/start', $routes );
+		$this->assertContains( '/binding/challenge', $routes );
 		$this->assertNotContains( '/apps', $routes );
 	}
 

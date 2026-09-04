@@ -22,9 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers settings, network-settings, diagnostics, and recovery.
+ * Registers settings, network-settings, diagnostics, recovery, and binding.
  *
- * Does not register residency, announcements, binding, entitlements, or apps.
+ * Does not register residency, announcements, entitlements, or apps.
  */
 final class RestModule implements Module {
 
@@ -124,6 +124,7 @@ final class RestModule implements Module {
 		$network     = new NetworkSettingsController( $writer );
 		$diagnostics = new DiagnosticsController( $this->checker );
 		$recovery    = new RecoveryController( new RecoveryActions( $this->repository ) );
+		$binding     = new BindingController( $this->repository );
 
 		register_rest_route(
 			self::NAMESPACE,
@@ -188,6 +189,49 @@ final class RestModule implements Module {
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
 				'args'                => array(
 					'action' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $binding, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( $binding, 'delete_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding/start',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $binding, 'start' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding/challenge',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $binding, 'challenge' ),
+				'permission_callback' => array( BindingController::class, 'public_read' ),
+				'args'                => array(
+					'id' => array(
 						'type'     => 'string',
 						'required' => true,
 					),

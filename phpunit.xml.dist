@@ -40,5 +40,8 @@
 		<testsuite name="rest">
 			<directory>tests/Unit/Rest</directory>
 		</testsuite>
+		<testsuite name="site-binding">
+			<directory>tests/Unit/Services/SiteBinding</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>
