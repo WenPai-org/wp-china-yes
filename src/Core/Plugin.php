@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Core;
 
+use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
@@ -75,7 +76,7 @@ final class Plugin {
 	}
 
 	/**
-	 * Build a kernel with Repository config, connectivity modules, and REST.
+	 * Build a kernel with Repository config, connectivity, REST, and admin.
 	 */
 	public static function create(): self {
 		$container   = new Container();
@@ -112,6 +113,7 @@ final class Plugin {
 		$registry->add( new SiteBindingModule( $config, $logger ) );
 		$registry->add( new AppsModule( null, null, null, null, $logger ) );
 		$registry->add( new RestModule( $config, $checker ) );
+		$registry->add( new AdminModule( $config ) );
 
 		return new self( $container, $registry, $environment );
 	}
