@@ -19,6 +19,7 @@ use WenPai\ChinaYes\Connectivity\WordPressOrg\WordPressOrgModule;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\DiagnosticsModule;
 use WenPai\ChinaYes\Diagnostics\SiteHealth;
+use WenPai\ChinaYes\Integrations\Windfonts\WindfontsModule;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Telemetry\TelemetryModule;
@@ -99,6 +100,7 @@ final class Plugin {
 		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
 
 		$registry->add( new AvatarModule( $config ) );
+		$registry->add( new WindfontsModule( $config ) );
 		$registry->add( new TelemetryModule( $config, $logger ) );
 		$registry->add( new DataResidencyModule() );
 

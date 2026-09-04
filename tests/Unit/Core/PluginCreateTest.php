@@ -21,7 +21,7 @@ class PluginCreateTest extends TestCase {
 	/**
 	 * Module ids in registration order; config is Repository.
 	 */
-	public function test_create_registers_five_modules_and_repository() {
+	public function test_create_registers_modules_and_repository() {
 		$plugin = Plugin::create();
 
 		$this->assertSame(
@@ -29,6 +29,7 @@ class PluginCreateTest extends TestCase {
 				'connectivity.wordpress_org',
 				'connectivity.public_assets',
 				'connectivity.avatar',
+				'modules.windfonts',
 				'telemetry',
 				'privacy.data_residency',
 				'diagnostics',

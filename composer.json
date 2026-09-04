@@ -57,7 +57,8 @@
 			"phpunit --testsuite privacy",
 			"phpunit --testsuite diagnostics",
 			"phpunit --testsuite cli",
-			"phpunit --testsuite rest"
+			"phpunit --testsuite rest",
+			"phpunit --testsuite integrations"
 		],
 		"test:legacy": "bash tests/run-tests.sh",
 		"check": [
