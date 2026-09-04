@@ -55,12 +55,16 @@ final class Report {
 	/**
 	 * Config repository used for wpcy_site_identity.site_uuid.
 	 *
+	 * PHP 7.4 has no union property types.
+	 *
 	 * @var Repository|null
 	 */
 	private $config;
 
 	/**
 	 * Request-local count_users() result. Avoids a second usermeta scan.
+	 *
+	 * PHP 7.4 has no union property types.
 	 *
 	 * @var array<string, mixed>|null
 	 */

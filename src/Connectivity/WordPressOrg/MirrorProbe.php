@@ -17,6 +17,8 @@ final class MirrorProbe {
 	/**
 	 * HTTP GET: function( string $url, array $args ): mixed
 	 *
+	 * Callable is not a valid PHP 7.4 property type.
+	 *
 	 * @var callable
 	 */
 	private $http_get;
@@ -24,12 +26,16 @@ final class MirrorProbe {
 	/**
 	 * Transient reader.
 	 *
+	 * Callable is not a valid PHP 7.4 property type.
+	 *
 	 * @var callable
 	 */
 	private $get_transient;
 
 	/**
 	 * Transient writer.
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable
 	 */
@@ -40,21 +46,21 @@ final class MirrorProbe {
 	 *
 	 * @var string
 	 */
-	private $last_url = '';
+	private string $last_url = '';
 
 	/**
 	 * Last probe args.
 	 *
 	 * @var array<string, mixed>
 	 */
-	private $last_args = array();
+	private array $last_args = array();
 
 	/**
 	 * Number of HTTP probes in this instance.
 	 *
 	 * @var int
 	 */
-	private $probe_count = 0;
+	private int $probe_count = 0;
 
 	/**
 	 * Wire optional HTTP and transient accessors for unit tests.

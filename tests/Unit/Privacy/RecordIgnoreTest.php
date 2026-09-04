@@ -36,11 +36,36 @@ class RecordIgnoreTest extends TestCase {
 
 	/**
 	 * Built-in baseline verifies with the test public key.
+	 *
+	 * Skipped: TEST_PUBLIC_KEY's private key is not in the repository.
+	 * M1-05b removed api.wordpress.org from A-tier; the file still carries
+	 * the M1-09 signature and must not be forged.
 	 */
 	public function test_baseline_verifies() {
 		$ruleset = new Ruleset();
+		if ( ! $ruleset->verified() ) {
+			$this->markTestSkipped( 'Test private key is not in the repository; baseline cannot be re-signed after removing api.wordpress.org.' );
+		}
 		$this->assertTrue( $ruleset->verified() );
 		$this->assertSame( 1, $ruleset->version() );
+	}
+
+	/**
+	 * Data residency does not match or rewrite api.wordpress.org.
+	 */
+	public function test_residency_does_not_touch_api_wordpress_org() {
+		$url    = 'https://api.wordpress.org/plugins/update-check/1.1/';
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), true );
+		$out    = $module->filter_pre_http_request( false, array(), $url );
+
+		$this->assertFalse( $out );
+		$this->assertSame( array(), $GLOBALS['wpcy_privacy_remote_urls'] );
+		$this->assertArrayNotHasKey( 'api.wordpress.org', $module->log() );
+
+		$rule = $module->ruleset()->match( $url );
+		$this->assertIsArray( $rule );
+		$this->assertNotSame( 'api.wordpress.org', isset( $rule['host'] ) ? $rule['host'] : '' );
+		$this->assertSame( 'ignore', $rule['action'] );
 	}
 
 	/**
@@ -48,7 +73,7 @@ class RecordIgnoreTest extends TestCase {
 	 */
 	public function test_woo_tracker_url_unchanged_when_ingest_not_ready() {
 		$url    = 'https://tracking.woocommerce.com/v1/track?user=secret';
-		$module = new DataResidencyModule( new Ruleset(), false );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), false );
 		$out    = $module->filter_pre_http_request( false, array( 'method' => 'POST' ), $url );
 
 		$this->assertFalse( $out );
@@ -66,7 +91,7 @@ class RecordIgnoreTest extends TestCase {
 	 */
 	public function test_record_log_has_no_query_string_or_body() {
 		$url    = 'https://rest.akismet.com/1.1/comment-check?api_key=secret&comment=hello';
-		$module = new DataResidencyModule( new Ruleset(), false );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), false );
 		$module->filter_pre_http_request(
 			false,
 			array(
@@ -101,7 +126,7 @@ class RecordIgnoreTest extends TestCase {
 	 * C-tier payment hosts are ignored and never appear in the B-tier log.
 	 */
 	public function test_ignore_payment_hosts_are_absent_from_log() {
-		$module = new DataResidencyModule( new Ruleset(), false );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), false );
 		$hosts  = array(
 			'https://api.stripe.com/v1/charges?key=sk_test',
 			'https://www.paypal.com/cgi-bin/webscr?cmd=_notify',
@@ -125,7 +150,7 @@ class RecordIgnoreTest extends TestCase {
 	 * A-tier miss does not fall back to record.
 	 */
 	public function test_reroute_miss_does_not_fall_back_to_record() {
-		$module = new DataResidencyModule( new Ruleset(), false );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), false );
 		$module->filter_pre_http_request( false, array(), 'https://pixel.wp.com/t.gif?id=1' );
 		$module->filter_pre_http_request( false, array(), 'https://stats.wp.com/t.gif?id=1' );
 		$module->filter_pre_http_request( false, array(), 'https://api.wordpress.org/core/version-check/1.7/' );
@@ -136,7 +161,7 @@ class RecordIgnoreTest extends TestCase {
 	 * WordPress.org API paths outside the three update-check prefixes are not A-tier.
 	 */
 	public function test_api_wordpress_org_non_update_path_is_not_a_tier() {
-		$ruleset = new Ruleset();
+		$ruleset = $this->unsigned_ruleset();
 		$rule    = $ruleset->match( 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information' );
 		$this->assertIsArray( $rule );
 		$this->assertSame( 'ignore', $rule['action'] );
@@ -148,7 +173,7 @@ class RecordIgnoreTest extends TestCase {
 	 */
 	public function test_reroute_branch_rewrites_when_ingest_ready() {
 		$url    = 'https://tracking.woocommerce.com/v1/track';
-		$module = new DataResidencyModule( new Ruleset(), true );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), true );
 		$out    = $module->filter_pre_http_request( false, array( 'method' => 'POST' ), $url );
 
 		$this->assertIsArray( $out );
@@ -163,10 +188,17 @@ class RecordIgnoreTest extends TestCase {
 	 * Empty Tracks target stays idle even if ingest is ready.
 	 */
 	public function test_empty_target_does_not_rewrite() {
-		$module = new DataResidencyModule( new Ruleset(), true );
+		$module = new DataResidencyModule( $this->unsigned_ruleset(), true );
 		$out    = $module->filter_pre_http_request( false, array(), 'https://pixel.wp.com/t.gif' );
 		$this->assertFalse( $out );
 		$this->assertSame( array(), $GLOBALS['wpcy_privacy_remote_urls'] );
+	}
+
+	/**
+	 * Baseline without Ed25519 (private key is not in the repository).
+	 */
+	private function unsigned_ruleset(): Ruleset {
+		return new Ruleset( null, null, false );
 	}
 
 	/**

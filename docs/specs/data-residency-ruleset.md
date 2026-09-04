@@ -86,7 +86,7 @@ C 档 `host: "*"` 的 `ignore` 吃掉未命中 A/B 的请求。支付网关、�
 
 ## 6. 初始 A / B / C 内容（定稿 §7.1a）
 
-基线 `ruleset_version`：**待定（M0）** 发版时冻结为内置整数；下列条目必须出现在首发基线。`target` 主机与路径在云桥合同未定时用占位，启用仍受 `ingest_ready` 约束。
+基线 `ruleset_version`：**待定（M0）** 发版时冻结为内置整数；下列条目必须出现在首发基线。`target` 主机与路径在云桥合同未定时用占位，启用仍受 `ingest_ready` 约束。`api.wordpress.org` 由 Connectivity 负责，不进驻留主机表；政策表里的「已改」仅为现状说明。
 
 ### A · 纯上报（`action: reroute`，`enabled_when: ingest_ready`）
 

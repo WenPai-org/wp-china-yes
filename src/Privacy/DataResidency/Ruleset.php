@@ -49,28 +49,35 @@ final class Ruleset {
 	 *
 	 * @var string
 	 */
-	private $path;
+	private string $path;
 
 	/**
 	 * Base64 Ed25519 public key used to verify the payload.
 	 *
 	 * @var string
 	 */
-	private $public_key;
+	private string $public_key;
 
 	/**
 	 * Decoded document without the signature field.
 	 *
 	 * @var array<string, mixed>
 	 */
-	private $document = array();
+	private array $document = array();
 
 	/**
 	 * Whether the last load verified.
 	 *
 	 * @var bool
 	 */
-	private $verified = false;
+	private bool $verified = false;
+
+	/**
+	 * Whether load() should verify Ed25519. Tests may skip when the private key is absent.
+	 *
+	 * @var bool
+	 */
+	private bool $require_signature;
 
 	/**
 	 * Create a ruleset from a JSON file.
@@ -79,14 +86,16 @@ final class Ruleset {
 	 *
 	 * @param string|null $path       JSON path. Null uses the shipped baseline.
 	 * @param string|null $public_key Base64 public key. Null uses the test key.
+	 * @param bool        $verify     When false, load JSON without Ed25519 (test-only).
 	 */
-	public function __construct( $path = null, $public_key = null ) {
-		$this->path       = is_string( $path ) && '' !== $path
+	public function __construct( $path = null, $public_key = null, bool $verify = true ) {
+		$this->path              = is_string( $path ) && '' !== $path
 			? $path
 			: dirname( __DIR__ ) . '/rulesets/baseline.json';
-		$this->public_key = is_string( $public_key ) && '' !== $public_key
+		$this->public_key        = is_string( $public_key ) && '' !== $public_key
 			? $public_key
 			: self::TEST_PUBLIC_KEY;
+		$this->require_signature = $verify;
 		$this->load();
 	}
 
@@ -223,6 +232,12 @@ final class Ruleset {
 
 		$signature = isset( $decoded['signature'] ) && is_string( $decoded['signature'] ) ? $decoded['signature'] : '';
 		unset( $decoded['signature'] );
+
+		if ( ! $this->require_signature ) {
+			$this->document = $decoded;
+			$this->verified = false;
+			return;
+		}
 
 		if ( '' === $signature || ! $this->verify( $decoded, $signature ) ) {
 			return;

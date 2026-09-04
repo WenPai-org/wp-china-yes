@@ -23,10 +23,12 @@ final class WordPressOrgModule implements ConditionalModule {
 	 *
 	 * @var MirrorProbe
 	 */
-	private $probe;
+	private MirrorProbe $probe;
 
 	/**
 	 * HTTP request used after rewrite: function( string $url, array $args ): mixed
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable
 	 */
@@ -36,6 +38,7 @@ final class WordPressOrgModule implements ConditionalModule {
 	 * Whether package (install zip / language pack) rewrite is allowed.
 	 *
 	 * No entitlements client: default false (limited-free). Metadata still rewrites.
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable
 	 */
@@ -46,7 +49,7 @@ final class WordPressOrgModule implements ConditionalModule {
 	 *
 	 * @var string
 	 */
-	private $last_request_url = '';
+	private string $last_request_url = '';
 
 	/**
 	 * Wire probe, optional HTTP request, and package-entitlement hook.

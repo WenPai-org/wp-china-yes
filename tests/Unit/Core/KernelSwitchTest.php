@@ -131,8 +131,37 @@ function get_site_option( $key, $default = false ) {
 function register_activation_hook( $file, $callback ) {
 	unset( $file, $callback );
 }
+function register_deactivation_hook( $file, $callback ) {
+	unset( $file, $callback );
+}
 function register_uninstall_hook( $file, $callback ) {
 	unset( $file, $callback );
+}
+function wp_next_scheduled( $hook ) {
+	unset( $hook );
+	return false;
+}
+function wp_rand( $min = 0, $max = 0 ) {
+	unset( $max );
+	return (int) $min;
+}
+function wp_schedule_single_event( $timestamp, $hook, $args = array() ) {
+	unset( $timestamp, $hook, $args );
+	return true;
+}
+function wp_clear_scheduled_hook( $hook ) {
+	unset( $hook );
+}
+function remove_action( $hook, $callback = '', $priority = 10 ) {
+	unset( $hook, $callback, $priority );
+	return true;
+}
+function remove_filter( $hook, $callback = '', $priority = 10 ) {
+	unset( $hook, $callback, $priority );
+	return true;
+}
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
 }
 function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
 	unset( $hook, $callback, $priority, $accepted_args );

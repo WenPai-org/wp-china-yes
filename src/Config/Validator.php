@@ -27,14 +27,14 @@ final class Validator {
 	 *
 	 * @var object
 	 */
-	private $omit;
+	private object $omit;
 
 	/**
 	 * Warnings collected during the last sanitize() call.
 	 *
 	 * @var array<int, array{path: string, message: string}>
 	 */
-	private $warnings = array();
+	private array $warnings = array();
 
 	/**
 	 * Constructor.

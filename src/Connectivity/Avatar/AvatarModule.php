@@ -1,6 +1,6 @@
 <?php
 /**
- * Cravatar avatar URL rewrite. Modes: cravatar_cn, cravatar_global, off.
+ * Cravatar / WeAvatar URL rewrite. Modes: cravatar_cn, cravatar_global, weavatar, off.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Module id connectivity.avatar. WeAvatar is not implemented in this task.
+ * Module id connectivity.avatar. weavatar rewrites to weavatar.com (3.x Service\Avatar).
  */
 final class AvatarModule implements ConditionalModule {
 
@@ -51,7 +51,7 @@ final class AvatarModule implements ConditionalModule {
 	 *
 	 * @var Config
 	 */
-	private $config;
+	private Config $config;
 
 	/**
 	 * Constructor. Does not register hooks.
@@ -114,7 +114,7 @@ final class AvatarModule implements ConditionalModule {
 
 		$mode = $config->get( 'connectivity.avatar', 'off' );
 
-		return 'cravatar_cn' === $mode || 'cravatar_global' === $mode;
+		return in_array( $mode, array( 'cravatar_cn', 'cravatar_global', 'weavatar' ), true );
 	}
 
 	/**
@@ -151,6 +151,8 @@ final class AvatarModule implements ConditionalModule {
 				return $this->replace_avatar_url( $url, 'cn.cravatar.com' );
 			case 'cravatar_global':
 				return $this->replace_avatar_url( $url, 'en.cravatar.com' );
+			case 'weavatar':
+				return $this->replace_avatar_url( $url, 'weavatar.com' );
 			default:
 				return $url;
 		}
@@ -181,7 +183,12 @@ final class AvatarModule implements ConditionalModule {
 			return $avatar_defaults;
 		}
 
-		$avatar_defaults['gravatar_default'] = __( '初认头像', 'wp-china-yes' );
+		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		if ( 'weavatar' === $mode ) {
+			$avatar_defaults['gravatar_default'] = 'WeAvatar';
+		} else {
+			$avatar_defaults['gravatar_default'] = __( '初认头像', 'wp-china-yes' );
+		}
 
 		return $avatar_defaults;
 	}
@@ -192,10 +199,18 @@ final class AvatarModule implements ConditionalModule {
 	 * @since 4.0.0
 	 */
 	public function set_user_profile_picture_for_cravatar(): string {
-		$href = function_exists( 'esc_url' ) ? esc_url( 'https://cravatar.com' ) : 'https://cravatar.com';
-		$text = function_exists( 'esc_html__' )
-			? esc_html__( '您可以在初认头像修改您的资料图片', 'wp-china-yes' )
-			: '您可以在初认头像修改您的资料图片';
+		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		if ( 'weavatar' === $mode ) {
+			$href = function_exists( 'esc_url' ) ? esc_url( 'https://weavatar.com' ) : 'https://weavatar.com';
+			$text = function_exists( 'esc_html__' )
+				? esc_html__( '您可以在 WeAvatar 修改您的资料图片', 'wp-china-yes' )
+				: '您可以在 WeAvatar 修改您的资料图片';
+		} else {
+			$href = function_exists( 'esc_url' ) ? esc_url( 'https://cravatar.com' ) : 'https://cravatar.com';
+			$text = function_exists( 'esc_html__' )
+				? esc_html__( '您可以在初认头像修改您的资料图片', 'wp-china-yes' )
+				: '您可以在初认头像修改您的资料图片';
+		}
 
 		return '<a href="' . $href . '" target="_blank">' . $text . '</a>';
 	}
@@ -213,6 +228,8 @@ final class AvatarModule implements ConditionalModule {
 			$host = 'cn.cravatar.com';
 		} elseif ( 'cravatar_global' === $mode ) {
 			$host = 'en.cravatar.com';
+		} elseif ( 'weavatar' === $mode ) {
+			$host = 'weavatar.com';
 		}
 
 		if ( '' === $host ) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Avatar modes: cravatar_cn, cravatar_global, off.
+ * Avatar modes: cravatar_cn, cravatar_global, weavatar, off.
  *
  * @package WenPai\ChinaYes
  */
@@ -18,7 +18,7 @@ use WenPai\ChinaYes\Tests\Unit\Connectivity\MapConfig;
 require_once dirname( __DIR__ ) . '/wp-hook-stubs.php';
 
 /**
- * Unit: three documented modes; off does not register hooks.
+ * Unit: four documented modes; off does not register hooks.
  */
 class AvatarModeTest extends TestCase {
 
@@ -166,15 +166,31 @@ class AvatarModeTest extends TestCase {
 	}
 
 	/**
-	 * Weavatar is in schema but not implemented here: do not hook.
+	 * Weavatar rewrites Gravatar hosts to weavatar.com (3.x Service\Avatar).
 	 */
-	public function test_weavatar_does_not_hook() {
+	public function test_weavatar_rewrites_to_weavatar_host() {
+		$module = $this->module( 'weavatar' );
+		$out    = $module->get_cravatar_url( $this->gravatar );
+
+		$this->assertSame(
+			'https://weavatar.com/avatar/00000000000000000000000000000000?s=96&d=mm&r=g',
+			$out
+		);
+	}
+
+	/**
+	 * Weavatar is enabled and registers the same filter set as Cravatar.
+	 */
+	public function test_weavatar_registers_hooks() {
 		$config = $this->config( 'weavatar' );
 		$module = new AvatarModule( $config );
 		$env    = new Environment( Environment::FRONTEND, true );
 
-		$this->assertFalse( $module->enabled( $config, $env ) );
-		$this->assertSame( $this->gravatar, $module->get_cravatar_url( $this->gravatar ) );
+		$this->assertTrue( $module->enabled( $config, $env ) );
+		$module->register();
+
+		$this->assertArrayHasKey( 'get_avatar_url', HookStore::$hooks );
+		$this->assertArrayHasKey( 'wp_head', HookStore::$hooks );
 	}
 
 	/**
@@ -185,6 +201,16 @@ class AvatarModeTest extends TestCase {
 		$out    = $module->set_defaults_for_cravatar( array( 'gravatar_default' => 'Gravatar' ) );
 
 		$this->assertSame( '初认头像', $out['gravatar_default'] );
+	}
+
+	/**
+	 * Discussion default label for weavatar matches 3.x.
+	 */
+	public function test_defaults_label_is_weavatar() {
+		$module = $this->module( 'weavatar' );
+		$out    = $module->set_defaults_for_cravatar( array( 'gravatar_default' => 'Gravatar' ) );
+
+		$this->assertSame( 'WeAvatar', $out['gravatar_default'] );
 	}
 
 	/**

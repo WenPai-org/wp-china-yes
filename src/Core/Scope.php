@@ -24,7 +24,7 @@ final class Scope {
 	 *
 	 * @var string
 	 */
-	private $level;
+	private string $level;
 
 	/**
 	 * Create a scope.
