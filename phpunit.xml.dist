@@ -46,5 +46,8 @@
 		<testsuite name="migration">
 			<directory>tests/Unit/Migration</directory>
 		</testsuite>
+		<testsuite name="site-binding">
+			<directory>tests/Unit/Services/SiteBinding</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

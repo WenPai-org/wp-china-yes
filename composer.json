@@ -59,7 +59,8 @@
 			"phpunit --testsuite cli",
 			"phpunit --testsuite rest",
 			"phpunit --testsuite integrations",
-			"phpunit --testsuite migration"
+			"phpunit --testsuite migration",
+			"phpunit --testsuite site-binding"
 		],
 		"test:legacy": "bash tests/run-tests.sh",
 		"check": [

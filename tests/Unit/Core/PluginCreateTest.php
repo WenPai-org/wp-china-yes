@@ -33,6 +33,7 @@ class PluginCreateTest extends TestCase {
 				'telemetry',
 				'privacy.data_residency',
 				'diagnostics',
+				'services.site_binding',
 				'rest',
 			),
 			$plugin->registry()->ids()
