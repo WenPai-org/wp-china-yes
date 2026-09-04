@@ -514,10 +514,9 @@ final class Report {
 		$orders_table = $wpdb->prefix . 'wc_orders';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe before HPOS aggregate.
 		if ( $data['hpos_enabled'] && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $orders_table ) ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce HPOS order-status aggregates for the compatibility report.
-			$order_counts = $wpdb->get_results(
-				$wpdb->prepare( 'SELECT status, COUNT(*) AS cnt FROM %i GROUP BY status', $orders_table ) // %i identifier placeholder (WP 6.2+); 4.0 kernel requires 6.5.
-			);
+			$orders_table_sql = function_exists( 'esc_sql' ) ? esc_sql( $orders_table ) : $orders_table;
+			// Table name is $wpdb->prefix + constant, escaped with esc_sql(); %i would need a 6.2+ header while 3.x still ships in this package (M4 raises it).
+			$order_counts = $wpdb->get_results( "SELECT status, COUNT(*) AS cnt FROM {$orders_table_sql} GROUP BY status" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- HPOS order-status aggregate for the compatibility report.
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce CPT order-status aggregates for the compatibility report.
 			$order_counts = $wpdb->get_results(
@@ -690,8 +689,7 @@ final class Report {
 		}
 
 		$table_sql = function_exists( 'esc_sql' ) ? esc_sql( $table ) : $table;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- shipping-zone count for the compatibility report; not a cached read path.
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name from prefix + esc_sql.
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- shipping-zone count for the compatibility report; table name from prefix + esc_sql.
 
 		return $count ? (int) $count : 0;
 	}
