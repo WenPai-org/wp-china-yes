@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Core;
 
 use WenPai\ChinaYes\Admin\AdminModule;
+use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
+use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
@@ -114,6 +116,8 @@ final class Plugin {
 		$registry->add( new AppsModule( null, null, null, null, $logger ) );
 		$registry->add( new RestModule( $config, $checker ) );
 		$registry->add( new AdminModule( $config ) );
+		$registry->add( new NoticeControlModule( $config ) );
+		$registry->add( new AnnouncementsModule( $config ) );
 
 		return new self( $container, $registry, $environment );
 	}

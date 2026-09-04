@@ -5,6 +5,7 @@
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { Button, Spinner, TabPanel } from '@wordpress/components';
 import { DataViews } from '@wordpress/dataviews/wp';
 import PageShell from '../components/PageShell';
@@ -134,6 +135,89 @@ function ConnectTable( { targets } ) {
 	);
 }
 
+function HiddenNoticesTable() {
+	const [ rows, setRows ] = useState( [] );
+	const fields = [
+		{
+			id: 'plugin',
+			label: __( '来源插件', 'wp-china-yes' ),
+			enableHiding: false,
+			getValue: ( { item } ) => item.plugin,
+		},
+		{
+			id: 'rule',
+			label: __( '匹配规则', 'wp-china-yes' ),
+			getValue: ( { item } ) => item.rule,
+		},
+		{
+			id: 'first',
+			label: __( '首次隐藏', 'wp-china-yes' ),
+			getValue: ( { item } ) => item.first_hidden,
+		},
+		{
+			id: 'count',
+			label: __( '次数', 'wp-china-yes' ),
+			getValue: ( { item } ) => item.count,
+		},
+	];
+	const [ view, setView ] = useState( {
+		...TABLE_VIEW,
+		fields: fields.map( ( field ) => field.id ),
+	} );
+
+	useEffect( () => {
+		let cancelled = false;
+		apiFetch( { path: '/wpcy/v1/notice-control/hidden' } )
+			.then( ( payload ) => {
+				if ( cancelled ) {
+					return;
+				}
+				const items = Array.isArray( payload?.items )
+					? payload.items
+					: [];
+				setRows(
+					items.map( ( row, index ) => ( {
+						...row,
+						id: ( row.rule || 'row' ) + '-' + index,
+					} ) )
+				);
+			} )
+			.catch( () => {
+				if ( ! cancelled ) {
+					setRows( [] );
+				}
+			} );
+		return () => {
+			cancelled = true;
+		};
+	}, [] );
+
+	return (
+		<div>
+			<p className="wpcy-help">
+				{ __( '核心更新、安全与站点健康通知永不隐藏', 'wp-china-yes' ) }
+			</p>
+			<DataViews
+				data={ rows }
+				fields={ fields }
+				view={ view }
+				onChangeView={ setView }
+				defaultLayouts={ { table: {} } }
+				paginationInfo={ {
+					totalItems: rows.length,
+					totalPages: 1,
+				} }
+				search={ false }
+				empty={
+					<p className="wpcy-help">
+						{ __( '暂无被隐藏的通知。', 'wp-china-yes' ) }
+					</p>
+				}
+			/>
+		</div>
+	);
+}
+
 export default function Diagnose() {
 	const { targets, running } = useSelect(
 		( select ) => ( {
@@ -183,53 +267,7 @@ export default function Diagnose() {
 						return <ConnectTable targets={ targets } />;
 					}
 					if ( tab.name === 'notices' ) {
-						return (
-							<div>
-								<p className="wpcy-help">
-									{ __(
-										'核心更新、安全与站点健康通知永不隐藏',
-										'wp-china-yes'
-									) }
-								</p>
-								<EmptyTable
-									fields={ [
-										{
-											id: 'plugin',
-											label: __(
-												'来源插件',
-												'wp-china-yes'
-											),
-										},
-										{
-											id: 'rule',
-											label: __(
-												'匹配规则',
-												'wp-china-yes'
-											),
-										},
-										{
-											id: 'first',
-											label: __(
-												'首次隐藏',
-												'wp-china-yes'
-											),
-										},
-										{
-											id: 'count',
-											label: __( '次数', 'wp-china-yes' ),
-										},
-									] }
-									empty={
-										<p className="wpcy-help">
-											{ __(
-												'暂无被隐藏的通知。',
-												'wp-china-yes'
-											) }
-										</p>
-									}
-								/>
-							</div>
-						);
+						return <HiddenNoticesTable />;
 					}
 					if ( tab.name === 'hosts' ) {
 						return (

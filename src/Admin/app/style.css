@@ -5,8 +5,8 @@
  * @package WenPai\ChinaYes
  */
 
-@import './tokens.css';
-@import '@wordpress/dataviews/build-style/style.css';
+@import "./tokens.css";
+@import "@wordpress/dataviews/build-style/style.css";
 
 :root {
 	--wpcy-status-success: #00a32a;
@@ -108,6 +108,30 @@
 	gap: 12px;
 	padding: 12px 0;
 	border-bottom: 1px solid #dcdcde;
+}
+
+.wpcy-announcements .wpcy-ann-title {
+	flex: 1;
+	font-weight: 600;
+}
+
+.wpcy-announcements .wpcy-ann-source {
+	font-size: 11px;
+	padding: 2px 6px;
+	background: #f0f0f1;
+	border-radius: 2px;
+	color: #646970;
+	white-space: nowrap;
+}
+
+.wpcy-announcements .wpcy-ann-date {
+	font-size: 12px;
+	color: #646970;
+	white-space: nowrap;
+}
+
+.wpcy-announcements .wpcy-ann-dismiss {
+	flex-shrink: 0;
 }
 
 .wpcy-field-row {
