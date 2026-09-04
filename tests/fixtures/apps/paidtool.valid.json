@@ -1,0 +1,26 @@
+{
+    "schema_version": 1,
+    "id": "paidtool",
+    "name": {
+        "zh_CN": "付费工具",
+        "en_US": "Paid Tool"
+    },
+    "description": {
+        "zh_CN": "付费",
+        "en_US": "Paid"
+    },
+    "icon": "https://apps.wpcy.com/paidtool/icon.svg",
+    "entry_url": "https://apps.wpcy.com/paidtool/",
+    "version": "1.0.0",
+    "min_plugin_version": "4.0.0",
+    "tier": "paid",
+    "entitlement": "wpcy-leaf-paidtool",
+    "permissions": [
+        "entitlement:read",
+        "data:write",
+        "go:open"
+    ],
+    "go_service": "paidtool",
+    "issued_at": "2026-09-03T12:00:00Z",
+    "signature": "qUZMIgG8PYxZOLk87oSUBvf0jfbgJkTRaZgsdsB3JNpIvSoIRLunnbRFuL6sTXK+aPjbBfptr/GErZK0PhrTAg=="
+}

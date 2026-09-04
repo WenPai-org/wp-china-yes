@@ -1,0 +1,29 @@
+{
+    "schema_version": 1,
+    "id": "motusnap",
+    "name": {
+        "zh_CN": "墨图截图",
+        "en_US": "MotuSnap"
+    },
+    "description": {
+        "zh_CN": "站点截图",
+        "en_US": "Site screenshots"
+    },
+    "icon": "https://apps.wpcy.com/motusnap/icon.svg",
+    "entry_url": "https://apps.wpcy.com/motusnap/",
+    "version": "1.2.0",
+    "min_plugin_version": "4.0.0",
+    "tier": "limited-free",
+    "entitlement": "wpcy-leaf-motusnap-100",
+    "permissions": [
+        "site:read",
+        "data:read",
+        "data:write",
+        "data:delete",
+        "entitlement:read",
+        "go:open"
+    ],
+    "go_service": "motusnap",
+    "issued_at": "2026-09-03T12:00:00Z",
+    "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+}
