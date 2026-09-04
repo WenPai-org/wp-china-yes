@@ -356,6 +356,33 @@ if ( ! function_exists( 'add_filter' ) ) {
 	}
 }
 
+if ( ! function_exists( 'add_menu_page' ) ) {
+	/**
+	 * Record a top-level menu page.
+	 *
+	 * @param string   $page_title  Title.
+	 * @param string   $menu_title  Menu title.
+	 * @param string   $capability  Capability.
+	 * @param string   $menu_slug   Slug.
+	 * @param callable $callback    Render callback.
+	 * @param string   $icon        Icon.
+	 * @param int      $position    Position.
+	 * @return string
+	 */
+	function add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon = '', $position = null ) {
+		RestStore::$menus[] = array(
+			'page_title' => $page_title,
+			'menu_title' => $menu_title,
+			'capability' => $capability,
+			'menu_slug'  => $menu_slug,
+			'callback'   => $callback,
+			'icon'       => $icon,
+			'position'   => $position,
+		);
+		return $menu_slug;
+	}
+}
+
 if ( ! function_exists( 'add_submenu_page' ) ) {
 	/**
 	 * Record a hidden submenu page.
@@ -581,4 +608,108 @@ if ( ! function_exists( 'set_transient' ) ) {
 
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
+}
+
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	/**
+	 * Record a script enqueue.
+	 *
+	 * @param string             $handle    Handle.
+	 * @param string             $src       Src.
+	 * @param array<int, string> $deps      Dependencies.
+	 * @param string|bool|null   $ver       Version.
+	 * @param bool               $in_footer Footer.
+	 * @return void
+	 */
+	function wp_enqueue_script( $handle, $src = '', $deps = array(), $ver = false, $in_footer = false ) {
+		RestStore::$scripts[] = array(
+			'handle'    => $handle,
+			'src'       => $src,
+			'deps'      => $deps,
+			'ver'       => $ver,
+			'in_footer' => $in_footer,
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	/**
+	 * Record a style enqueue.
+	 *
+	 * @param string             $handle Handle.
+	 * @param string             $src    Src.
+	 * @param array<int, string> $deps   Dependencies.
+	 * @param string|bool|null   $ver    Version.
+	 * @return void
+	 */
+	function wp_enqueue_style( $handle, $src = '', $deps = array(), $ver = false ) {
+		unset( $handle, $src, $deps, $ver );
+	}
+}
+
+if ( ! function_exists( 'wp_add_inline_script' ) ) {
+	/**
+	 * Record inline JS.
+	 *
+	 * @param string $handle   Handle.
+	 * @param string $data     JS.
+	 * @param string $position Position.
+	 * @return true
+	 */
+	function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+		RestStore::$inline[] = array(
+			'handle'   => $handle,
+			'data'     => $data,
+			'position' => $position,
+		);
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * JSON encode.
+	 *
+	 * @param mixed $data Data.
+	 * @return string|false
+	 */
+	function wp_json_encode( $data ) {
+		return json_encode( $data ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- this is the wp_json_encode stub.
+	}
+}
+
+if ( ! function_exists( 'wp_create_nonce' ) ) {
+	/**
+	 * Stable nonce.
+	 *
+	 * @param string $action Action.
+	 * @return string
+	 */
+	function wp_create_nonce( $action ) {
+		return 'nonce-' . $action;
+	}
+}
+
+if ( ! function_exists( 'rest_url' ) ) {
+	/**
+	 * REST root.
+	 *
+	 * @param string $path Path.
+	 * @return string
+	 */
+	function rest_url( $path = '' ) {
+		return 'http://example.test/wp-json/' . ltrim( (string) $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	/**
+	 * Raw URL.
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	function esc_url_raw( $url ) {
+		return $url;
+	}
 }

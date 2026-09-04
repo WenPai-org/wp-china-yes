@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Core;
 
+use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
@@ -72,7 +73,7 @@ final class Plugin {
 	}
 
 	/**
-	 * Build a kernel with Repository config, connectivity modules, and REST.
+	 * Build a kernel with Repository config, connectivity, REST, and admin.
 	 */
 	public static function create(): self {
 		$container   = new Container();
@@ -106,6 +107,7 @@ final class Plugin {
 		$container->set( 'diagnostics.checker', $checker );
 		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new RestModule( $config, $checker ) );
+		$registry->add( new AdminModule( $config ) );
 
 		return new self( $container, $registry, $environment );
 	}

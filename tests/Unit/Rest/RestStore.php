@@ -51,6 +51,27 @@ final class RestStore {
 	public static $pages = array();
 
 	/**
+	 * Top-level pages recorded by add_menu_page().
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public static $menus = array();
+
+	/**
+	 * Scripts recorded by wp_enqueue_script().
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public static $scripts = array();
+
+	/**
+	 * Inline scripts recorded by wp_add_inline_script().
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public static $inline = array();
+
+	/**
 	 * Hooks recorded by add_action / add_filter.
 	 *
 	 * @var array<string, array<int, mixed>>
@@ -96,6 +117,9 @@ final class RestStore {
 		self::$admin_nonces = array();
 		self::$routes       = array();
 		self::$pages        = array();
+		self::$menus        = array();
+		self::$scripts      = array();
+		self::$inline       = array();
 		self::$hooks        = array();
 		self::$die          = null;
 		self::$die_status   = 0;
