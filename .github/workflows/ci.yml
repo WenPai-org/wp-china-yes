@@ -149,6 +149,10 @@ jobs:
               except json.JSONDecodeError:
                   continue
           if payload is None:
+              # With zero findings Plugin Check prints "Success: Checks complete. No errors found." and no JSON.
+              if "No errors found" in raw:
+                  print("Plugin Check: no findings")
+                  sys.exit(0)
               sys.stderr.write("plugin-check produced no JSON\n")
               sys.exit(1)
 
