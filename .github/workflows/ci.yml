@@ -110,6 +110,8 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx wp-env start
+      # 3.x 旧代码（framework/Service/client/templates/assets 与根部旧文件）在 M4-01 物理删除前排除；
+      # 本 job 只守 4.0 代码。M4-01 删旧时把这些排除项撤掉。
       - name: Run Plugin Check
         run: |
           set -euo pipefail
@@ -117,7 +119,8 @@ jobs:
           npx wp-env run cli wp plugin activate wp-china-yes
           npx wp-env run cli wp plugin check wp-china-yes \
             --format=json \
-            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github \
+            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github,framework,Service,client,templates,assets \
+            --exclude-files=helpers.php,Plugin.php,autoload-guard.php \
             | tee plugin-check.json
           python3 - <<'PY'
           import json, re, sys
