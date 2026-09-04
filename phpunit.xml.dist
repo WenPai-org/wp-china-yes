@@ -31,5 +31,11 @@
 		<testsuite name="privacy">
 			<directory>tests/Unit/Privacy</directory>
 		</testsuite>
+		<testsuite name="diagnostics">
+			<directory>tests/Unit/Diagnostics</directory>
+		</testsuite>
+		<testsuite name="cli">
+			<directory>tests/Unit/Cli</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>
