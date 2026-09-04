@@ -1,0 +1,16 @@
+{
+	"entitlements": [
+		{
+			"id": "wpcy-leaf-motusnap-100",
+			"service": "motusnap",
+			"tier": "limited-free",
+			"status": "exhausted",
+			"quota": {
+				"limit": 100,
+				"used": 100,
+				"period": "month",
+				"resets_at": "2026-10-01T00:00:00Z"
+			}
+		}
+	]
+}
