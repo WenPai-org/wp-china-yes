@@ -1,0 +1,52 @@
+{
+    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B).",
+    "issued_at": "2026-09-03T00:00:00Z",
+    "ruleset_version": 1,
+    "tiers": {
+        "A": [
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "api.wordpress.org",
+                "match": "exact",
+                "target": "https://api.wenpai.net/"
+            },
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "tracking.woocommerce.com",
+                "match": "exact",
+                "target": "https://updates.wenpai.net/ingest/woo-tracker"
+            },
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "pixel.wp.com",
+                "match": "exact",
+                "target": ""
+            },
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "stats.wp.com",
+                "match": "exact",
+                "target": ""
+            }
+        ],
+        "B": [
+            {
+                "action": "record",
+                "data_class": "comments",
+                "host": "rest.akismet.com",
+                "match": "suffix"
+            }
+        ],
+        "C": [
+            {
+                "action": "ignore",
+                "host": "*"
+            }
+        ]
+    },
+    "signature": "9onR6CyAM1yCC4sOzc4pNTuvk8iluxyfhT4D7owJEUSJ8Jth8DrE/uCYZXcmsgiHcFlzAmUHx4usf4ovSdCzCQ=="
+}
