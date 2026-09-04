@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin::create() wires Repository and the five M1 modules.
+ * Plugin::create() wires Repository, connectivity modules, and REST.
  *
  * @package WenPai\ChinaYes
  */
@@ -19,7 +19,7 @@ use WenPai\ChinaYes\Core\Plugin;
 class PluginCreateTest extends TestCase {
 
 	/**
-	 * Five module ids in registration order; config is Repository.
+	 * Module ids in registration order; config is Repository.
 	 */
 	public function test_create_registers_five_modules_and_repository() {
 		$plugin = Plugin::create();
@@ -31,6 +31,7 @@ class PluginCreateTest extends TestCase {
 				'connectivity.avatar',
 				'telemetry',
 				'privacy.data_residency',
+				'rest',
 			),
 			$plugin->registry()->ids()
 		);

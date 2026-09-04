@@ -37,5 +37,8 @@
 		<testsuite name="cli">
 			<directory>tests/Unit/Cli</directory>
 		</testsuite>
+		<testsuite name="rest">
+			<directory>tests/Unit/Rest</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

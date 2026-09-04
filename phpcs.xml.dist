@@ -26,6 +26,10 @@
 		<severity>0</severity>
 	</rule>
 
+	<rule ref="Generic.Classes.DuplicateClassName">
+		<exclude-pattern>tests/Unit/</exclude-pattern>
+	</rule>
+
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
