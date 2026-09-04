@@ -189,3 +189,43 @@ jobs:
       - run: bash tests/integration-recovery.sh
       - if: always()
         run: npx wp-env stop
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install chromium --with-deps
+      - run: npx wp-env start
+      - name: Enable v4 kernel
+        run: |
+          set -euo pipefail
+          npx wp-env run cli wp config set WPCY_KERNEL v4
+          npx wp-env run cli wp plugin activate wp-china-yes
+          npx wp-env run cli wp eval 'echo defined("WPCY_KERNEL") ? WPCY_KERNEL : "undefined";'
+      - run: npm run test:e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:8888
+          WP_USERNAME: admin
+          WP_PASSWORD: password
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-playwright-output
+          path: |
+            tests/e2e/test-results/
+            tests/e2e/playwright-report/
+          if-no-files-found: ignore
+      - if: always()
+        run: npx wp-env stop

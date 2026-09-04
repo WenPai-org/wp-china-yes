@@ -162,6 +162,10 @@ export default function Connect() {
 					value: 'cravatar_global',
 					label: __( 'Cravatar 国际', 'wp-china-yes' ),
 				},
+				{
+					value: 'weavatar',
+					label: __( 'WeAvatar', 'wp-china-yes' ),
+				},
 				{ value: 'off', label: __( '关闭', 'wp-china-yes' ) },
 			],
 		},
