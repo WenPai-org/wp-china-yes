@@ -103,3 +103,4 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | 3.x `windfonts_list` | 迁入 `integrations.windfonts.fonts[]`（`family` / `subset` / `selector` / `enable`），迁移时对 API 字体目录重新校验，目录里不存在的条目记 `ignored`。`docs/specs/config-schema.md` 已补 `integrations.windfonts` 结构。 |
 | 提交前缀 | 允许列表补 `feat(diagnostics): `、`feat(integrations): `、`feat(residency): `。 |
 | M1-06 / M1-07 并行 | M1-07 依赖 M1-06，改为 M1-06 合并后再派。 |
+| 退出恢复模式后是否自动恢复改写/模块 | **不自动恢复**：`exit` 只清 `recovery_mode`，用户在连接优化页手动开回。理由：恢复模式的触发原因（样式错乱/站点不可访问）未必已消除，自动开回可能立刻复现。React 概览横幅退出后提示「改写与模块仍处于关闭，前往连接优化开启」。 |
