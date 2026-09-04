@@ -55,6 +55,7 @@
 | `target` | 仅 `reroute`：改写后的绝对 URL（HTTPS） |
 | `enabled_when` | 仅 `reroute`：见 §3 |
 | `data_class` | 仅 `record`：见 §5 |
+| `kid` | 可选 string；`wpcy-ruleset-2026` 或 `wpcy-apps-2026`。存在时按 `kid` 选公钥。缺省不写。一套测试钥两个 `kid`（定稿 §7.5b-3） |
 | `signature` | Base64 Ed25519 |
 
 ## 3. `enabled_when`
@@ -130,3 +131,15 @@ Jetpack Stats 若现网与连接 API 同主机，按路径分档，不得把功�
 6. 用户不可加域名、不可改条目。
 
 `wpcy_settings.data_residency.ruleset_version` 记录当前生效版本号，供诊断与支持对照。
+
+## 8. 重签命令
+
+规范化规则与 §1 / apps manifest §1.3 相同：去掉 `signature` 后键字典序、UTF-8、无多余空白，对该字节做 Ed25519 分离签名，Base64 写回 `signature`。`--kid` 写入载荷（可选字段，缺省 `wpcy-ruleset-2026`）。
+
+测试密钥（**TEST ONLY，禁止用于生产**）：
+
+```bash
+php scripts/sign-ruleset.php src/Privacy/rulesets/baseline.json tests/fixtures/keys/wpcy-test-ed25519.key --kid wpcy-ruleset-2026
+```
+
+生产签发见 linuxjoy 定稿 §7.5b-3（devops 在 feicode-prod 生成，不在本仓执行）。
