@@ -69,15 +69,101 @@ jobs:
       - run: bash scripts/build-release.sh
       - name: Verify release contents
         run: |
+          set -euo pipefail
           unzip -tq dist/wp-china-yes-*.zip
-          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/)'; then
+          LIST="$(unzip -Z1 dist/wp-china-yes-*.zip)"
+          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/)'; then
             echo 'Release archive contains build-only files.' >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/build/.+\.js$'; then
+            echo 'Release archive missing build/ JavaScript.' >&2
+            exit 1
+          fi
+          test -f dist/wp-china-yes-*.zip.sha256
+          FILE_HASH="$(awk '{print $1}' dist/wp-china-yes-*.zip.sha256)"
+          SUM_HASH="$(sha256sum dist/wp-china-yes-*.zip | awk '{print $1}')"
+          if [ "$FILE_HASH" != "$SUM_HASH" ]; then
+            echo "SHA-256 mismatch: file=$FILE_HASH sum=$SUM_HASH" >&2
             exit 1
           fi
       - uses: actions/upload-artifact@v4
         with:
           name: wp-china-yes-release
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.sha256
+
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: npx wp-env start
+      - name: Run Plugin Check
+        run: |
+          set -euo pipefail
+          npx wp-env run cli wp plugin install plugin-check --activate --force
+          npx wp-env run cli wp plugin activate wp-china-yes
+          npx wp-env run cli wp plugin check wp-china-yes \
+            --format=json \
+            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github \
+            | tee plugin-check.json
+          python3 - <<'PY'
+          import json, re, sys
+          raw = open("plugin-check.json", encoding="utf-8").read()
+          decoder = json.JSONDecoder()
+          payload = None
+          for match in re.finditer(r"[\[{]", raw):
+              try:
+                  payload, _ = decoder.raw_decode(raw[match.start():])
+              except json.JSONDecodeError:
+                  continue
+          if payload is None:
+              sys.stderr.write("plugin-check produced no JSON\n")
+              sys.exit(1)
+
+          findings = []
+          finding_types = {"ERROR", "WARNING", "FATAL", "CRITICAL"}
+          count_keys = {
+              "errors", "warnings", "error_count", "warning_count",
+              "fatal", "fatals", "error", "warning",
+          }
+
+          def walk(node):
+              if isinstance(node, dict):
+                  kind = str(node.get("type") or node.get("level") or node.get("severity") or "").upper()
+                  if kind in finding_types and any(k in node for k in ("message", "code", "check", "text")):
+                      findings.append(node)
+                  for key, value in node.items():
+                      if key.lower() in count_keys and isinstance(value, int) and value > 0:
+                          findings.append({key: value})
+                      else:
+                          walk(value)
+              elif isinstance(node, list):
+                  for item in node:
+                      walk(item)
+
+          walk(payload)
+          if findings:
+              sys.stderr.write("Plugin Check failed with %d ERROR/WARNING-level issue(s)\n" % len(findings))
+              for item in findings[:50]:
+                  sys.stderr.write("%s\n" % json.dumps(item, ensure_ascii=False)[:500])
+              sys.exit(1)
+          print("Plugin Check: no ERROR/WARNING-level issues")
+          PY
+      - if: always()
+        run: npx wp-env stop
 
   wordpress:
     runs-on: ubuntu-latest
