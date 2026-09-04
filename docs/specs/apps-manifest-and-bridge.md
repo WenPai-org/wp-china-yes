@@ -109,6 +109,17 @@
 - 宿主只接受 `event.origin === new URL(manifest.entry_url).origin`。
 - 工具只接受 `event.origin === 宿主 origin`（宿主在 `init` 里告知；工具页面也可用 `document.referrer` 校验）。
 - 不匹配则丢弃，错误码 `wpcy_apps_origin_mismatch`（仅当消息已通过信封校验、能回 `error` 时才回；跨 origin 且无法确认来源时静默丢弃）。
+- **宿主 origin 在启动时快照进闭包**（`const HOST_ORIGIN = window.location.origin`），之后不再读可能被改写的 `location`。
+- **宿主校验 `event.source === iframe.contentWindow`**：同 origin 的其它窗口、同页第二个工具实例的消息一律丢弃。
+- 宿主页自身可能运行在别的壳（如 OpenStation 的 chromeless iframe）内：宿主**不向 `window.parent` / `window.top` 发送任何桥接消息**，也不把来自 `window.parent` 的消息当作工具消息处理。
+
+（以上三条借鉴 WordPress/openstation `src/window/iframe-bridge.ts` 的做法，GPL-2.0-or-later，按思想重写不拷代码；分析见 linuxjoy `docs/research/2026-09-04-openstation-analysis.md` E.2。）
+
+### 3.1a 超时与重试
+
+- 宿主转发 REST 超时 10s；超时回 `error`，`code = wpcy_apps_host_timeout`（HTTP 504 语义）。
+- `data.set` / `data.delete` / `go.open` **不自动重试**（非幂等或有副作用）；`context.get` / `data.get` / `data.list` / `entitlement.get` 由工具自行决定是否重发。
+- `ready` 之前工具发出的其它消息宿主丢弃；宿主在收到 `ready` 后立即发 `init`，工具应在 `init` 后再开始请求。
 
 ### 3.2 消息表
 
@@ -131,7 +142,7 @@
 
 工具永远拿不到 REST nonce。宿主页持有 nonce，把桥接请求转发为 REST。
 
-`resize` 只允许高度，上限 4000px。宽度由容器决定。
+`resize` 只允许高度，上限 4000px。宽度由容器决定。宿主对 `resize` 做 **200ms 防抖**（取窗口内最后一个值）；工具侧建议用 `ResizeObserver` 而不是定时器。
 
 ## 4. REST `wpcy/v1/apps/*`
 
@@ -196,5 +207,6 @@ CREATE TABLE {prefix}wpcy_app_data (
 | `wpcy_apps_key_invalid` | 400 | `{key}` 不符 `^[a-z0-9_.-]{1,64}$` |
 | `wpcy_apps_payload_too_large` | 413 | PUT body > 64KB，或超过工具总大小上限 |
 | `wpcy_apps_origin_mismatch` | 403 | `event.origin` 与 manifest `entry_url` origin 不一致 |
+| `wpcy_apps_host_timeout` | 504 | 宿主转发 REST 超过 10s 未返回 |
 
 通用约定（与 `docs/specs/rest-api.md` 相同）：写请求需 `X-WP-Nonce`；响应带 `X-WPCY-Request-Id`；时间 UTC ISO 8601。

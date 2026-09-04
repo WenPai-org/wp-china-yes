@@ -29,6 +29,8 @@
 
 命令面板（⌘K）注册：「打开文派叶子概览」「打开连接优化」「打开文派服务」「运行连接诊断」「进入恢复模式」。
 
+路由约束：四页各是一个菜单项，页内 Tab / 子视图只用 hash（`#/tab=…`），不用 History API 改 `?page=`，不访问 `window.top`。在 OpenStation 这类壳里 ⌘K 属于壳；叶子命令在经典后台走 Core 面板，若 `wp.os?.registerCommand` 存在则额外注册（feature detect），不自己抢快捷键。依据：ADR-002 硬约束、linuxjoy `docs/research/2026-09-04-openstation-analysis.md` E.1。
+
 页面骨架（所有 React 页共用）：`<Page>` 顶栏 = 页标题 + 右侧一个主动作（若有）；左侧不再做自建导航（wp-admin 菜单已是导航）；内容区最大宽 1080px，窄列居中；底部无页脚。
 
 ## 3. 页面规格

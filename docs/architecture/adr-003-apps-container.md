@@ -52,6 +52,8 @@
 
 不采用为依赖或蓝本。核实（`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md` §1、§4.2）：OpenStation 是 Automattic 维护、用户 opt-in 的 wp-admin 多窗口壳，**不是 Core**；其窗口是同域 chromeless iframe + 类型化 postMessage，App Framework 是 PHP 声明的服务端渲染窗口且标 Experimental。与本 ADR 的差别在内容来源（同域后台页 vs 跨域文派托管页）、隔离模型（chromeless vs `sandbox=`）、声明方式（`openstation_register_window()` vs 服务端签名 manifest）、分发（改插件 vs 改托管页）。**兼容**：用户开启 OpenStation 时叶子服务页成为一扇窗口，容器内的沙箱 iframe 照常工作（双层 iframe）。**不为像它而改 manifest，不注册 OpenStation 窗口作为 4.0 前提。**
 
+源码核实（linuxjoy `docs/research/2026-09-04-openstation-analysis.md` C、D、E.3）：OpenStation 的菜单 iframe 同域且无 `sandbox`，把 REST nonce 放进窗口 config 交给 app 脚本，App 未声明 capability 时任意登录用户可见，`PROTOCOL_VERSION` 不随消息走——这些正是我们的威胁模型要反着做的。**双层 iframe 是预期状态**：外层若是 OS 的 chromeless 页，内层工具仍无 `allow-same-origin`，即使因此永远用不上 OS 的 `os-*` 桥。可借的只有工程细节（origin 快照、`event.source` 校验、ready 排队、resize 防抖），已写入桥接规格 §3.1 / §3.1a。
+
 ### Interactivity API / Script Modules 作为小工具运行时
 
 否决。二者面向前台区块（`data-wp-*` 指令、ESM import map），不是跨域后台 iframe 的容器；小工具若将来改为同域 block 再议。

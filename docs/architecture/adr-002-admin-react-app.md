@@ -22,6 +22,14 @@ ADR-001 原决策把后台拆成两套：本地设置走 Settings API 服务端�
 - 页面骨架：普通 `add_menu_page` 页内的 React 应用，布局层用 `@wordpress/admin-ui` 的 `<Page>`（隔离在单独布局组件里，接受其 2.0 提案带来的大版本变动）。**不用 `@wordpress/interface` 做壳**（官方文档仍标 experimental、明示可能 drastic breaking）。**不引入第三方 UI 库**。
 - 命令面板：用 `@wordpress/commands` 注册跳到概览 / 文派服务 / 诊断 / 恢复页的命令（WP 7.0 起 ⌘K 在全后台可用）。
 - 与 OpenStation（`desktop-mode` 插件，Automattic 维护、用户 opt-in 的多窗口后台壳）的关系：叶子只是普通后台页，用户开启 OpenStation 时自然成为一扇窗口；**不检测、不排斥、不模仿**，不做第二套窗口管理器。依据：`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md`。
+- **作为"普通后台页"的硬约束**（源码级依据见 linuxjoy `docs/research/2026-09-04-openstation-analysis.md` E.1；这些约束对经典 wp-admin 同样成立，不是为 OpenStation 特设）：
+  1. 不自建全屏壳，不用相对浏览器视口的 `position: fixed` 去躲 admin bar；
+  2. 不假设 `#wpadminbar` 存在、不读它的高度，`--wp-admin--admin-bar--height` 可能为 0；
+  3. 不依赖 `#wpcontent` 左侧 160px 槽，不写死 `top: 32px/46px`；
+  4. 四页各自是一个菜单项（`?page=wpcy*`），页内切换只用 hash，**不用 `pushState` 改 `?page=`**，不访问 `window.top` / `window.parent.location`；
+  5. 命令面板：经典后台照常用 `@wordpress/commands` 注册；若 `wp.os?.registerCommand` 存在则**额外**向壳注册（feature detect，不检测插件本身），没有则只靠 Core 面板——不在自己页里抢 ⌘K；
+  6. 不向 `window.parent` 发任何非约定消息；小工具容器的桥只认自己那个 iframe 的 `event.source`；
+  7. e2e 增加一条"外层 chromeless iframe + 内层 sandbox iframe"的双层场景（实现阶段）。
 - 状态管理：`@wordpress/data` store `wpcy/admin`。
 - 所有数据经 REST 命名空间 `wpcy/v1`（见 `docs/specs/rest-api.md`）。
 - `wp_localize_script` / `wp_add_inline_script` 只传 nonce、REST root、当前用户能力、初始设置快照。
