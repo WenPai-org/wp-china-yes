@@ -31,6 +31,7 @@ class PluginCreateTest extends TestCase {
 				'connectivity.avatar',
 				'telemetry',
 				'privacy.data_residency',
+				'diagnostics',
 				'rest',
 			),
 			$plugin->registry()->ids()

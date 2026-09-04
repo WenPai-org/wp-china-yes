@@ -17,6 +17,8 @@ use WenPai\ChinaYes\Connectivity\PublicAssets\PublicAssetsModule;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\MirrorProbe;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\WordPressOrgModule;
 use WenPai\ChinaYes\Diagnostics\Checker;
+use WenPai\ChinaYes\Diagnostics\DiagnosticsModule;
+use WenPai\ChinaYes\Diagnostics\SiteHealth;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Telemetry\TelemetryModule;
@@ -102,6 +104,7 @@ final class Plugin {
 
 		$checker = new Checker( null, null, null, $config );
 		$container->set( 'diagnostics.checker', $checker );
+		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new RestModule( $config, $checker ) );
 
 		return new self( $container, $registry, $environment );
