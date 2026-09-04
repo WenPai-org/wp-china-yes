@@ -52,6 +52,13 @@ final class WordPressOrgModule implements ConditionalModule {
 	private string $last_request_url = '';
 
 	/**
+	 * Last args passed to $request (tests).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $last_request_args = array();
+
+	/**
 	 * Wire probe, optional HTTP request, and package-entitlement hook.
 	 *
 	 * @param MirrorProbe   $probe            Usability probe.
@@ -148,8 +155,15 @@ final class WordPressOrgModule implements ConditionalModule {
 
 		$args = is_array( $parsed_args ) ? $parsed_args : array();
 
-		$args['timeout']        = 30;
-		$this->last_request_url = $mirror_url;
+		$timeout = isset( $args['timeout'] ) ? (float) $args['timeout'] : 10;
+		if ( $timeout > 10 || $timeout <= 0 ) {
+			$timeout = 10;
+		}
+
+		$args['timeout']         = $timeout;
+		$args['sslverify']       = true;
+		$this->last_request_url  = $mirror_url;
+		$this->last_request_args = $args;
 
 		return ( $this->request )( $mirror_url, $args );
 	}
@@ -195,6 +209,15 @@ final class WordPressOrgModule implements ConditionalModule {
 	 */
 	public function last_request_url(): string {
 		return $this->last_request_url;
+	}
+
+	/**
+	 * Last rewritten request args (empty if none).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function last_request_args(): array {
+		return $this->last_request_args;
 	}
 
 	/**

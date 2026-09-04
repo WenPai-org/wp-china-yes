@@ -44,20 +44,6 @@ final class Ruleset {
 	);
 
 	/**
-	 * Path prefixes on api.wordpress.org that belong to tier A (M0 whitelist).
-	 *
-	 * Path-filter expression is 待定（M0）; until then only these three.
-	 *
-	 * @since 4.0.0
-	 * @var list<string>
-	 */
-	public const API_WORDPRESS_ORG_PATH_PREFIXES = array(
-		'/core/version-check',
-		'/plugins/update-check',
-		'/themes/update-check',
-	);
-
-	/**
 	 * Absolute path of the loaded JSON file.
 	 *
 	 * @var string
@@ -145,7 +131,6 @@ final class Ruleset {
 		}
 
 		$host = strtolower( (string) $parts['host'] );
-		$path = isset( $parts['path'] ) ? (string) $parts['path'] : '/';
 
 		foreach ( array( 'A', 'B', 'C' ) as $tier ) {
 			$rules = isset( $this->document['tiers'][ $tier ] ) && is_array( $this->document['tiers'][ $tier ] )
@@ -156,9 +141,6 @@ final class Ruleset {
 					continue;
 				}
 				if ( ! $this->host_matches( $host, $rule ) ) {
-					continue;
-				}
-				if ( 'api.wordpress.org' === $host && ! $this->api_wordpress_org_path_allowed( $path ) ) {
 					continue;
 				}
 				return $rule;
@@ -339,20 +321,6 @@ final class Ruleset {
 		}
 
 		return $host === $needle;
-	}
-
-	/**
-	 * A-tier api.wordpress.org is only version-check / update-check.
-	 *
-	 * @param string $path URL path.
-	 */
-	private function api_wordpress_org_path_allowed( string $path ): bool {
-		foreach ( self::API_WORDPRESS_ORG_PATH_PREFIXES as $prefix ) {
-			if ( 0 === strpos( $path, $prefix ) ) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	/**

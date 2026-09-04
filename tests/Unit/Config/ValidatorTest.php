@@ -248,7 +248,7 @@ class ValidatorTest extends TestCase {
 	}
 
 	/**
-	 * Site overrides keep only schema_version, connectivity, modules.
+	 * Site overrides keep schema_version, connectivity, modules, recovery_mode.
 	 */
 	public function test_site_overrides_only_allowed_keys() {
 		$out = $this->validator->sanitize(
@@ -261,7 +261,7 @@ class ValidatorTest extends TestCase {
 		);
 		$this->assertArrayHasKey( 'connectivity', $out );
 		$this->assertSame( 'off', $out['connectivity']['avatar'] );
-		$this->assertArrayNotHasKey( 'recovery_mode', $out );
+		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertArrayNotHasKey( 'diagnostics', $out );
 		$this->assertArrayNotHasKey( 'wordpress_org', $out['connectivity'] );
 	}

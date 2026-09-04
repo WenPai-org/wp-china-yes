@@ -160,6 +160,7 @@ final class Schema {
 				'schema_version' => $props['schema_version'],
 				'connectivity'   => $props['connectivity'],
 				'modules'        => $props['modules'],
+				'recovery_mode'  => $props['recovery_mode'],
 			),
 		);
 	}

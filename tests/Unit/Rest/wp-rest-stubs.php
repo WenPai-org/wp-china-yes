@@ -360,12 +360,12 @@ if ( ! function_exists( 'add_submenu_page' ) ) {
 	/**
 	 * Record a hidden submenu page.
 	 *
-	 * @param string   $parent_slug Parent slug.
-	 * @param string   $page_title  Title.
-	 * @param string   $menu_title  Menu title.
-	 * @param string   $capability  Capability.
-	 * @param string   $menu_slug   Slug.
-	 * @param callable $callback    Render callback.
+	 * @param string|null $parent_slug Parent slug. Null hides the item.
+	 * @param string      $page_title  Title.
+	 * @param string      $menu_title  Menu title.
+	 * @param string      $capability  Capability.
+	 * @param string      $menu_slug   Slug.
+	 * @param callable    $callback    Render callback.
 	 * @return string
 	 */
 	function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback = '' ) {
@@ -537,6 +537,23 @@ if ( ! function_exists( 'admin_url' ) ) {
 	 */
 	function admin_url( $path = '' ) {
 		return 'http://example.test/wp-admin/' . ltrim( (string) $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'wp_safe_redirect' ) ) {
+	/**
+	 * Record a redirect and throw so unit tests do not hit exit.
+	 *
+	 * @param string $location Redirect URL.
+	 * @param int    $status   Unused.
+	 * @param string $x_by     Unused.
+	 * @return void
+	 * @throws RuntimeException Always, with the location as the message.
+	 */
+	function wp_safe_redirect( $location, $status = 302, $x_by = 'WordPress' ) {
+		unset( $status, $x_by );
+		RestStore::$redirect = (string) $location;
+		throw new RuntimeException( (string) $location ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- test control flow, not HTML.
 	}
 }
 

@@ -6,6 +6,9 @@ set -euo pipefail
 
 WP_CLI="${WP_CLI:-npx wp-env run cli wp}"
 
+echo "==> activate plugin"
+$WP_CLI plugin activate wp-china-yes >/dev/null
+
 json_from_wp_out() {
 	python3 -c '
 import json, sys

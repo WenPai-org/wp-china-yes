@@ -171,6 +171,88 @@ class CliTest extends TestCase {
 	}
 
 	/**
+	 * Multisite export is network, site_overrides, and read-only effective.
+	 */
+	public function test_config_export_multisite_three_sections() {
+		OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 1,
+				'allow_site_override' => true,
+				'recovery_mode'       => false,
+				'connectivity'        => array( 'wordpress_org' => 'auto' ),
+			)
+		);
+		update_option(
+			Schema::SITE_OVERRIDES,
+			array(
+				'schema_version' => 1,
+				'recovery_mode'  => true,
+				'connectivity'   => array( 'wordpress_org' => 'off' ),
+			)
+		);
+
+		$doc = ( new ConfigCommand( new Repository() ) )->export_document();
+
+		$this->assertArrayHasKey( 'network', $doc );
+		$this->assertArrayHasKey( 'site_overrides', $doc );
+		$this->assertArrayHasKey( 'effective', $doc );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, $doc );
+		$this->assertFalse( $doc['network']['recovery_mode'] );
+		$this->assertTrue( $doc['site_overrides']['recovery_mode'] );
+		$this->assertTrue( $doc['effective']['recovery_mode'] );
+		$this->assertSame( 'off', $doc['effective']['connectivity']['wordpress_org'] );
+		$this->assertSame( 'auto', $doc['network']['connectivity']['wordpress_org'] );
+	}
+
+	/**
+	 * Multisite import ignores effective and does not copy it into network.
+	 */
+	public function test_config_import_rejects_effective() {
+		OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 1,
+				'allow_site_override' => true,
+				'recovery_mode'       => false,
+			)
+		);
+
+		$cmd = new ConfigCommand( new Repository() );
+		$cmd->import_document(
+			array(
+				'network'        => array(
+					'schema_version'      => 1,
+					'allow_site_override' => true,
+					'recovery_mode'       => false,
+					'connectivity'        => array( 'wordpress_org' => 'auto' ),
+				),
+				'site_overrides' => array(
+					'schema_version' => 1,
+					'recovery_mode'  => true,
+				),
+				'effective'      => array(
+					'schema_version' => 1,
+					'recovery_mode'  => true,
+					'connectivity'   => array( 'wordpress_org' => 'off' ),
+				),
+			)
+		);
+
+		$network   = get_site_option( Schema::NETWORK_SETTINGS );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $network );
+		$this->assertIsArray( $overrides );
+		$this->assertFalse( $network['recovery_mode'] );
+		$this->assertSame( 'auto', $network['connectivity']['wordpress_org'] );
+		$this->assertTrue( $overrides['recovery_mode'] );
+		$this->assertArrayNotHasKey( 'effective', OptionStore::$options );
+		$this->assertArrayNotHasKey( 'effective', OptionStore::$site_options );
+	}
+
+	/**
 	 * Doctor exit-code helper treats down as failure.
 	 */
 	public function test_has_down_detects_down_only() {

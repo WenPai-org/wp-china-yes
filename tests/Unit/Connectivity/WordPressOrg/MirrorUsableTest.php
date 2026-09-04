@@ -465,6 +465,39 @@ class MirrorUsableTest extends TestCase {
 	}
 
 	/**
+	 * Rewritten requests cap timeout at 10s and set sslverify true.
+	 */
+	public function test_rewritten_request_sslverify_true_and_timeout_at_most_ten(): void {
+		$this->transients[ Origins::STATE_KEY ] = 'up';
+		$captured                               = array();
+		$module                                 = new WordPressOrgModule(
+			$this->new_probe(),
+			static function ( $url, $args ) use ( &$captured ) {
+				$captured = is_array( $args ) ? $args : array();
+				return $url;
+			},
+			static function () {
+				return true;
+			}
+		);
+
+		$module->filter_wordpress_org(
+			false,
+			array(
+				'timeout'   => 30,
+				'sslverify' => false,
+			),
+			'https://api.wordpress.org/core/version-check/1.7/'
+		);
+
+		$this->assertTrue( $captured['sslverify'] );
+		$this->assertLessThanOrEqual( 10, $captured['timeout'] );
+		$this->assertGreaterThan( 0, $captured['timeout'] );
+		$this->assertTrue( $module->last_request_args()['sslverify'] );
+		$this->assertLessThanOrEqual( 10, $module->last_request_args()['timeout'] );
+	}
+
+	/**
 	 * Run one probe with a canned HTTP result.
 	 *
 	 * @param mixed $canned Response array or WP_Error.
