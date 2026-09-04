@@ -55,7 +55,8 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'phpunit.xml.dist' \
   --exclude '.grok-context/' \
   --exclude 'package.json' \
-  --exclude 'package-lock.json'
+  --exclude 'package-lock.json' \
+  --exclude '.gitkeep'
 
 # composer.json and composer.lock are build inputs, not runtime plugin files.
 composer install \

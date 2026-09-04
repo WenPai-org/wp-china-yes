@@ -12,23 +12,24 @@ $WP_CLI plugin activate wp-china-yes >/dev/null
 echo "==> POST ?page=wpcy-recovery via handle_post (nonce + \$_POST, no JS)"
 # handle_post calls wp_safe_redirect then exit. Returning false from wp_redirect
 # stops headers; a shutdown function prints after apply() so eval is observable.
+# Nonce create and verify must share one process: wp_create_nonce uses the
+# current user and session token, which CLI does not persist across evals.
 POST_RAW="$($WP_CLI eval '
-$users = get_users( array( "role" => "administrator", "number" => 1 ) );
-if ( empty( $users ) ) {
-	throw new Exception( "no administrator" );
+wp_set_current_user( 1 );
+if ( ! current_user_can( "manage_options" ) ) {
+	$users = get_users( array( "role" => "administrator", "number" => 1 ) );
+	if ( empty( $users ) ) {
+		throw new Exception( "no administrator" );
+	}
+	wp_set_current_user( $users[0]->ID );
 }
-wp_set_current_user( $users[0]->ID );
+$_SERVER["REQUEST_METHOD"] = "POST";
 $_POST = array(
 	"wpcy_recovery_action" => "disable_rewrites",
 	"wpcy_recovery_nonce"  => wp_create_nonce( "wpcy_recovery_disable_rewrites" ),
 );
-add_filter(
-	"wp_redirect",
-	static function ( $location ) {
-		echo "redirect:" . $location . "\n";
-		return false;
-	}
-);
+$_REQUEST = $_POST;
+add_filter( "wp_redirect", "__return_false" );
 register_shutdown_function(
 	static function () {
 		echo "handle_post_shutdown\n";
@@ -40,8 +41,16 @@ $page->handle_post();
 echo "handle_post_returned_without_exit\n";
 ')"
 printf '%s\n' "$POST_RAW"
+if printf '%s\n' "$POST_RAW" | grep -q 'The link you followed has expired'; then
+	echo "nonce check failed (expired link)"
+	exit 1
+fi
 if printf '%s\n' "$POST_RAW" | grep -q 'handle_post_returned_without_exit'; then
 	echo "handle_post returned without redirect+exit"
+	exit 1
+fi
+if ! printf '%s\n' "$POST_RAW" | grep -q 'handle_post_shutdown'; then
+	echo "handle_post did not reach shutdown"
 	exit 1
 fi
 

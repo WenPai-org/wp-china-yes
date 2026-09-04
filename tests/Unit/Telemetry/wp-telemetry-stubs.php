@@ -224,6 +224,33 @@ if ( ! function_exists( 'count_users' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * Strip slashes. Unit bootstrap has no WordPress.
+	 *
+	 * @param mixed $value Raw.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		if ( is_string( $value ) ) {
+			return stripslashes( $value );
+		}
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'esc_sql' ) ) {
+	/**
+	 * Identity escape for SQL identifiers in unit stubs.
+	 *
+	 * @param mixed $value Raw.
+	 * @return mixed
+	 */
+	function esc_sql( $value ) {
+		return $value;
+	}
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * Strip tags.

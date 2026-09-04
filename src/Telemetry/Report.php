@@ -99,7 +99,7 @@ final class Report {
 			'is_multisite'      => function_exists( 'is_multisite' ) ? is_multisite() : false,
 			'active_theme'      => function_exists( 'get_stylesheet' ) ? get_stylesheet() : '',
 			'locale'            => function_exists( 'get_locale' ) ? get_locale() : '',
-			'server_software'   => isset( $_SERVER['SERVER_SOFTWARE'] ) ? $this->sanitize_server_software( $_SERVER['SERVER_SOFTWARE'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by sanitize_server_software().
+			'server_software'   => isset( $_SERVER['SERVER_SOFTWARE'] ) ? $this->sanitize_server_software( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by sanitize_server_software().
 			'wpcy_version'      => defined( 'CHINA_YES_VERSION' ) ? CHINA_YES_VERSION : 'unknown',
 			'telemetry_version' => self::TELEMETRY_VERSION,
 			'plugins'           => $this->get_plugin_list(),
@@ -330,12 +330,13 @@ final class Report {
 			return 0;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- one-shot schema probe; engine mix is not a request-cached value.
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND ENGINE = 'MyISAM'",
 				DB_NAME
 			)
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- schema probe.
+		);
 
 		return $count ? (int) $count : 0;
 	}
@@ -485,15 +486,20 @@ final class Report {
 		$data['products_total']   = 0;
 		$data['products_by_type'] = array();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce product-type aggregates for the compatibility report; not a cached read path.
 		$product_counts = $wpdb->get_results(
-			"SELECT t.slug, COUNT(*) as cnt
-			 FROM {$wpdb->posts} p
-			 INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-			 INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id AND tt.taxonomy = 'product_type'
-			 INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-			 WHERE p.post_type = 'product' AND p.post_status = 'publish'
-			 GROUP BY t.slug"
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- aggregate counts, table names from $wpdb.
+			$wpdb->prepare(
+				"SELECT t.slug, COUNT(*) as cnt
+				 FROM {$wpdb->posts} p
+				 INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+				 INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id AND tt.taxonomy = 'product_type'
+				 INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+				 WHERE p.post_type = %s AND p.post_status = %s
+				 GROUP BY t.slug", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names from $wpdb.
+				'product',
+				'publish'
+			)
+		);
 
 		if ( $product_counts ) {
 			foreach ( $product_counts as $row ) {
@@ -506,17 +512,24 @@ final class Report {
 		$data['orders_by_status'] = array();
 
 		$orders_table = $wpdb->prefix . 'wc_orders';
-		if ( $data['hpos_enabled'] && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $orders_table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe before HPOS aggregate.
+		if ( $data['hpos_enabled'] && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $orders_table ) ) ) {
+			$orders_table_sql = function_exists( 'esc_sql' ) ? esc_sql( $orders_table ) : $orders_table;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce HPOS order-status aggregates for the compatibility report.
 			$order_counts = $wpdb->get_results(
-				"SELECT status, COUNT(*) as cnt FROM {$wpdb->prefix}wc_orders GROUP BY status"
-			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- aggregate counts.
+				"SELECT status, COUNT(*) as cnt FROM {$orders_table_sql} GROUP BY status" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix + esc_sql.
+			);
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WooCommerce CPT order-status aggregates for the compatibility report.
 			$order_counts = $wpdb->get_results(
-				"SELECT post_status as status, COUNT(*) as cnt
-				 FROM {$wpdb->posts}
-				 WHERE post_type = 'shop_order'
-				 GROUP BY post_status"
-			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- aggregate counts.
+				$wpdb->prepare(
+					"SELECT post_status as status, COUNT(*) as cnt
+					 FROM {$wpdb->posts}
+					 WHERE post_type = %s
+					 GROUP BY post_status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from $wpdb.
+					'shop_order'
+				)
+			);
 		}
 
 		if ( $order_counts ) {
@@ -672,11 +685,14 @@ final class Report {
 		}
 
 		$table = $wpdb->prefix . 'woocommerce_shipping_zones';
-		if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence probe.
+		if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) {
 			return 0;
 		}
 
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- count on a probed table name.
+		$table_sql = function_exists( 'esc_sql' ) ? esc_sql( $table ) : $table;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- shipping-zone count for the compatibility report; not a cached read path.
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name from prefix + esc_sql.
 
 		return $count ? (int) $count : 0;
 	}

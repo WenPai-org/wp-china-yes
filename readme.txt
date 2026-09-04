@@ -2,8 +2,8 @@
 Contributors: wenpai
 Tags: china, performance, mirror, gravatar, cdn
 Requires at least: 4.9
-Tested up to: 7.0
-Requires PHP: 7.4
+Tested up to: 7.1
+Requires PHP: 7.4.0
 Stable tag: 3.9.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
