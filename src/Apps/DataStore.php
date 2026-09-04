@@ -152,12 +152,12 @@ final class DataStore {
 	 */
 	public function list_keys( string $app_id ): array {
 		if ( is_object( $this->wpdb ) && method_exists( $this->wpdb, 'get_col' ) && method_exists( $this->wpdb, 'prepare' ) ) {
-			$table = $this->table_name();
+			$table = function_exists( 'esc_sql' ) ? esc_sql( $this->table_name() ) : $this->table_name();
 			$sql   = $this->wpdb->prepare(
-				"SELECT data_key FROM {$table} WHERE app_id = %s ORDER BY data_key ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix, not user input.
+				"SELECT data_key FROM {$table} WHERE app_id = %s ORDER BY data_key ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix + esc_sql, not user input.
 				$app_id
 			);
-			$cols  = $this->wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql from $wpdb->prepare() above.
+			$cols  = $this->wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- $sql from $wpdb->prepare(); table from prefix + esc_sql.
 			if ( ! is_array( $cols ) ) {
 				return array();
 			}
@@ -308,13 +308,13 @@ final class DataStore {
 	 */
 	private function get_json( string $app_id, string $key ) {
 		if ( is_object( $this->wpdb ) && method_exists( $this->wpdb, 'get_var' ) && method_exists( $this->wpdb, 'prepare' ) ) {
-			$table = $this->table_name();
+			$table = function_exists( 'esc_sql' ) ? esc_sql( $this->table_name() ) : $this->table_name();
 			$sql   = $this->wpdb->prepare(
-				"SELECT data_json FROM {$table} WHERE app_id = %s AND data_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix, not user input.
+				"SELECT data_json FROM {$table} WHERE app_id = %s AND data_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from prefix + esc_sql, not user input.
 				$app_id,
 				$key
 			);
-			$json  = $this->wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql from $wpdb->prepare() above.
+			$json  = $this->wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- $sql from $wpdb->prepare(); table from prefix + esc_sql.
 			return is_string( $json ) ? $json : null;
 		}
 

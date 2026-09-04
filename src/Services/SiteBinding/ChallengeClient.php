@@ -91,7 +91,7 @@ final class ChallengeClient {
 			$base = WPCY_SERVICES_API;
 		}
 		if ( function_exists( 'apply_filters' ) ) {
-			$filtered = apply_filters( self::FILTER_API, $base );
+			$filtered = apply_filters( 'wpcy_services_api', $base );
 			if ( is_string( $filtered ) ) {
 				$base = $filtered;
 			}
