@@ -3,6 +3,7 @@
 	"version": "3.9.3",
 	"private": true,
 	"devDependencies": {
+		"@playwright/test": "^1.62.1",
 		"@wordpress/env": "11.12.0",
 		"@wordpress/scripts": "^34.2.0"
 	},
@@ -15,7 +16,8 @@
 		"format:check": "wp-scripts format --check src/Admin/app",
 		"env:start": "wp-env start",
 		"env:stop": "wp-env stop",
-		"test:wordpress": "bash tests/wordpress-smoke.sh"
+		"test:wordpress": "bash tests/wordpress-smoke.sh",
+		"test:e2e": "playwright test --config=tests/e2e/playwright.config.js"
 	},
 	"dependencies": {
 		"@wordpress/admin-ui": "^2.9.0",
@@ -25,6 +27,7 @@
 		"@wordpress/data": "^10.54.0",
 		"@wordpress/dataviews": "^18.1.0",
 		"@wordpress/element": "^8.6.0",
-		"@wordpress/i18n": "^6.27.0"
+		"@wordpress/i18n": "^6.27.0",
+		"use-memo-one": "^1.1.3"
 	}
 }
