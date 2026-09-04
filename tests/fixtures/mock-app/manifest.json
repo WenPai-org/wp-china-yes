@@ -1,0 +1,29 @@
+{
+    "schema_version": 1,
+    "id": "mock-app",
+    "name": {
+        "zh_CN": "站点体检",
+        "en_US": "Site Check"
+    },
+    "description": {
+        "zh_CN": "检查站点健康与连接状态。",
+        "en_US": "Check site health."
+    },
+    "icon": "https://apps.wpcy.com/mock-app/icon.svg",
+    "entry_url": "https://apps.wpcy.com/mock-app/",
+    "version": "1.2.0",
+    "min_plugin_version": "4.0.0",
+    "tier": "free",
+    "entitlement": null,
+    "permissions": [
+        "site:read",
+        "data:read",
+        "data:write",
+        "data:delete",
+        "entitlement:read",
+        "go:open"
+    ],
+    "go_service": "mock-app",
+    "issued_at": "2026-09-03T12:00:00Z",
+    "signature": "cbyVf+lOIjEYZx1u+IOGLawLjAvkx7/R0lt9AWZvc42pPdiaPZdEOrmu6kksem/OD12JiOhrQ37ZgOHv9TLcAg=="
+}

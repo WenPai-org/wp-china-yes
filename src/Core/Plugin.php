@@ -11,6 +11,7 @@ namespace WenPai\ChinaYes\Core;
 
 use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Apps\AppsModule;
+use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
@@ -112,10 +113,11 @@ final class Plugin {
 		$container->set( 'diagnostics.checker', $checker );
 		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new SiteBindingModule( $config, $logger ) );
-		$registry->add( new AppsModule( null, null, null, null, $logger ) );
+		$entitlements = new EntitlementsModule( $config, $logger );
+		$registry->add( new AppsModule( null, null, new CachedEntitlements( $entitlements ), null, $logger ) );
 		$registry->add( new RestModule( $config, $checker ) );
 		$registry->add( new AdminModule( $config ) );
-		$registry->add( new EntitlementsModule( $config, $logger ) );
+		$registry->add( $entitlements );
 
 		return new self( $container, $registry, $environment );
 	}

@@ -21,9 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Module id services.apps. Does not fetch production apps.wpcy.com by default.
- *
- * Kernel wiring (Plugin::create / RestModule) is left to merge: those files
- * are outside this task's diff budget and existing tests pin the current list.
  */
 final class AppsModule implements Module {
 
@@ -55,7 +52,7 @@ final class AppsModule implements Module {
 	 *
 	 * @param Registry|null           $registry     Verified list.
 	 * @param DataStore|null          $store        Data table.
-	 * @param EntitlementsClient|null $entitlements Entitlements. Null is exhausted.
+	 * @param EntitlementsClient|null $entitlements Entitlements. Null uses CachedEntitlements.
 	 * @param Index|null              $index        Signed index.
 	 * @param Logger|null             $logger       Logger.
 	 */
@@ -63,12 +60,19 @@ final class AppsModule implements Module {
 		if ( $registry instanceof Registry ) {
 			$this->registry = $registry;
 		} else {
-			$logger         = $logger instanceof Logger ? $logger : null;
-			$index          = $index instanceof Index ? $index : new Index( new ManifestVerifier(), '', null, $logger );
+			$logger = $logger instanceof Logger ? $logger : null;
+			$source = '';
+			if ( function_exists( 'apply_filters' ) ) {
+				$filtered = apply_filters( 'wpcy_apps_index_source', '' );
+				$source   = is_string( $filtered ) ? $filtered : '';
+			}
+			$index          = $index instanceof Index ? $index : new Index( new ManifestVerifier(), $source, null, $logger );
 			$this->registry = new Registry( $index );
 		}
 		$this->store        = $store instanceof DataStore ? $store : new DataStore();
-		$this->entitlements = $entitlements instanceof EntitlementsClient ? $entitlements : new ExhaustedEntitlements();
+		$this->entitlements = $entitlements instanceof EntitlementsClient
+			? $entitlements
+			: new CachedEntitlements( null, null, $logger instanceof Logger ? $logger : null );
 	}
 
 	/**

@@ -318,6 +318,57 @@ if ( ! function_exists( 'register_rest_route' ) ) {
 	}
 }
 
+if ( ! function_exists( 'apply_filters' ) ) {
+	/**
+	 * Identity filter.
+	 *
+	 * @param string $tag   Hook.
+	 * @param mixed  $value Value.
+	 * @return mixed
+	 */
+	function apply_filters( $tag, $value ) {
+		unset( $tag );
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * Missing option.
+	 *
+	 * @param string $key     Name.
+	 * @param mixed  $fallback Fallback.
+	 * @return mixed
+	 */
+	function get_option( $key, $fallback = false ) {
+		unset( $key );
+		return $fallback;
+	}
+}
+
+if ( ! function_exists( 'get_site_option' ) ) {
+	/**
+	 * Missing site option.
+	 *
+	 * @param string $key     Name.
+	 * @param mixed  $fallback Fallback.
+	 * @return mixed
+	 */
+	function get_site_option( $key, $fallback = false ) {
+		unset( $key );
+		return $fallback;
+	}
+}
+
+if ( ! function_exists( 'is_multisite' ) ) {
+	/**
+	 * Single site in this suite.
+	 */
+	function is_multisite() {
+		return false;
+	}
+}
+
 if ( ! function_exists( 'add_action' ) ) {
 	/**
 	 * No-op action registration.
