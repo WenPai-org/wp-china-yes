@@ -39,5 +39,11 @@ npx wp-env run cli wp eval 'do_action( "admin_init" ); $saved = get_option( "wp_
 npx wp-env run cli wp eval 'update_option( "wp_china_yes", [ "store" => "off", "admincdn" => [], "admincdn_public" => [], "admincdn_files" => [], "admincdn_dev" => [], "cravatar" => "off", "webp_support" => true ] );'
 npx wp-env run cli wp eval '$metadata = apply_filters( "wp_generate_attachment_metadata", [] ); if ( [] !== $metadata ) { throw new Exception( "empty media metadata changed" ); }'
 
+# 3.x path (WPCY_KERNEL undefined) still loads the settings framework.
+npx wp-env run cli wp eval 'if ( ! class_exists( "WP_CHINA_YES_Setup" ) ) { throw new Exception( "3.x path did not load WP_CHINA_YES_Setup" ); }'
+
+# WPCY_KERNEL=v4 cannot be defined before plugin bootstrap via `wp eval`
+# (WordPress and plugins are already loaded). Covered by KernelSwitchTest.
+
 npx wp-env run cli wp plugin deactivate wp-china-yes
 echo "WordPress activation, maintenance, memory, fonts, language, media and compatibility-report smoke tests passed."

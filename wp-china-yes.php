@@ -57,6 +57,8 @@ if (file_exists(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')) {
         \WenPai\ChinaYes\Core\Plugin::boot();
         return;
     }
+
+    require_once CHINA_YES_PLUGIN_PATH . 'framework/classes/setup.class.php';
     
     // 初始化翻译管理器
     require_once(CHINA_YES_PLUGIN_PATH . 'Service/TranslationManager.php');
