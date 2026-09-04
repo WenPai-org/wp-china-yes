@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           unzip -tq dist/wp-china-yes-*.zip
           LIST="$(unzip -Z1 dist/wp-china-yes-*.zip)"
-          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/)'; then
+          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/|AGENTS\.md|\.grok-context/)'; then
             echo 'Release archive contains build-only files.' >&2
             exit 1
           fi

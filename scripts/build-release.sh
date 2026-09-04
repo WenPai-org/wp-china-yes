@@ -38,6 +38,8 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'tests/' \
   --exclude 'scripts/' \
   --exclude 'docs/' \
+  --exclude 'AGENTS.md' \
+  --exclude '.grok-context/' \
   --exclude 'vendor/' \
   --exclude 'node_modules/' \
   --exclude 'src/Admin/app/' \
