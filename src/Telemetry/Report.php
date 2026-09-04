@@ -689,7 +689,7 @@ final class Report {
 		}
 
 		$table_sql = function_exists( 'esc_sql' ) ? esc_sql( $table ) : $table;
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- shipping-zone count for the compatibility report; table name from prefix + esc_sql.
+		$count     = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- shipping-zone count for the compatibility report; table name from prefix + esc_sql.
 
 		return $count ? (int) $count : 0;
 	}
