@@ -43,5 +43,8 @@
 		<testsuite name="integrations">
 			<directory>tests/Unit/Integrations</directory>
 		</testsuite>
+		<testsuite name="migration">
+			<directory>tests/Unit/Migration</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>
