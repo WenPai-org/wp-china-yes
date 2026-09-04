@@ -35,7 +35,7 @@ jobs:
       - name: Verify release contents
         run: |
           unzip -tq dist/wp-china-yes-*.zip
-          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$)'; then
+          if unzip -Z1 dist/wp-china-yes-*.zip | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|\.grok-context/|AGENTS\.md)'; then
             echo 'Release archive contains build-only files.' >&2
             exit 1
           fi

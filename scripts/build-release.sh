@@ -15,6 +15,8 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude '.gitignore' \
   --exclude '.github/' \
   --exclude '.codex/' \
+  --exclude '.grok-context/' \
+  --exclude 'AGENTS.md' \
   --exclude '.wp-env.json' \
   --exclude 'dist/' \
   --exclude 'tests/' \
