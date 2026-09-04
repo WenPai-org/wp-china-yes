@@ -47,7 +47,14 @@
 		"lint": "phpcs",
 		"lint:fix": "phpcbf",
 		"analyse": "phpstan analyse --memory-limit=1G",
-		"test:unit": "phpunit",
+		"test:unit": [
+			"phpunit --testsuite smoke",
+			"phpunit --testsuite core",
+			"phpunit --testsuite config",
+			"phpunit --testsuite connectivity",
+			"phpunit --testsuite telemetry",
+			"phpunit --testsuite privacy"
+		],
 		"test:legacy": "bash tests/run-tests.sh",
 		"check": [
 			"@lint",

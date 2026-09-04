@@ -1,4 +1,10 @@
 <?xml version="1.0"?>
+<!--
+	Each module's unit tests ship their own global WordPress function stubs
+	(tests/Unit/<Module>/wp-*-stubs.php). Stubs collide when suites share a
+	process, so `composer test:unit` runs every suite in its own phpunit
+	invocation. `phpunit` without -testsuite still runs everything (may fail).
+-->
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
@@ -7,8 +13,23 @@
 	cacheResultFile=".phpunit.result.cache"
 	>
 	<testsuites>
-		<testsuite name="unit">
-			<directory>tests/Unit</directory>
+		<testsuite name="smoke">
+			<file>tests/Unit/SmokeTest.php</file>
+		</testsuite>
+		<testsuite name="core">
+			<directory>tests/Unit/Core</directory>
+		</testsuite>
+		<testsuite name="config">
+			<directory>tests/Unit/Config</directory>
+		</testsuite>
+		<testsuite name="connectivity">
+			<directory>tests/Unit/Connectivity</directory>
+		</testsuite>
+		<testsuite name="telemetry">
+			<directory>tests/Unit/Telemetry</directory>
+		</testsuite>
+		<testsuite name="privacy">
+			<directory>tests/Unit/Privacy</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>
