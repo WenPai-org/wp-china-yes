@@ -68,6 +68,24 @@ class KernelSwitchTest extends TestCase {
 	}
 
 	/**
+	 * V4 bootstrap must not include any framework/ path or define WP_CHINA_YES_Setup.
+	 */
+	public function test_v4_bootstrap_does_not_include_framework() {
+		$result = $this->run_bootstrap( 'v4' );
+		$this->assertSame( 'framework_no', $result['framework'] );
+		$this->assertSame( 'setup_no', $result['setup'] );
+	}
+
+	/**
+	 * Undefined WPCY_KERNEL still loads setup.class.php after autoload.
+	 */
+	public function test_undefined_constant_includes_framework_setup() {
+		$result = $this->run_bootstrap( null );
+		$this->assertSame( 'framework_yes', $result['framework'] );
+		$this->assertSame( 'setup_yes', $result['setup'] );
+	}
+
+	/**
 	 * Path to wp-china-yes.php.
 	 */
 	private function plugin_file(): string {
@@ -78,13 +96,19 @@ class KernelSwitchTest extends TestCase {
 	 * Load the plugin bootstrap in a subprocess with WordPress stubs.
 	 *
 	 * @param string|null $kernel_value Null leaves WPCY_KERNEL undefined.
-	 * @return array{core: string, legacy: string, code: int, raw: string}
+	 * @return array{core: string, legacy: string, framework: string, setup: string, code: int, raw: string}
 	 */
 	private function run_bootstrap( ?string $kernel_value ): array {
 		$stub = <<<'PHP'
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', '/tmp/wordpress/' );
+}
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	define( 'WP_PLUGIN_DIR', '/tmp/wordpress/wp-content/plugins' );
+}
+if ( ! defined( 'WP_PLUGIN_URL' ) ) {
+	define( 'WP_PLUGIN_URL', 'http://example.test/wp-content/plugins' );
 }
 function plugin_dir_url( $file ) {
 	unset( $file );
@@ -133,6 +157,71 @@ function apply_filters( $tag, $value ) {
 function do_action( $tag ) {
 	unset( $tag );
 }
+function wp_normalize_path( $path ) {
+	$path = str_replace( '\\', '/', (string) $path );
+	$path = preg_replace( '|(?<=.)/+|', '/', $path );
+	return $path;
+}
+function get_parent_theme_file_path( $file = '' ) {
+	$base = '/tmp/wordpress/wp-content/themes/default';
+	return '' === $file ? $base : $base . '/' . ltrim( $file, '/' );
+}
+function get_theme_file_path( $file = '' ) {
+	return get_parent_theme_file_path( $file );
+}
+function get_parent_theme_file_uri( $file = '' ) {
+	$base = 'http://example.test/wp-content/themes/default';
+	return '' === $file ? $base : $base . '/' . ltrim( $file, '/' );
+}
+function is_ssl() {
+	return false;
+}
+function set_url_scheme( $url, $scheme = null ) {
+	unset( $scheme );
+	return $url;
+}
+function esc_url( $url ) {
+	return $url;
+}
+function esc_html__( $text, $domain = 'default' ) {
+	unset( $domain );
+	return $text;
+}
+function __( $text, $domain = 'default' ) {
+	unset( $domain );
+	return $text;
+}
+function load_template( $path, $require_once = true ) {
+	if ( $require_once ) {
+		require_once $path;
+	} else {
+		require $path;
+	}
+}
+function load_textdomain( $domain, $mofile ) {
+	unset( $domain, $mofile );
+	return false;
+}
+function load_plugin_textdomain( $domain, $deprecated = false, $plugin_rel_path = false ) {
+	unset( $domain, $deprecated, $plugin_rel_path );
+	return false;
+}
+function determine_locale() {
+	return 'en_US';
+}
+function get_locale() {
+	return 'en_US';
+}
+function sanitize_text_field( $str ) {
+	return is_string( $str ) ? $str : '';
+}
+function wp_unslash( $value ) {
+	return $value;
+}
+function current_user_can( $capability ) {
+	unset( $capability );
+	return false;
+}
 
 if ( 'undef' !== $argv[2] ) {
 	define( 'WPCY_KERNEL', $argv[2] );
@@ -140,9 +229,18 @@ if ( 'undef' !== $argv[2] ) {
 
 require $argv[1];
 
-$core   = class_exists( 'WenPai\\ChinaYes\\Core\\Plugin', false ) ? 'core_yes' : 'core_no';
-$legacy = class_exists( 'WenPai\\ChinaYes\\Plugin', false ) ? 'legacy_yes' : 'legacy_no';
-fwrite( STDOUT, $core . "\n" . $legacy . "\n" );
+$core      = class_exists( 'WenPai\\ChinaYes\\Core\\Plugin', false ) ? 'core_yes' : 'core_no';
+$legacy    = class_exists( 'WenPai\\ChinaYes\\Plugin', false ) ? 'legacy_yes' : 'legacy_no';
+$setup     = class_exists( 'WP_CHINA_YES_Setup', false ) ? 'setup_yes' : 'setup_no';
+$framework = 'framework_no';
+foreach ( get_included_files() as $included ) {
+	$normalized = str_replace( '\\', '/', $included );
+	if ( false !== strpos( $normalized, '/framework/' ) ) {
+		$framework = 'framework_yes';
+		break;
+	}
+}
+fwrite( STDOUT, $core . "\n" . $legacy . "\n" . $framework . "\n" . $setup . "\n" );
 PHP;
 
 		$tmp = tempnam( sys_get_temp_dir(), 'wpcy-kernel-' );
@@ -165,13 +263,15 @@ PHP;
 
 		$raw = implode( "\n", $output );
 		$this->assertSame( 0, $code, 'bootstrap stub exited ' . $code . ': ' . $raw );
-		$this->assertGreaterThanOrEqual( 2, count( $output ), $raw );
+		$this->assertGreaterThanOrEqual( 4, count( $output ), $raw );
 
 		return array(
-			'core'   => $output[0],
-			'legacy' => $output[1],
-			'code'   => $code,
-			'raw'    => $raw,
+			'core'      => $output[0],
+			'legacy'    => $output[1],
+			'framework' => $output[2],
+			'setup'     => $output[3],
+			'code'      => $code,
+			'raw'       => $raw,
 		);
 	}
 }
