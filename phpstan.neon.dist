@@ -13,3 +13,7 @@ parameters:
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
     reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        -
+            identifier: require.fileNotFound
+            path: src/Admin/AdminModule.php

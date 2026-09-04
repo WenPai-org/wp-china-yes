@@ -131,7 +131,10 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 0, preg_match( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/', $joined ) );
 		$this->assertNotFalse( strpos( $joined, 'wp.os' ) );
 		$this->assertNotFalse( strpos( $joined, 'registerCommand' ) );
-		$this->assertNotFalse( strpos( $joined, '绑定与小工具将在后续版本提供' ) );
+		$this->assertNotFalse( strpos( $joined, '绑定本站' ) );
+		$this->assertNotFalse( strpos( $joined, '绑定后显示' ) );
+		$this->assertNotFalse( strpos( $joined, 'allow-scripts allow-forms' ) );
+		$this->assertSame( 0, preg_match( '/allow-same-origin/', $joined ) );
 	}
 
 	/**

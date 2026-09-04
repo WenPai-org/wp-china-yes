@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>WPCY mock app</title>
+	<style>
+		body { font-family: sans-serif; margin: 16px; color: #1e1e1e; }
+		#log { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+	</style>
+</head>
+<body>
+	<p id="status" data-testid="status">loading</p>
+	<ol id="log" data-testid="log"></ol>
+	<script>
+	(function () {
+		var hostOrigin = '';
+		var step = 0;
+		var logEl = document.getElementById('log');
+		var statusEl = document.getElementById('status');
+
+		function line(text) {
+			var li = document.createElement('li');
+			li.setAttribute('data-testid', 'log-line');
+			li.textContent = text;
+			logEl.appendChild(li);
+		}
+
+		function envelope(type, payload, requestId) {
+			var msg = { wpcy: 1, type: type, payload: payload || {} };
+			if (requestId) {
+				msg.request_id = requestId;
+			}
+			return msg;
+		}
+
+		function send(type, payload, requestId) {
+			var target = hostOrigin || '*';
+			window.parent.postMessage(envelope(type, payload, requestId), target);
+		}
+
+		function next() {
+			step += 1;
+			if (step === 1) {
+				line('ready');
+				send('ready', {});
+				return;
+			}
+			if (step === 2) {
+				line('context.get');
+				send('context.get', {}, 'req-context');
+				return;
+			}
+			if (step === 3) {
+				line('data.set');
+				send('data.set', { key: 'smoke', value: { ok: true } }, 'req-set');
+				return;
+			}
+			if (step === 4) {
+				line('data.get');
+				send('data.get', { key: 'smoke' }, 'req-get');
+				return;
+			}
+			if (step === 5) {
+				line('data.delete');
+				send('data.delete', { key: 'smoke' }, 'req-delete');
+				return;
+			}
+			if (step === 6) {
+				line('entitlement.get');
+				send('entitlement.get', {}, 'req-ent');
+				return;
+			}
+			if (step === 7) {
+				line('go.open');
+				send('go.open', {}, 'req-go');
+				return;
+			}
+			if (step === 8) {
+				line('resize');
+				send('resize', { height: 320 });
+				statusEl.textContent = 'done';
+			}
+		}
+
+		window.addEventListener('message', function (event) {
+			var data = event.data;
+			if (!data || data.wpcy !== 1) {
+				return;
+			}
+			if (hostOrigin && event.origin !== hostOrigin) {
+				line('ignored origin ' + event.origin);
+				return;
+			}
+			if (data.type === 'init') {
+				hostOrigin = (data.payload && data.payload.host_origin) || event.origin;
+				line('init');
+				statusEl.textContent = 'init';
+				next();
+				return;
+			}
+			if (data.type === 'result') {
+				line('result ' + (data.request_id || ''));
+				if (data.request_id === 'req-set') {
+					line('set ok');
+				}
+				if (data.request_id === 'req-get') {
+					line('get ok');
+				}
+				if (data.request_id === 'req-delete') {
+					line('delete ok');
+				}
+				next();
+				return;
+			}
+			if (data.type === 'error') {
+				line('error ' + ((data.payload && data.payload.code) || ''));
+				next();
+			}
+		});
+
+		try {
+			if (document.referrer) {
+				hostOrigin = new URL(document.referrer).origin;
+			}
+		} catch (e) {}
+
+		next();
+	})();
+	</script>
+</body>
+</html>

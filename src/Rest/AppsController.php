@@ -10,9 +10,9 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Rest;
 
+use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Apps\DataStore;
 use WenPai\ChinaYes\Apps\EntitlementsClient;
-use WenPai\ChinaYes\Apps\ExhaustedEntitlements;
 use WenPai\ChinaYes\Apps\Registry;
 use WP_Error;
 use WP_REST_Request;
@@ -51,7 +51,7 @@ final class AppsController {
 	private DataStore $store;
 
 	/**
-	 * Entitlements. Default exhausted until M2-03.
+	 * Entitlements. Default is the cached Services\\Entitlements client.
 	 *
 	 * @var EntitlementsClient
 	 */
@@ -71,13 +71,13 @@ final class AppsController {
 	 *
 	 * @param Registry                           $registry     Verified list.
 	 * @param DataStore                          $store        Data table.
-	 * @param EntitlementsClient|null            $entitlements Entitlements. Null is exhausted.
+	 * @param EntitlementsClient|null            $entitlements Entitlements. Null uses CachedEntitlements.
 	 * @param array<string, mixed>|callable|null $context      Site context override.
 	 */
 	public function __construct( Registry $registry, DataStore $store, $entitlements = null, $context = null ) {
 		$this->registry     = $registry;
 		$this->store        = $store;
-		$this->entitlements = $entitlements instanceof EntitlementsClient ? $entitlements : new ExhaustedEntitlements();
+		$this->entitlements = $entitlements instanceof EntitlementsClient ? $entitlements : new CachedEntitlements();
 		$this->context      = $context;
 	}
 
