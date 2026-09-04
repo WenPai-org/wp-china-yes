@@ -100,6 +100,24 @@ class ModuleRegistryTest extends TestCase {
 	}
 
 	/**
+	 * ConditionalModule::enabled() throwing does not stop later modules.
+	 */
+	public function test_enabled_throw_does_not_block_others() {
+		$order    = array();
+		$registry = $this->registry();
+		$registry->add( RecordingModule::everywhere( 'ok-before', $order ) );
+		$registry->add( new ThrowingEnabledModule( 'boom-enabled' ) );
+		$registry->add( RecordingModule::everywhere( 'ok-after', $order ) );
+
+		$registry->boot( Environment::ADMIN );
+
+		$this->assertSame( array( 'ok-before', 'ok-after' ), $order );
+		$this->assertArrayHasKey( 'boom-enabled', $registry->failures() );
+		$this->assertNotEmpty( $registry->failures()['boom-enabled'] );
+		$this->assertInstanceOf( RuntimeException::class, $registry->failures()['boom-enabled'][0] );
+	}
+
+	/**
 	 * ConditionalModule::enabled() false skips register() without a failure.
 	 */
 	public function test_disabled_conditional_module_is_skipped() {

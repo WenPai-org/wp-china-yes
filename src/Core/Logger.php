@@ -35,10 +35,12 @@ final class Logger {
 	 *
 	 * @var string
 	 */
-	private $min_level;
+	private string $min_level;
 
 	/**
 	 * Optional writer. Null uses error_log().
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable|null
 	 */
@@ -49,7 +51,7 @@ final class Logger {
 	 *
 	 * @var list<array{level: string, message: string, context: array<string, mixed>}>
 	 */
-	private $records = array();
+	private array $records = array();
 
 	/**
 	 * Create a logger.
@@ -117,24 +119,82 @@ final class Logger {
 	 * @return array<string, mixed>
 	 */
 	private function redact( array $context ): array {
-		foreach ( array( 'password', 'credential', 'token', 'authorization', 'email', 'auth', 'ip', 'cookie' ) as $key ) {
-			unset( $context[ $key ] );
-		}
+		$out = array();
 
-		if ( isset( $context['url'] ) && is_string( $context['url'] ) ) {
-			$parts = function_exists( 'wp_parse_url' )
-				? wp_parse_url( $context['url'] )
-				: parse_url( $context['url'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap has no WordPress.
-			if ( is_array( $parts ) ) {
-				$scheme         = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
-				$host           = isset( $parts['host'] ) ? $parts['host'] : '';
-				$port           = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
-				$path           = isset( $parts['path'] ) ? $parts['path'] : '';
-				$context['url'] = $scheme . $host . $port . $path;
+		foreach ( $context as $key => $value ) {
+			if ( in_array( $key, array( 'password', 'credential', 'token', 'authorization', 'email', 'auth', 'ip', 'cookie' ), true ) ) {
+				continue;
 			}
+
+			if ( 'exception' === $key ) {
+				$out[ $key ] = $this->redact_exception( $value );
+				continue;
+			}
+
+			if ( 'url' === $key && is_string( $value ) ) {
+				$out[ $key ] = $this->redact_url( $value );
+				continue;
+			}
+
+			if ( is_array( $value ) ) {
+				$out[ $key ] = $this->redact( $value );
+				continue;
+			}
+
+			$out[ $key ] = $value;
 		}
 
-		return $context;
+		return $out;
+	}
+
+	/**
+	 * Keep class name and message only. Drop traces.
+	 *
+	 * @param mixed $value Throwable, array, or message string.
+	 * @return array{class: string, message: string}
+	 */
+	private function redact_exception( $value ): array {
+		if ( $value instanceof \Throwable ) {
+			return array(
+				'class'   => get_class( $value ),
+				'message' => $value->getMessage(),
+			);
+		}
+
+		if ( is_array( $value ) ) {
+			$class   = isset( $value['class'] ) && is_string( $value['class'] ) ? $value['class'] : '';
+			$message = isset( $value['message'] ) && is_string( $value['message'] ) ? $value['message'] : '';
+			return array(
+				'class'   => $class,
+				'message' => $message,
+			);
+		}
+
+		return array(
+			'class'   => '',
+			'message' => is_string( $value ) ? $value : '',
+		);
+	}
+
+	/**
+	 * Strip query string from a URL.
+	 *
+	 * @param string $url Raw URL.
+	 */
+	private function redact_url( string $url ): string {
+		$parts = function_exists( 'wp_parse_url' )
+			? wp_parse_url( $url )
+			: parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap has no WordPress.
+		if ( ! is_array( $parts ) ) {
+			return $url;
+		}
+
+		$scheme = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
+		$host   = isset( $parts['host'] ) ? $parts['host'] : '';
+		$port   = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
+		$path   = isset( $parts['path'] ) ? $parts['path'] : '';
+
+		return $scheme . $host . $port . $path;
 	}
 
 	/**

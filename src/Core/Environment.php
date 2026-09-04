@@ -40,14 +40,14 @@ final class Environment {
 	 *
 	 * @var string
 	 */
-	private $context;
+	private string $context;
 
 	/**
 	 * Whether URL rewrite modules may run.
 	 *
 	 * @var bool
 	 */
-	private $allows_url_rewrite;
+	private bool $allows_url_rewrite;
 
 	/**
 	 * Create a scene.

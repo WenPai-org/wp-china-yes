@@ -1,16 +1,9 @@
 {
-    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B).",
+    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B). api.wordpress.org is owned by Connectivity, not this table. Signature is the M1-09 payload and will not verify until the test private key is available to re-sign.",
     "issued_at": "2026-09-03T00:00:00Z",
     "ruleset_version": 1,
     "tiers": {
         "A": [
-            {
-                "action": "reroute",
-                "enabled_when": "ingest_ready",
-                "host": "api.wordpress.org",
-                "match": "exact",
-                "target": "https://api.wenpai.net/"
-            },
             {
                 "action": "reroute",
                 "enabled_when": "ingest_ready",

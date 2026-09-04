@@ -23,35 +23,35 @@ final class ModuleRegistry {
 	 *
 	 * @var array<string, Module>
 	 */
-	private $modules = array();
+	private array $modules = array();
 
 	/**
 	 * Config read model used by ConditionalModule::enabled().
 	 *
 	 * @var Config
 	 */
-	private $config;
+	private Config $config;
 
 	/**
 	 * Current request scene.
 	 *
 	 * @var Environment
 	 */
-	private $environment;
+	private Environment $environment;
 
 	/**
 	 * Kernel logger.
 	 *
 	 * @var Logger
 	 */
-	private $logger;
+	private Logger $logger;
 
 	/**
 	 * Failures keyed by module id. Never discarded after a log line.
 	 *
 	 * @var array<string, list<Throwable>>
 	 */
-	private $failures = array();
+	private array $failures = array();
 
 	/**
 	 * Create a registry.
@@ -95,24 +95,24 @@ final class ModuleRegistry {
 	 */
 	public function boot( string $scene ): void {
 		foreach ( $this->topological_sort() as $module ) {
-			if ( ! in_array( $scene, $this->contexts_of( $module ), true ) ) {
-				continue;
-			}
-
-			if ( $module instanceof ConditionalModule
-				&& ! $module->enabled( $this->config, $this->environment )
-			) {
-				continue;
-			}
-
 			try {
+				if ( ! in_array( $scene, $this->contexts_of( $module ), true ) ) {
+					continue;
+				}
+
+				if ( $module instanceof ConditionalModule
+					&& ! $module->enabled( $this->config, $this->environment )
+				) {
+					continue;
+				}
+
 				$module->register();
 			} catch ( Throwable $error ) {
 				$this->logger->error(
 					sprintf( 'Module register() failed: %s', $module->id() ),
 					array(
 						'module'    => $module->id(),
-						'exception' => $error->getMessage(),
+						'exception' => $error,
 					)
 				);
 				$this->record_failure( $module->id(), $error );
@@ -139,6 +139,15 @@ final class ModuleRegistry {
 	}
 
 	/**
+	 * Module ids in insertion order.
+	 *
+	 * @return list<string>
+	 */
+	public function ids(): array {
+		return array_keys( $this->modules );
+	}
+
+	/**
 	 * Kahn topological sort by dependencies(). Missing edges and cycles are recorded.
 	 *
 	 * @return list<Module>
@@ -155,7 +164,22 @@ final class ModuleRegistry {
 		}
 
 		foreach ( $this->modules as $id => $module ) {
-			foreach ( $this->dependencies_of( $module ) as $dependency ) {
+			try {
+				$dependencies = $this->dependencies_of( $module );
+			} catch ( Throwable $error ) {
+				$blocked[ $id ] = true;
+				$this->logger->error(
+					sprintf( 'Module dependencies() failed: %s', $id ),
+					array(
+						'module'    => $id,
+						'exception' => $error,
+					)
+				);
+				$this->record_failure( $id, $error );
+				continue;
+			}
+
+			foreach ( $dependencies as $dependency ) {
 				if ( ! isset( $this->modules[ $dependency ] ) ) {
 					$blocked[ $id ] = true;
 					$error          = new RuntimeException(

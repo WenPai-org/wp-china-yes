@@ -29,25 +29,27 @@ final class PublicAssetsModule implements ConditionalModule {
 	 *
 	 * @var Config
 	 */
-	private $config;
+	private Config $config;
 
 	/**
 	 * Whitelist table.
 	 *
 	 * @var AssetMap
 	 */
-	private $map;
+	private AssetMap $map;
 
 	/**
 	 * Node health.
 	 *
 	 * @var MirrorHealth
 	 */
-	private $health;
+	private MirrorHealth $health;
 
 	/**
 	 * Optional entitlement gate. Null means apply_filters default true
 	 * (no entitlements client yet: unbound still rewrites).
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable|null
 	 */

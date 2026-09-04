@@ -41,6 +41,8 @@ final class TelemetryModule implements Module {
 	/**
 	 * Config used only for site_uuid. Never read a telemetry switch.
 	 *
+	 * PHP 7.4 has no union property types.
+	 *
 	 * @var Repository|null
 	 */
 	private $config;
@@ -48,12 +50,16 @@ final class TelemetryModule implements Module {
 	/**
 	 * Kernel logger.
 	 *
+	 * PHP 7.4 has no union property types.
+	 *
 	 * @var Logger|null
 	 */
 	private $logger;
 
 	/**
 	 * Report collector. Injected in tests.
+	 *
+	 * PHP 7.4 has no union property types.
 	 *
 	 * @var Report|null
 	 */

@@ -22,7 +22,7 @@ final class Container {
 	 *
 	 * @var array<string, mixed>
 	 */
-	private $entries = array();
+	private array $entries = array();
 
 	/**
 	 * Bind an instance or a factory closure.

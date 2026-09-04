@@ -28,12 +28,16 @@ final class MirrorHealth {
 	/**
 	 * Reader: function( string $key ): mixed
 	 *
+	 * Callable is not a valid PHP 7.4 property type.
+	 *
 	 * @var callable
 	 */
 	private $get_transient;
 
 	/**
 	 * Writer: function( string $key, mixed $value, int $ttl ): bool
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable
 	 */
@@ -44,7 +48,7 @@ final class MirrorHealth {
 	 *
 	 * @var array<string, bool>
 	 */
-	private $overrides = array();
+	private array $overrides = array();
 
 	/**
 	 * Wire optional transient accessors, or pass a host => healthy map for tests.

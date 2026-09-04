@@ -36,12 +36,13 @@ final class DataResidencyModule implements Module {
 	 *
 	 * @var Ruleset
 	 */
-	private $ruleset;
+	private Ruleset $ruleset;
 
 	/**
 	 * Whether the cloud-bridge ingest health probe currently succeeds.
 	 *
 	 * M1-09: always false. Health URL and interval are 待定（M0）.
+	 * PHP 7.4 has no union property types.
 	 *
 	 * @var bool|callable
 	 */
@@ -52,7 +53,7 @@ final class DataResidencyModule implements Module {
 	 *
 	 * @var array<string, array{host: string, data_class: string, count: int, last_seen: string}>
 	 */
-	private $log = array();
+	private array $log = array();
 
 	/**
 	 * Create the module. Constructor does not register hooks.

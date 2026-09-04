@@ -172,6 +172,31 @@ class RepositoryTest extends TestCase {
 	}
 
 	/**
+	 * Has() is true for schema paths on the effective document, false otherwise.
+	 */
+	public function test_has_known_and_unknown_paths() {
+		$repo = $this->repo();
+		$this->assertTrue( $repo->has( 'connectivity.avatar' ) );
+		$this->assertFalse( $repo->has( 'nope.nope' ) );
+	}
+
+	/**
+	 * A present null leaf is distinct from a missing key.
+	 */
+	public function test_get_present_null_is_not_fallback() {
+		$tree = array(
+			'x' => null,
+		);
+		$this->assertTrue( Repository::path_exists( $tree, 'x' ) );
+		$this->assertNull( Repository::path_get( $tree, 'x' ) );
+		$this->assertFalse( Repository::path_exists( $tree, 'missing' ) );
+
+		$identity = $this->repo()->get_identity();
+		$this->assertArrayHasKey( 'credential', $identity['binding'] );
+		$this->assertNull( $identity['binding']['credential'] );
+	}
+
+	/**
 	 * Invalid set() values are sanitized rather than stored raw.
 	 */
 	public function test_set_invalid_enum_falls_back() {

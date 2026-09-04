@@ -19,11 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Unknown paths are discarded with a warning; they never throw.
  */
-final class Repository {
+final class Repository implements \WenPai\ChinaYes\Core\Config {
 
 	/**
 	 * Optional logger: callable(string $level, string $message, array $context): void
 	 * or an object with log().
+	 *
+	 * Callable is not a valid PHP 7.4 property type.
 	 *
 	 * @var callable|null
 	 */
@@ -34,7 +36,7 @@ final class Repository {
 	 *
 	 * @var Validator
 	 */
-	private $validator;
+	private Validator $validator;
 
 	/**
 	 * Constructor.
@@ -71,8 +73,27 @@ final class Repository {
 			$this->warn( 'Unknown config path discarded.', array( 'path' => $path ) );
 			return $fallback_value;
 		}
-		$value = self::path_get( $this->all(), $path );
-		return null === $value ? $fallback_value : $value;
+		$all = $this->all();
+		if ( ! self::path_exists( $all, $path ) ) {
+			return $fallback_value;
+		}
+		return self::path_get( $all, $path );
+	}
+
+	/**
+	 * Whether a dotted path exists on the effective settings (including a null leaf).
+	 *
+	 * Unknown schema paths are false. Does not log.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $path Dotted key.
+	 */
+	public function has( string $path ): bool {
+		if ( '' === $path || ! $this->is_readable_path( $path ) ) {
+			return false;
+		}
+		return self::path_exists( $this->all(), $path );
 	}
 
 	/**
@@ -269,6 +290,28 @@ final class Repository {
 			$current = $current[ $segment ];
 		}
 		return $current;
+	}
+
+	/**
+	 * Whether a dotted path is present. Distinguishes a missing key from a null value.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $data Tree.
+	 * @param string               $path Dotted path.
+	 */
+	public static function path_exists( array $data, string $path ): bool {
+		if ( '' === $path ) {
+			return true;
+		}
+		$current = $data;
+		foreach ( explode( '.', $path ) as $segment ) {
+			if ( ! is_array( $current ) || ! array_key_exists( $segment, $current ) ) {
+				return false;
+			}
+			$current = $current[ $segment ];
+		}
+		return true;
 	}
 
 	/**
