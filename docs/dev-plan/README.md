@@ -81,7 +81,7 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 
 | ID | 任务 | 主要交付 |
 |----|------|----------|
-| M4-01 | 删旧 | 物理删除 `framework/`、`Service/`、`client/`、`templates/`、旧 `Plugin.php` 路径与 `WPCY_KERNEL` 开关；composer 去 `./` 映射与 `files` |
+| M4-01 | 删旧 | 物理删除 `framework/`、`Service/`、`client/`、`templates/`、旧 `Plugin.php` 路径与 `WPCY_KERNEL` 开关；composer 去 `./` 映射与 `files`；**撤掉 CI `plugin-check` job 对旧目录/旧文件的排除项**（2026-09-04 为让门禁只守 4.0 代码而加，Plugin Check 在旧代码里发现的文本域/转义/直接访问问题随删除一并消失） |
 | M4-02 | 升级矩阵 | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
 | M4-03 | RC 与文档 | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧） |
 | M4-04 | 发版 | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |
