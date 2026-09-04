@@ -93,13 +93,13 @@ C 档 `host: "*"` 的 `ignore` 吃掉未命中 A/B 的请求。支付网关、�
 
 | host | match | target（占位） | 说明 |
 |---|---|---|---|
-| `api.wordpress.org` | `exact` | `https://api.wenpai.net/`（路径按原请求保留） | version / update-check；3.x 已改，4.0 纳入本表 |
+| `api.wordpress.org` | `exact` | `https://api.wenpai.net/`（路径按原请求保留） | **已迁 Connectivity**（`WordPressOrgModule`）。不进驻留主机表，基线无此主机 |
 | `tracking.woocommerce.com` | `exact` | `https://updates.wenpai.net/ingest/woo-tracker` | Woo Tracker |
 | `pixel.wp.com` | `exact` | **待定（M0）**：云桥 Tracks ingest URL | Tracks |
 | `stats.wp.com` | `exact` | **待定（M0）**：云桥 Tracks ingest URL | Tracks |
 | Jetpack Stats 埋点主机 | **待定（M0）** | 云桥 ingest | 定稿写「Jetpack Stats 埋点」；具体主机名与 target 由实现对照现网请求、与云桥合同后补进本表 |
 
-`api.wordpress.org` 的改写范围仅 version-check / plugins/update-check / themes/update-check，其它路径不在 A 档。路径过滤表达式 **待定（M0）**。
+`api.wordpress.org` **已迁 Connectivity**：改写范围由 `WordPressOrgModule` 负责（version-check / plugins/update-check / themes/update-check）。驻留 `Ruleset` 不再对该主机做路径白名单。
 
 ### B · 功能型（`action: record`）
 

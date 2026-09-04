@@ -253,14 +253,14 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
-	 * Recovery page is registered with an empty parent and the wpcy-recovery slug.
+	 * Recovery page is registered with a null parent and the wpcy-recovery slug.
 	 */
 	public function test_recovery_page_is_hidden_submenu() {
 		$page = new RecoveryPage( new RecoveryActions( new Repository() ) );
 		$page->add_page();
 
 		$this->assertCount( 1, RestStore::$pages );
-		$this->assertSame( '', RestStore::$pages[0]['parent'] );
+		$this->assertNull( RestStore::$pages[0]['parent'] );
 		$this->assertSame( RecoveryPage::SLUG, RestStore::$pages[0]['menu_slug'] );
 		$this->assertSame( 'manage_options', RestStore::$pages[0]['capability'] );
 		$this->assertSame( '文派叶子 · 恢复模式', RestStore::$pages[0]['page_title'] );
@@ -319,10 +319,43 @@ class PermissionsTest extends TestCase {
 
 		$repo = new Repository();
 		$page = new RecoveryPage( new RecoveryActions( $repo ) );
-		$page->handle_post();
+		try {
+			$page->handle_post();
+			$this->fail( 'handle_post must redirect after a successful POST' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-recovery', $e->getMessage() );
+		}
 
 		$this->assertTrue( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
+		$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-recovery', RestStore::$redirect );
+	}
+
+	/**
+	 * Multisite recovery_mode stays on site overrides; network option is unchanged.
+	 */
+	public function test_recovery_actions_multisite_does_not_write_network_option() {
+		\WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 1,
+				'allow_site_override' => true,
+				'recovery_mode'       => false,
+			)
+		);
+
+		$repo    = new Repository();
+		$actions = new RecoveryActions( $repo );
+		$this->assertTrue( $actions->apply( RecoveryActions::DISABLE_REWRITES ) );
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+
+		$network   = get_site_option( Schema::NETWORK_SETTINGS );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $network );
+		$this->assertIsArray( $overrides );
+		$this->assertFalse( $network['recovery_mode'] );
+		$this->assertTrue( $overrides['recovery_mode'] );
 	}
 
 	/**

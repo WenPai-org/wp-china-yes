@@ -98,7 +98,15 @@ final class MirrorHealth {
 		);
 
 		if ( function_exists( 'apply_filters' ) ) {
-			$filtered = apply_filters( 'wp_china_yes_mirror_probe_targets', $targets );
+			$filtered = apply_filters( 'wpcy_mirror_probe_targets', $targets );
+			if ( function_exists( 'apply_filters_deprecated' ) ) {
+				$filtered = apply_filters_deprecated(
+					'wp_china_yes_mirror_probe_targets',
+					array( $filtered ),
+					'4.0.0',
+					'wpcy_mirror_probe_targets'
+				);
+			}
 			if ( is_array( $filtered ) ) {
 				return $filtered;
 			}

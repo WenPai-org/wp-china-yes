@@ -86,6 +86,13 @@ final class RestStore {
 	public static $transients = array();
 
 	/**
+	 * Last wp_safe_redirect location, or null.
+	 *
+	 * @var string|null
+	 */
+	public static $redirect = null;
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -101,5 +108,6 @@ final class RestStore {
 		self::$die_status   = 0;
 		self::$die_throws   = false;
 		self::$transients   = array();
+		self::$redirect     = null;
 	}
 }

@@ -32,6 +32,7 @@ class RecordIgnoreTest extends TestCase {
 		parent::setUp();
 		OptionStore::reset();
 		$GLOBALS['wpcy_privacy_remote_urls'] = array();
+		$GLOBALS['wpcy_privacy_remote_args'] = array();
 	}
 
 	/**
@@ -199,6 +200,11 @@ class RecordIgnoreTest extends TestCase {
 			$GLOBALS['wpcy_privacy_remote_urls']
 		);
 		$this->assertArrayNotHasKey( 'tracking.woocommerce.com', $module->log() );
+		$this->assertNotEmpty( $GLOBALS['wpcy_privacy_remote_args'] );
+		$args = $GLOBALS['wpcy_privacy_remote_args'][0];
+		$this->assertTrue( $args['sslverify'] );
+		$this->assertLessThanOrEqual( 10, $args['timeout'] );
+		$this->assertGreaterThan( 0, $args['timeout'] );
 	}
 
 	/**

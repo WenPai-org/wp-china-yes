@@ -71,7 +71,7 @@ final class RecoveryPage {
 	}
 
 	/**
-	 * Hidden submenu: parent empty so the item is not listed.
+	 * Hidden submenu: parent null so the item is not listed.
 	 *
 	 * Direct URL ?page=wpcy-recovery still works.
 	 *
@@ -80,8 +80,10 @@ final class RecoveryPage {
 	public function add_page(): void {
 		$title = __( '文派叶子 · 恢复模式', 'wp-china-yes' );
 
+		$parent = null; // Hidden parent (ADR-002 / M1-11). WP stubs type this as string.
+
 		add_submenu_page(
-			'',
+			$parent, // @phpstan-ignore argument.type
 			$title,
 			$title,
 			'manage_options',
@@ -107,7 +109,16 @@ final class RecoveryPage {
 		$action = sanitize_key( wp_unslash( (string) $_POST[ self::ACTION_FIELD ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer immediately below.
 		check_admin_referer( $this->nonce_action( $action ), self::NONCE_FIELD );
 
-		$this->actions->apply( $action );
+		$result = $this->actions->apply( $action );
+		if ( true !== $result ) {
+			return;
+		}
+
+		if ( function_exists( 'wp_safe_redirect' ) ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=' . self::SLUG ) );
+		}
+
+		exit;
 	}
 
 	/**

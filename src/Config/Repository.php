@@ -100,7 +100,8 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 * Write a dotted path. Unknown paths are discarded.
 	 *
 	 * On multisite, connectivity/modules go to site overrides (when allowed);
-	 * other settings keys go to the network option.
+	 * recovery_mode always goes to site overrides. Other settings keys go to
+	 * the network option.
 	 *
 	 * @since 4.0.0
 	 *
@@ -135,8 +136,13 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		if ( $this->is_multisite() ) {
 			$base      = $this->load_option( Schema::NETWORK_SETTINGS );
 			$allow     = ! empty( $base['allow_site_override'] );
-			$overrides = $allow ? $this->load_option( Schema::SITE_OVERRIDES ) : array();
+			$overrides = $this->load_option( Schema::SITE_OVERRIDES );
 			unset( $overrides['schema_version'] );
+			if ( ! $allow ) {
+				$overrides = array_key_exists( 'recovery_mode', $overrides )
+					? array( 'recovery_mode' => $overrides['recovery_mode'] )
+					: array();
+			}
 			return $this->deep_merge( $base, $overrides );
 		}
 
@@ -254,8 +260,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		}
 
 		if ( Schema::SITE_OVERRIDES === $option && $this->is_multisite() && ! $this->allows_site_override() ) {
-			$this->warn( 'Site overrides ignored because allow_site_override is false.', array() );
-			return false;
+			$value = $this->preserve_disallowed_policy_segments( $value );
 		}
 
 		$clean = $this->validator->sanitize( $value, $option );
@@ -418,14 +423,17 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	}
 
 	/**
-	 * Write a connectivity/modules path into wpcy_site_overrides.
+	 * Write a connectivity/modules/recovery_mode path into wpcy_site_overrides.
+	 *
+	 * Recovery_mode is always site-scoped, including when allow_site_override is false.
 	 *
 	 * @param string $path  Dotted path.
 	 * @param mixed  $value New value.
 	 * @return bool
 	 */
 	private function set_override_path( string $path, $value ): bool {
-		if ( ! $this->allows_site_override() ) {
+		$root = explode( '.', $path )[0];
+		if ( 'recovery_mode' !== $root && ! $this->allows_site_override() ) {
 			$this->warn( 'Site overrides ignored because allow_site_override is false.', array( 'path' => $path ) );
 			return false;
 		}
@@ -445,6 +453,33 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	}
 
 	/**
+	 * Keep stored connectivity/modules when allow_site_override is false.
+	 *
+	 * Recovery_mode stays writable: it is site-scoped, not a network policy overlay.
+	 *
+	 * @param array<string, mixed> $value Incoming site-overrides document.
+	 * @return array<string, mixed>
+	 */
+	private function preserve_disallowed_policy_segments( array $value ): array {
+		$stored_raw = get_option( Schema::SITE_OVERRIDES, array() );
+		$stored     = is_array( $stored_raw ) ? $stored_raw : array();
+
+		if ( array_key_exists( 'connectivity', $value ) || array_key_exists( 'modules', $value ) ) {
+			$this->warn( 'Site overrides ignored because allow_site_override is false.', array() );
+		}
+
+		foreach ( array( 'connectivity', 'modules' ) as $key ) {
+			if ( array_key_exists( $key, $stored ) ) {
+				$value[ $key ] = $stored[ $key ];
+			} else {
+				unset( $value[ $key ] );
+			}
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Whether this path belongs in wpcy_site_overrides on multisite.
 	 *
 	 * @param string $path Dotted path.
@@ -452,7 +487,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 */
 	private function is_override_path( string $path ): bool {
 		$root = explode( '.', $path )[0];
-		return in_array( $root, array( 'connectivity', 'modules' ), true );
+		return in_array( $root, array( 'connectivity', 'modules', 'recovery_mode' ), true );
 	}
 
 	/**

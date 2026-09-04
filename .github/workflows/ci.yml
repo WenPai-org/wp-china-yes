@@ -185,5 +185,7 @@ jobs:
       - run: npm ci
       - run: npx wp-env start
       - run: bash tests/wordpress-smoke.sh
+      - run: bash tests/integration-cli.sh
+      - run: bash tests/integration-recovery.sh
       - if: always()
         run: npx wp-env stop

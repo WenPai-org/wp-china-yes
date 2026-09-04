@@ -43,14 +43,19 @@ if ( ! function_exists( 'wp_remote_request' ) ) {
 	/**
 	 * Record the rewritten URL. Never contacts a network.
 	 *
-	 * @param string $url Request URL.
+	 * @param string               $url  Request URL.
+	 * @param array<string, mixed> $args Request args.
 	 * @return array<string, mixed>
 	 */
-	function wp_remote_request( $url ) {
+	function wp_remote_request( $url, $args = array() ) {
 		if ( ! isset( $GLOBALS['wpcy_privacy_remote_urls'] ) || ! is_array( $GLOBALS['wpcy_privacy_remote_urls'] ) ) {
 			$GLOBALS['wpcy_privacy_remote_urls'] = array();
 		}
+		if ( ! isset( $GLOBALS['wpcy_privacy_remote_args'] ) || ! is_array( $GLOBALS['wpcy_privacy_remote_args'] ) ) {
+			$GLOBALS['wpcy_privacy_remote_args'] = array();
+		}
 		$GLOBALS['wpcy_privacy_remote_urls'][] = $url;
+		$GLOBALS['wpcy_privacy_remote_args'][] = is_array( $args ) ? $args : array();
 		return array(
 			'response' => array(
 				'code' => 200,

@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Cli;
 
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
+use WenPai\ChinaYes\Config\Validator;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -88,6 +89,9 @@ final class ConfigCommand {
 	/**
 	 * Settings plus network option. Never includes binding.credential.
 	 *
+	 * Multisite export is three sections: network, site_overrides, effective.
+	 * `effective` is the merged read model and must not be imported.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @return array<string, mixed>
@@ -99,14 +103,21 @@ final class ConfigCommand {
 			unset( $identity['binding']['credential'] );
 		}
 
+		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
+			return $this->strip_secrets(
+				array(
+					'network'             => $this->validated_option( Schema::NETWORK_SETTINGS ),
+					'site_overrides'      => $this->validated_option( Schema::SITE_OVERRIDES ),
+					'effective'           => $this->repository->all(),
+					Schema::SITE_IDENTITY => $identity,
+				)
+			);
+		}
+
 		$out = array(
 			Schema::SETTINGS      => isset( $exported['settings'] ) ? $exported['settings'] : $this->repository->all(),
 			Schema::SITE_IDENTITY => $identity,
 		);
-
-		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
-			$out[ Schema::NETWORK_SETTINGS ] = $this->repository->all();
-		}
 
 		return $this->strip_secrets( $out );
 	}
@@ -114,24 +125,38 @@ final class ConfigCommand {
 	/**
 	 * Write known option documents. Unknown keys go through Validator.
 	 *
+	 * Multisite import accepts only `network` and `site_overrides`. `effective` is ignored.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @param array<string, mixed> $decoded Import payload.
 	 */
 	public function import_document( array $decoded ): void {
+		unset( $decoded['effective'] );
+
+		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
+			$map = array(
+				'network'                => Schema::NETWORK_SETTINGS,
+				'site_overrides'         => Schema::SITE_OVERRIDES,
+				Schema::NETWORK_SETTINGS => Schema::NETWORK_SETTINGS,
+				Schema::SITE_OVERRIDES   => Schema::SITE_OVERRIDES,
+			);
+			foreach ( $map as $key => $option ) {
+				if ( ! isset( $decoded[ $key ] ) || ! is_array( $decoded[ $key ] ) ) {
+					continue;
+				}
+				$this->repository->save_option( $option, $decoded[ $key ] );
+			}
+			return;
+		}
+
 		$map = array(
-			Schema::SETTINGS         => Schema::SETTINGS,
-			Schema::NETWORK_SETTINGS => Schema::NETWORK_SETTINGS,
-			Schema::SITE_OVERRIDES   => Schema::SITE_OVERRIDES,
-			'settings'               => Schema::SETTINGS,
-			'network_settings'       => Schema::NETWORK_SETTINGS,
+			Schema::SETTINGS => Schema::SETTINGS,
+			'settings'       => Schema::SETTINGS,
 		);
 
 		foreach ( $map as $key => $option ) {
 			if ( ! isset( $decoded[ $key ] ) || ! is_array( $decoded[ $key ] ) ) {
-				continue;
-			}
-			if ( Schema::NETWORK_SETTINGS === $option && function_exists( 'is_multisite' ) && ! is_multisite() ) {
 				continue;
 			}
 			$this->repository->save_option( $option, $decoded[ $key ] );
@@ -140,6 +165,24 @@ final class ConfigCommand {
 		if ( ! isset( $decoded[ Schema::SETTINGS ] ) && ! isset( $decoded['settings'] ) && $this->looks_like_settings( $decoded ) ) {
 			$this->repository->save_option( Schema::SETTINGS, $decoded );
 		}
+	}
+
+	/**
+	 * Load one option and run it through Validator.
+	 *
+	 * @param string $option Option name.
+	 * @return array<string, mixed>
+	 */
+	private function validated_option( string $option ): array {
+		$raw = Schema::NETWORK_SETTINGS === $option
+			? ( function_exists( 'get_site_option' ) ? get_site_option( $option, array() ) : array() )
+			: ( function_exists( 'get_option' ) ? get_option( $option, array() ) : array() );
+
+		if ( ! is_array( $raw ) ) {
+			$raw = array();
+		}
+
+		return ( new Validator() )->sanitize( $raw, $option );
 	}
 
 	/**

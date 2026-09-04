@@ -154,3 +154,19 @@ if ( ! function_exists( 'apply_filters' ) ) {
 		return $value;
 	}
 }
+
+if ( ! function_exists( 'apply_filters_deprecated' ) ) {
+	/**
+	 * Pass the first extra argument through (WordPress deprecated-filter stand-in).
+	 *
+	 * @param string            $tag         Hook.
+	 * @param array<int, mixed> $args        Args; [0] is the filtered value.
+	 * @param string            $version     Unused.
+	 * @param string            $replacement Unused.
+	 * @return mixed
+	 */
+	function apply_filters_deprecated( $tag, $args, $version, $replacement = '' ) {
+		unset( $tag, $version, $replacement );
+		return is_array( $args ) && array_key_exists( 0, $args ) ? $args[0] : null;
+	}
+}

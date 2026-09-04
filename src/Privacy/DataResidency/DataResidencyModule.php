@@ -245,7 +245,13 @@ final class DataResidencyModule implements Module {
 		}
 
 		remove_filter( 'pre_http_request', array( $this, 'filter_pre_http_request' ), 10 );
-		$response = wp_remote_request( $rewritten );
+		$response = wp_remote_request(
+			$rewritten,
+			array(
+				'timeout'   => 10,
+				'sslverify' => true,
+			)
+		);
 		add_filter( 'pre_http_request', array( $this, 'filter_pre_http_request' ), 10, 3 );
 
 		return $response;

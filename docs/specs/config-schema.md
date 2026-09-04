@@ -159,7 +159,9 @@
 
 ## 3. `wpcy_site_overrides`（子站对网络策略的覆盖）
 
-只允许 `connectivity`、`modules` 两段。结构与站点设置对应段相同。不允许 `schema_version` 以外的其它顶层键。
+允许 `connectivity`、`modules`、`recovery_mode`。结构与站点设置对应段相同。不允许这些键与 `schema_version` 以外的其它顶层键。
+
+`recovery_mode` 是站点级：多站点下子站写入本 option，读取时站点值优先于网络 option。即使 `allow_site_override` 为 false，本站 `recovery_mode` 仍生效（恢复模式不是连接/模块覆盖）。
 
 ```json
 {
@@ -170,12 +172,13 @@
   "properties": {
     "schema_version": { "type": "integer", "const": 1, "default": 1 },
     "connectivity": { "$ref": "https://wpcy.com/schema/wpcy_settings.json#/properties/connectivity" },
-    "modules": { "$ref": "https://wpcy.com/schema/wpcy_settings.json#/properties/modules" }
+    "modules": { "$ref": "https://wpcy.com/schema/wpcy_settings.json#/properties/modules" },
+    "recovery_mode": { "$ref": "https://wpcy.com/schema/wpcy_settings.json#/properties/recovery_mode" }
   }
 }
 ```
 
-缺省段表示不覆盖。合并规则：网络默认 ← 本站覆盖（仅当 `allow_site_override` 为 true）。
+缺省段表示不覆盖。合并规则：网络默认 ← 本站覆盖（`connectivity`/`modules` 仅当 `allow_site_override` 为 true；`recovery_mode` 始终合并）。
 
 ## 4. `wpcy_site_identity`（`autoload=no`）
 

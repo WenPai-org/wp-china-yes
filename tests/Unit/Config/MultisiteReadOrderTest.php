@@ -165,11 +165,56 @@ class MultisiteReadOrderTest extends TestCase {
 	 */
 	public function test_set_network_key() {
 		$repo = $this->repo();
+		$this->assertTrue( $repo->set( 'diagnostics.scheduled_checks', false ) );
+		$this->assertFalse( $repo->get( 'diagnostics.scheduled_checks' ) );
+		$network = get_site_option( Schema::NETWORK_SETTINGS );
+		$this->assertFalse( $network['diagnostics']['scheduled_checks'] );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+	}
+
+	/**
+	 * Site recovery_mode writes wpcy_site_overrides and leaves the network option false.
+	 */
+	public function test_site_recovery_mode_does_not_write_network_option() {
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 1,
+				'allow_site_override' => true,
+				'recovery_mode'       => false,
+			)
+		);
+		$repo = $this->repo();
 		$this->assertTrue( $repo->set( 'recovery_mode', true ) );
 		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertTrue( $overrides['recovery_mode'] );
 		$network = get_site_option( Schema::NETWORK_SETTINGS );
-		$this->assertTrue( $network['recovery_mode'] );
+		$this->assertFalse( $network['recovery_mode'] );
 		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+	}
+
+	/**
+	 * Recovery_mode remains site-scoped when allow_site_override is false.
+	 */
+	public function test_site_recovery_mode_writes_when_overrides_disallowed() {
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 1,
+				'allow_site_override' => false,
+				'recovery_mode'       => false,
+			)
+		);
+		$repo = $this->repo();
+		$this->assertTrue( $repo->set( 'recovery_mode', true ) );
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertTrue( $overrides['recovery_mode'] );
+		$network = get_site_option( Schema::NETWORK_SETTINGS );
+		$this->assertFalse( $network['recovery_mode'] );
 	}
 
 	/**
