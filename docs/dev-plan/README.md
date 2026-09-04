@@ -39,6 +39,7 @@
 |----|------|------|--------|----------|----------|
 | M1-01 | 仓根脚手架 | — | — | composer PSR-4 `src/`、phpcs/phpstan/phpunit、`@wordpress/scripts` 构建链、CI `quality`/`frontend`、发布脚本排除项 | `composer check` 与 `npm run build` 通过；legacy 29 仍过；ZIP 含 `build/` 不含源码 |
 | M1-02 | Core 内核 | M1-01 | A | `src/Core/{Plugin,Container,Module,ConditionalModule,ModuleRegistry,Environment,Scope,Logger}`；`wp-china-yes.php` 加 `WPCY_KERNEL=v4` 常量开关（默认关，开则走新内核、不加载旧 `Plugin.php`） | 单元测试：注册顺序、依赖解析、单模块抛异常不阻断其它、场景过滤（admin/frontend/rest/cli/cron）；开关关时行为与 3.x 完全一致 |
+| M1-02b | v4 路径不加载 `framework/`（Composer `files` → 3.x 显式 require） | M1-02 | B | `composer.json` 去掉 setup.class.php 的 `files` 加载，3.x 路径显式 require，顺序不变；v4 `get_included_files()` 无 `framework/` | 见 `tasks/M1-02b.md`；legacy 29 仍过 |
 | M1-03 | Config | M1-01 | A | `src/Config/{Schema,Repository,Validator,Defaults}`，四个 option 键与 `schema_version`，未知键丢弃记 warning | 按 `docs/specs/config-schema.md` 逐字段测试；多站点网络/覆盖读取顺序测试 |
 | M1-04 | Connectivity/WordPressOrg | M1-02, M1-03 | B | 元数据源与包源分离、失败回原上游、状态码+类型+体积校验、状态缓存 TTL；**行为对齐 3.9.3 `tests/test-wporg-mirror-fallback.php` 与 `test-mirror-health-fallback.php` 的全部断言** | 把这两份 3.x 测试的场景改写为 PHPUnit 并全过；旧测试仍过 |
 | M1-05 | Connectivity/PublicAssets + Avatar | M1-02, M1-03 | B | 公共库白名单替换（节点故障保留原 URL）、Emoji 可选、Cravatar cn/global/off | 单元：白名单外不改写；节点不可用不改写；头像三种模式 |
