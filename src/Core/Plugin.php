@@ -24,6 +24,7 @@ use WenPai\ChinaYes\Diagnostics\SiteHealth;
 use WenPai\ChinaYes\Integrations\Windfonts\WindfontsModule;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Rest\RestModule;
+use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
 use WenPai\ChinaYes\Telemetry\TelemetryModule;
 
@@ -114,6 +115,7 @@ final class Plugin {
 		$registry->add( new AppsModule( null, null, null, null, $logger ) );
 		$registry->add( new RestModule( $config, $checker ) );
 		$registry->add( new AdminModule( $config ) );
+		$registry->add( new EntitlementsModule( $config, $logger ) );
 
 		return new self( $container, $registry, $environment );
 	}

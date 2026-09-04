@@ -37,6 +37,7 @@ class PluginCreateTest extends TestCase {
 				'services.apps',
 				'rest',
 				'admin',
+				'services.entitlements',
 			),
 			$plugin->registry()->ids()
 		);

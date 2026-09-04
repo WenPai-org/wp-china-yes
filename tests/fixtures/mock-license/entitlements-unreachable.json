@@ -1,0 +1,6 @@
+{
+	"error": {
+		"code": "unreachable",
+		"message": "Mock transport failure. Tests must not treat this body as a successful entitlements list."
+	}
+}

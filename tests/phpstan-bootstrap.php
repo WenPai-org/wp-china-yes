@@ -22,5 +22,5 @@ if ( ! defined( 'CHINA_YES_PLUGIN_URL' ) ) {
 }
 
 if ( ! defined( 'CHINA_YES_PLUGIN_PATH' ) ) {
-	define( 'CHINA_YES_PLUGIN_PATH', '' );
+	define( 'CHINA_YES_PLUGIN_PATH', dirname( __DIR__ ) . '/' );
 }
