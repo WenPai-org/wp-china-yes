@@ -4,7 +4,7 @@
 
 本文冻结自动匿名绑定、权益查询、配额与降级语义。客户端不计算额度、不解析价格、不存账号密码。不得在本文新增产品决定；空白处标「待定（M0）」。
 
-服务端基座 URL 用常量 `WPCY_SERVICES_API`（默认值 **待定（M0）：license.wenpai.net 或 MotuSnap 服务端**，由授权系统归属拍板后写入常量默认值）。
+服务端基座 URL 用常量 `WPCY_SERVICES_API`，默认值 **`https://license.wenpai.net/v1`**（2026-09-04 定稿 §7.5b-2：绑定与权益归 license-server；MotuSnap 作为权益提供方在其后）。staging 基座 URL 待 M3-S1 提供。
 
 ## 1. 绑定流程（自动匿名，无账号）
 
