@@ -38,6 +38,8 @@ class PluginCreateTest extends TestCase {
 				'rest',
 				'admin',
 				'services.entitlements',
+				'admin.notice_control',
+				'admin.announcements',
 			),
 			$plugin->registry()->ids()
 		);

@@ -4,6 +4,8 @@
 
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
+import { useEffect, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Button,
 	Card,
@@ -145,6 +147,86 @@ function attentionItems( targets ) {
 }
 
 /**
+ * Source label. wptea = 文派茶馆, one = 薇晓朵.
+ *
+ * @param {string} source Source id.
+ * @return {string} Label.
+ */
+function sourceLabel( source ) {
+	if ( source === 'one' ) {
+		return __( '薇晓朵', 'wp-china-yes' );
+	}
+	return __( '文派茶馆', 'wp-china-yes' );
+}
+
+/**
+ * Date part of a UTC ISO timestamp.
+ *
+ * @param {string} iso Timestamp.
+ * @return {string} YYYY-MM-DD or the original string.
+ */
+function publishedDate( iso ) {
+	if ( ! iso ) {
+		return '';
+	}
+	return iso.slice( 0, 10 );
+}
+
+/**
+ * Announcements list. Empty cache: render nothing, no error.
+ *
+ * @param {Object}   props
+ * @param {Array}    props.items
+ * @param {Function} props.onDismiss
+ */
+function AnnouncementsList( { items, onDismiss } ) {
+	if ( ! items.length ) {
+		return null;
+	}
+	return (
+		<section
+			className="wpcy-section"
+			aria-labelledby="wpcy-announcements-heading"
+		>
+			<h2 id="wpcy-announcements-heading">
+				{ __( '公告', 'wp-china-yes' ) }
+			</h2>
+			<ul className="wpcy-announcements">
+				{ items.map( ( item ) => (
+					<li key={ item.id }>
+						<a
+							className="wpcy-ann-title"
+							href={ item.url }
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{ item.title }
+						</a>
+						<span className="wpcy-ann-source">
+							{ sourceLabel( item.source ) }
+						</span>
+						<time
+							className="wpcy-ann-date"
+							dateTime={ item.published_at }
+						>
+							{ publishedDate( item.published_at ) }
+						</time>
+						<Button
+							className="wpcy-ann-dismiss"
+							variant="tertiary"
+							label={ __( '关闭', 'wp-china-yes' ) }
+							onClick={ () => onDismiss( item.id ) }
+						>
+							×
+						</Button>
+					</li>
+				) ) }
+			</ul>
+		</section>
+	);
+}
+
+/**
  * WordPress.org card status block.
  *
  * @param {Object}  props
@@ -224,6 +306,48 @@ export default function Overview() {
 			};
 		}, [] );
 	const { exitRecovery, runDiagnostics } = useDispatch( STORE_NAME );
+	const [ announcements, setAnnouncements ] = useState( [] );
+
+	useEffect( () => {
+		let cancelled = false;
+		apiFetch( { path: '/wpcy/v1/announcements' } )
+			.then( ( payload ) => {
+				if ( cancelled ) {
+					return;
+				}
+				const items = Array.isArray( payload?.items )
+					? payload.items.slice( 0, 5 )
+					: [];
+				setAnnouncements( items );
+			} )
+			.catch( () => {
+				if ( ! cancelled ) {
+					setAnnouncements( [] );
+				}
+			} );
+		return () => {
+			cancelled = true;
+		};
+	}, [] );
+
+	const dismissAnnouncement = ( id ) => {
+		apiFetch( {
+			path:
+				'/wpcy/v1/announcements/' +
+				encodeURIComponent( id ) +
+				'/dismiss',
+			method: 'POST',
+		} )
+			.then( ( payload ) => {
+				const items = Array.isArray( payload?.items )
+					? payload.items.slice( 0, 5 )
+					: [];
+				setAnnouncements( items );
+			} )
+			.catch( () => {
+				setAnnouncements( ( current ) => current );
+			} );
+	};
 
 	const org = wordpressOrgSummary( targets );
 	const assets = publicAssetsSummary( targets );
@@ -372,6 +496,11 @@ export default function Overview() {
 					</ul>
 				</section>
 			) : null }
+
+			<AnnouncementsList
+				items={ announcements }
+				onDismiss={ dismissAnnouncement }
+			/>
 		</PageShell>
 	);
 }

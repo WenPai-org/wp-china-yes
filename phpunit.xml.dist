@@ -55,5 +55,8 @@
 		<testsuite name="entitlements">
 			<directory>tests/Unit/Services/Entitlements</directory>
 		</testsuite>
+		<testsuite name="admin">
+			<directory>tests/Unit/Admin</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

@@ -1,0 +1,18 @@
+{
+  "rules_version": 1,
+  "issued_at": "2026-09-03T00:00:00Z",
+  "rules": [
+    {
+      "id": "woo-connect-promo",
+      "plugin": "woocommerce",
+      "hook": "admin_notices",
+      "class": "woocommerce-message"
+    },
+    {
+      "id": "acme-dashboard-banner",
+      "plugin": "acme-seo",
+      "hook": "admin_notices",
+      "class": "acme-promo-banner"
+    }
+  ]
+}

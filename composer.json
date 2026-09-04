@@ -62,7 +62,8 @@
 			"phpunit --testsuite migration",
 			"phpunit --testsuite site-binding",
 			"phpunit --testsuite apps",
-			"phpunit --testsuite entitlements"
+			"phpunit --testsuite entitlements",
+			"phpunit --testsuite admin"
 		],
 		"test:legacy": "bash tests/run-tests.sh",
 		"check": [
