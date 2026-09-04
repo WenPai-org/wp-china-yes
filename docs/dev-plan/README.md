@@ -43,6 +43,7 @@
 | M1-03 | Config | M1-01 | A | `src/Config/{Schema,Repository,Validator,Defaults}`，四个 option 键与 `schema_version`，未知键丢弃记 warning | 按 `docs/specs/config-schema.md` 逐字段测试；多站点网络/覆盖读取顺序测试 |
 | M1-04 | Connectivity/WordPressOrg | M1-02, M1-03 | B | 元数据源与包源分离、失败回原上游、状态码+类型+体积校验、状态缓存 TTL；**行为对齐 3.9.3 `tests/test-wporg-mirror-fallback.php` 与 `test-mirror-health-fallback.php` 的全部断言** | 把这两份 3.x 测试的场景改写为 PHPUnit 并全过；旧测试仍过 |
 | M1-05 | Connectivity/PublicAssets + Avatar | M1-02, M1-03 | B | 公共库白名单替换（节点故障保留原 URL）、Emoji 可选、Cravatar cn/global/off | 单元：白名单外不改写；节点不可用不改写；头像三种模式 |
+| M1-05b | 内核接线：Repository 实现 `Core\Config`、五模块注册进 `Plugin::create()`、`weavatar`、审查建议 | M1-02b, M1-04, M1-05, M1-09 | C | 见 `tasks/M1-05b.md`；**唯一可改 `src/Core/Plugin.php` 的 C 组任务** | v4 打开后五模块工作；`PluginCreateTest` |
 | M1-06 | Diagnostics + Site Health + WP-CLI | M1-04, M1-05 | C | 连接诊断（目标、结果、延迟、最近检查、建议）、Site Health 段、`wp wpcy status|doctor|config export|import` | wp-env 集成：CLI 输出 JSON schema；Site Health 段出现 |
 | M1-07 | REST `wpcy/v1` 基础 + 恢复页 | M1-03, M1-06 | C'（M1-06 合并后） | `/settings` `/network-settings` `/diagnostics` `/diagnostics/run` `/recovery`；PHP 恢复页 `?page=wpcy-recovery` | 按 `docs/specs/rest-api.md`；权限/nonce/schema 校验测试；恢复页无 JS 可关全部改写（wp-env 断言） |
 | M1-08 | 后台 React 应用（外壳 + 三页） | M1-07 | D | `src/Admin/app/`：store `wpcy/admin`、`<Page>` 布局、四页路由、命令面板注册；概览（公告占位）、连接优化（DataForm）、诊断（DataViews）；文派服务页占位 | 按 `docs/design/admin-ui-spec.md` 与原型；`npm run build` 体积 ≤ 300KB gz；键盘可达 |
