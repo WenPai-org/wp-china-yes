@@ -49,5 +49,8 @@
 		<testsuite name="site-binding">
 			<directory>tests/Unit/Services/SiteBinding</directory>
 		</testsuite>
+		<testsuite name="apps">
+			<directory>tests/Unit/Apps</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

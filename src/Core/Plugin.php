@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Core;
 
+use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
@@ -109,6 +110,7 @@ final class Plugin {
 		$container->set( 'diagnostics.checker', $checker );
 		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new SiteBindingModule( $config, $logger ) );
+		$registry->add( new AppsModule( null, null, null, null, $logger ) );
 		$registry->add( new RestModule( $config, $checker ) );
 
 		return new self( $container, $registry, $environment );
