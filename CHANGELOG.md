@@ -4,7 +4,7 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
-## v3.9.3 - 2026-09-XX
+## v3.9.3 - 2026-09-05
 
 ### 安全与隐私
 - 设置导入、导出、重置只允许管理员操作固定的 `wp_china_yes` option；评论置顶接口补充 `moderate_comments` 权限与参数校验。
