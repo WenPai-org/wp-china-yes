@@ -93,7 +93,7 @@ HTML;
             $font_family = $this->extract_font_family_name($font['family']);
             
             echo sprintf(<<<HTML
-            <link rel="stylesheet" type="text/css" crossorigin="anonymous" href="%s">
+            <link rel="stylesheet" type="text/css" href="%s">
             <style>
             %s {
                 font-style: %s;
@@ -103,7 +103,7 @@ HTML;
             </style>
 HTML
                 ,
-                $css_url,
+                esc_url($css_url),
                 htmlspecialchars_decode($font['selector']),
                 $font['style'] ?? 'normal',
                 $font['weight'] ?? 400,
@@ -122,15 +122,17 @@ HTML
         
         $params['family'] = $font['family'];
         
-        if (!empty($font['subset'])) {
-            $params['subset'] = $font['subset'];
+        $valid_subsets = ['en', 'zh', 'zh-common', 'full'];
+        $subset = $font['subset'] ?? 'full';
+        if (in_array($subset, $valid_subsets, true)) {
+            $params['subset'] = $subset;
         }
         
         if (!empty($font['lang'])) {
             $params['lang'] = $font['lang'];
         }
         
-        return $base_url . '?' . http_build_query($params);
+        return add_query_arg($params, $base_url);
     }
 
     /**

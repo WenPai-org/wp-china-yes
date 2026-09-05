@@ -1,0 +1,12 @@
+{
+  "name": "wp-china-yes-development",
+  "private": true,
+  "devDependencies": {
+    "@wordpress/env": "11.12.0"
+  },
+  "scripts": {
+    "env:start": "wp-env start",
+    "env:stop": "wp-env stop",
+    "test:wordpress": "bash tests/wordpress-smoke.sh"
+  }
+}

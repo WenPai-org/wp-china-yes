@@ -29,12 +29,6 @@ class WenPai_Bridge_Site_Health {
 	/** @var string 端点 */
 	const ENDPOINT = 'https://updates.wenpai.net/api/v1/telemetry';
 
-	/** @var string 开关 option key */
-	const ENABLED_KEY = 'wpcy_telemetry_enabled';
-
-	/** @var string 站点 URL 上报开关 option key */
-	const SITE_URL_KEY = 'wpcy_telemetry_send_site_url';
-
 	/** @var string 数据格式版本 */
 	const TELEMETRY_VERSION = '2.1';
 
@@ -51,10 +45,6 @@ class WenPai_Bridge_Site_Health {
 	public static function init(): void {
 		add_action( self::CRON_HOOK, [ __CLASS__, 'send_report' ] );
 
-		if ( ! get_option( self::ENABLED_KEY, 1 ) ) {
-			return;
-		}
-
 		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			$delay = wp_rand( 0, 6 * HOUR_IN_SECONDS );
 			wp_schedule_single_event( time() + $delay, self::CRON_HOOK );
@@ -65,10 +55,6 @@ class WenPai_Bridge_Site_Health {
 	 * 发送健康检查报告。
 	 */
 	public static function send_report(): void {
-		if ( ! get_option( self::ENABLED_KEY, 1 ) ) {
-			return;
-		}
-
 		$today     = gmdate( 'Y-m-d' );
 		$last_sent = get_transient( 'wpcy_telemetry_last_sent' );
 		if ( $last_sent === $today ) {
@@ -79,13 +65,22 @@ class WenPai_Bridge_Site_Health {
 		try {
 			$report = self::collect_report();
 
-			wp_remote_post( self::ENDPOINT, [
+			$response = wp_remote_post( self::ENDPOINT, [
 				'body'      => wp_json_encode( $report ),
 				'headers'   => [ 'Content-Type' => 'application/json' ],
 				'timeout'   => 10,
-				'blocking'  => false,
+				'blocking'  => true,
 				'sslverify' => true,
 			] );
+
+			if ( is_wp_error( $response ) ) {
+				throw new \RuntimeException( $response->get_error_message() );
+			}
+
+			$status = (int) wp_remote_retrieve_response_code( $response );
+			if ( $status < 200 || $status >= 300 ) {
+				throw new \RuntimeException( 'Telemetry endpoint returned HTTP ' . $status );
+			}
 
 			set_transient( 'wpcy_telemetry_last_sent', $today, 36 * HOUR_IN_SECONDS );
 		} catch ( \Throwable $e ) {
@@ -105,7 +100,7 @@ class WenPai_Bridge_Site_Health {
 	private static function collect_report(): array {
 		$report = [
 			'site_uuid'          => WenPai_Bridge_Site_Identity::get_uuid(),
-			'site_url'           => get_option( self::SITE_URL_KEY, 1 ) ? home_url() : '',
+			'site_url'           => home_url(),
 			'wp_version'         => get_bloginfo( 'version' ),
 			'php_version'        => PHP_VERSION,
 			'mysql_version'      => self::get_mysql_version(),
@@ -121,7 +116,6 @@ class WenPai_Bridge_Site_Health {
 			'translations'       => self::get_translations(),
 		];
 
-		// WooCommerce 数据（仅当 WC 激活时）
 		$wc_data = self::get_woocommerce_data();
 		if ( $wc_data !== null ) {
 			$report['woocommerce'] = $wc_data;
@@ -298,11 +292,22 @@ class WenPai_Bridge_Site_Health {
 	private static function get_users_count(): int {
 		$count = get_transient( 'wpcy_users_count' );
 		if ( false === $count ) {
-			$count = count_users();
-			$count = isset( $count['total_users'] ) ? (int) $count['total_users'] : 0;
+			$counts = self::count_users_once();
+			$count  = isset( $counts['total_users'] ) ? (int) $counts['total_users'] : 0;
 			set_transient( 'wpcy_users_count', $count, DAY_IN_SECONDS );
 		}
 		return (int) $count;
+	}
+
+	/** @var array|null 本次请求内 count_users() 的结果，避免大站上跑两遍 usermeta 聚合。 */
+	private static $user_counts = null;
+
+	private static function count_users_once(): array {
+		if ( null === self::$user_counts ) {
+			$counts            = count_users();
+			self::$user_counts = is_array( $counts ) ? $counts : [];
+		}
+		return self::$user_counts;
 	}
 
 	/**
@@ -383,6 +388,9 @@ class WenPai_Bridge_Site_Health {
 		}
 
 		global $wpdb;
+		if ( ! $wpdb ) {
+			return null;
+		}
 
 		$data = [
 			'wc_version'    => defined( 'WC_VERSION' ) ? WC_VERSION : '',
@@ -390,6 +398,8 @@ class WenPai_Bridge_Site_Health {
 			'base_location' => '',
 			'is_ssl'        => is_ssl(),
 			'hpos_enabled'  => self::is_hpos_enabled(),
+			// 商店是否仍向 WooCommerce.com 开着用量追踪（数据驻留改道的前置观察项）
+			'allow_tracking' => get_option( 'woocommerce_allow_tracking', 'no' ) === 'yes',
 		];
 
 		// 商店位置
@@ -499,7 +509,7 @@ class WenPai_Bridge_Site_Health {
 			return $cached;
 		}
 
-		$user_count = count_users();
+		$user_count = self::count_users_once();
 		$roles      = [];
 
 		if ( isset( $user_count['avail_roles'] ) && is_array( $user_count['avail_roles'] ) ) {
@@ -572,6 +582,11 @@ class WenPai_Bridge_Site_Health {
 			return false;
 		}
 
+		// has_block() 是 WP 5.0 才有的；插件仍声明 4.9。
+		if ( ! function_exists( 'has_block' ) ) {
+			return false;
+		}
+
 		return has_block( $block_name, $post );
 	}
 
@@ -623,9 +638,6 @@ class WenPai_Bridge_Site_Health {
 	 * 插件停用时清理 Cron。
 	 */
 	public static function deactivate(): void {
-		$timestamp = wp_next_scheduled( self::CRON_HOOK );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK );
-		}
+		wp_clear_scheduled_hook( self::CRON_HOOK );
 	}
 }

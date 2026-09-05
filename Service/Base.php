@@ -19,15 +19,18 @@ class Base {
 
     private function init_services() {
         $core_services = [
+            'Migration',
             'Super',
-            'Monitor', 
             'Memory',
             'Update',
             'Database',
+            // 必须在 Acceleration 之前：后者构造时即读取镜像健康状态
+            'MirrorHealth',
             'Acceleration',
             'Avatar',
             'Fonts',
             'Comments',
+            'Language',
             'Media',
             'Performance',
             'Maintenance'

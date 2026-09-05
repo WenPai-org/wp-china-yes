@@ -2,7 +2,7 @@
 /**
  * WenPai Bridge — 客户端引导加载器
  *
- * 在 wp-china-yes 主文件中 require 此文件即可启用遥测功能。
+ * 在 wp-china-yes 主文件中 require 此文件即可启用站点身份、每日兼容性报告与更新通道降级。
  * 不依赖任何框架，可在插件重构前后直接使用。
  *
  * 用法：
@@ -19,9 +19,16 @@ require_once __DIR__ . '/class-site-identity.php';
 require_once __DIR__ . '/class-site-health.php';
 require_once __DIR__ . '/class-fallback.php';
 
-// 初始化遥测（在 plugins_loaded 之后，确保 WordPress API 可用）
+// 每日兼容性报告始终启用（在 plugins_loaded 之后，确保 WordPress API 可用）
 add_action( 'init', [ 'WenPai_Bridge_Site_Health', 'init' ] );
-add_action( 'init', [ 'WenPai_Bridge_Fallback', 'init' ] );
+
+// 更新通道降级策略受 `bridge` 设置开关控制
+add_action( 'init', function () {
+	$settings = function_exists( '\\WenPai\\ChinaYes\\get_settings' ) ? \WenPai\ChinaYes\get_settings() : [];
+	if ( ! empty( $settings['bridge'] ) ) {
+		WenPai_Bridge_Fallback::init();
+	}
+} );
 
 // Phase 3: 在发往云桥的 HTTP 请求中注入 X-Site-UUID 头（用于灰度发布分组）
 add_filter( 'http_request_args', function ( $args, $url ) {

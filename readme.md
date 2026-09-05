@@ -15,7 +15,6 @@
 
 - [x] 优化 WordPress 相关服务在中国大陆的访问速度
 - [x] 优化 WordPress 后台加载速度
-- [x] 优化 WordPress 前台加载速度
 - [x] 移除后台无用请求与组件
 - [x] 替换 Gravatar 头像为 Cravatar [初认头像](https://cravatar.com/)
 - [x] 优化 谷歌字体 加载速度
@@ -26,8 +25,10 @@
 - [x] 集成 Windfonts 中文网页 Webfonts [文风字体](https://windfonts.com)
 - [x] 集成 adminCDN 前端公共库 [萌芽加速](https://admincdn.com)
 - [x] 启用 飞行模式 可屏蔽外部 API 请求
-- [x] 启用 节点监控 可自动切换加速节点
-- [x] 启用 品牌白标 可自定义 OEM 插件品牌
+- [x] 镜像不可用时自动回到原始上游
+- [x] 连接诊断与兼容性报告
+
+> 3.9.3 已移除把站点自身 `wp-content` 资源改写到共享公共端点的“前台加速”。
 
 
 ## 安装
@@ -50,4 +51,4 @@
 
 ---
 
-**Copyright © 2025 · WPCY.COM , All Rights Reserved. 文派 （广州） 科技有限公司；**
+**Copyright © 2026 · WPCY.COM , All Rights Reserved. 文派 （广州） 科技有限公司；**

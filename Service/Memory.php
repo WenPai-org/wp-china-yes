@@ -21,12 +21,11 @@ class Memory {
     private $mysql_version = '';
 
     public function __construct() {
-    $settings = get_settings();
-    if (!empty($settings['memory'])) {
-        add_action('plugins_loaded', [$this, 'initialize']);
-    }
-    register_activation_hook(CHINA_YES_PLUGIN_FILE, [$this, 'check_php_version']);
-}
+	    $settings = get_settings();
+	    if (!empty($settings['memory'])) {
+	        $this->initialize();
+	    }
+	}
 
     /**
      * 初始化插件
@@ -89,7 +88,10 @@ class Memory {
      * 检查 PHP 内存限制
      */
     public function check_memory_limit() {
-        $this->memory['limit'] = (int) ini_get('memory_limit');
+        $raw_limit = trim((string) ini_get('memory_limit'));
+        $this->memory['limit'] = '-1' === $raw_limit
+            ? 0
+            : round(wp_convert_hr_to_bytes($raw_limit) / 1024 / 1024, 2);
     }
 
     /**
@@ -100,7 +102,9 @@ class Memory {
             ? round(memory_get_peak_usage(true) / 1024 / 1024, 2) 
             : 0;
 
-        if (!empty($this->memory['usage']) && !empty($this->memory['limit'])) {
+        $this->memory['percent'] = null;
+        $this->memory['color'] = 'font-weight:normal;';
+        if (!empty($this->memory['usage']) && $this->memory['limit'] > 0) {
             $this->memory['percent'] = round($this->memory['usage'] / $this->memory['limit'] * 100, 0);
             $this->memory['color'] = $this->get_memory_color($this->memory['percent']);
         }
@@ -174,15 +178,17 @@ public function add_footer($content) {
 
     
     // 内存使用量
-    if (in_array('memory_usage', $display_options)) {
-        $footer_parts[] = sprintf('%s: %s %s %s MB (<span style="%s">%s%%</span>)',
-            'Memory',
-            $this->memory['usage'],
-            'of',
-            $this->memory['limit'],
-            $this->memory['color'],
-            $this->memory['percent']
-        );
+	if (in_array('memory_usage', $display_options, true)) {
+	    if (null === $this->memory['percent']) {
+	        $footer_parts[] = sprintf('Memory: %s MB of Unlimited', $this->memory['usage']);
+	    } else {
+	        $footer_parts[] = sprintf('Memory: %s of %s MB (<span style="%s">%s%%</span>)',
+	            $this->memory['usage'],
+	            $this->memory['limit'],
+	            $this->memory['color'],
+	            $this->memory['percent']
+	        );
+	    }
     }
     
     // WP内存限制
@@ -245,13 +251,13 @@ public function add_footer($content) {
      * 检查 PHP 版本
      */
     public function check_php_version() {
-        if (version_compare(PHP_VERSION, '7.0', '<')) {
+        if (version_compare(PHP_VERSION, '7.4.0', '<')) {
             deactivate_plugins(plugin_basename(CHINA_YES_PLUGIN_FILE));
             wp_die(
                 sprintf(
                     '<h1>%s</h1><p>%s</p>',
                     '插件无法激活：PHP 版本过低',
-                    '请升级 PHP 至 7.0 或更高版本。'
+					'请升级 PHP 至 7.4 或更高版本。'
                 ),
                 'PHP 版本错误',
                 ['back_link' => true]

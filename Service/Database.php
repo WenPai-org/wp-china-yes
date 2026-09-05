@@ -19,14 +19,6 @@ class Database {
 
         $this->settings = get_settings();
 
-        // 如果启用了数据库工具，则允许访问数据库修复工具
-        if ( ! empty( $this->settings['enable_db_tools'] ) && $this->settings['enable_db_tools'] ) {
-            define( 'WP_ALLOW_REPAIR', true );
-        }
-
-        // 处理调试常量
-        $this->handle_debug_constants();
-
         // 安全相关常量
         $this->handle_security_constants();
     }
