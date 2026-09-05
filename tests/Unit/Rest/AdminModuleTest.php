@@ -69,9 +69,11 @@ class AdminModuleTest extends TestCase {
 		$payload                           = $module->bootstrap_payload();
 
 		$this->assertSame(
-			array( 'nonce', 'restRoot', 'capabilities', 'settings' ),
+			array( 'nonce', 'restRoot', 'capabilities', 'settings', 'pluginVersion', 'siteContext' ),
 			array_keys( $payload )
 		);
+		$this->assertIsString( $payload['pluginVersion'] );
+		$this->assertIsArray( $payload['siteContext'] );
 		$this->assertSame( 'nonce-wp_rest', $payload['nonce'] );
 		$this->assertSame( 'http://example.test/wp-json/', $payload['restRoot'] );
 		$this->assertTrue( $payload['capabilities']['manage_options'] );

@@ -99,6 +99,58 @@ class StylesheetTest extends TestCase {
 	}
 
 	/**
+	 * Selector tags and braces are stripped.
+	 */
+	public function test_selector_strips_tags_and_braces() {
+		$sheet = new Stylesheet();
+		$html  = $sheet->render(
+			array(
+				array(
+					'family'   => 'wenfeng-hcszt',
+					'subset'   => 'full',
+					'selector' => 'body<script>alert(1)</script>{color:red}',
+					'enable'   => true,
+				),
+			)
+		);
+
+		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertStringNotContainsString( '{color:red}', $html );
+		$this->assertStringContainsString( 'body', $html );
+	}
+
+	/**
+	 * Denied entitlement prints no stylesheet.
+	 */
+	public function test_print_stylesheets_empty_when_entitlement_denied() {
+		$module = new WindfontsModule(
+			new MapConfig(
+				array(
+					'modules.windfonts'            => true,
+					'recovery_mode'                => false,
+					'integrations.windfonts.fonts' => array(
+						array(
+							'family'   => 'wenfeng-hcszt',
+							'subset'   => 'full',
+							'selector' => 'body',
+							'enable'   => true,
+						),
+					),
+				)
+			),
+			null,
+			static function () {
+				return false;
+			}
+		);
+
+		ob_start();
+		$module->print_stylesheets();
+		$html = (string) ob_get_clean();
+		$this->assertSame( '', $html );
+	}
+
+	/**
 	 * Disabled fonts are skipped. Empty enable matches 3.x empty().
 	 */
 	public function test_disabled_font_is_skipped() {

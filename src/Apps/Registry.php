@@ -78,6 +78,15 @@ final class Registry {
 	}
 
 	/**
+	 * Last index fetch outcome: ok, unreachable, or invalid.
+	 *
+	 * @since 4.0.0
+	 */
+	public function index_status(): string {
+		return $this->index->index_status();
+	}
+
+	/**
 	 * One verified manifest, or null.
 	 *
 	 * @since 4.0.0

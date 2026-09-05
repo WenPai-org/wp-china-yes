@@ -156,7 +156,8 @@ function canOpenSandbox( app ) {
 	if ( app.tier === 'free' ) {
 		return true;
 	}
-	return appQuota( app ).status === 'active';
+	const status = appQuota( app ).status;
+	return status === 'active' || status === 'exhausted';
 }
 
 /**
@@ -464,12 +465,17 @@ function AppSandbox( { app, onBack } ) {
 		if ( ! node ) {
 			return undefined;
 		}
+		const bootstrap =
+			typeof window !== 'undefined' && window.wpcyAdmin
+				? window.wpcyAdmin
+				: {};
 		const bridge = attachBridge( {
 			iframe: node,
 			manifest: app,
 			hostOrigin,
 			locale: document.documentElement.lang || 'zh_CN',
-			pluginVersion: '',
+			pluginVersion: bootstrap.pluginVersion || '',
+			context: bootstrap.siteContext || {},
 			restFetch: ( request ) => apiFetch( request ),
 			onResize: setHeight,
 		} );
@@ -558,9 +564,19 @@ export default function Services() {
 
 	async function refreshApps() {
 		try {
-			const list = await apiFetch( { path: APPS_PATH } );
-			setApps( Array.isArray( list ) ? list : [] );
-			setAppsUnavailable( false );
+			const body = await apiFetch( { path: APPS_PATH } );
+			if ( Array.isArray( body ) ) {
+				setApps( body );
+				setAppsUnavailable( false );
+				return;
+			}
+			const list = body && Array.isArray( body.apps ) ? body.apps : [];
+			const status =
+				body && typeof body.index_status === 'string'
+					? body.index_status
+					: 'ok';
+			setApps( list );
+			setAppsUnavailable( status !== 'ok' );
 		} catch ( error ) {
 			setApps( [] );
 			setAppsUnavailable( true );
@@ -576,6 +592,7 @@ export default function Services() {
 				bound_at: null,
 			} );
 		} );
+		refreshApps();
 		return stopPoll;
 	}, [] );
 
@@ -585,7 +602,6 @@ export default function Services() {
 			return;
 		}
 		refreshQuotas();
-		refreshApps();
 	}, [ bound ] );
 
 	useEffect( () => {

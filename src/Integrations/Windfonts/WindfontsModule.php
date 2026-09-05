@@ -82,7 +82,7 @@ final class WindfontsModule implements ConditionalModule {
 	 * @return list<string>
 	 */
 	public function dependencies(): array {
-		return array();
+		return array( 'services.entitlements' );
 	}
 
 	/**
@@ -135,12 +135,16 @@ final class WindfontsModule implements ConditionalModule {
 	 * @since 4.0.0
 	 */
 	public function print_stylesheets(): void {
+		if ( ! $this->entitlement_allows() ) {
+			return;
+		}
+
 		$fonts = $this->config->get( 'integrations.windfonts.fonts', array() );
 		if ( ! is_array( $fonts ) ) {
 			$fonts = array();
 		}
 
-		echo $this->stylesheet->render( $fonts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Stylesheet::render() escapes href via esc_url; license mark is a fixed 3.x string; selector matches 3.x htmlspecialchars_decode.
+		echo $this->stylesheet->render( $fonts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Stylesheet::render() escapes href via esc_url; license mark is a fixed 3.x string; selector is escaped.
 	}
 
 	/**

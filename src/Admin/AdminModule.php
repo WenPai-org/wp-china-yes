@@ -274,7 +274,7 @@ final class AdminModule implements Module {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{nonce: string, restRoot: string, capabilities: array<string, bool>, settings: array<string, mixed>}
+	 * @return array{nonce: string, restRoot: string, capabilities: array<string, bool>, settings: array<string, mixed>, pluginVersion: string, siteContext: array<string, mixed>}
 	 */
 	public function bootstrap_payload(): array {
 		$nonce = '';
@@ -288,13 +288,47 @@ final class AdminModule implements Module {
 		}
 
 		return array(
-			'nonce'        => $nonce,
-			'restRoot'     => $rest_root,
-			'capabilities' => array(
+			'nonce'         => $nonce,
+			'restRoot'      => $rest_root,
+			'capabilities'  => array(
 				'manage_options'         => current_user_can( 'manage_options' ),
 				'manage_network_options' => current_user_can( 'manage_network_options' ),
 			),
-			'settings'     => $this->repository->all(),
+			'settings'      => $this->repository->all(),
+			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
+			'siteContext'   => $this->site_context(),
+		);
+	}
+
+	/**
+	 * Site context for host bridge init. No roles, no email.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function site_context(): array {
+		$plugins = array();
+		if ( function_exists( 'get_option' ) ) {
+			$stored = get_option( 'active_plugins', array() );
+			if ( is_array( $stored ) ) {
+				foreach ( $stored as $slug ) {
+					if ( is_string( $slug ) && '' !== $slug ) {
+						$plugins[] = $slug;
+					}
+				}
+			}
+		}
+
+		return array(
+			'site_url'       => function_exists( 'site_url' ) ? site_url() : '',
+			'wp_version'     => function_exists( 'get_bloginfo' ) ? (string) get_bloginfo( 'version' ) : '',
+			'locale'         => function_exists( 'get_locale' ) ? get_locale() : 'en_US',
+			'is_multisite'   => function_exists( 'is_multisite' ) ? is_multisite() : false,
+			'user_can'       => array(
+				'manage_options' => function_exists( 'current_user_can' ) ? current_user_can( 'manage_options' ) : false,
+			),
+			'active_plugins' => $plugins,
 		);
 	}
 

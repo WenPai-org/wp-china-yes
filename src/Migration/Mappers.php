@@ -35,13 +35,7 @@ final class Mappers {
 		'google_ajax'  => 'google_ajax',
 		'cdnjs'        => 'cdnjs',
 		'jsdelivr'     => 'jsdelivr',
-		'bootstrapcdn' => 'jsdelivr',
 		'emoji'        => 'emoji',
-		'react'        => 'jsdelivr',
-		'jquery'       => 'jsdelivr',
-		'vuejs'        => 'jsdelivr',
-		'datatables'   => 'jsdelivr',
-		'tailwindcss'  => 'jsdelivr',
 	);
 
 	/**

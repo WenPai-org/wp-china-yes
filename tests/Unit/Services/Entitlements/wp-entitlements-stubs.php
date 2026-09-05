@@ -39,10 +39,34 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 * @return mixed
 	 */
 	function apply_filters( $tag, $value ) {
+		$args = func_get_args();
 		if ( 'wpcy_services_api' === $tag ) {
 			return EntitlementsStore::$api;
 		}
+		if ( isset( RestStore::$hooks[ $tag ] ) ) {
+			foreach ( RestStore::$hooks[ $tag ] as $callback ) {
+				$value = call_user_func_array( $callback, array_slice( $args, 1 ) );
+			}
+		}
 		return $value;
+	}
+}
+
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Run recorded action callbacks.
+	 *
+	 * @param string $tag Hook.
+	 * @return void
+	 */
+	function do_action( $tag ) {
+		$args = func_get_args();
+		if ( ! isset( RestStore::$hooks[ $tag ] ) ) {
+			return;
+		}
+		foreach ( RestStore::$hooks[ $tag ] as $callback ) {
+			call_user_func_array( $callback, array_slice( $args, 1 ) );
+		}
 	}
 }
 

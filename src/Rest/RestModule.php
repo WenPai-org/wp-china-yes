@@ -23,8 +23,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers settings, network-settings, diagnostics, recovery, and binding.
- *
- * Does not register residency, announcements, entitlements, or apps.
  */
 final class RestModule implements Module {
 

@@ -150,7 +150,7 @@ WordPress 能力一律 `manage_options`。此外按 manifest `permissions[]` 裁
 
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
-| GET | `/apps` | `manage_options` | 已验签的 manifest 列表（含每个工具的权益状态摘要） |
+| GET | `/apps` | `manage_options` | `{ "apps": [ <manifest + entitlement_status> ], "index_status": "ok"\|"unreachable"\|"invalid" }`。空目录为 `ok` + `apps: []`；拉索引失败为 `unreachable`；签名或 JSON 无效为 `invalid`。 |
 | GET | `/apps/{id}/context` | 同上 + `site:read` | `site_url`、`wp_version`、`locale`、`is_multisite`、`user_can`（布尔映射）、`active_plugins`（slug 列表） |
 | GET | `/apps/{id}/data` | + `data:read` | key 列表 |
 | GET | `/apps/{id}/data/{key}` | + `data:read` | 单条 |

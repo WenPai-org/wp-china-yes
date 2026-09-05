@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Core;
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Plugin;
+use WenPai\ChinaYes\Integrations\Windfonts\Catalog;
 
 /**
  * Kernel create() contract from M1-05b.
@@ -45,6 +46,7 @@ class PluginCreateTest extends TestCase {
 		);
 
 		$this->assertInstanceOf( Repository::class, $plugin->container()->get( 'config' ) );
+		$this->assertInstanceOf( Catalog::class, $plugin->container()->get( 'windfonts.catalog' ) );
 	}
 
 	/**

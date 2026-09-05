@@ -54,6 +54,19 @@ final class EntitlementsModule implements Module {
 	public const TTL_STALE = 259200;
 
 	/**
+	 * Restricted-layer service slugs. Baseline modules do not consult this filter.
+	 *
+	 * @since 4.0.0
+	 * @var list<string>
+	 */
+	public const RESTRICTED_SERVICES = array(
+		'windfonts',
+		'admincdn',
+		'wpmirror-packages',
+		'motusnap',
+	);
+
+	/**
 	 * Settings / identity access.
 	 *
 	 * @var Repository
@@ -142,6 +155,7 @@ final class EntitlementsModule implements Module {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_filter( 'wpcy_entitlement_allows', array( $this, 'filter_allows' ), 10, 2 );
 	}
 
 	/**
@@ -203,11 +217,39 @@ final class EntitlementsModule implements Module {
 	}
 
 	/**
+	 * `wpcy_entitlement_allows` for restricted services. Upstream fallback → false.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $allowed Default allow flag.
+	 * @param mixed $service Service slug.
+	 */
+	public function filter_allows( $allowed, $service = '' ): bool {
+		$slug = is_string( $service ) ? $service : '';
+		if ( ! in_array( $slug, self::RESTRICTED_SERVICES, true ) ) {
+			return (bool) $allowed;
+		}
+
+		if ( $this->degrade()->shouldUseUpstream( $slug ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Contact the license server when outbound is allowed and the site is bound.
 	 *
 	 * @return list<array<string, mixed>>|null Null on failure (caller may use stale).
 	 */
 	private function refresh() {
+		$identity = $this->repository->get_identity();
+		$binding  = isset( $identity['binding'] ) && is_array( $identity['binding'] ) ? $identity['binding'] : array();
+		$status   = isset( $binding['status'] ) && is_string( $binding['status'] ) ? $binding['status'] : '';
+		if ( 'bound' !== $status ) {
+			return null;
+		}
+
 		$hash = $this->site_hash();
 		if ( '' === $hash ) {
 			return null;

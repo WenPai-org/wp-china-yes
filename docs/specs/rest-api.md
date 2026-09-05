@@ -34,7 +34,7 @@
 | DELETE | `/binding` | 同上 | 撤销绑定 |
 | GET | `/entitlements` | 同上 | 全部权益与配额 |
 | POST | `/recovery` | 同上 | `{ "action": "disable_rewrites" \| "disable_modules" \| "exit" }` |
-| GET | `/apps` | 同上 | 见 apps 规格 |
+| GET | `/apps` | 同上 | `{ apps, index_status }`，见 apps 规格 §4 |
 | GET | `/apps/{id}/context` | 同上 + manifest `site:read` | 见 apps 规格 |
 | GET | `/apps/{id}/data` | 同上 + `data:read` | 见 apps 规格 |
 | GET | `/apps/{id}/data/{key}` | 同上 + `data:read` | 见 apps 规格 |
@@ -131,11 +131,11 @@ B 档记录。每条含：`host`、`data_class`、`count`、`last_seen`。**无�
 
 ### `/binding`
 
-返回 `{ "status": "unbound"|"pending"|"bound"|"revoked", "site_hash": "…"|null, "bound_at": "…"|null }`。不含 `credential`、不含 `challenge_token`。
+返回 `{ "status": "unbound"|"pending"|"bound"|"revoked"|"failed", "site_hash": "…"|null, "bound_at": "…"|null }`。不含 `credential`、不含 `challenge_token`。
 
 ### `/binding/start`
 
-发起挑战。插件侧再向服务端 `POST {WPCY_SERVICES_API}/v1/site-connections`。响应 `{ "status": "pending", "challenge_id": "…", "expires_at": "…" }`。流程见 entitlements 规格。
+发起挑战。插件侧再向服务端 `POST {WPCY_SERVICES_API}/v1/site-connections`，并在同一请求内尝试 `confirm()`。确认成功时响应绑定快照 `{ "status": "bound", "site_hash": "…", "bound_at": "…" }`；否则 `{ "status": "pending", "challenge_id": "…", "expires_at": "…" }`，并由一次性 cron（60s，最多 10 次）重试，耗尽后 `failed`。流程见 entitlements 规格。
 
 ### `DELETE /binding`
 

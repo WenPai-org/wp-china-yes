@@ -89,6 +89,18 @@ if ( ! function_exists( 'add_query_arg' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * Strip HTML tags.
+	 *
+	 * @param string $text Text.
+	 */
+	function wp_strip_all_tags( $text ) {
+		$stripped = preg_replace( '/<[^>]*>/', '', (string) $text );
+		return is_string( $stripped ) ? $stripped : '';
+	}
+}
+
 if ( ! function_exists( 'esc_url' ) ) {
 	/**
 	 * Identity URL escape.
@@ -134,8 +146,8 @@ if ( ! function_exists( 'wp_remote_get' ) ) {
 	 * @return mixed
 	 */
 	function wp_remote_get( $url, $args = array() ) {
-		unset( $args );
-		HookStore::$last_http_url = $url;
+		HookStore::$last_http_url  = $url;
+		HookStore::$last_http_args = is_array( $args ) ? $args : array();
 		if ( array() === HookStore::$http_queue ) {
 			return array(
 				'response' => array(

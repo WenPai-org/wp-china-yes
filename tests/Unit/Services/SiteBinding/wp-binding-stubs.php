@@ -142,6 +142,59 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_schedule_single_event' ) ) {
+	/**
+	 * Record a one-shot cron event.
+	 *
+	 * @param int    $timestamp Unix time.
+	 * @param string $hook      Hook.
+	 * @param array  $args      Args.
+	 * @return true
+	 */
+	function wp_schedule_single_event( $timestamp, $hook, $args = array() ) {
+		BindingStore::$cron[] = array(
+			'timestamp' => (int) $timestamp,
+			'hook'      => (string) $hook,
+			'args'      => $args,
+		);
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_next_scheduled' ) ) {
+	/**
+	 * First scheduled timestamp or false.
+	 *
+	 * @param string $hook Hook.
+	 * @return int|false
+	 */
+	function wp_next_scheduled( $hook ) {
+		foreach ( BindingStore::$cron as $row ) {
+			if ( $hook === $row['hook'] ) {
+				return $row['timestamp'];
+			}
+		}
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
+	/**
+	 * Drop scheduled events for a hook.
+	 *
+	 * @param string $hook Hook.
+	 */
+	function wp_clear_scheduled_hook( $hook ) {
+		$keep = array();
+		foreach ( BindingStore::$cron as $row ) {
+			if ( $hook !== $row['hook'] ) {
+				$keep[] = $row;
+			}
+		}
+		BindingStore::$cron = $keep;
+	}
+}
+
 if ( ! function_exists( 'untrailingslashit' ) ) {
 	/**
 	 * Strip trailing slashes.

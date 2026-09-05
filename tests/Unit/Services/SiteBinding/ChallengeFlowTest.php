@@ -189,9 +189,15 @@ class ChallengeFlowTest extends TestCase {
 
 		$this->queue_json( $this->confirm_fixture );
 		$module->confirm();
-		$confirm_url = BindingStore::$requests[1]['url'];
-		$this->assertStringContainsString( '/v1/site-connections/' . $this->start_fixture['challenge_id'] . '/confirm', $confirm_url );
-		$this->assertArrayHasKey( 'Idempotency-Key', BindingStore::$requests[1]['args']['headers'] );
+		$confirm_req = null;
+		foreach ( BindingStore::$requests as $row ) {
+			if ( false !== strpos( $row['url'], '/confirm' ) ) {
+				$confirm_req = $row;
+			}
+		}
+		$this->assertIsArray( $confirm_req );
+		$this->assertStringContainsString( '/v1/site-connections/' . $this->start_fixture['challenge_id'] . '/confirm', $confirm_req['url'] );
+		$this->assertArrayHasKey( 'Idempotency-Key', $confirm_req['args']['headers'] );
 
 		$revoked = $module->revoke();
 		$this->assertSame( 'revoked', $revoked['status'] );
@@ -236,6 +242,60 @@ class ChallengeFlowTest extends TestCase {
 		$this->assertSame( $first, $body['site_uuid'] );
 		$this->assertSame( BindingStore::$site_url, $body['site_url'] );
 		$this->assertArrayHasKey( 'plugin_version', $body );
+	}
+
+	/**
+	 * Start confirms in the same request when the license server is ready.
+	 */
+	public function test_start_confirms_in_same_request_when_ready() {
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$this->queue_json( $this->confirm_fixture );
+		$started = $module->start();
+
+		$this->assertIsArray( $started );
+		$this->assertSame( 'bound', $started['status'] );
+		$this->assertSame( $this->confirm_fixture['site_hash'], $started['site_hash'] );
+		$this->assertNotNull( $started['bound_at'] );
+		$this->assertSame( array(), BindingStore::$cron );
+	}
+
+	/**
+	 * Start stays pending and retries via cron until confirm succeeds.
+	 */
+	public function test_start_pending_retries_via_cron_then_binds() {
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$started = $module->start();
+		$this->assertIsArray( $started );
+		$this->assertSame( 'pending', $started['status'] );
+		$this->assertNotEmpty( BindingStore::$cron );
+		$this->assertSame( SiteBindingModule::CRON_HOOK, BindingStore::$cron[0]['hook'] );
+
+		$this->queue_json( $this->confirm_fixture );
+		$module->cron_confirm();
+		$snap = $module->snapshot();
+		$this->assertSame( 'bound', $snap['status'] );
+		$this->assertSame( $this->confirm_fixture['site_hash'], $snap['site_hash'] );
+	}
+
+	/**
+	 * Ten failed confirm attempts mark the challenge failed.
+	 */
+	public function test_confirm_retries_mark_failed_after_ten_attempts() {
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$module->start();
+		$this->assertSame( 'pending', $module->snapshot()['status'] );
+
+		for ( $i = 0; $i < SiteBindingModule::MAX_CONFIRM_ATTEMPTS; $i++ ) {
+			$module->cron_confirm();
+			if ( 'failed' === $module->snapshot()['status'] ) {
+				break;
+			}
+		}
+
+		$this->assertSame( 'failed', $module->snapshot()['status'] );
 	}
 
 	/**

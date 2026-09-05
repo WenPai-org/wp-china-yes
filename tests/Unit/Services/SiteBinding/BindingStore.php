@@ -51,6 +51,13 @@ final class BindingStore {
 	public static $log_sink = '';
 
 	/**
+	 * Scheduled single events.
+	 *
+	 * @var array<int, array{timestamp: int, hook: string, args: array<int, mixed>}>
+	 */
+	public static $cron = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -61,5 +68,6 @@ final class BindingStore {
 		self::$responses = array();
 		self::$site_url  = 'https://example.test';
 		self::$log_sink  = '';
+		self::$cron      = array();
 	}
 }

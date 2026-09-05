@@ -59,15 +59,21 @@ function assetStatus( asset, targets ) {
 	return { tone: 'danger', label: __( '不可用', 'wp-china-yes' ) };
 }
 
-function WindfontsEdit( { data, field } ) {
+function WindfontsEdit( { data, field, onChange } ) {
 	return (
 		<ToggleControl
 			__nextHasNoMarginBottom
 			label="Windfonts"
 			help={ __( '绑定后可用配额', 'wp-china-yes' ) }
 			checked={ Boolean( field.getValue( { item: data } ) ) }
-			disabled
-			onChange={ () => undefined }
+			onChange={ ( value ) => {
+				onChange(
+					field.setValue( {
+						item: data,
+						value,
+					} )
+				);
+			} }
 		/>
 	);
 }
@@ -222,9 +228,7 @@ export default function Connect() {
 				fields={ fields }
 				form={ form }
 				onChange={ ( edits ) => {
-					const next = { ...edits };
-					delete next.windfonts;
-					setDraft( next );
+					setDraft( edits );
 				} }
 			/>
 			{ notice ? (

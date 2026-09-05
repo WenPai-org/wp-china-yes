@@ -37,6 +37,7 @@
 	],
 	"config": {
 		"optimize-autoloader": true,
+		"process-timeout": 600,
 		"platform": {
 			"php": "7.4.33"
 		},

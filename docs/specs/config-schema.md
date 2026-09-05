@@ -199,7 +199,7 @@
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["unbound", "pending", "bound", "revoked"],
+          "enum": ["unbound", "pending", "bound", "revoked", "failed"],
           "default": "unbound"
         },
         "site_hash": { "type": ["string", "null"], "default": null },

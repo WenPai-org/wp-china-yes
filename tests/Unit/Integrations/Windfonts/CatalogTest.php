@@ -105,5 +105,7 @@ class CatalogTest extends TestCase {
 		$this->assertSame( 'https://example.test/fonts.json', $catalog->url() );
 		$this->assertTrue( $catalog->has_family( 'wenfeng-ibmps' ) );
 		$this->assertSame( 'https://example.test/fonts.json', HookStore::$last_http_url );
+		$this->assertSame( 8, HookStore::$last_http_args['timeout'] );
+		$this->assertTrue( HookStore::$last_http_args['sslverify'] );
 	}
 }
