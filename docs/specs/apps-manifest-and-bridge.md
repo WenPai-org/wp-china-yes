@@ -104,13 +104,16 @@
 - `request_id`：工具发出的请求为 UUID；宿主 `result` / `error` 原样回传。宿主主动 `init` 可无 `request_id`。
 - 非本信封结构的消息丢弃，不回 `error`。
 
-### 3.1 origin 校验
+### 3.1 来源校验
 
-- 宿主只接受 `event.origin === new URL(manifest.entry_url).origin`。
+> **2026-09-06 修订（M2-10）**：`sandbox` 不含 `allow-same-origin`（§2 硬性要求）时，iframe 是 opaque origin，宿主收到的 `event.origin` 恒为字符串 `"null"`，`postMessage` 的 `targetOrigin` 也无法用 URL origin 命中它。原文"宿主只接受 `event.origin === entry_url origin`"在真实沙箱下永远不成立，已改为以下规则。
+
+- **宿主的身份判据是 `event.source === iframe.contentWindow`**，不是 `event.origin`。同 origin 的其它窗口、同页第二个工具实例、`window.parent`/`window.top` 的消息一律丢弃。
+- 宿主对 `event.origin` 只做一致性检查：必须等于 `"null"`（沙箱 opaque origin）或 `new URL(manifest.entry_url).origin`（工具页因导航离开沙箱语义时的兜底）；其它值丢弃，错误码 `wpcy_apps_origin_mismatch`（仅当消息已通过信封校验、能回 `error` 时才回；无法确认来源时静默丢弃）。
+- 宿主向工具发送消息用 `iframe.contentWindow.postMessage(msg, '*')`：目标 WindowProxy 已经限定为该 iframe，`'*'` 只是 opaque origin 下唯一可用的 `targetOrigin`。**禁止**对 `window.parent`/`window.top`/任何其它窗口使用 `'*'`。
+- **会话令牌**：宿主在 `init.payload.session_token` 下发一个每次挂载随机生成的 32 字节 token（`crypto.getRandomValues`，base64url），工具之后每条消息在信封顶层带 `session_token`；不匹配丢弃，错误码 `wpcy_apps_session_invalid`。目的：工具页在沙箱内自行导航到第三方页面后，第三方仍是同一个 `event.source`，但拿不到 token。`ready` 是唯一不需要 token 的工具消息。
 - 工具只接受 `event.origin === 宿主 origin`（宿主在 `init` 里告知；工具页面也可用 `document.referrer` 校验）。
-- 不匹配则丢弃，错误码 `wpcy_apps_origin_mismatch`（仅当消息已通过信封校验、能回 `error` 时才回；跨 origin 且无法确认来源时静默丢弃）。
 - **宿主 origin 在启动时快照进闭包**（`const HOST_ORIGIN = window.location.origin`），之后不再读可能被改写的 `location`。
-- **宿主校验 `event.source === iframe.contentWindow`**：同 origin 的其它窗口、同页第二个工具实例的消息一律丢弃。
 - 宿主页自身可能运行在别的壳（如 OpenStation 的 chromeless iframe）内：宿主**不向 `window.parent` / `window.top` 发送任何桥接消息**，也不把来自 `window.parent` 的消息当作工具消息处理。
 
 （以上三条借鉴 WordPress/openstation `src/window/iframe-bridge.ts` 的做法，GPL-2.0-or-later，按思想重写不拷代码；分析见 linuxjoy `docs/research/2026-09-04-openstation-analysis.md` E.2。）
@@ -134,7 +137,7 @@
 | 工具 → 宿主 | `entitlement.get` | （空） | `entitlement:read` | `GET /apps/{id}/entitlement` | `wpcy_apps_forbidden_permission`、`wpcy_apps_entitlement_required`、`wpcy_apps_quota_exceeded` |
 | 工具 → 宿主 | `go.open` | （空，或 `utm` 对象，宿主可忽略自建 UTM） | `go:open` | `POST /apps/{id}/go` | `wpcy_apps_forbidden_permission` |
 | 工具 → 宿主 | `resize` | `height`（px，整数） | 无 | 无；只允许高度，上限 4000px，超出截断为 4000 | — |
-| 宿主 → 工具 | `init` | `app_id`、`locale`、`plugin_version`、`host_origin`、`context` 摘要 | 无 | 无 | — |
+| 宿主 → 工具 | `init` | `app_id`、`locale`、`plugin_version`、`host_origin`、`session_token`、`context` 摘要 | 无 | 无 | — |
 | 宿主 → 工具 | `result` | 与请求对应的业务对象；外层另带 `request_id` | 无 | — | — |
 | 宿主 → 工具 | `error` | 外层 `request_id`、`code`、`message` | 无 | — | — |
 
@@ -206,7 +209,8 @@ CREATE TABLE {prefix}wpcy_app_data (
 | `wpcy_apps_quota_exceeded` | 403 | 权益 `exhausted` 且请求需要配额 |
 | `wpcy_apps_key_invalid` | 400 | `{key}` 不符 `^[a-z0-9_.-]{1,64}$` |
 | `wpcy_apps_payload_too_large` | 413 | PUT body > 64KB，或超过工具总大小上限 |
-| `wpcy_apps_origin_mismatch` | 403 | `event.origin` 与 manifest `entry_url` origin 不一致 |
+| `wpcy_apps_origin_mismatch` | 403 | `event.origin` 既不是 `"null"`（沙箱 opaque origin）也不是 manifest `entry_url` origin |
+| `wpcy_apps_session_invalid` | 403 | 信封 `session_token` 与 `init` 下发的不一致或缺失（`ready` 除外） |
 | `wpcy_apps_host_timeout` | 504 | 宿主转发 REST 超过 10s 未返回 |
 
 通用约定（与 `docs/specs/rest-api.md` 相同）：写请求需 `X-WP-Nonce`；响应带 `X-WPCY-Request-Id`；时间 UTC ISO 8601。
