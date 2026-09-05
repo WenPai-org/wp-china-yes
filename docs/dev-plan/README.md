@@ -65,6 +65,7 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | M2-05 | Apps 桥接 + 文派服务页 UI | M2-03, M2-04, M1-08 | G | 宿主侧 postMessage 桥（origin/nonce/permission 裁剪）、`tests/fixtures/mock-app/` 一个 mock 工具页；文派服务页：绑定状态、权益配额、用量、小工具网格与容器 | 合同测试：每条消息类型；跨 origin 丢弃；e2e：加载 mock 工具、读写数据、无权益显示"获取" |
 | M2-06 | NoticeControl + Announcements | M1-08 | F | `src/Admin/NoticeControl`（规则 JSON 下发、铁律：不隐藏核心通知、诊断页可查）；`src/Admin/Announcements`（固定源 JSON、24h 缓存、逐条关闭）；概览页 UI | 单元：核心通知永不匹配；关闭状态持久；离线不渲染错误 |
 | M2-07 | Integrations/Windfonts | M1-05 | F | 移植 3.9.3 Windfonts（API 目录 + 缓存，参数与 CORS 修复保留） | 对齐 3.9.3 smoke 里 Windfonts 断言 |
+| M2-09 | M2 独立审查修复（绑定 confirm 入口、`wpcy_entitlement_allows` 接线、NoticeControl 白名单铁律、expired 只读、A1–A9 e2e、12 条建议） | M2-05, M2-06 | — | 见 `tasks/M2-09.md`；审查 `verification/m2-services-review-2026-09-05.md` | 五阻断各有测试 |
 | M2-08 | 发布链 | M1-01 | — | 版本号三处同步脚本、CHANGELOG 段生成、Plugin Check 进 CI、ZIP 含 `build/`、SHA-256 附件、`docs/release/4.0-runbook.md` | CI 出的 ZIP 装进 wp-env 激活成功 |
 
 ### M3（服务端与接通；插件侧任务标 P，服务端任务标 S）
