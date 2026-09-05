@@ -82,10 +82,10 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 
 | ID | 任务 | 主要交付 |
 |----|------|----------|
-| M4-01 | 删旧 | 物理删除 `framework/`、`Service/`、`client/`、`templates/`、旧 `Plugin.php` 路径与 `WPCY_KERNEL` 开关；composer 去 `./` 映射与 `files`；**撤掉 CI `plugin-check` job 对旧目录/旧文件的排除项**（2026-09-04 为让门禁只守 4.0 代码而加，Plugin Check 在旧代码里发现的文本域/转义/直接访问问题随删除一并消失） |
-| M4-02 | 升级矩阵 | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
-| M4-03 | RC 与文档 | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧） |
-| M4-04 | 发版 | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |
+| M4-01 | 删旧（`tasks/M4-01.md`；影响分析 `verification/m4-delete-impact-2026-09-05.md`） | 物理删除 `framework/`、`Service/`、`client/`、`templates/`、`assets/`（先搬 `src/Admin/app` 用到的图）、旧 `Plugin.php`、`helpers.php`、`autoload-guard.php`、3.x 独立测试与 `WPCY_KERNEL` 开关；composer 去 `./` 映射与 `files`、去 `plugin-update-checker`；**把 `Migration\Runner` 接进内核首次启动**（否则升级站吃默认值）；`load_plugin_textdomain`；`tests/bootstrap-unit.php` 垫 `ABSPATH`；PHP 下限占位 8.0 由统筹开工时填；**撤掉 CI `plugin-check` job 对旧目录/旧文件的排除项**（2026-09-04 为让门禁只守 4.0 代码而加，Plugin Check 在旧代码里发现的文本域/转义/直接访问问题随删除一并消失） |
+| M4-02 | 升级矩阵（`tasks/M4-02.md`） | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
+| M4-03 | RC 与文档（`tasks/M4-03.md`） | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧） |
+| M4-04 | 发版（`tasks/M4-04.md`） | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |
 
 ## 3. 验收人清单（统筹用）
 
