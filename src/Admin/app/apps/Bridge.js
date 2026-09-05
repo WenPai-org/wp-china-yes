@@ -56,6 +56,25 @@ export function snapshotHostOrigin( href ) {
 }
 
 /**
+ * Whether an inbound event.origin may be treated as the tool page.
+ *
+ * Unique-origin sandbox serializes as the string "null".
+ * Parent vs child is decided by event.source (classify source_is_iframe),
+ * not by origin, because a same-origin tool page shares the host origin
+ * and a sandboxed tool page reports "null".
+ *
+ * @param {string} origin      event.origin
+ * @param {string} entryOrigin Origin of manifest.entry_url
+ * @return {boolean} True when origin is the entry origin or opaque "null".
+ */
+export function originAllowed( origin, entryOrigin ) {
+	if ( origin && origin === entryOrigin ) {
+		return true;
+	}
+	return origin === 'null';
+}
+
+/**
  * Origin of manifest.entry_url, or empty.
  *
  * @param {string} entryUrl Absolute entry URL.
@@ -190,7 +209,7 @@ export function classify( event ) {
 	const origin = event.origin || '';
 	const entryOrigin = event.entry_origin || '';
 
-	if ( origin !== entryOrigin ) {
+	if ( ! originAllowed( origin, entryOrigin ) ) {
 		if ( requestId ) {
 			return {
 				action: 'error',
@@ -309,7 +328,10 @@ export function attachBridge( options ) {
 		if ( destroyed || ! iframe.contentWindow ) {
 			return;
 		}
-		iframe.contentWindow.postMessage( message, entryOrigin || hostOrigin );
+		// Unique-origin sandbox uses an opaque origin, so a URL targetOrigin
+		// never matches. Post to this WindowProxy only; inbound still
+		// requires event.source === iframe.contentWindow.
+		iframe.contentWindow.postMessage( message, '*' );
 	}
 
 	/**

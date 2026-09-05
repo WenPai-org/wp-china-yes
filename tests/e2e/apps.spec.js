@@ -178,7 +178,12 @@ async function mockApps( target, extras ) {
 		( path ) => path === '/wpcy/v1/apps' || path.indexOf( '/wpcy/v1/apps/' ) === 0,
 		async ( route ) => {
 		const request = route.request();
-		const method = request.method();
+		const override = request.headers()[ 'x-http-method-override' ];
+		const method = (
+			request.method() === 'POST' && override
+				? override
+				: request.method()
+		).toUpperCase();
 		const path = restPath( request.url() );
 
 		if ( method === 'GET' && path === '/wpcy/v1/apps' ) {
@@ -350,7 +355,12 @@ test.describe( 'apps A1–A9', () => {
 
 		await expect( page.getByText( '可用', { exact: true } ) ).toBeVisible();
 		await expect( page.getByText( '本期已用尽' ) ).toBeVisible();
-		await expect( page.getByText( '已到期' ) ).toBeVisible();
+		await expect(
+			page
+				.getByRole( 'row' )
+				.filter( { hasText: 'admincdn' } )
+				.getByText( '已到期' )
+		).toBeVisible();
 
 		const getLinks = page.getByRole( 'link', { name: '获取' } );
 		await expect( getLinks ).toHaveCount( 2 );
@@ -421,6 +431,8 @@ test.describe( 'apps A1–A9', () => {
 		await openAdminPage( page, 'wpcy-services' );
 		await page.getByRole( 'button', { name: '站点体检' } ).click();
 		await expect( page.getByTestId( 'wpcy-app-iframe' ) ).toBeVisible();
+		const frame = page.frameLocator( '[data-testid="wpcy-app-iframe"]' );
+		await expect( frame.getByTestId( 'log' ) ).toContainText( 'set ok' );
 
 		const before = bag.writes();
 		await page.evaluate( () => {
@@ -449,7 +461,7 @@ test.describe( 'apps A1–A9', () => {
 		await openAdminPage( page, 'wpcy-services' );
 
 		await expect(
-			page.getByText( '小工具目录暂时不可用' )
+			page.getByLabel( '小工具' ).getByText( '小工具目录暂时不可用' )
 		).toBeVisible();
 		await expect(
 			page.getByRole( 'heading', { name: '站点绑定' } )
@@ -464,7 +476,13 @@ test.describe( 'apps A1–A9', () => {
 
 		const base = process.env.BASE_URL || 'http://localhost:8888';
 		const wrapper = await context.newPage();
-		await wrapper.addInitScript( () => {
+		// Same-origin wrapper so WordPress X-Frame-Options: SAMEORIGIN
+		// allows the admin iframe. about:blank is blocked and times out.
+		await wrapper.goto( base + '/', { waitUntil: 'domcontentloaded' } );
+		await wrapper.setContent(
+			`<!DOCTYPE html><html><body style="margin:0"><iframe id="host" title="chromeless host" src="${ base }/wp-admin/admin.php?page=wpcy-services" style="width:100%;height:100vh;border:0"></iframe></body></html>`
+		);
+		await wrapper.evaluate( () => {
 			window.__wpcyFromChild = [];
 			window.addEventListener( 'message', ( event ) => {
 				if ( event.data && event.data.wpcy === 1 ) {
@@ -472,12 +490,12 @@ test.describe( 'apps A1–A9', () => {
 				}
 			} );
 		} );
-		await wrapper.setContent(
-			`<!DOCTYPE html><html><body style="margin:0"><iframe id="host" title="chromeless host" src="${ base }/wp-admin/admin.php?page=wpcy-services" style="width:100%;height:100vh;border:0"></iframe></body></html>`
-		);
 
 		const host = wrapper.frameLocator( '#host' );
 		await host.locator( '#wpcy-admin-root' ).waitFor( { state: 'attached' } );
+		await host
+			.getByRole( 'heading', { name: '文派服务', level: 1 } )
+			.waitFor( { state: 'visible' } );
 		await host.getByRole( 'button', { name: '站点体检' } ).click();
 		await expect( host.getByTestId( 'wpcy-app-iframe' ) ).toBeVisible();
 		await expect(
