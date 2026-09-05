@@ -431,6 +431,8 @@ test.describe( 'apps A1–A9', () => {
 		await openAdminPage( page, 'wpcy-services' );
 		await page.getByRole( 'button', { name: '站点体检' } ).click();
 		await expect( page.getByTestId( 'wpcy-app-iframe' ) ).toBeVisible();
+		const frame = page.frameLocator( '[data-testid="wpcy-app-iframe"]' );
+		await expect( frame.getByTestId( 'log' ) ).toContainText( 'set ok' );
 
 		const before = bag.writes();
 		await page.evaluate( () => {
