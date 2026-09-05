@@ -1,0 +1,104 @@
+<?php
+
+namespace Platform\API\API\ChinaYes;
+
+use Platform\API\API\Base;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+
+use function Platform\API\forward_to_bridge;
+use function Platform\API\forward_telemetry_to_bridge;
+
+class VersionCheck extends Base {
+
+	public function __construct() {
+		register_rest_route( 'china-yes', 'version-check', array(
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => array( $this, 'version_check' ),
+		) );
+		register_rest_route( 'china-yes', 'version-check', array(
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => array( $this, 'version_check' ),
+		) );
+	}
+
+	public function version_check( WP_REST_Request $request ): WP_REST_Response {
+		$installed_version = $request->get_param( 'installed_version' );
+		$user_agent        = $request->get_header( 'User-Agent' ) ?? '';
+		$this->do_site_count( $user_agent, $installed_version );
+
+		// 异步转发到文派云桥（不阻塞响应）
+		forward_to_bridge(
+			[ 'wp-china-yes/wp-china-yes.php' => [ 'Version' => $installed_version ?? '' ] ],
+			$user_agent
+		);
+
+		// 转发遥测数据（填充站点健康/站点页面）
+		$ua_parts = explode( ';', $user_agent );
+		if ( count( $ua_parts ) >= 2 ) {
+			forward_telemetry_to_bridge(
+				trim( $ua_parts[1] ),
+				trim( $ua_parts[0] ),
+				$installed_version ?? ''
+			);
+		}
+
+		$plugin_info = array(
+			"name"            => "文派叶子（WP-China-Yes）",
+			"slug"            => "wp-china-yes",
+			"version"         => "3.8",
+			"download_url"    => "https://dl1.weixiaoduo.com/2025/01/wp-china-yes.3.8.zip",
+			"homepage"        => "https://wpcy.com",
+			"requires"        => "4.9",
+			"tested"          => "9.9.9",
+			"requires_php"    => "7.0",
+			"last_updated"    => "2025-01-01 22:00:00",
+			"author"          => "文派开源",
+			"author_homepage" => "https://wenpai.org",
+			"sections"        => array(
+				"description" => "文派叶子 🍃（WP-China-Yes）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。"
+			),
+			"icons"           => array(
+				"1x" => "https://wenpai.org/wp-content/uploads/2025/01/wpcy-icon-128.png",
+				"2x" => "https://wenpai.org/wp-content/uploads/2025/01/wpcy-icon-256.png"
+			),
+			"rating"          => 100,
+			"num_ratings"     => 10000,
+			"downloaded"      => 100000,
+			"active_installs" => 100000
+		);
+
+		return new WP_REST_Response( $plugin_info );
+	}
+
+	public function do_site_count( $user_agent, $installed_version ) {
+		$user_agent_items = explode( ';', $user_agent );
+		if ( count( $user_agent_items ) < 2 ) {
+			return;
+		}
+
+		$wp_version   = trim( $user_agent_items[0] );
+		$domain       = trim( $user_agent_items[1] );
+		$current_time = current_time( 'mysql' );
+
+		if ( empty( $domain ) || empty( $wp_version ) || empty( $installed_version ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$sql = $wpdb->prepare(
+			<<<SQL
+			INSERT INTO china_yes_count (domain, wp_version, plugin_version, count, created_at, updated_at)
+			VALUES (%s, %s, %s, 1, %s, %s)
+			ON DUPLICATE KEY UPDATE
+			    count = count + 1,
+			    wp_version = %s,
+			    plugin_version = %s,
+			    updated_at = %s
+			SQL,
+			$domain, $wp_version, $installed_version, $current_time, $current_time, $wp_version, $installed_version, $current_time );
+
+		$wpdb->query( $sql );
+	}
+}
