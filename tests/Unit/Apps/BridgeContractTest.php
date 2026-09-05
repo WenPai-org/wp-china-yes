@@ -259,6 +259,31 @@ class BridgeContractTest extends TestCase {
 	}
 
 	/**
+	 * Same-origin tool page: origin matches entry_url; source is the iframe, not parent.
+	 */
+	public function test_same_origin_tool_page_is_not_treated_as_parent() {
+		$event                     = $this->event( 'ready' );
+		$event['origin']           = 'https://site.example';
+		$event['entry_origin']     = 'https://site.example';
+		$event['source_is_iframe'] = true;
+		$event['source_is_parent'] = false;
+		$out                       = Bridge::classify( $event );
+		$this->assertSame( 'init', $out['action'] );
+	}
+
+	/**
+	 * Host JS accepts opaque sandbox origin ("null") only after source is the iframe.
+	 */
+	public function test_host_js_accepts_opaque_sandbox_origin_via_source() {
+		$js = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/apps/Bridge.js' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
+		$this->assertNotFalse( $js );
+		$this->assertNotFalse( strpos( $js, "origin === 'null'" ) );
+		$this->assertNotFalse( strpos( $js, 'function originAllowed' ) );
+		$this->assertNotFalse( strpos( $js, 'source === iframe.contentWindow' ) );
+		$this->assertNotFalse( strpos( $js, "postMessage( message, '*' )" ) );
+	}
+
+	/**
 	 * Undeclared data.set is wpcy_apps_forbidden_permission.
 	 */
 	public function test_undeclared_data_set_is_forbidden() {

@@ -458,6 +458,7 @@ function AppsGrid( { apps, bound, onOpen } ) {
 function AppSandbox( { app, onBack } ) {
 	const iframeRef = useRef( null );
 	const [ height, setHeight ] = useState( 360 );
+	const [ frameSrc, setFrameSrc ] = useState( '' );
 	const hostOrigin = HOST_ORIGIN;
 
 	useEffect( () => {
@@ -479,6 +480,7 @@ function AppSandbox( { app, onBack } ) {
 			restFetch: ( request ) => apiFetch( request ),
 			onResize: setHeight,
 		} );
+		setFrameSrc( app.entry_url || '' );
 		return () => {
 			bridge.destroy();
 		};
@@ -505,7 +507,7 @@ function AppSandbox( { app, onBack } ) {
 				ref={ iframeRef }
 				className="wpcy-app-frame"
 				title={ name }
-				src={ app.entry_url }
+				src={ frameSrc }
 				sandbox={ IFRAME_SANDBOX }
 				referrerPolicy={ IFRAME_REFERRERPOLICY }
 				height={ height }
