@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
+use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Rest\Permissions;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Rest\RestModule;
@@ -67,6 +68,21 @@ final class NoticeControlModule implements ConditionalModule {
 	public const CRON_HOOK = 'wpcy_notice_rules_refresh';
 
 	/**
+	 * WordPress generic notice class/id tokens. Rules naming these are dropped.
+	 *
+	 * @since 4.0.0
+	 * @var list<string>
+	 */
+	public const GENERIC_CLASSES = array(
+		'notice',
+		'updated',
+		'error',
+		'update-nag',
+		'is-dismissible',
+		'inline',
+	);
+
+	/**
 	 * Tokens that mark core update, security, or Site Health notices.
 	 *
 	 * @since 4.0.0
@@ -111,6 +127,20 @@ final class NoticeControlModule implements ConditionalModule {
 	private $fetcher;
 
 	/**
+	 * Optional diagnostic logger.
+	 *
+	 * @var Logger|null
+	 */
+	private $logger;
+
+	/**
+	 * Rules dropped by the class/id whitelist in the last sanitize.
+	 *
+	 * @var list<array{id: string, class: string, reason: string}>
+	 */
+	private array $discarded = array();
+
+	/**
 	 * In-memory hidden log keyed by rule id.
 	 *
 	 * @var array<string, array{plugin: string, rule: string, first_hidden: string, count: int}>
@@ -125,11 +155,13 @@ final class NoticeControlModule implements ConditionalModule {
 	 * @param Repository    $config  Settings access.
 	 * @param string        $source  Fixture path or HTTPS URL. Empty disables fetch.
 	 * @param callable|null $fetcher Optional `fn(string $source): string`.
+	 * @param Logger|null   $logger  Diagnostic sink for discarded rules.
 	 */
-	public function __construct( Repository $config, string $source = '', $fetcher = null ) {
+	public function __construct( Repository $config, string $source = '', $fetcher = null, $logger = null ) {
 		$this->config  = $config;
 		$this->source  = $source;
 		$this->fetcher = is_callable( $fetcher ) ? $fetcher : null;
+		$this->logger  = $logger instanceof Logger ? $logger : null;
 		$this->log     = $this->load_log();
 	}
 
@@ -363,11 +395,10 @@ final class NoticeControlModule implements ConditionalModule {
 		$selectors = array();
 		foreach ( $this->active_rules() as $rule ) {
 			$name = $this->sanitize_class( $rule['class'] );
-			if ( '' === $name ) {
+			if ( '' === $name || ! $this->is_allowed_class( $name ) ) {
 				continue;
 			}
 			$selectors[] = '.' . $name;
-			$this->record_hidden( $rule, $rule['plugin'] );
 		}
 		$selectors = array_values( array_unique( $selectors ) );
 		if ( array() === $selectors ) {
@@ -391,6 +422,8 @@ final class NoticeControlModule implements ConditionalModule {
 		if ( '' === $this->source ) {
 			return $previous;
 		}
+
+		$this->discarded = array();
 
 		$raw = $this->read_source();
 		if ( '' === $raw ) {
@@ -529,10 +562,17 @@ final class NoticeControlModule implements ConditionalModule {
 		$class  = isset( $row['class'] ) && is_string( $row['class'] ) ? trim( $row['class'] ) : '';
 
 		if ( isset( $row['selector'] ) && is_string( $row['selector'] ) && '' !== $row['selector'] ) {
+			$this->discard_rule( $id, $class, 'selector_rejected' );
+			return null;
+		}
+
+		if ( '' !== $class && ! $this->is_allowed_class( $class ) ) {
+			$this->discard_rule( $id, $class, 'generic_or_invalid_class' );
 			return null;
 		}
 
 		if ( $this->is_protected( $hook, $class, $plugin ) ) {
+			$this->discard_rule( $id, $class, 'protected' );
 			return null;
 		}
 
@@ -651,6 +691,72 @@ final class NoticeControlModule implements ConditionalModule {
 			return false;
 		}
 		return in_array( $needle, $parts, true );
+	}
+
+	/**
+	 * Rules dropped by whitelist / iron law during the last sanitize.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<array{id: string, class: string, reason: string}>
+	 */
+	public function discarded_rules(): array {
+		return $this->discarded;
+	}
+
+	/**
+	 * Whether a class/id token is plugin-specific and not a WP generic notice class.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $token Class or id token.
+	 */
+	public function is_allowed_class( string $token ): bool {
+		$first = strtok( $token, ' ' );
+		$token = strtolower( trim( is_string( $first ) ? $first : '' ) );
+		if ( 1 !== preg_match( '/^[a-z0-9-]+$/', $token ) ) {
+			return false;
+		}
+		if ( in_array( $token, self::GENERIC_CLASSES, true ) ) {
+			return false;
+		}
+		if ( 0 === strpos( $token, 'notice-' ) ) {
+			return false;
+		}
+		if ( 'update-core' === $token || 0 === strpos( $token, 'update-core-' ) ) {
+			return false;
+		}
+		if ( 0 === strpos( $token, 'site-health' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Record a discarded rule and log a diagnostic line.
+	 *
+	 * @param string $id        Rule id.
+	 * @param string $css_class Class token.
+	 * @param string $reason    Machine reason.
+	 */
+	private function discard_rule( string $id, string $css_class, string $reason ): void {
+		$this->discarded[] = array(
+			'id'     => $id,
+			'class'  => $css_class,
+			'reason' => $reason,
+		);
+		if ( $this->logger instanceof Logger ) {
+			$this->logger->log(
+				'warning',
+				'Notice control rule discarded.',
+				array(
+					'rule'   => $id,
+					'class'  => $css_class,
+					'reason' => $reason,
+				)
+			);
+		}
 	}
 
 	/**

@@ -186,6 +186,88 @@ class NoticeControlTest extends TestCase {
 	}
 
 	/**
+	 * Generic WP class notice-warning is dropped and prints no CSS.
+	 */
+	public function test_generic_notice_warning_rule_prints_no_css() {
+		$payload = wp_json_encode(
+			array(
+				'rules_version' => 1,
+				'issued_at'     => '2026-09-03T00:00:00Z',
+				'rules'         => array(
+					array(
+						'id'     => 'hide-warning',
+						'plugin' => 'acme',
+						'hook'   => 'admin_notices',
+						'class'  => 'notice-warning',
+					),
+				),
+			)
+		);
+
+		$module = new NoticeControlModule(
+			new Repository(),
+			'mock://rules',
+			static function () use ( $payload ) {
+				return $payload;
+			}
+		);
+		$module->refresh();
+
+		$this->assertSame( array(), $module->active_rules() );
+		$this->assertNotEmpty( $module->discarded_rules() );
+
+		ob_start();
+		$module->print_hide_styles();
+		$css = (string) ob_get_clean();
+		$this->assertSame( '', $css );
+		$this->assertStringNotContainsString( 'update-nag', $css );
+		$this->assertStringNotContainsString( 'notice-warning', $css );
+		$this->assertSame( array(), $module->hidden_items() );
+	}
+
+	/**
+	 * Update-nag is never emitted as a hide selector.
+	 */
+	public function test_update_nag_never_appears_in_hide_css() {
+		$payload = wp_json_encode(
+			array(
+				'rules_version' => 1,
+				'issued_at'     => '2026-09-03T00:00:00Z',
+				'rules'         => array(
+					array(
+						'id'     => 'hide-nag',
+						'plugin' => 'wordpress',
+						'hook'   => 'admin_notices',
+						'class'  => 'update-nag',
+					),
+					array(
+						'id'     => 'acme-banner',
+						'plugin' => 'acme-seo',
+						'hook'   => 'admin_notices',
+						'class'  => 'acme-promo-banner',
+					),
+				),
+			)
+		);
+
+		$module = new NoticeControlModule(
+			new Repository(),
+			'mock://rules',
+			static function () use ( $payload ) {
+				return $payload;
+			}
+		);
+		$module->refresh();
+
+		ob_start();
+		$module->print_hide_styles();
+		$css = (string) ob_get_clean();
+		$this->assertStringNotContainsString( 'update-nag', $css );
+		$this->assertStringContainsString( 'acme-promo-banner', $css );
+		$this->assertSame( array(), $module->hidden_items() );
+	}
+
+	/**
 	 * Empty source does not invent production rules.
 	 */
 	public function test_empty_source_has_no_rules() {
