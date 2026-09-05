@@ -24,6 +24,7 @@ use WenPai\ChinaYes\Connectivity\WordPressOrg\WordPressOrgModule;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\DiagnosticsModule;
 use WenPai\ChinaYes\Diagnostics\SiteHealth;
+use WenPai\ChinaYes\Integrations\Windfonts\Catalog;
 use WenPai\ChinaYes\Integrations\Windfonts\WindfontsModule;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Rest\RestModule;
@@ -107,6 +108,8 @@ final class Plugin {
 		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
 
 		$registry->add( new AvatarModule( $config ) );
+		$catalog = new Catalog();
+		$container->set( 'windfonts.catalog', $catalog );
 		$registry->add( new WindfontsModule( $config ) );
 		$registry->add( new TelemetryModule( $config, $logger ) );
 		$registry->add( new DataResidencyModule() );
@@ -120,7 +123,7 @@ final class Plugin {
 		$registry->add( new RestModule( $config, $checker ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
-		$registry->add( new NoticeControlModule( $config ) );
+		$registry->add( new NoticeControlModule( $config, '', null, $logger ) );
 		$registry->add( new AnnouncementsModule( $config ) );
 
 		return new self( $container, $registry, $environment );

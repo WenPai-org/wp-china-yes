@@ -181,7 +181,12 @@ final class AppsController {
 			unset( $row['signature'] );
 			$out[] = $row;
 		}
-		return RestError::ok( $out );
+		return RestError::ok(
+			array(
+				'apps'         => $out,
+				'index_status' => $this->registry->index_status(),
+			)
+		);
 	}
 
 	/**
@@ -240,7 +245,7 @@ final class AppsController {
 		$id = $this->app_id( $request );
 		if ( ! $this->store->has( $id, $key ) ) {
 			return RestError::make(
-				'wpcy_apps_unknown_app',
+				'wpcy_apps_key_invalid',
 				__( 'The requested data key was not found for this app.', 'wp-china-yes' ),
 				404
 			);
@@ -439,6 +444,13 @@ final class AppsController {
 			return RestError::make(
 				'wpcy_apps_quota_exceeded',
 				__( 'The entitlement quota is exhausted.', 'wp-china-yes' ),
+				403
+			);
+		}
+		if ( $needs_quota && 'expired' === $status ) {
+			return RestError::make(
+				'wpcy_apps_entitlement_required',
+				__( 'This app requires an entitlement.', 'wp-china-yes' ),
 				403
 			);
 		}

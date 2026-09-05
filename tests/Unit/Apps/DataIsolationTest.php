@@ -71,6 +71,7 @@ class DataIsolationTest extends TestCase {
 		$result          = $controller->get_data( $request );
 
 		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_apps_key_invalid', $result->get_error_code() );
 		$this->assertSame( 404, $result->get_error_data()['status'] );
 	}
 
@@ -223,13 +224,34 @@ class DataIsolationTest extends TestCase {
 	}
 
 	/**
+	 * Expired entitlement cannot write; REST returns entitlement_required.
+	 */
+	public function test_expired_write_is_entitlement_required() {
+		$controller      = $this->controller( null, new ExpiredEntitlements() );
+		$request         = new WP_REST_Request();
+		$request->params = array(
+			'id'  => 'motusnap',
+			'key' => 'settings',
+		);
+		$request->json   = array( 'value' => 1 );
+		$request->body   = '{"value":1}';
+		$result          = $controller->put_data( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_apps_entitlement_required', $result->get_error_code() );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+	}
+
+	/**
 	 * GET /apps lists verified ids. AppsController registers /apps*.
 	 */
 	public function test_list_apps_and_register_routes() {
 		$controller = $this->controller();
 		$response   = $controller->list_apps( new WP_REST_Request() );
-		$ids        = array();
-		foreach ( $response->get_data() as $row ) {
+		$body       = $response->get_data();
+		$this->assertSame( 'ok', $body['index_status'] );
+		$ids = array();
+		foreach ( $body['apps'] as $row ) {
 			$ids[] = $row['id'];
 		}
 		$this->assertSame( array( 'motusnap', 'noteboard', 'paidtool' ), $ids );

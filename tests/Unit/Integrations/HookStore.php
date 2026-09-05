@@ -36,6 +36,13 @@ final class HookStore {
 	public static $last_http_url = '';
 
 	/**
+	 * Last HTTP GET args.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public static $last_http_args = array();
+
+	/**
 	 * Queued HTTP responses for wp_remote_get.
 	 *
 	 * @var list<mixed>
@@ -46,9 +53,10 @@ final class HookStore {
 	 * Reset bags.
 	 */
 	public static function reset(): void {
-		self::$hooks         = array();
-		self::$transients    = array();
-		self::$last_http_url = '';
-		self::$http_queue    = array();
+		self::$hooks          = array();
+		self::$transients     = array();
+		self::$last_http_url  = '';
+		self::$last_http_args = array();
+		self::$http_queue     = array();
 	}
 }

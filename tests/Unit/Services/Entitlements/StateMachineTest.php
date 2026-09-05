@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Services\Entitlements;
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Logger;
+use WenPai\ChinaYes\Core\Plugin;
 use WenPai\ChinaYes\Rest\EntitlementsController;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Services\Entitlements\Client;
@@ -164,6 +165,62 @@ class StateMachineTest extends TestCase {
 		$this->assertStringContainsString( '/v1/sites/site_hash_test_01/entitlements', $url );
 		$this->assertStringNotContainsString( '/v1/v1/', $url );
 		$this->assertStringNotContainsString( ChallengeClient::PRODUCTION_HOST, $url );
+	}
+
+	/**
+	 * Restricted services are denied when the cached row is exhausted.
+	 */
+	public function test_entitlement_allows_false_when_exhausted() {
+		$module = $this->bound_module( 'entitlements-exhausted.json' );
+		$module->items();
+
+		$this->assertFalse( $module->filter_allows( true, 'motusnap' ) );
+		$this->assertFalse( $module->filter_allows( true, 'windfonts' ) );
+		$this->assertTrue( $module->filter_allows( true, 'wordpress_org' ) );
+	}
+
+	/**
+	 * Plugin::create() + exhausted cache: wp_head has no Windfonts stylesheet.
+	 */
+	public function test_plugin_create_exhausted_wp_head_has_no_windfonts_link() {
+		$plugin = Plugin::create();
+		$config = $plugin->container()->get( 'config' );
+		$config->set( 'modules.windfonts', true );
+		$config->set(
+			'integrations.windfonts.fonts',
+			array(
+				array(
+					'family'   => 'wenfeng-hcszt',
+					'subset'   => 'full',
+					'selector' => 'body',
+					'enable'   => true,
+				),
+			)
+		);
+
+		$payload = $this->load_fixture( 'entitlements-exhausted.json' );
+		RestStore::$transients[ EntitlementsModule::TRANSIENT_FRESH ] = array(
+			'fetched_at'   => '2026-09-05T00:00:00Z',
+			'entitlements' => $payload['entitlements'],
+		);
+
+		$modules = $plugin->registry()->modules();
+		$ents    = $modules['services.entitlements'];
+		$wind    = $modules['modules.windfonts'];
+		$this->assertInstanceOf( EntitlementsModule::class, $ents );
+		$ents->register();
+
+		$this->assertFalse( apply_filters( 'wpcy_entitlement_allows', true, 'windfonts' ) );
+
+		ob_start();
+		$wind->print_stylesheets();
+		$html = (string) ob_get_clean();
+		$this->assertStringNotContainsString( 'app.windfonts.com/api/css', $html );
+
+		ob_start();
+		do_action( 'wp_head' );
+		$head = (string) ob_get_clean();
+		$this->assertStringNotContainsString( 'app.windfonts.com/api/css', $head );
 	}
 
 	/**

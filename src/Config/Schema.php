@@ -194,7 +194,7 @@ final class Schema {
 					'properties'           => array(
 						'status'       => array(
 							'type'    => 'string',
-							'enum'    => array( 'unbound', 'pending', 'bound', 'revoked' ),
+							'enum'    => array( 'unbound', 'pending', 'bound', 'revoked', 'failed' ),
 							'default' => 'unbound',
 						),
 						'site_hash'    => array(

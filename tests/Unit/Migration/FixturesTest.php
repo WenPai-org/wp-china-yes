@@ -212,6 +212,23 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
+	 * Unknown jquery and react tokens are unsupported_whitelist.
+	 */
+	public function test_jquery_react_are_unsupported_whitelist() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'admincdn_public' => array( 'googlefonts', 'jquery', 'react' ),
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertSame( array( 'google_fonts' ), $report->settings()['connectivity']['public_assets'] );
+		$this->assertContains( 'jquery', $report->ignored() );
+		$this->assertContains( 'react', $report->ignored() );
+		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['jquery'] );
+		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['react'] );
+	}
+
+	/**
 	 * All three admincdn_public / files / dev keys missing → schema default five items.
 	 */
 	public function test_public_assets_default_when_admincdn_keys_absent() {

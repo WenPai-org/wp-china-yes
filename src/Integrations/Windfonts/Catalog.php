@@ -149,6 +149,7 @@ final class Catalog {
 			$this->url,
 			array(
 				'timeout'     => 8,
+				'sslverify'   => true,
 				'redirection' => 2,
 			)
 		);

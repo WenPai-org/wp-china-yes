@@ -129,7 +129,7 @@ final class Stylesheet {
 			$href        = function_exists( 'esc_url' ) ? esc_url( $css_url ) : $css_url;
 			$font_family = $this->family_name( $font['family'] );
 			$selector    = isset( $font['selector'] ) ? (string) $font['selector'] : '';
-			$selector    = htmlspecialchars_decode( $selector );
+			$selector    = $this->escape_selector( $selector );
 			$style       = isset( $font['style'] ) ? (string) $font['style'] : 'normal';
 			$weight      = isset( $font['weight'] ) ? (string) $font['weight'] : '400';
 			$link        = sprintf(
@@ -145,5 +145,24 @@ final class Stylesheet {
 		}
 
 		return $html;
+	}
+
+	/**
+	 * Strip tags and CSS-breaking characters from a selector.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $selector Raw selector from settings.
+	 */
+	private function escape_selector( string $selector ): string {
+		$selector = htmlspecialchars_decode( $selector );
+		if ( function_exists( 'wp_strip_all_tags' ) ) {
+			$selector = wp_strip_all_tags( $selector );
+		} else {
+			$stripped = preg_replace( '/<[^>]*>/', '', $selector );
+			$selector = is_string( $stripped ) ? $stripped : '';
+		}
+
+		return str_replace( array( '{', '}', '<', '>', '"', "'" ), '', $selector );
 	}
 }

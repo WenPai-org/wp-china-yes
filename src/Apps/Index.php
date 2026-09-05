@@ -78,6 +78,13 @@ final class Index {
 	private string $plugin_version;
 
 	/**
+	 * Last index fetch outcome: ok, unreachable, or invalid.
+	 *
+	 * @var string
+	 */
+	private string $index_status = 'ok';
+
+	/**
 	 * Constructor. Does not fetch.
 	 *
 	 * @since 4.0.0
@@ -131,16 +138,21 @@ final class Index {
 	public function refresh(): array {
 		$previous = $this->cached();
 		if ( '' === $this->source ) {
+			$this->index_status = 'ok';
 			return $previous;
 		}
 
 		$raw = $this->read_source();
 		if ( '' === $raw ) {
+			$this->index_status = 'unreachable';
+			$this->store( $previous );
 			return $previous;
 		}
 
 		$decoded = json_decode( $raw, true );
 		if ( ! is_array( $decoded ) || $this->is_list( $decoded ) ) {
+			$this->index_status = 'invalid';
+			$this->store( $previous );
 			return $previous;
 		}
 
@@ -152,6 +164,8 @@ final class Index {
 					'code' => 'wpcy_apps_signature_invalid',
 				)
 			);
+			$this->index_status = 'invalid';
+			$this->store( $previous );
 			return $previous;
 		}
 
@@ -164,8 +178,18 @@ final class Index {
 			}
 		}
 
+		$this->index_status = 'ok';
 		$this->store( $keep );
 		return $keep;
+	}
+
+	/**
+	 * Last fetch outcome: ok (including empty catalog), unreachable, or invalid.
+	 *
+	 * @since 4.0.0
+	 */
+	public function index_status(): string {
+		return $this->index_status;
 	}
 
 	/**
@@ -265,7 +289,13 @@ final class Index {
 			return '';
 		}
 
-		$response = wp_remote_get( $this->source );
+		$response = wp_remote_get(
+			$this->source,
+			array(
+				'timeout'   => 10,
+				'sslverify' => true,
+			)
+		);
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) {
 			return '';
 		}
@@ -291,7 +321,14 @@ final class Index {
 	private function store( array $apps ): void {
 		if ( function_exists( 'set_transient' ) ) {
 			$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : self::TTL;
-			set_transient( self::TRANSIENT_KEY, $apps, $ttl );
+			set_transient(
+				self::TRANSIENT_KEY,
+				array(
+					'apps'         => $apps,
+					'index_status' => $this->index_status,
+				),
+				$ttl
+			);
 		}
 	}
 
@@ -304,6 +341,15 @@ final class Index {
 	private function sanitize_cached( $stored ): array {
 		if ( ! is_array( $stored ) ) {
 			return array();
+		}
+		if ( isset( $stored['apps'] ) && is_array( $stored['apps'] ) && ! $this->is_list( $stored ) ) {
+			$status = isset( $stored['index_status'] ) && is_string( $stored['index_status'] )
+				? $stored['index_status']
+				: 'ok';
+			if ( in_array( $status, array( 'ok', 'unreachable', 'invalid' ), true ) ) {
+				$this->index_status = $status;
+			}
+			$stored = $stored['apps'];
 		}
 		$out = array();
 		foreach ( $stored as $row ) {

@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,6 +36,27 @@ final class SiteBindingModule implements Module {
 	 * @since 4.0.0
 	 */
 	public const TRANSIENT_PREFIX = 'wpcy_binding_challenge_';
+
+	/**
+	 * One-shot cron hook that retries confirm() after start().
+	 *
+	 * @since 4.0.0
+	 */
+	public const CRON_HOOK = 'wpcy_binding_confirm';
+
+	/**
+	 * Maximum confirm attempts (in-request plus cron retries).
+	 *
+	 * @since 4.0.0
+	 */
+	public const MAX_CONFIRM_ATTEMPTS = 10;
+
+	/**
+	 * Seconds before the next confirm retry.
+	 *
+	 * @since 4.0.0
+	 */
+	public const CONFIRM_RETRY_DELAY = 60;
 
 	/**
 	 * Settings / identity access.
@@ -109,6 +131,7 @@ final class SiteBindingModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function register(): void {
+		add_action( self::CRON_HOOK, array( $this, 'cron_confirm' ) );
 		if ( ! function_exists( 'update_option' ) ) {
 			return;
 		}
@@ -137,7 +160,7 @@ final class SiteBindingModule implements Module {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{status: string, challenge_id: string, expires_at: string}|WP_Error
+	 * @return array{status: string, challenge_id?: string, expires_at?: string, site_hash?: string|null, bound_at?: string|null}|WP_Error
 	 */
 	public function start() {
 		if ( ! ChallengeClient::outbound_allowed() ) {
@@ -157,6 +180,15 @@ final class SiteBindingModule implements Module {
 		}
 
 		$this->store_pending( $identity, $result );
+		$this->write_attempts( $result['challenge_id'], 0 );
+
+		$confirmed = $this->confirm();
+		if ( ! is_wp_error( $confirmed ) && 'bound' === $confirmed['status'] ) {
+			return $confirmed;
+		}
+
+		$this->bump_attempts( $result['challenge_id'] );
+		$this->schedule_confirm_retry();
 
 		return array(
 			'status'       => 'pending',
@@ -250,8 +282,35 @@ final class SiteBindingModule implements Module {
 		$identity['binding'] = $binding;
 		$this->repository->set_identity( $identity );
 		$this->delete_transient( $challenge_id );
+		$this->clear_confirm_retry( $challenge_id );
 
 		return $this->snapshot();
+	}
+
+	/**
+	 * Cron callback: retry confirm() while pending; mark failed after 10 attempts.
+	 *
+	 * @since 4.0.0
+	 */
+	public function cron_confirm(): void {
+		$binding = $this->binding();
+		if ( 'pending' !== $binding['status'] ) {
+			return;
+		}
+
+		$challenge_id = (string) $binding['challenge_id'];
+		$confirmed    = $this->confirm();
+		if ( ! is_wp_error( $confirmed ) && 'bound' === $confirmed['status'] ) {
+			return;
+		}
+
+		$attempts = $this->bump_attempts( $challenge_id );
+		if ( $attempts >= self::MAX_CONFIRM_ATTEMPTS ) {
+			$this->mark_failed( $challenge_id );
+			return;
+		}
+
+		$this->schedule_confirm_retry();
 	}
 
 	/**
@@ -274,6 +333,14 @@ final class SiteBindingModule implements Module {
 
 		if ( '' !== $challenge_id ) {
 			$this->delete_transient( $challenge_id );
+			$this->clear_confirm_retry( $challenge_id );
+		} else {
+			$this->clear_confirm_retry( '' );
+		}
+
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( EntitlementsModule::TRANSIENT_FRESH );
+			delete_transient( EntitlementsModule::TRANSIENT_STALE );
 		}
 
 		return $this->snapshot();
@@ -427,5 +494,87 @@ final class SiteBindingModule implements Module {
 		if ( $this->logger instanceof Logger ) {
 			$this->logger->log( 'warning', $message, $context );
 		}
+	}
+
+	/**
+	 * Schedule a one-shot confirm retry in 60 seconds.
+	 */
+	private function schedule_confirm_retry(): void {
+		if ( ! function_exists( 'wp_schedule_single_event' ) ) {
+			return;
+		}
+		if ( function_exists( 'wp_next_scheduled' ) && wp_next_scheduled( self::CRON_HOOK ) ) {
+			return;
+		}
+		wp_schedule_single_event( time() + self::CONFIRM_RETRY_DELAY, self::CRON_HOOK );
+	}
+
+	/**
+	 * Drop confirm retry state for a challenge.
+	 *
+	 * @param string $challenge_id Challenge id, or empty to only unschedule.
+	 */
+	private function clear_confirm_retry( string $challenge_id ): void {
+		if ( '' !== $challenge_id ) {
+			$this->delete_transient( 'attempts_' . $challenge_id );
+		}
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			wp_clear_scheduled_hook( self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Persist attempt count for a challenge.
+	 *
+	 * @param string $challenge_id Challenge id.
+	 * @param int    $attempts     Count.
+	 */
+	private function write_attempts( string $challenge_id, int $attempts ): void {
+		$id = ChallengeClient::sanitize_id( $challenge_id );
+		if ( '' === $id || ! function_exists( 'set_transient' ) ) {
+			return;
+		}
+		$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : 86400;
+		set_transient( self::TRANSIENT_PREFIX . 'attempts_' . $id, $attempts, $ttl );
+	}
+
+	/**
+	 * Increment and return the confirm attempt count.
+	 *
+	 * @param string $challenge_id Challenge id.
+	 */
+	private function bump_attempts( string $challenge_id ): int {
+		$id = ChallengeClient::sanitize_id( $challenge_id );
+		if ( '' === $id ) {
+			return self::MAX_CONFIRM_ATTEMPTS;
+		}
+		$key    = self::TRANSIENT_PREFIX . 'attempts_' . $id;
+		$stored = function_exists( 'get_transient' ) ? get_transient( $key ) : 0;
+		$count  = is_numeric( $stored ) ? (int) $stored : 0;
+		++$count;
+		$this->write_attempts( $id, $count );
+		return $count;
+	}
+
+	/**
+	 * Mark the pending challenge failed so the user can start again.
+	 *
+	 * @param string $challenge_id Challenge id.
+	 */
+	private function mark_failed( string $challenge_id ): void {
+		$identity                = $this->repository->get_identity();
+		$binding                 = $this->binding_from( $identity );
+		$binding['status']       = 'failed';
+		$binding['challenge_id'] = null;
+		$identity['binding']     = $binding;
+		$this->repository->set_identity( $identity );
+		$this->delete_transient( $challenge_id );
+		$this->clear_confirm_retry( $challenge_id );
+		$this->warn(
+			'Site binding confirm retries exhausted.',
+			array(
+				'status' => 'failed',
+			)
+		);
 	}
 }

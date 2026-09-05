@@ -78,7 +78,10 @@ class VerifyTest extends TestCase {
 			$ids[] = $app['id'];
 		}
 		$this->assertSame( array( 'motusnap', 'noteboard', 'paidtool' ), $ids );
-		$this->assertSame( $apps, AppsStore::$transients[ Index::TRANSIENT_KEY ] );
+		$this->assertSame( 'ok', $index->index_status() );
+		$stored = AppsStore::$transients[ Index::TRANSIENT_KEY ];
+		$this->assertSame( $apps, $stored['apps'] );
+		$this->assertSame( 'ok', $stored['index_status'] );
 	}
 
 	/**
