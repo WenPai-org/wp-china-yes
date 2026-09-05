@@ -178,7 +178,12 @@ async function mockApps( target, extras ) {
 		( path ) => path === '/wpcy/v1/apps' || path.indexOf( '/wpcy/v1/apps/' ) === 0,
 		async ( route ) => {
 		const request = route.request();
-		const method = request.method();
+		const override = request.headers()[ 'x-http-method-override' ];
+		const method = (
+			request.method() === 'POST' && override
+				? override
+				: request.method()
+		).toUpperCase();
 		const path = restPath( request.url() );
 
 		if ( method === 'GET' && path === '/wpcy/v1/apps' ) {
