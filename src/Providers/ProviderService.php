@@ -103,6 +103,9 @@ final class ProviderService {
 	/**
 	 * Connect with email + license key.
 	 *
+	 * Key check is product_list (providers.md §4, 2026-09-07): activate and
+	 * status need product_id and would mark a valid key invalid.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @param string $id          Provider id.
@@ -138,7 +141,7 @@ final class ProviderService {
 		$now      = gmdate( 'Y-m-d\TH:i:s\Z' );
 		$instance = $this->store->peek_instance( $id );
 		$client   = $this->client( $preset['api_url'] );
-		$result   = $client->activate( $license_key, $instance );
+		$result   = $client->product_list( $license_key, $instance );
 
 		if ( 'unreachable' === $result['kind'] ) {
 			$this->store->put_item(
@@ -174,7 +177,9 @@ final class ProviderService {
 		}
 		$this->store->put_instance( $id, $instance );
 
+		$rows   = $this->extract_products( $result['data'] );
 		$fields = $this->store->email_fields( $email );
+		$this->store->put_products( $id, $rows );
 		$this->store->put_item(
 			$id,
 			array(
@@ -183,13 +188,9 @@ final class ProviderService {
 				'email_hash'      => $fields['email_hash'],
 				'connected_at'    => $now,
 				'last_checked_at' => $now,
+				'product_count'   => count( $rows ),
 			)
 		);
-
-		$products = $this->refresh_products( $id, $license_key, $instance, $client );
-		if ( is_int( $products ) ) {
-			$this->store->put_item( $id, array( 'product_count' => $products ) );
-		}
 
 		return $this->public_item( $id );
 	}
@@ -209,7 +210,7 @@ final class ProviderService {
 		}
 
 		$key      = $this->store->license_key( $id );
-		$instance = $this->read_instance( $id );
+		$instance = $this->store->read_instance( $id );
 		if ( is_string( $key ) && '' !== $key && '' !== $preset['api_url'] && '' !== $instance ) {
 			$this->client( $preset['api_url'] )->deactivate( $key, $instance );
 		}
@@ -219,7 +220,7 @@ final class ProviderService {
 	}
 
 	/**
-	 * Live status check.
+	 * Live key check via product_list. Same three states as connect.
 	 *
 	 * @since 4.0.0
 	 *
@@ -243,25 +244,37 @@ final class ProviderService {
 
 		$now      = gmdate( 'Y-m-d\TH:i:s\Z' );
 		$instance = $this->store->instance( $id );
-		$result   = $this->client( $preset['api_url'] )->status( $key, $instance );
+		$client   = $this->client( $preset['api_url'] );
+		$result   = $client->product_list( $key, $instance );
 		$kind     = $result['kind'];
 		if ( 'ok' === $kind ) {
 			$connection = 'connected';
+			$rows       = $this->extract_products( $result['data'] );
+			$this->store->put_products( $id, $rows );
+			$this->store->put_item(
+				$id,
+				array(
+					'connection'      => $connection,
+					'last_checked_at' => $now,
+					'product_count'   => count( $rows ),
+				)
+			);
 		} elseif ( 'invalid' === $kind ) {
-			$connection = 'invalid';
+			$this->store->put_item(
+				$id,
+				array(
+					'connection'      => 'invalid',
+					'last_checked_at' => $now,
+				)
+			);
 		} else {
-			$connection = 'unreachable';
-		}
-
-		$this->store->put_item(
-			$id,
-			array(
-				'connection'      => $connection,
-				'last_checked_at' => $now,
-			)
-		);
-
-		if ( 'unreachable' === $kind ) {
+			$this->store->put_item(
+				$id,
+				array(
+					'connection'      => 'unreachable',
+					'last_checked_at' => $now,
+				)
+			);
 			return RestError::make(
 				'wpcy_provider_unreachable',
 				__( '暂时无法连接薇晓朵商城，请稍后重试。', 'wp-china-yes' ),
@@ -275,7 +288,11 @@ final class ProviderService {
 	/**
 	 * Purchased products with installed / update_managed flags.
 	 *
-	 * Unconnected → empty list (200). Unreachable → stale cache ≤ 72h.
+	 * Empty list (200) when there is no key or connection is disconnected.
+	 * connected / invalid / unreachable: fresh cache is returned; expired
+	 * cache is refreshed. Pull failure: invalid still returns cache
+	 * (read-only); unreachable returns cache within 72h. Failure must not
+	 * clear the list by flipping connection then re-applying the gate.
 	 *
 	 * @since 4.0.0
 	 *
@@ -290,7 +307,7 @@ final class ProviderService {
 
 		$item = $this->store->item( $id );
 		$key  = $this->store->license_key( $id );
-		if ( 'connected' !== $item['connection'] || ! is_string( $key ) || '' === $key ) {
+		if ( 'disconnected' === $item['connection'] || ! is_string( $key ) || '' === $key ) {
 			return array(
 				'products' => array(),
 			);
@@ -331,6 +348,11 @@ final class ProviderService {
 					'last_checked_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
 				)
 			);
+			if ( is_array( $cache ) ) {
+				return array(
+					'products' => $this->annotate( $cache['products'] ),
+				);
+			}
 			return array(
 				'products' => array(),
 			);
@@ -430,7 +452,11 @@ final class ProviderService {
 			return array();
 		}
 		$instance = $this->store->instance( $id );
-		$result   = $this->client( $preset['api_url'] )->update(
+		$client   = $this->client( $preset['api_url'] );
+		if ( ! $this->ensure_activated( $id, $product_id, $key, $instance, $client ) ) {
+			return array();
+		}
+		$result = $client->update(
 			$key,
 			$instance,
 			array(
@@ -488,32 +514,35 @@ final class ProviderService {
 	}
 
 	/**
-	 * Instance option if already written.
+	 * Activate one product_id before update. Success is recorded on the
+	 * public item; failure does not flip connection or block other products.
 	 *
-	 * @param string $id Provider id.
+	 * @param string     $id         Provider id.
+	 * @param string     $product_id Mall product id.
+	 * @param string     $key        License key.
+	 * @param string     $instance   UUID.
+	 * @param WcAmClient $client     Client.
+	 * @return bool Whether update may proceed for this product.
 	 */
-	private function read_instance( string $id ): string {
-		$stored = function_exists( 'get_option' ) ? get_option( $this->store->instance_option( $id ), '' ) : '';
-		return is_string( $stored ) ? $stored : '';
-	}
-
-	/**
-	 * Pull product_list after a successful connect.
-	 *
-	 * @param string     $id       Provider id.
-	 * @param string     $key      License key.
-	 * @param string     $instance UUID.
-	 * @param WcAmClient $client   Client.
-	 * @return int|null Count or null when unreachable.
-	 */
-	private function refresh_products( string $id, string $key, string $instance, WcAmClient $client ) {
-		$result = $client->product_list( $key, $instance );
-		if ( 'ok' !== $result['kind'] ) {
-			return null;
+	private function ensure_activated( string $id, string $product_id, string $key, string $instance, WcAmClient $client ): bool {
+		if ( '' === $product_id ) {
+			return false;
 		}
-		$rows = $this->extract_products( $result['data'] );
-		$this->store->put_products( $id, $rows );
-		return count( $rows );
+		if ( in_array( $product_id, $this->store->activated_products( $id ), true ) ) {
+			return true;
+		}
+		$result = $client->activate(
+			$key,
+			$instance,
+			array(
+				'product_id' => $product_id,
+			)
+		);
+		if ( 'ok' !== $result['kind'] ) {
+			return false;
+		}
+		$this->store->mark_activated( $id, $product_id );
+		return true;
 	}
 
 	/**

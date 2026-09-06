@@ -146,36 +146,64 @@ final class Store {
 	}
 
 	/**
-	 * Persist or create the WC AM instance UUID.
+	 * Persist or create the WC AM instance UUID (secretbox).
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param string $id Provider id.
 	 */
 	public function instance( string $id ): string {
-		$uuid = $this->peek_instance( $id );
+		$existing = $this->read_instance( $id );
+		if ( '' !== $existing ) {
+			return $existing;
+		}
+		$uuid = $this->new_uuid();
 		$this->put_instance( $id, $uuid );
 		return $uuid;
 	}
 
 	/**
-	 * Existing instance or a fresh UUID. Does not write.
+	 * Existing instance or a fresh UUID. Does not create a new option
+	 * unless a leftover plaintext value is migrated.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param string $id Provider id.
 	 */
 	public function peek_instance( string $id ): string {
-		$stored = $this->read_option( $this->instance_option( $id ) );
-		if ( is_string( $stored ) && '' !== $stored ) {
-			return $stored;
-		}
-
-		return $this->new_uuid();
+		$existing = $this->read_instance( $id );
+		return '' !== $existing ? $existing : $this->new_uuid();
 	}
 
 	/**
-	 * Persist the WC AM instance UUID.
+	 * Decrypt the stored instance. Empty when missing.
+	 *
+	 * Leftover plaintext (pre-secretbox) is treated as the UUID and
+	 * rewritten as ciphertext. Decrypt failure on a value that is not
+	 * plaintext is fail-closed (empty string).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Provider id.
+	 */
+	public function read_instance( string $id ): string {
+		$stored = $this->read_option( $this->instance_option( $id ) );
+		if ( ! is_string( $stored ) || '' === $stored ) {
+			return '';
+		}
+		$plain = $this->box( $id )->open( $stored );
+		if ( is_string( $plain ) && '' !== $plain ) {
+			return $plain;
+		}
+		if ( $this->looks_like_ciphertext( $stored ) ) {
+			return '';
+		}
+		$this->put_instance( $id, $stored );
+		return $stored;
+	}
+
+	/**
+	 * Seal and persist the WC AM instance UUID. Empty plaintext is refused.
 	 *
 	 * @since 4.0.0
 	 *
@@ -183,7 +211,59 @@ final class Store {
 	 * @param string $uuid Instance id.
 	 */
 	public function put_instance( string $id, string $uuid ): void {
-		$this->write_option( $this->instance_option( $id ), $uuid );
+		if ( '' === $uuid ) {
+			return;
+		}
+		$sealed = $this->box( $id )->seal( $uuid );
+		if ( ! is_string( $sealed ) || '' === $sealed ) {
+			return;
+		}
+		$this->write_option( $this->instance_option( $id ), $sealed );
+	}
+
+	/**
+	 * Product ids already activated for update checks.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Provider id.
+	 * @return list<string>
+	 */
+	public function activated_products( string $id ): array {
+		$item = $this->item( $id );
+		$raw  = isset( $item['activated_products'] ) && is_array( $item['activated_products'] )
+			? $item['activated_products']
+			: array();
+		$out  = array();
+		foreach ( $raw as $pid ) {
+			if ( is_string( $pid ) && '' !== $pid ) {
+				$out[] = $pid;
+			} elseif ( is_int( $pid ) || is_float( $pid ) ) {
+				$out[] = (string) $pid;
+			}
+		}
+
+		return array_values( array_unique( $out ) );
+	}
+
+	/**
+	 * Remember a product_id that activated successfully. Idempotent.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id         Provider id.
+	 * @param string $product_id Mall product id.
+	 */
+	public function mark_activated( string $id, string $product_id ): void {
+		if ( '' === $product_id ) {
+			return;
+		}
+		$have = $this->activated_products( $id );
+		if ( in_array( $product_id, $have, true ) ) {
+			return;
+		}
+		$have[] = $product_id;
+		$this->put_item( $id, array( 'activated_products' => $have ) );
 	}
 
 	/**
@@ -293,12 +373,13 @@ final class Store {
 		$this->put_item(
 			$id,
 			array(
-				'connection'      => 'disconnected',
-				'email_masked'    => null,
-				'email_hash'      => null,
-				'connected_at'    => null,
-				'last_checked_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
-				'product_count'   => null,
+				'connection'         => 'disconnected',
+				'email_masked'       => null,
+				'email_hash'         => null,
+				'connected_at'       => null,
+				'last_checked_at'    => gmdate( 'Y-m-d\TH:i:s\Z' ),
+				'product_count'      => null,
+				'activated_products' => array(),
 			)
 		);
 	}
@@ -364,13 +445,26 @@ final class Store {
 			$count = (int) $row['product_count'];
 		}
 
+		$activated = array();
+		if ( isset( $row['activated_products'] ) && is_array( $row['activated_products'] ) ) {
+			foreach ( $row['activated_products'] as $pid ) {
+				if ( is_string( $pid ) && '' !== $pid ) {
+					$activated[] = $pid;
+				} elseif ( is_int( $pid ) || is_float( $pid ) ) {
+					$activated[] = (string) $pid;
+				}
+			}
+			$activated = array_values( array_unique( $activated ) );
+		}
+
 		return array(
-			'connection'      => $connection,
-			'email_masked'    => isset( $row['email_masked'] ) && is_string( $row['email_masked'] ) ? $row['email_masked'] : null,
-			'email_hash'      => isset( $row['email_hash'] ) && is_string( $row['email_hash'] ) ? $row['email_hash'] : null,
-			'connected_at'    => isset( $row['connected_at'] ) && is_string( $row['connected_at'] ) ? $row['connected_at'] : null,
-			'last_checked_at' => isset( $row['last_checked_at'] ) && is_string( $row['last_checked_at'] ) ? $row['last_checked_at'] : null,
-			'product_count'   => $count,
+			'connection'         => $connection,
+			'email_masked'       => isset( $row['email_masked'] ) && is_string( $row['email_masked'] ) ? $row['email_masked'] : null,
+			'email_hash'         => isset( $row['email_hash'] ) && is_string( $row['email_hash'] ) ? $row['email_hash'] : null,
+			'connected_at'       => isset( $row['connected_at'] ) && is_string( $row['connected_at'] ) ? $row['connected_at'] : null,
+			'last_checked_at'    => isset( $row['last_checked_at'] ) && is_string( $row['last_checked_at'] ) ? $row['last_checked_at'] : null,
+			'product_count'      => $count,
+			'activated_products' => $activated,
 		);
 	}
 
@@ -432,6 +526,24 @@ final class Store {
 		}
 		$age = time() - $ts;
 		return $age > 0 ? $age : 0;
+	}
+
+	/**
+	 * Whether $stored looks like secretbox output rather than a UUID.
+	 *
+	 * Plain UUIDs are 36 chars with dashes; seal() is Base64(nonce||box)
+	 * and is much longer. Used so decrypt failure on garbage ciphertext
+	 * does not get rewritten as "plaintext".
+	 *
+	 * @param string $stored Option value.
+	 */
+	private function looks_like_ciphertext( string $stored ): bool {
+		if ( strlen( $stored ) < 48 ) {
+			return false;
+		}
+		$raw        = base64_decode( $stored, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- inverse of SecretBox::seal().
+		$nonce_size = defined( 'SODIUM_CRYPTO_SECRETBOX_NONCEBYTES' ) ? SODIUM_CRYPTO_SECRETBOX_NONCEBYTES : 24;
+		return is_string( $raw ) && strlen( $raw ) >= $nonce_size;
 	}
 
 	/**

@@ -8,8 +8,12 @@
  *   POST body → HTTP 200 `success:false`「未收到请求值」; GET query → HTTP 200
  *   `success:false`「此许可证密钥不存在客户账户」on product_list. The mall
  *   therefore only reads query (same as cloud-bridge WooCommerceVendor).
- * - All five actions use GET query. Logger context never includes the full
- *   URL (host + path only); error objects never include the request URL.
+ * - Action query key is `wc_am_action` (underscore). Spec text still says
+ *   `wc-am-action`; live mall accepts the underscore form.
+ * - Connect/test validate the key with product_list (activate/status need
+ *   product_id). All five actions use GET query. Logger context never
+ *   includes the full URL (host + path only); error objects never include
+ *   the request URL.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
