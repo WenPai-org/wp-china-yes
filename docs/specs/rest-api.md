@@ -179,12 +179,14 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 
 **界面分组（2026-09-06，供概览"线路状态"与 `/events` 的 `{route}` 使用）**。概览不逐个列目标，按下表分组；组状态取成员里**最差**的（`down` > `fallback` > `ok`），组延迟取成员里**最大**的 `latency_ms`，组"最近检查"取最早的 `checked_at`。诊断页仍逐个列目标。
 
-| 组（人读名） | 说明文案 | 成员目标 |
-|---|---|---|
-| WordPress.org 镜像 | 更新检查与安装包 | `api.wenpai.net`、`downloads.wenpai.net` |
-| 公共库源 | Google Fonts、Ajax、jsDelivr、Emoji | `googlefonts.admincdn.com`、`googleajax.admincdn.com`、`jsd.admincdn.com` |
-| CDNJS 源 | 备用公共库 | `cdnjs.admincdn.com` |
-| Cravatar | 评论头像 · `{host}` | 当前头像线路主机（一个） |
+| 组（人读名） | 服务商（品牌原文，决定 D1） | 说明文案 | 成员目标 |
+|---|---|---|---|
+| WordPress.org 镜像 | WenPai.org | 更新检查与安装包 | `api.wenpai.net`、`downloads.wenpai.net` |
+| 公共库源 | adminCDN | Google Fonts、Ajax、jsDelivr、Emoji | `googlefonts.admincdn.com`、`googleajax.admincdn.com`、`jsd.admincdn.com` |
+| CDNJS 源 | adminCDN | 备用公共库 | `cdnjs.admincdn.com` |
+| Cravatar | Cravatar | 评论头像 · `{host}` | 当前头像线路主机（一个） |
+
+服务商列是界面与事件文案用的常量（`{provider}`），不进 `/diagnostics` 响应；分组与服务商的映射放在一处（`Diagnostics\RouteGroups`），前后端共用同一张表。
 
 `connectivity.wordpress_org=off`（直连）时"WordPress.org 镜像"组不出现在概览线路列表（跨境站默认如此）；`public_assets.scope=off` 时两个公共库组不出现；`avatar` 两侧都 `off` 时 Cravatar 组不出现。
 
@@ -459,10 +461,10 @@ GET，权限 `manage_options`。查询参数 `per_page`：默认 `20`，上限 `
 | `type` | `tone` | `title` 模板 | `detail` 模板 |
 |---|---|---|---|
 | `first_check` | ok | 首次线路检查完成 | `{ok}` 条线路全部正常 / `{ok}`/`{total}` 条线路正常 |
-| `route_recovered` | ok | `{route}` 恢复，已切回 | 中断 `{minutes}` 分钟，期间走原始上游，访客不受影响 |
-| `mirror_fallback` | warn | WordPress.org 镜像不可达，已回原始上游 | 每 1 分钟重试，恢复后自动切回 |
-| `route_fallback` | warn | `{route}` 不可达，已回原始上游 | 恢复后自动切回 |
-| `route_down` | warn | `{route}` 不可达 | 该项已暂停改写，恢复后自动继续 |
+| `route_recovered` | ok | `{route}` 恢复，已切回 | `{provider}` 中断 `{minutes}` 分钟，期间走原始上游，访客不受影响 |
+| `mirror_fallback` | warn | WordPress.org 镜像不可达，已回原始上游 | WenPai.org 镜像暂时不可达，每 1 分钟重试，恢复后自动切回 |
+| `route_fallback` | warn | `{route}` 不可达，已回原始上游 | `{provider}` 暂时不可达，恢复后自动切回 |
+| `route_down` | warn | `{route}` 不可达 | `{provider}` 暂时不可达，该项已暂停改写，恢复后自动继续 |
 | `update_check` | ok / neutral | 完成 WordPress `{version}` 更新检查 | 经国内镜像，耗时 `{seconds}` 秒（ok）/ 直连 WordPress.org，耗时 `{seconds}` 秒（neutral） |
 | `migrated` | neutral | 插件更新到 `{version}` | 从 `{source_version}` 迁移 `{kept}` 项设置 |
 | `profile_set` | neutral | 已按「`{profile_label}`」配置 | 更新走国内镜像，前端资源与头像走国内节点（domestic）/ 后台资源只在后台加速，更新直连 WordPress.org（crossborder / mixed） |

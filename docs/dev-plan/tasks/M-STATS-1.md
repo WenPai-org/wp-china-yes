@@ -35,6 +35,11 @@ worktree 分支 `grok/m-stats-1`，基于 `main`。预计 diff ≤ 900 行（不
 - 性能：`increment` 与 `record` 不做 I/O；一次请求最多各写一次 option；`GET /stats` 不触发写（除首次写 `installed_at`）。
 - 多站点：计数、事件、`installed_at` 均按站点（`switch_to_blog` 安全：用 `get_option`）。
 
+## 统筹补充（2026-09-06 22:40，决定 D1）
+
+- rest-api §`/diagnostics` 分组表新增**服务商**列（WenPai.org / adminCDN / Cravatar），事件模板 `route_fallback` / `route_down` / `route_recovered` 的 detail 用 `{provider}`。把分组 → 服务商 → 成员目标放在**一个**类 `src/Diagnostics/RouteGroups.php`（常量表 + `group_for_target()` + `worst()` 聚合），`Events` 从它取 `{route}` / `{provider}` / `{host}`；后续前端也读这张表（导出到 bootstrap 由 M-UI-1 做，本任务不碰 Admin）。
+- 决定原文 `.grok-context/2026-09-06-core-services-value-and-providers.md` D1 / D2。
+
 ## 禁区
 
 - 不改 `src/Admin/app/**`、`src/Admin/AdminModule.php`、`src/Admin/RecoveryPage.php`。
