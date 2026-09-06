@@ -124,4 +124,21 @@ class ProfileSuggestTest extends TestCase {
 
 		$this->assertSame( 'crossborder', $out['suggestion'] );
 	}
+
+	/**
+	 * Locale / timezone longer than 64 characters are dropped from signals.
+	 */
+	public function test_locale_and_timezone_over_64_are_null() {
+		$engine = new ProfileSuggest(
+			static function () {
+				return array( 'country' => 'US' );
+			}
+		);
+		$long   = str_repeat( 'a', 65 );
+		$out    = $engine->suggest( $long, $long );
+
+		$this->assertNull( $out['signals']['admin_locale_hint'] );
+		$this->assertNull( $out['signals']['admin_tz_hint'] );
+		$this->assertNull( $out['suggestion'] );
+	}
 }

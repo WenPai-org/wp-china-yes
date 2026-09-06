@@ -81,8 +81,8 @@
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `locale` | string，可选 | 浏览器 `Accept-Language` 主标签，如 `zh-CN` |
-| `timezone` | string，可选 | IANA 时区，如 `Asia/Shanghai` |
+| `locale` | string，可选，最长 64 | 浏览器 `Accept-Language` 主标签，如 `zh-CN` |
+| `timezone` | string，可选，最长 64 | IANA 时区，如 `Asia/Shanghai` |
 
 未传 `locale` 时可用请求头 `Accept-Language` 的第一项作同等 hint。不接受、不回传 IP。
 

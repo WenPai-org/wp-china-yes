@@ -462,6 +462,35 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
+	 * Multisite PUT /settings writes overrides / network, not wpcy_settings.
+	 */
+	public function test_multisite_put_settings_writes_overrides_not_wpcy_settings() {
+		\WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 2,
+				'allow_site_override' => true,
+				'profile'             => 'domestic',
+			)
+		);
+
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array( 'profile' => 'crossborder' );
+		$response      = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, \WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$options );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertSame( 'crossborder', $overrides['profile'] );
+		$this->assertSame( 'admin', $overrides['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'crossborder', $response->get_data()['profile'] );
+		$this->assertSame( 'off', $response->get_data()['connectivity']['avatar_frontend'] );
+	}
+
+	/**
 	 * Network write without manage_network_options is forbidden.
 	 */
 	public function test_network_settings_requires_manage_network_options() {

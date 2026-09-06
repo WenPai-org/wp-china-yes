@@ -137,6 +137,64 @@ class ClientProbeTest extends TestCase {
 	}
 
 	/**
+	 * Diagnostics.client_probe_url host is added to the allow-list.
+	 */
+	public function test_client_probe_url_host_is_allowed() {
+		$repo = new Repository();
+		$repo->set( 'diagnostics.client_probe_url', 'https://probe.example.com/path' );
+		$controller = new ClientProbeController( $repo );
+		$saved      = $controller->update_item(
+			$this->request(
+				array(
+					array(
+						'url'        => 'https://probe.example.com/speed',
+						'result'     => 'ok',
+						'latency_ms' => 9,
+					),
+				)
+			)
+		);
+
+		$this->assertNotInstanceOf( WP_Error::class, $saved );
+		$this->assertSame( 'probe.example.com', $saved->get_data()['probes'][0]['target'] );
+	}
+
+	/**
+	 * GET projects stored probes to {target,result,latency_ms}.
+	 */
+	public function test_get_projects_probe_fields() {
+		update_option(
+			ClientProbeController::OPTION,
+			array(
+				'checked_at' => '2026-09-06T12:00:00Z',
+				'probes'     => array(
+					array(
+						'target'     => 'fonts.googleapis.com',
+						'result'     => 'ok',
+						'latency_ms' => 12,
+						'url'        => 'https://fonts.googleapis.com/css2',
+						'extra'      => 'drop-me',
+					),
+				),
+			),
+			false
+		);
+
+		$controller = new ClientProbeController( new Repository() );
+		$data       = $controller->get_item( new WP_REST_Request() )->get_data();
+
+		$this->assertSame(
+			array(
+				'target'     => 'fonts.googleapis.com',
+				'result'     => 'ok',
+				'latency_ms' => 12,
+			),
+			$data['probes'][0]
+		);
+		$this->assertSame( '2026-09-06T12:00:00Z', $data['checked_at'] );
+	}
+
+	/**
 	 * Route is registered.
 	 */
 	public function test_route_registered() {

@@ -25,8 +25,6 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 * Optional logger: callable(string $level, string $message, array $context): void
 	 * or an object with log().
 	 *
-	 * Callable is not a valid PHP 7.4 property type.
-	 *
 	 * @var callable|null
 	 */
 	private $logger;

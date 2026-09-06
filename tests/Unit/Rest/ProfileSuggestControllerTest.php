@@ -100,6 +100,29 @@ class ProfileSuggestControllerTest extends TestCase {
 	}
 
 	/**
+	 * Locale / timezone query params longer than 64 are not echoed in signals.
+	 */
+	public function test_locale_timezone_over_64_are_dropped() {
+		$engine          = new ProfileSuggest(
+			static function () {
+				return array( 'country' => 'CN' );
+			}
+		);
+		$controller      = new ProfileSuggestController( $engine );
+		$long            = str_repeat( 'z', 65 );
+		$request         = new WP_REST_Request();
+		$request->params = array(
+			'locale'   => $long,
+			'timezone' => $long,
+		);
+		$data            = $controller->get_item( $request )->get_data();
+
+		$this->assertNull( $data['signals']['admin_locale_hint'] );
+		$this->assertNull( $data['signals']['admin_tz_hint'] );
+		$this->assertSame( 'domestic', $data['suggestion'] );
+	}
+
+	/**
 	 * Missing manage_options is wpcy_forbidden.
 	 */
 	public function test_permission_denied() {

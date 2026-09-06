@@ -41,8 +41,6 @@ final class ProfileSuggest {
 	/**
 	 * Optional HTTP client: fn(string $url): mixed. Return decoded array or null.
 	 *
-	 * Callable is not a valid PHP 7.4 property type.
-	 *
 	 * @var callable|null
 	 */
 	private $http;
@@ -194,8 +192,11 @@ final class ProfileSuggest {
 			return null;
 		}
 		$locale = trim( $locale );
+		if ( '' === $locale || strlen( $locale ) > 64 ) {
+			return null;
+		}
 
-		return '' === $locale ? null : $locale;
+		return $locale;
 	}
 
 	/**
@@ -209,7 +210,10 @@ final class ProfileSuggest {
 			return null;
 		}
 		$timezone = trim( $timezone );
+		if ( '' === $timezone || strlen( $timezone ) > 64 ) {
+			return null;
+		}
 
-		return '' === $timezone ? null : $timezone;
+		return $timezone;
 	}
 }

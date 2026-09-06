@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Rest;
 
-use WenPai\ChinaYes\Config\Schema;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -66,11 +65,7 @@ final class SettingsController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( WP_REST_Request $request ) {
-		$result = $this->writer->put(
-			Schema::SETTINGS,
-			$this->writer->stored_site_document(),
-			self::body( $request )
-		);
+		$result = $this->writer->put_site( self::body( $request ) );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

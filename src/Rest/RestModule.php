@@ -208,12 +208,14 @@ final class RestModule implements Module {
 				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
 				'args'                => array(
 					'locale'   => array(
-						'type'     => 'string',
-						'required' => false,
+						'type'      => 'string',
+						'required'  => false,
+						'maxLength' => 64,
 					),
 					'timezone' => array(
-						'type'     => 'string',
-						'required' => false,
+						'type'      => 'string',
+						'required'  => false,
+						'maxLength' => 64,
 					),
 				),
 			)

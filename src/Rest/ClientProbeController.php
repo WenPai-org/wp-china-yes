@@ -136,8 +136,39 @@ final class ClientProbeController {
 
 		return array(
 			'checked_at' => $checked,
-			'probes'     => $probes,
+			'probes'     => $this->project_probes( $probes ),
 		);
+	}
+
+	/**
+	 * Drop extra keys so GET matches {target,result,latency_ms}.
+	 *
+	 * @param array<int|string, mixed> $probes Stored rows.
+	 * @return list<array{target: string, result: string, latency_ms: int|null}>
+	 */
+	private function project_probes( array $probes ): array {
+		$out = array();
+		foreach ( $probes as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$target = isset( $row['target'] ) && is_string( $row['target'] ) ? $row['target'] : '';
+			$result = isset( $row['result'] ) && is_string( $row['result'] ) ? $row['result'] : '';
+			if ( '' === $target || ! in_array( $result, array( 'ok', 'down' ), true ) ) {
+				continue;
+			}
+			$latency = $row['latency_ms'] ?? null;
+			if ( null !== $latency && ( ! is_int( $latency ) || $latency < 1 ) ) {
+				$latency = null;
+			}
+			$out[] = array(
+				'target'     => $target,
+				'result'     => $result,
+				'latency_ms' => $latency,
+			);
+		}
+
+		return $out;
 	}
 
 	/**
