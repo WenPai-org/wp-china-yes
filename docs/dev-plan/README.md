@@ -67,7 +67,7 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | M2-07 | Integrations/Windfonts | M1-05 | F | 移植 3.9.3 Windfonts（API 目录 + 缓存，参数与 CORS 修复保留） | 对齐 3.9.3 smoke 里 Windfonts 断言 |
 | M2-09 | M2 独立审查修复（绑定 confirm 入口、`wpcy_entitlement_allows` 接线、NoticeControl 白名单铁律、expired 只读、A1–A9 e2e、12 条建议） | M2-05, M2-06 | — | 见 `tasks/M2-09.md`；审查 `verification/m2-services-review-2026-09-05.md` | 五阻断各有测试 |
 | M2-10 | CI e2e 四条小工具用例（A3 定位器、A5 同源桥接 `data.set`、A8 索引不可达提示、A9 双层 iframe 超时），以 CI 为验证回路 | M2-09 | — | 见 `tasks/M2-10.md` | 已合入 `c8447af`；e2e 23/23（任务书误写 27） |
-| M2-11 | 桥接来源校验落地规格修订：PHP `Bridge::classify` 接受 `"null"` origin、`session_token` 会话令牌（JS+PHP+mock-app+e2e） | M2-10 | — | 见 `tasks/M2-11.md` | `composer check` 绿；分支 CI e2e 全绿；合同测试覆盖 token 缺失/错误/第三方导航场景 |
+| M2-11 | 桥接来源校验落地规格修订：PHP `Bridge::classify` 接受 `"null"` origin、`session_token` 会话令牌（JS+PHP+mock-app+e2e） | M2-10 | — | 见 `tasks/M2-11.md` | 已合入；e2e 24/24（run 34002282877）；独立审查阻断（第二条 `ready` 重发 token）已修 |
 | M2-08 | 发布链 | M1-01 | — | 版本号三处同步脚本、CHANGELOG 段生成、Plugin Check 进 CI、ZIP 含 `build/`、SHA-256 附件、`docs/release/4.0-runbook.md` | CI 出的 ZIP 装进 wp-env 激活成功 |
 
 ### M3（服务端与接通；插件侧任务标 P，服务端任务标 S）
