@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Rest;
 
+use WenPai\ChinaYes\Config\Repository as ConfigRepository;
+use WenPai\ChinaYes\Diagnostics\OutboundLayers;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -45,14 +48,23 @@ final class ResidencyController {
 	private DataResidencyModule $module;
 
 	/**
+	 * Three-layer snapshot. Null constructs on demand.
+	 *
+	 * @var OutboundLayers|null
+	 */
+	private $layers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param DataResidencyModule|null $module Host table. Null constructs the default.
+	 * @param OutboundLayers|null      $layers Three-layer snapshot.
 	 */
-	public function __construct( $module = null ) {
+	public function __construct( $module = null, $layers = null ) {
 		$this->module = $module instanceof DataResidencyModule ? $module : new DataResidencyModule();
+		$this->layers = $layers instanceof OutboundLayers ? $layers : null;
 	}
 
 	/**
@@ -89,6 +101,39 @@ final class ResidencyController {
 				'items' => array_slice( $items, $offset, $per_page ),
 			)
 		);
+	}
+
+	/**
+	 * L0 / L1 / L2 / noise_block snapshot. No request bodies.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return WP_REST_Response
+	 */
+	public function get_protected( WP_REST_Request $request ): WP_REST_Response {
+		unset( $request );
+		return RestError::ok( $this->layers()->snapshot() );
+	}
+
+	/**
+	 * Classify one URL. Does not persist. Illegal URL → 400.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function test_url( WP_REST_Request $request ) {
+		$body = SettingsController::body( $request );
+		$url  = is_array( $body ) && isset( $body['url'] ) && is_string( $body['url'] ) ? $body['url'] : '';
+		if ( ! $this->is_absolute_http_url( $url ) ) {
+			return RestError::invalid_schema();
+		}
+
+		return RestError::ok( $this->layers()->test( $url ) );
 	}
 
 	/**
@@ -148,5 +193,34 @@ final class ResidencyController {
 		}
 
 		return $per_page;
+	}
+
+	/**
+	 * Snapshot helper.
+	 */
+	private function layers(): OutboundLayers {
+		if ( ! $this->layers instanceof OutboundLayers ) {
+			$this->layers = new OutboundLayers( new ConfigRepository(), $this->module->ruleset(), null, $this->module );
+		}
+
+		return $this->layers;
+	}
+
+	/**
+	 * Absolute http(s) URL with a host.
+	 *
+	 * @param string $url Candidate.
+	 */
+	private function is_absolute_http_url( string $url ): bool {
+		if ( '' === $url ) {
+			return false;
+		}
+		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $url ) : parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap has no WordPress.
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return false;
+		}
+		$scheme = isset( $parts['scheme'] ) ? strtolower( (string) $parts['scheme'] ) : '';
+
+		return in_array( $scheme, array( 'http', 'https' ), true );
 	}
 }

@@ -58,6 +58,14 @@ final class DocumentWriter {
 			return RestError::invalid_schema();
 		}
 
+		if ( $this->has_site_blocklist( $incoming ) && $this->site_blocklist_forbidden( $option ) ) {
+			return RestError::make(
+				'wpcy_settings_network_only_key',
+				__( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' ),
+				400
+			);
+		}
+
 		$incoming  = $this->expand_legacy_avatar( $incoming );
 		$current   = $this->apply_profile_switch( $current, $incoming );
 		$merged    = $this->deep_merge( $current, $incoming );
@@ -278,6 +286,32 @@ final class DocumentWriter {
 		}
 
 		return Profile::apply_to( $current, $incoming['profile'] );
+	}
+
+	/**
+	 * Whether PUT body includes the network-only site_blocklist segment.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $incoming PUT body.
+	 */
+	private function has_site_blocklist( array $incoming ): bool {
+		return isset( $incoming['modules'] ) && is_array( $incoming['modules'] ) && array_key_exists( 'site_blocklist', $incoming['modules'] );
+	}
+
+	/**
+	 * Site blocklist may not be written via site overrides or a subsite /settings PUT.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $option Option name.
+	 */
+	private function site_blocklist_forbidden( string $option ): bool {
+		if ( Schema::SITE_OVERRIDES === $option ) {
+			return true;
+		}
+
+		return Schema::SETTINGS === $option && function_exists( 'is_multisite' ) && is_multisite();
 	}
 
 	/**
