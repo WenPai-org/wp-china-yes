@@ -19,9 +19,7 @@ npx wp-env run cli wp eval 'if ( ! has_action( "wpcy_daily_telemetry" ) ) { thro
 # 3.x Maintenance is gone.
 npx wp-env run cli wp eval 'if ( class_exists( "WenPai\\ChinaYes\\Service\\Maintenance" ) ) { throw new Exception( "3.x Maintenance class must not exist" ); }'
 
-# Windfonts via 4.0 option (new process so the module reads stored settings).
-npx wp-env run cli wp eval '$settings = get_option( "wpcy_settings", array() ); if ( ! is_array( $settings ) ) { $settings = array(); } $settings["modules"]["windfonts"] = true; $settings["integrations"]["windfonts"]["fonts"] = array( array( "family" => "wenfeng-hcszt", "subset" => "full", "selector" => "body", "enable" => true ) ); $settings["connectivity"]["avatar"] = "off"; update_option( "wpcy_settings", $settings );'
-npx wp-env run cli wp eval 'ob_start(); do_action( "wp_head" ); $html = ob_get_clean(); if ( false === strpos( $html, "family=wenfeng-hcszt" ) || false === strpos( $html, "subset=full" ) || false !== strpos( $html, "crossorigin" ) ) { throw new Exception( "invalid Windfonts stylesheet output" ); }'
+# Windfonts 4.0 wp_head is tests/integration-windfonts.sh (analysis §4).
 
 # First-boot migration: 4.0 option absent + wp_china_yes present → Runner::execute().
 npx wp-env run cli wp eval 'delete_option( "wpcy_settings" ); delete_option( "wpcy_migration_backup" ); update_option( "wp_china_yes", array( "store" => "off", "cravatar" => "off" ) );'
