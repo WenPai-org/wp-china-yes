@@ -90,7 +90,7 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | M4-02 ✅ | 升级矩阵（`tasks/M4-02.md`）。**已合入**（2026-09-06；Studio 真机 3.8/3.9.3→4.0→停用→装回全过；CI run 34019965572；产品决定：3.8 `admincdn` 键存在即按 token 推导 `public_assets`，空则 `[]`；矩阵 `verification/m4-upgrade-matrix-2026-09-06.md`；报告 `reports/M4-02*`） | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
 | M-UI-0 | 产品化后端前置（`tasks/M-UI-0.md`）：`/residency/*` 与 `/migration/report` REST、索引 `unconfigured` 态、面向用户错误串中文化、恢复页 title | M4-02 | 不改 `src/Admin/app/` | 见任务书 | `composer check` + CI 全绿；DoD |
 | M-SCOPE-0 | 站点场景与作用域文档（ADR-004、schema/REST/UI 词表、M-SCOPE-1 任务书、M-SCOPE-UI 需求） | — | 纯文档 | 见本行交付 | 决定展开，不改 `src/` |
-| M-SCOPE-1 | 引擎：profile / scope / admin_assets（`tasks/M-SCOPE-1.md`） | **M-UI-0 合入** | 不改 `src/Admin/app/` | Schema v2、三模块门控、Profile、REST、迁移 D3 | 见任务书；单元 + e2e 不红 |
+| M-SCOPE-1 | 引擎：profile / scope / admin_assets / 跨境免费体验层（心跳节流、挡仪表盘外部内容、浏览器测速 REST、驻留方案 A）（`tasks/M-SCOPE-1.md`） | **M-UI-0 合入** | 不改 `src/Admin/app/` | Schema v2、三模块门控、Profile、REST、迁移 D3、Heartbeat、dashboard feeds、client-probe、A 档按 profile 闸 | 见任务书；单元 + e2e 不红 |
 | M-UI-1… | 产品化 UI（原型定稿后拆；`docs/dev/design-sop.md` 门禁）。场景向导 / 概览提示 / 作用域呈现需求见 `tasks/M-SCOPE-UI.md` | M-UI-0、原型认可 | — | 待写 | 三层验收 |
 | M4-03 | RC 与文档（`tasks/M4-03.md`）；**依赖 M-SCOPE-1** | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧）；en_US 完整性；`admin_assets`「即将提供」 |
 | M4-04 | 发版（`tasks/M4-04.md`） | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |

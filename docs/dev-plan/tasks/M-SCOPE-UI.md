@@ -13,7 +13,7 @@
 - 不发明 §4 词表以外的用户可见句子。
 - 不把本文件当成已认可的 UI 任务书（无 `APPROVAL.md` 则 M-UI 任务书无效）。
 
-依据：ADR-004；[`docs/design/admin-ui-spec.md`](../../design/admin-ui-spec.md) §2 场景条目、§4 词表；规格编号 `WZ-01` / `OV-09` / `CO-07`；REST [`docs/specs/rest-api.md`](../../specs/rest-api.md) `GET /profile/suggest`、`GET/PUT /settings`。
+依据：ADR-004；[`docs/design/admin-ui-spec.md`](../../design/admin-ui-spec.md) §2 场景条目、§4 词表；规格编号 `WZ-01` / `OV-09` / `CO-07` / `CO-08` / `CO-09` / `DG-06`；REST [`docs/specs/rest-api.md`](../../specs/rest-api.md) `GET /profile/suggest`、`GET/PUT /settings`、`GET/POST /diagnostics/client-probe`。
 
 引擎（Schema、门控、建议接口）由 [M-SCOPE-1](M-SCOPE-1.md) 交付。本文件假设那份已合，或与原型并行时以 mock 该 REST 为准。
 
@@ -94,8 +94,10 @@
 | WordPress.org 源 | **不**呈现仅后台 / 仅前台 / 后台与前台 | 服务器侧，无 admin/frontend 之分。控件仍是「自动（推荐）/ 关闭」 |
 | 公共前端库 | 呈现三项作用域之一（默认随场景：domestic=`后台与前台`，crossborder/mixed=`仅后台`） | 五项勾选仍在；作用域是整组 |
 | 头像 | 不套单一 scope 词。后台一个值、前台一个值（各为 Cravatar 中国 / Cravatar 国际 / 关闭；`weavatar` 按专有名词保留） | 跨境默认：后台 Cravatar 中国、前台关闭；混合：后台 Cravatar 中国、前台 Cravatar 国际 |
-| 字体 Windfonts | 不呈现三项作用域（前台功能）。跨境 / 混合默认关 | 未绑定：既有「绑定后可用配额」 |
+| 字体 Windfonts | 不呈现三项作用域（前台功能）。跨境 / 混合默认关 | 未绑定：按服务端应答呈现；词表用「绑定后可用」，不用「配额」 |
 | 后台加速 `admin_assets` | 开关位 + 「即将提供」。值为 `on`（含迁移保留）时同时用「后台加速：已保留设置，4.1 起生效」 | 4.0 打开也不改写。开关可存 `on`/`off` |
+| 降低后台心跳 | 开关，文案「降低后台心跳」；说明「仪表盘关闭心跳，编辑器间隔 60 秒」 | `connectivity.heartbeat`；见 §5 |
+| 挡住仪表盘新闻和活动 | 开关，文案「挡住仪表盘新闻和活动」 | `connectivity.dashboard_feeds`；见 §5 |
 
 ### 状态
 
@@ -114,6 +116,66 @@
 
 向导：加载 / 有建议 / 无建议。  
 概览：需确认提示出现；已确认不出现。  
-连接优化：domestic 默认（公共库「后台与前台」、头像双侧 Cravatar 中国、`admin_assets`「即将提供」且为关）；crossborder 默认（公共库「仅后台」、头像前台关闭、`admin_assets` 开 + 「即将提供」）；迁移保留 `admin_assets=on` 那一行文案。
+连接优化：domestic 默认（公共库「后台与前台」、头像双侧 Cravatar 中国、`admin_assets`「即将提供」且为关、心跳关、仪表盘不挡）；crossborder 默认（公共库「仅后台」、头像前台关闭、`admin_assets` 开 + 「即将提供」、心跳开、挡住仪表盘新闻和活动）；迁移保留 `admin_assets=on` 那一行文案。  
+诊断：从你的浏览器测速空 / 测速中 / 有结果 / 失败。
 
-每个状态的 HTML 进 `docs/design/prototypes/`，认可进该页 `APPROVAL.md`，再拆 M-UI 任务。M-UI 任务书必须引用本文件、原型路径、认可日期、规格编号 `WZ-01` `OV-09` `CO-07`。
+每个状态的 HTML 进 `docs/design/prototypes/`，认可进该页 `APPROVAL.md`，再拆 M-UI 任务。M-UI 任务书必须引用本文件、原型路径、认可日期、规格编号 `WZ-01` `OV-09` `CO-07` `CO-08` `CO-09` `DG-06`。
+
+---
+
+## 5. 连接优化页：心跳与仪表盘项（CO-08 / CO-09）
+
+不写布局。开关在连接优化 DataForm 内，与公共库 / 头像同页。引擎键见 [M-SCOPE-1](M-SCOPE-1.md) 与 [ADR-004](../../architecture/adr-004-site-profile-and-scope.md)。
+
+### 文案（§4 原文）
+
+| 用途 | 原文 |
+|------|------|
+| 心跳开关 | 降低后台心跳 |
+| 心跳说明 | 仪表盘关闭心跳，编辑器间隔 60 秒 |
+| 仪表盘开关 | 挡住仪表盘新闻和活动 |
+
+`scope=off` 类关闭态沿用现有，不另造「已关闭」。
+
+### 状态
+
+| 状态 | 心跳（`connectivity.heartbeat`） | 仪表盘（`connectivity.dashboard_feeds`） |
+|------|----------------------------------|------------------------------------------|
+| domestic 默认 | 关（`off`） | 关（`allow`，不挡） |
+| crossborder / mixed 默认 | 开（`on`） | 开（`block`） |
+| 用户改过 | 显示当前值；切换场景后回到该场景默认 | 同 |
+| 恢复模式 | 本页仍显示开关；运行时引擎不挂钩（不在本页另写「恢复中无效」除非先改词表） | 同 |
+| 多站点 | 沿用 CO-06 只读 / 申请覆盖，不另造词 | 同 |
+| 保存 | 沿用「已保存」 | 同 |
+
+不要写「配额」。不要写 Heartbeat / dashboard 英文（专有名词 WordPress 可保留；本项标签用上表中文）。
+
+---
+
+## 6. 诊断页：从你的浏览器测速（DG-06）
+
+诊断页增加一块，与「连接检查」并列（Tab 或同 Tab 下一段；布局由原型定）。数据：`GET/POST /diagnostics/client-probe`。测的是**管理员浏览器**到 `fonts.googleapis.com` / Gravatar / 可选 `diagnostics.client_probe_url`，不是服务器出站。
+
+### 文案（§4 原文）
+
+| 用途 | 原文 |
+|------|------|
+| 区块标题 | 从你的浏览器测速 |
+| 空 | 尚未从浏览器测速 |
+| 进行中 | 测速中 |
+| 动作 | 开始测速 |
+| 单条可达 | 浏览器可达 |
+| 单条不可达 | 浏览器不可达 |
+| 失败 | 暂时无法从浏览器测速，请稍后重试。 |
+
+### 状态
+
+| 状态 | 界面要什么 | 数据 |
+|------|------------|------|
+| 空 | 标题「从你的浏览器测速」；正文「尚未从浏览器测速」；按钮「开始测速」 | GET `checked_at === null` |
+| 测速中 | 按钮 Spinner；文案「测速中」；不展示上一轮数字以免当成本轮 | POST 尚未返回 |
+| 有结果 | 每条：主机名 + 延迟 ms + 「浏览器可达」绿点或「浏览器不可达」红点；按钮仍是「开始测速」（可再测，覆盖写） | GET `probes[]` |
+| 失败 | 琥珀 Notice「暂时无法从浏览器测速，请稍后重试。」；不展示英文 `WP_Error` | POST 403 / 400 / 网络失败 |
+| 权限不足 | 与失败相同（不弹出 `wpcy_forbidden`） | 403 |
+
+不要把 IP 画到界面。不要写「配额」。延迟单位用 `ms`（数字单位，不是另造词）。
