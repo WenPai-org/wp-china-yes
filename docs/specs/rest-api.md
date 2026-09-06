@@ -26,6 +26,8 @@
 | GET | `/profile/suggest` | `manage_options` | 向导建议场景；不自动切换；不返回 IP 原值 |
 | GET | `/diagnostics` | `manage_options` | 最近一次检查结果 |
 | POST | `/diagnostics/run` | 同上 | 触发检查，返回结果 |
+| GET | `/diagnostics/client-probe` | 同上 | 管理员浏览器测速的最近一次摘要 |
+| POST | `/diagnostics/client-probe` | 同上 | 接收浏览器测速结果，只存最近一次摘要 |
 | GET | `/residency/ruleset` | 同上 | 当前生效主机表（版本、档位、条目） |
 | GET | `/residency/log` | 同上 | B 档记录（主机、数据类别、次数、最近时间；**无正文**） |
 | GET | `/announcements` | 同上 | 缓存的公告 |
@@ -61,6 +63,9 @@
   - `connectivity.public_assets`：`{ "items": [...], "scope": "both"|"admin"|"frontend"|"off" }`（不再是字符串数组）
   - `connectivity.avatar`：`{ "admin": <枚举>, "frontend": <枚举> }`（不再是单字符串；枚举 `cravatar_cn` \| `cravatar_global` \| `weavatar` \| `off`）
   - `admin_assets`：`on` \| `off`（4.0 预留，无运行时行为）
+  - `connectivity.heartbeat`：`on` \| `off`
+  - `connectivity.dashboard_feeds`：`block` \| `allow`
+  - `diagnostics.client_probe_url`：string，默认 `""`
   - 其余字段同 `docs/specs/config-schema.md`
 - PUT body 为完整对象或与 schema 兼容的部分对象；服务端按 `docs/specs/config-schema.md` 校验后写入，响应完整对象。PUT `profile` 且请求标明切换场景时，服务端走 `Profile::apply_defaults()` 重置连通性各项为该场景默认（改前由界面确认；本端点不代做确认对话框）。
 - 子站覆盖走 `wpcy_site_overrides`，经 `Config\Repository` 合并；本命名空间不另开 overrides 端点。**待定（M0）**：是否需要独立 `GET/PUT /site-overrides`，由实现方在写 `Rest/` 时与产品负责人确认。
@@ -166,6 +171,50 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 ```
 
 探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com` / `weavatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
+
+### `/diagnostics/client-probe`
+
+管理员从**自己的浏览器**测速（不是服务器出站）。服务端不代发这些 URL。只存最近一次摘要，option 键 `wpcy_diagnostics_client_probe`（`autoload=no`），不进 `wpcy_settings`。
+
+GET 无记录时：
+
+```json
+{ "checked_at": null, "probes": [] }
+```
+
+GET 有记录 / POST 成功响应：
+
+```json
+{
+  "checked_at": "2026-09-06T12:00:00Z",
+  "probes": [
+    { "target": "fonts.googleapis.com", "result": "ok", "latency_ms": 123 },
+    { "target": "secure.gravatar.com", "result": "down", "latency_ms": null }
+  ]
+}
+```
+
+POST body：
+
+```json
+{
+  "probes": [
+    { "url": "https://fonts.googleapis.com/css2?family=Roboto:wght@400", "result": "ok", "latency_ms": 123 },
+    { "url": "https://secure.gravatar.com/avatar/00000000000000000000000000000000?d=404", "result": "ok", "latency_ms": 80 }
+  ]
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `probes` | 非空数组，最多 8 条 |
+| `probes[].url` | HTTPS URL；主机必须在允许名单 |
+| `probes[].result` | `ok` \| `down` |
+| `probes[].latency_ms` | 正整数或 `null`（`down` 时可为 null） |
+
+允许名单主机：`fonts.googleapis.com`、`secure.gravatar.com`、`www.gravatar.com`、`gravatar.com`；若 `diagnostics.client_probe_url` 为非空 HTTPS URL，其主机一并允许。POST 覆盖写；非法主机或 schema 失败 → `wpcy_invalid_schema` 400，不改存储。权限不足 → `wpcy_forbidden` 403。
+
+`GET /entitlements` 的配额字段**仅服务 / 小工具链使用**；连通性无配额。
 
 ### `/residency/ruleset`
 

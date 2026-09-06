@@ -31,7 +31,8 @@
 
 - **向导第一步**（首次安装，非菜单页）：选场景。选项文案「国内站」「跨境 / 外贸站」「混合站」。插件给出建议值（`GET /profile/suggest`），用户确认。规格编号 `WZ-01`。
 - **概览确认提示**：3.x → 4.0 升级站未选场景前视为 `domestic`，概览给一条「确认你的站点场景」提示，不打断。规格编号 `OV-09`。
-- **连接优化页每项作用域呈现**：公共库等带 `scope` 的项显示「仅后台」「仅前台」「后台与前台」。`admin_assets` 显示「即将提供」；从 3.x 迁来且值为 `on` 时用「后台加速：已保留设置，4.1 起生效」。规格编号 `CO-07`。
+- **连接优化页每项作用域呈现**：公共库等带 `scope` 的项显示「仅后台」「仅前台」「后台与前台」。`admin_assets` 显示「即将提供」；从 3.x 迁来且值为 `on` 时用「后台加速：已保留设置，4.1 起生效」。规格编号 `CO-07`。心跳开关「降低后台心跳」（`CO-08`）；仪表盘开关「挡住仪表盘新闻和活动」（`CO-09`）。
+- **诊断页浏览器测速**：区块「从你的浏览器测速」（`DG-06`）。
 
 状态与文案原文见 §4 词表；各状态清单见 [`docs/dev-plan/tasks/M-SCOPE-UI.md`](../dev-plan/tasks/M-SCOPE-UI.md)。
 
@@ -72,7 +73,7 @@
 | WordPress.org 源 | `connectivity.wordpress_org` | RadioControl：自动（推荐）/ 关闭 | 自动 = 国内镜像优先，不可用时回原始上游 |
 | 公共前端库 | `connectivity.public_assets[]` | CheckboxControl 列表：Google Fonts / Google Ajax / CDNJS / jsDelivr / Emoji | 每项右侧圆点显示当前节点状态 |
 | 头像 | `connectivity.avatar` | RadioControl：Cravatar 中国 / Cravatar 国际 / 关闭 | — |
-| 字体（可选模块） | `modules.windfonts` + 字体列表 | ToggleControl；开启后出现字体族选择（DataViews 列表，来源 API 缓存） | 未绑定站点：提示「绑定后可用配额」并禁用 |
+| 字体（可选模块） | `modules.windfonts` + 字体列表 | ToggleControl；开启后出现字体族选择（DataViews 列表，来源 API 缓存） | 未绑定站点：提示「绑定后可用」并禁用；是否可开按服务端应答呈现 |
 
 多站点：网络管理员看到同页 + 顶部说明「网络策略，子站可覆盖」；子站管理员看到「已由网络设定」的只读态与「申请覆盖」（若 `allow_site_override`）。
 
@@ -136,6 +137,7 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | scope both | 后台与前台 | — |
 | admin_assets reserved | 即将提供 | `admin_assets` 开关位 |
 | admin_assets migrated | 后台加速：已保留设置，4.1 起生效 | 迁移报告；连接优化页对应项 |
+<<<<<<< HEAD
 | binding unavailable | 暂时无法连接文派服务，请稍后重试。 | 琥珀 Notice |
 | binding start failed | 暂时无法完成站点绑定，请稍后重试。 | 琥珀 Notice |
 | entitlements unavailable | 暂时无法读取权益配额，请稍后重试。 | 琥珀 Notice |
@@ -152,6 +154,20 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | apps quota exceeded | 暂时无法使用该小工具，本期配额已用尽。 | 琥珀 Notice |
 | recovery forbidden | 暂时无法打开恢复页，请确认你有管理权限。 | 红 Notice |
 | admin forbidden | 暂时无法打开该页面，请确认你有管理权限。 | 红 Notice |
+||||||| 09700e8
+=======
+| windfonts unbound | 绑定后可用 | 连接优化字体项；按服务端应答呈现 |
+| heartbeat throttle | 降低后台心跳 | 连接优化开关 |
+| heartbeat throttle help | 仪表盘关闭心跳，编辑器间隔 60 秒 | 连接优化说明 |
+| dashboard feeds | 挡住仪表盘新闻和活动 | 连接优化开关 |
+| client probe block | 从你的浏览器测速 | 诊断页区块标题 |
+| client probe idle | 尚未从浏览器测速 | 诊断页空状态 |
+| client probe running | 测速中 | 诊断页 Spinner |
+| client probe action | 开始测速 | 诊断页按钮 |
+| client probe ok | 浏览器可达 | 绿点 |
+| client probe down | 浏览器不可达 | 红点 |
+| client probe fail | 暂时无法从浏览器测速，请稍后重试。 | 琥珀 Notice |
+>>>>>>> grok/m-scope-0b
 
 禁用词：遥测、匿名数据、opt-in、entitlement、SaaS、套餐（用「权益」）、Pro。
 
@@ -213,6 +229,9 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | WZ-01 | 2 场景 | 向导第一步：选场景（国内站 / 跨境 / 外贸站 / 混合站），插件给建议、用户确认 |
 | OV-09 | 2 场景 | 概览「确认你的站点场景」提示（升级未选，不打断） |
 | CO-07 | 2 场景 | 连接优化页每项作用域呈现（仅后台 / 仅前台 / 后台与前台）；`admin_assets`「即将提供」与迁移保留文案 |
+| CO-08 | 3.2 | 降低后台心跳 |
+| CO-09 | 3.2 | 挡住仪表盘新闻和活动 |
+| DG-06 | 3.4 | 从你的浏览器测速 |
 
 词表行（§4 表内状态）验收时写界面文字本身，不必另编号。
 

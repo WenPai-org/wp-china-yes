@@ -143,3 +143,9 @@ php scripts/sign-ruleset.php src/Privacy/rulesets/baseline.json tests/fixtures/k
 ```
 
 生产签发见 linuxjoy 定稿 §7.5b-3（devops 在 feicode-prod 生成，不在本仓执行）。
+
+## 9. 与站点场景的关系
+
+统筹拍板原文：采用方案 A + 保险。A 档改道跟 `profile` 闸：`domestic` 维持现状（`ingest_ready` 才改道）；`crossborder` / `mixed` 不执行 A 档改道，B 档记录仍做，C 档不碰。保险：`profile=domestic` 时即使 geo 判定服务器在海外也改道（用户自称国内站以用户为准）。理由：A 档要挡的是"中国站数据出境"，不是"海外站回中国"；海外服务器绕国内云桥增加失败面，与叶子要解的问题方向相反。
+
+闸在 `Privacy/DataResidency` 运行时读有效 `profile`，不改主机表条目，不新增 `data_residency` 设置键。切换场景不改本 option。实现见 [M-SCOPE-1](../dev-plan/tasks/M-SCOPE-1.md)；合同见 [ADR-004](../architecture/adr-004-site-profile-and-scope.md)。

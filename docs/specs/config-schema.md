@@ -26,6 +26,9 @@
 | `connectivity.public_assets` 数组 | `{ "items": <原数组>, "scope": "both" }` | `scope` 用 domestic 默认 `both`；`items` 保持用户已选，不回填五项 |
 | `connectivity.avatar` 字符串 | `{ "admin": <原值>, "frontend": <原值> }` | 旧单值 → 两个值都等于它 |
 | （无 `admin_assets`） | `admin_assets` | `"off"`（domestic 默认；3.x `admin` token 的意图由 3.x→4.0 映射写入，不走本函数） |
+| （无 `connectivity.heartbeat`） | `connectivity.heartbeat` | `"off"`（domestic 默认） |
+| （无 `connectivity.dashboard_feeds`） | `connectivity.dashboard_feeds` | `"allow"`（domestic 默认） |
+| （无 `diagnostics.client_probe_url`） | `diagnostics.client_probe_url` | `""` |
 | `schema_version` `1` | `2` | |
 
 3.x → 4.0 映射器直接写出 v2，不先写 v1 再升级。3.x `admin` token → `admin_assets=on` 的规则见「3.x → 4.0 映射（D3）」与 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) D3。
@@ -60,7 +63,7 @@
     "connectivity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["wordpress_org", "public_assets", "avatar"],
+      "required": ["wordpress_org", "public_assets", "avatar", "heartbeat", "dashboard_feeds"],
       "properties": {
         "wordpress_org": {
           "type": "string",
@@ -104,6 +107,16 @@
               "default": "cravatar_cn"
             }
           }
+        },
+        "heartbeat": {
+          "type": "string",
+          "enum": ["on", "off"],
+          "default": "off"
+        },
+        "dashboard_feeds": {
+          "type": "string",
+          "enum": ["block", "allow"],
+          "default": "allow"
         }
       }
     },
@@ -149,7 +162,12 @@
       "additionalProperties": false,
       "required": ["scheduled_checks"],
       "properties": {
-        "scheduled_checks": { "type": "boolean", "default": true }
+        "scheduled_checks": { "type": "boolean", "default": true },
+        "client_probe_url": {
+          "type": "string",
+          "maxLength": 2048,
+          "default": ""
+        }
       }
     },
     "data_residency": {
@@ -197,11 +215,19 @@
 
 `connectivity.public_assets.items` 必须是 `[google_fonts, google_ajax, cdnjs, jsdelivr, emoji]` 的子集。未知字符串丢弃。
 
-`connectivity.public_assets.scope` 枚举 `both` / `admin` / `frontend` / `off`。判定当前请求是 admin 还是 frontend：`is_admin()`（含 `admin-ajax` / REST 带 `X-WP-Nonce` 的后台请求视为 admin；前台 REST 视为 frontend；WP-CLI 视为 admin）。实现为共享 `Connectivity\Scope::current()`，见 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 与 [`docs/dev-plan/tasks/M-SCOPE-1.md`](../dev-plan/tasks/M-SCOPE-1.md)。`wordpress_org` 是服务器侧行为，无 admin/frontend 之分，取值仍是 `auto` / `off`。
+`connectivity.public_assets.scope` 枚举 `both` / `admin` / `frontend` / `off`。判定当前请求是 admin 还是 frontend：`is_admin()`（含 `admin-ajax` / REST 带 `X-WP-Nonce` 的后台请求视为 admin；前台 REST 视为 frontend；WP-CLI 视为 admin；WP-Cron 视为 frontend）。cron / WP-CLI（统筹拍板原文）：`WP-CLI` 视为 `admin`；`WP-Cron` 视为 `frontend`（保守：不做任何仅后台的改写；服务器侧取 .org 的行为不受作用域影响）。实现为共享 `Connectivity\Scope::current()`，见 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 与 [`docs/dev-plan/tasks/M-SCOPE-1.md`](../dev-plan/tasks/M-SCOPE-1.md)。`wordpress_org` 是服务器侧行为，无 admin/frontend 之分，取值仍是 `auto` / `off`。
+
+连通性全部免费、无配额。本文与其它规格里若出现配额 / 降级字段，**仅服务 / 小工具链使用**（`Services/Entitlements`、小工具），不作用于 `wordpress_org` / `public_assets` / `avatar` / `admin_assets` / `heartbeat` / `dashboard_feeds`。
 
 `connectivity.avatar` 是两个独立值，替代 v1 单值。旧单值 → `admin` 与 `frontend` 都等于它。`weavatar` 仍在枚举内（M0 已关闭的 3.x 映射）。
 
-`admin_assets`：4.0 **预留**，枚举 `on` \| `off`，默认按场景（见 D2 矩阵）。**无运行时行为**——4.0 不做任何后台静态资源改写。界面显示「即将提供」；从 3.x 迁来且值为 `on` 时迁移报告写「后台加速：已保留设置，4.1 起生效」。
+`admin_assets`：4.0 **预留**，枚举 `on` \| `off`，默认按场景（见 D2 矩阵）。**无运行时行为**——4.0 不做任何后台静态资源改写。界面显示「即将提供」；从 3.x 迁来且值为 `on` 时迁移报告写「后台加速：已保留设置，4.1 起生效」。不规划商业化。
+
+`connectivity.heartbeat`：枚举 `on` \| `off`。`on` = 仪表盘关闭 Heartbeat，编辑器 `heartbeat_settings.interval = 60`。domestic 默认 `off`；`crossborder` / `mixed` 默认 `on`。钩子与 filter 名见 M-SCOPE-1。
+
+`connectivity.dashboard_feeds`：枚举 `block` \| `allow`。`block` = 去掉 WP 新闻/事件 widget，并短路核心 dashboard feed 请求；支付/物流不在本项范围内（主机表 C 档，不挡）。domestic 默认 `allow`；`crossborder` / `mixed` 默认 `block`。
+
+`diagnostics.client_probe_url`：可选 HTTPS 探针 URL，默认 `""`。空则浏览器测速只打允许名单内的固定目标（`fonts.googleapis.com`、Gravatar）。非空时其主机加入 POST `/diagnostics/client-probe` 允许名单。不在 `PUT /settings` 以外的路径写入。
 
 `profile` 枚举、默认、多站点覆盖：
 
@@ -330,10 +356,13 @@
 | `connectivity.public_assets.scope` | `"both"` |
 | `connectivity.avatar.admin` | `"cravatar_cn"` |
 | `connectivity.avatar.frontend` | `"cravatar_cn"` |
+| `connectivity.heartbeat` | `"off"` |
+| `connectivity.dashboard_feeds` | `"allow"` |
 | `admin_assets` | `"off"` |
 | `modules.notice_control` | `true` |
 | `modules.windfonts` | `false` |
 | `diagnostics.scheduled_checks` | `true` |
+| `diagnostics.client_probe_url` | `""` |
 | `data_residency.ruleset_version` | `1` |
 | `announcements.dismissed` | `[]` |
 | `apps.disabled` | `[]` |
@@ -347,14 +376,16 @@
 
 | 功能 | `domestic` 默认 | `crossborder` 默认 | `mixed` 默认 | 备注 |
 |------|-----------------|--------------------|--------------|------|
-| `connectivity.wordpress_org`（服务器取 .org API / 安装包） | `auto` | `off` | `auto` | 服务器侧行为，无 admin/frontend 之分；`auto` 靳探测决定 |
+| `connectivity.wordpress_org`（服务器取 .org API / 安装包） | `auto` | `off` | `auto` | 服务器侧行为，无 admin/frontend 之分；`auto` 靠探测决定 |
 | `connectivity.public_assets`（Google Fonts / Ajax / CDNJS / jsDelivr / Emoji 改写） | scope `both`，默认五项 | scope `admin`，默认五项 | scope `admin`，默认五项 | 海外访客不改写 |
 | `connectivity.avatar` | `cravatar_cn`，scope `both` | admin `cravatar_cn`；frontend `off`（保留 Gravatar） | admin `cravatar_cn`；frontend `cravatar_global` | avatar 的 scope 是两个独立值 |
-| `windfonts` | 绑定后可开 | `off` | `off` | 前台功能；跨境站不默认 |
+| `windfonts` | 绑定后可开（是否绑定由 Windfonts 平台决定，插件按服务端应答呈现；连通性无配额） | `off` | `off` | 前台功能；跨境站不默认 |
 | `admin_assets`（后台静态资源加速） | `off` | `on` | `on` | **4.1 交付**；4.0 只预留 schema 键与开关位，界面显示「即将提供」，不做任何改写 |
+| `connectivity.heartbeat`（仪表盘关心跳、编辑器 60s） | `off` | `on` | `on` | 跨境免费体验层；filter 名见 M-SCOPE-1 |
+| `connectivity.dashboard_feeds`（挡 WP 新闻/事件 widget 与 dashboard feed） | `allow` | `block` | `block` | 跨境免费体验层；不挡支付/物流 |
 | `notice_control` / `announcements` / 诊断 / 恢复 | 不受场景影响 | 同 | 同 | |
 | `telemetry` | 不受场景影响（常开） | 同 | 同 | payload 增加 `profile` 字段 |
-| `privacy.data_residency` | 按主机表 | **统筹待定**：服务器在海外时 A 档改道是否仍执行 | 同待定 | 规格任务须提出方案与理由，统筹拍板前保持现状（按主机表） |
+| `privacy.data_residency` | 按主机表；A 档 `ingest_ready` 才改道 | 不执行 A 档改道；B 档记录仍做；C 档不碰 | 同 `crossborder` | 方案 A + 保险，原文见下 |
 
 写入对应：
 
@@ -365,10 +396,14 @@
 | `connectivity.public_assets.scope` | `both` | `admin` | `admin` |
 | `connectivity.avatar.admin` | `cravatar_cn` | `cravatar_cn` | `cravatar_cn` |
 | `connectivity.avatar.frontend` | `cravatar_cn` | `off` | `cravatar_global` |
-| `modules.windfonts` | `false`（绑定后可开，不默认 true） | `false` | `false` |
+| `modules.windfonts` | `false`（绑定后可开，不默认 true；无配额文案） | `false` | `false` |
+| `connectivity.heartbeat` | `off` | `on` | `on` |
+| `connectivity.dashboard_feeds` | `allow` | `block` | `block` |
 | `admin_assets` | `off` | `on` | `on` |
 
-「五项」= `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]`。`notice_control` / `announcements` / 诊断 / 恢复 / `telemetry` / `privacy.data_residency` 切换场景时不改。`privacy.data_residency` 拍板前按主机表，见 [`data-residency-ruleset.md`](data-residency-ruleset.md)。
+「五项」= `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]`。`notice_control` / `announcements` / 诊断 / 恢复 / `telemetry` / `privacy.data_residency` 切换场景时不改设置键。`privacy.data_residency` 采用方案 A + 保险（运行时按 `profile` 闸 A 档，不改主机表），见 [`data-residency-ruleset.md`](data-residency-ruleset.md)。
+
+`privacy.data_residency`（统筹拍板原文）：采用方案 A + 保险。A 档改道跟 `profile` 闸：`domestic` 维持现状（`ingest_ready` 才改道）；`crossborder` / `mixed` 不执行 A 档改道，B 档记录仍做，C 档不碰。保险：`profile=domestic` 时即使 geo 判定服务器在海外也改道（用户自称国内站以用户为准）。理由：A 档要挡的是"中国站数据出境"，不是"海外站回中国"；海外服务器绕国内云桥增加失败面，与叶子要解的问题方向相反。
 
 ## 3.x → 4.0 映射（D3）
 
