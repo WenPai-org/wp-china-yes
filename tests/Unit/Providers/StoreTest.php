@@ -127,4 +127,34 @@ class StoreTest extends TestCase {
 		$this->assertFalse( $store->put_license_key( 'weixiaoduo-mall', '' ) );
 		$this->assertArrayNotHasKey( $store->license_option( 'weixiaoduo-mall' ), OptionStore::$options );
 	}
+
+	/**
+	 * Instance is sealed; option value is not the UUID.
+	 */
+	public function test_instance_is_sealed() {
+		$store  = new Store();
+		$uuid   = '11111111-2222-4333-8444-555555555555';
+		$option = $store->instance_option( 'weixiaoduo-mall' );
+		$store->put_instance( 'weixiaoduo-mall', $uuid );
+		$this->assertArrayHasKey( $option, OptionStore::$options );
+		$cipher = OptionStore::$options[ $option ];
+		$this->assertIsString( $cipher );
+		$this->assertNotSame( $uuid, $cipher );
+		$this->assertSame( $uuid, $store->read_instance( 'weixiaoduo-mall' ) );
+	}
+
+	/**
+	 * Leftover plaintext instance is migrated to ciphertext on read.
+	 */
+	public function test_plaintext_instance_is_migrated() {
+		$store                           = new Store();
+		$uuid                            = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+		$option                          = $store->instance_option( 'weixiaoduo-mall' );
+		OptionStore::$options[ $option ] = $uuid;
+		$this->assertSame( $uuid, $store->read_instance( 'weixiaoduo-mall' ) );
+		$cipher = OptionStore::$options[ $option ];
+		$this->assertIsString( $cipher );
+		$this->assertNotSame( $uuid, $cipher );
+		$this->assertSame( $uuid, $store->read_instance( 'weixiaoduo-mall' ) );
+	}
 }

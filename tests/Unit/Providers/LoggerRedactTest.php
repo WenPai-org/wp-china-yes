@@ -64,4 +64,22 @@ class LoggerRedactTest extends TestCase {
 		);
 		$this->assertSame( 'retry api_key=*** failed', $logger->records()[0]['context']['detail'] );
 	}
+
+	/**
+	 * Context key `url` drops the query string so the full URL is never kept.
+	 */
+	public function test_url_context_drops_query() {
+		$logger = new Logger( 'debug', static function () {} );
+		$logger->log(
+			'warning',
+			'outbound',
+			array(
+				'url' => 'https://mall.weixiaoduo.com/wc-api/wc-am-api/?api_key=abc&instance=1',
+			)
+		);
+		$url = $logger->records()[0]['context']['url'];
+		$this->assertSame( 'https://mall.weixiaoduo.com/wc-api/wc-am-api/', $url );
+		$this->assertStringNotContainsString( 'api_key', $url );
+		$this->assertStringNotContainsString( 'abc', $url );
+	}
 }
