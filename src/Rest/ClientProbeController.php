@@ -41,6 +41,8 @@ final class ClientProbeController {
 		'secure.gravatar.com',
 		'www.gravatar.com',
 		'gravatar.com',
+		'googlefonts.admincdn.com',
+		'cn.cravatar.com',
 	);
 
 	/**

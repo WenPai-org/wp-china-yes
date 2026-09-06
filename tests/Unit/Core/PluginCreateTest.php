@@ -41,6 +41,7 @@ class PluginCreateTest extends TestCase {
 
 		$this->assertSame(
 			array(
+				'stats',
 				'connectivity.wordpress_org',
 				'connectivity.public_assets',
 				'connectivity.avatar',
@@ -58,6 +59,7 @@ class PluginCreateTest extends TestCase {
 				'services.entitlements',
 				'admin.notice_control',
 				'admin.announcements',
+				'providers',
 			),
 			$plugin->registry()->ids()
 		);
@@ -75,6 +77,15 @@ class PluginCreateTest extends TestCase {
 		$this->assertSame( 0, preg_match( '/(?:update_option|update_site_option|add_option)\s*\(\s*[\'"]wp_china_yes[\'"]/', $source ) );
 		$this->assertSame( 0, preg_match( '/register_uninstall_hook/', $source ) );
 		Plugin::activate();
+		$this->assertArrayHasKey( 'wpcy_installed_at', OptionStore::$options );
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/',
+			OptionStore::$options['wpcy_installed_at']
+		);
+		Plugin::activate();
+		$first = OptionStore::$options['wpcy_installed_at'];
+		Plugin::activate();
+		$this->assertSame( $first, OptionStore::$options['wpcy_installed_at'] );
 	}
 
 	/**

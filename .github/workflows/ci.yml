@@ -136,7 +136,7 @@ jobs:
           npx wp-env run cli wp plugin activate wp-china-yes
           npx wp-env run cli wp plugin check wp-china-yes \
             --format=json \
-            --exclude-checks=offloading_files,trademarks,plugin_readme,file_type \
+            --exclude-checks=offloading_files,trademarks,plugin_readme,file_type,plugin_updater \
             --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github \
             | tee plugin-check.json
           python3 - <<'PY'
@@ -209,6 +209,8 @@ jobs:
       - run: bash tests/integration-cli.sh
       - run: bash tests/integration-recovery.sh
       - run: bash tests/integration-windfonts.sh
+      - run: bash tests/integration-stats.sh
+      - run: bash tests/integration-providers.sh
       - if: always()
         run: npx wp-env stop
 

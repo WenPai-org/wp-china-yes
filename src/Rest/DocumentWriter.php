@@ -45,6 +45,15 @@ final class DocumentWriter {
 	}
 
 	/**
+	 * Settings access used by SettingsController for read-only stamps.
+	 *
+	 * @since 4.0.0
+	 */
+	public function repository(): Repository {
+		return $this->repository;
+	}
+
+	/**
 	 * Merge $incoming into $current, validate, persist. True or WP_Error.
 	 *
 	 * @since 4.0.0
@@ -127,7 +136,7 @@ final class DocumentWriter {
 		$profile_switch  = isset( $incoming['profile'] ) && is_string( $incoming['profile'] )
 			&& in_array( $incoming['profile'], Schema::PROFILES, true )
 			&& $incoming['profile'] !== $from;
-		$override_roots  = array( 'profile', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' );
+		$override_roots  = array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' );
 		$overrides_touch = $profile_switch;
 		$overrides       = array( 'schema_version' => Schema::VERSION );
 		$stored_raw      = function_exists( 'get_option' ) ? get_option( Schema::SITE_OVERRIDES, array() ) : array();

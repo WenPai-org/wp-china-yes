@@ -77,6 +77,7 @@ final class Logger {
 			return;
 		}
 
+		$message         = $this->redact_query_secrets( $message );
 		$context         = $this->redact( $context );
 		$this->records[] = array(
 			'level'   => $level,
@@ -122,6 +123,11 @@ final class Logger {
 		$out = array();
 
 		foreach ( $context as $key => $value ) {
+			if ( in_array( $key, array( 'license_key', 'api_key' ), true ) ) {
+				$out[ $key ] = '***';
+				continue;
+			}
+
 			if ( in_array( $key, array( 'password', 'credential', 'token', 'authorization', 'email', 'auth', 'ip', 'cookie' ), true ) ) {
 				continue;
 			}
@@ -132,12 +138,17 @@ final class Logger {
 			}
 
 			if ( 'url' === $key && is_string( $value ) ) {
-				$out[ $key ] = $this->redact_url( $value );
+				$out[ $key ] = $this->redact_url( $this->redact_query_secrets( $value ) );
 				continue;
 			}
 
 			if ( is_array( $value ) ) {
 				$out[ $key ] = $this->redact( $value );
+				continue;
+			}
+
+			if ( is_string( $value ) ) {
+				$out[ $key ] = $this->redact_query_secrets( $value );
 				continue;
 			}
 
@@ -174,6 +185,16 @@ final class Logger {
 			'class'   => '',
 			'message' => is_string( $value ) ? $value : '',
 		);
+	}
+
+	/**
+	 * Mask api_key= and license_key= query values. Never keeps the secret.
+	 *
+	 * @param string $value Raw string.
+	 */
+	private function redact_query_secrets( string $value ): string {
+		$redacted = preg_replace( '/((?:api_key|license_key)=)([^&\s]*)/i', '$1***', $value );
+		return is_string( $redacted ) ? $redacted : $value;
 	}
 
 	/**

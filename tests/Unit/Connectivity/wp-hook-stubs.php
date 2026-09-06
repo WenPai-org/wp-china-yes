@@ -141,6 +141,34 @@ if ( ! function_exists( 'esc_attr' ) ) {
 	}
 }
 
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Run recorded action callbacks.
+	 *
+	 * @param string $tag Hook.
+	 * @return void
+	 */
+	function do_action( $tag ) {
+		$args = func_get_args();
+		array_shift( $args );
+		if ( ! isset( HookStore::$hooks[ $tag ] ) ) {
+			return;
+		}
+		foreach ( HookStore::$hooks[ $tag ] as $callback ) {
+			call_user_func_array( $callback, $args );
+		}
+	}
+}
+
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	/**
+	 * Current user id for heartbeat throttle keys.
+	 */
+	function get_current_user_id() {
+		return HookStore::$user_id;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * Run recorded callbacks when present; otherwise return $value.

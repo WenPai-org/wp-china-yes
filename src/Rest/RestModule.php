@@ -15,6 +15,8 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 use WenPai\ChinaYes\Diagnostics\Checker;
+use WenPai\ChinaYes\Stats\Counters;
+use WenPai\ChinaYes\Stats\Events;
 use WP_REST_Request;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -55,6 +57,20 @@ final class RestModule implements Module {
 	private $recovery_page;
 
 	/**
+	 * Daily counters. Null constructs a default.
+	 *
+	 * @var Counters|null
+	 */
+	private $counters;
+
+	/**
+	 * Event log. Null constructs a default.
+	 *
+	 * @var Events|null
+	 */
+	private $events;
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -62,11 +78,17 @@ final class RestModule implements Module {
 	 * @param Repository        $repository    Settings access.
 	 * @param Checker|null      $checker       Probe runner.
 	 * @param RecoveryPage|null $recovery_page Hidden admin page.
+	 * @param Counters|null     $counters      Daily counters.
+	 * @param Events|null       $events        Event log.
 	 */
-	public function __construct( Repository $repository, $checker = null, $recovery_page = null ) {
+	public function __construct( Repository $repository, $checker = null, $recovery_page = null, $counters = null, $events = null ) {
 		$this->repository    = $repository;
-		$this->checker       = $checker instanceof Checker ? $checker : new Checker( null, null, null, $repository );
 		$this->recovery_page = $recovery_page instanceof RecoveryPage ? $recovery_page : null;
+		$this->counters      = $counters instanceof Counters ? $counters : null;
+		$this->events        = $events instanceof Events ? $events : null;
+		$this->checker       = $checker instanceof Checker
+			? $checker
+			: new Checker( null, null, null, $repository, null, $this->events() );
 	}
 
 	/**
@@ -128,6 +150,9 @@ final class RestModule implements Module {
 		$migration      = new MigrationReportController();
 		$recovery       = new RecoveryController( new RecoveryActions( $this->repository ) );
 		$binding        = new BindingController( $this->repository );
+		$stats          = new StatsController( $this->counters() );
+		$event_log      = new EventsController( $this->events() );
+		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
 			self::NAMESPACE,
@@ -344,6 +369,43 @@ final class RestModule implements Module {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/stats',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $stats, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'days' => array(
+						'type'     => 'integer',
+						'required' => false,
+						'default'  => 7,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/events',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $event_log, 'get_items' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => EventsController::PER_PAGE_DEFAULT,
+					),
+					'type'     => array(
+						'type'     => 'string',
+						'required' => false,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/binding/challenge',
 			array(
 				'methods'             => 'GET',
@@ -395,5 +457,31 @@ final class RestModule implements Module {
 		}
 
 		return $this->recovery_page;
+	}
+
+	/**
+	 * Counters used by GET /stats.
+	 *
+	 * @since 4.0.0
+	 */
+	private function counters(): Counters {
+		if ( ! $this->counters instanceof Counters ) {
+			$this->counters = new Counters( $this->repository );
+		}
+
+		return $this->counters;
+	}
+
+	/**
+	 * Events used by GET /events.
+	 *
+	 * @since 4.0.0
+	 */
+	private function events(): Events {
+		if ( ! $this->events instanceof Events ) {
+			$this->events = new Events( $this->repository );
+		}
+
+		return $this->events;
 	}
 }

@@ -189,6 +189,10 @@ npx wp-env run tests-cli wp eval '
 
 节点被标故障时，断言 `$src` 仍是原始 jsDelivr URL。
 
+## 计数与事件
+
+连通性模块不要自己 `update_option( 'wpcy_stats' )` / `wpcy_events`。次数走 `do_action( 'wpcy_stats_increment', '<counter>', $n )`（`StatsModule` 转给 `Stats\Counters`，shutdown 一次写入）。事件走 `do_action( 'wpcy_events_record', '<type>', $vars )` 或直接 `Events::record()`；`title` / `detail` 只在 `Events` 按 rest-api §`/events` 模板生成。计数器名只允许 `/stats` 表里的 10 个；`outbound_blocked` 由 M-BLOCK-1 接 HttpBlock。恢复模式下 `increment` 不计，事件只记 `recovery_*`。
+
 ## 与服务端交互的模块
 
 适用于 `Telemetry` / `Privacy/DataResidency` / `Services/SiteBinding` / `Services/Entitlements` / `Services/Apps`：
@@ -327,3 +331,12 @@ public function profile_defaults(): array {
 - 把已删功能（飞行模式、评论、维护模式等，定稿 §7.1-8）用别的名字加回来。L2 本站拦截清单是已拍板的极窄例外（只拦、20 条、不能改道），不是飞行模式复活；不得借此口子加回正则/通配/全局屏蔽
 
 没有行为的能力：从注册、schema、迁移、宣传里删掉，不要留空壳。
+
+## 供应商层：用 `ProviderService`，不要直接读 `wpcy_secure_*`
+
+供应商是独立于文派绑定的第二层账户（`docs/specs/providers.md`）。业务代码只经 `WenPai\ChinaYes\Providers\ProviderService` 连接、断开、测试与拉已购产品。
+
+- 密钥在 `wpcy_secure_provider_{id}_license_key`（sodium secretbox，purpose `provider:{id}`）；instance 在 `wpcy_secure_provider_{id}_instance`。公开摘要在 `wpcy_providers`，不含密钥与完整邮箱。
+- 不要 `get_option( 'wpcy_secure_provider_*' )`，不要把密钥写进 `wpcy_settings` / `wpcy_site_identity` / 网络 option。
+- REST `/providers*` 由 `ProvidersController` 注册；响应不含密钥、完整邮箱、instance。
+- 更新接通走 `UpdateBridge`（id `providers`），只对 `update_managed` 精确匹配项填 `pre_set_site_transient_update_plugins`。恢复模式下不挂钩。

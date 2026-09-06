@@ -157,6 +157,9 @@ final class SiteBlocklistModule implements ConditionalModule {
 			return $preempt;
 		}
 
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'wpcy_stats_increment', 'outbound_blocked', 1 );
+		}
 		return new WP_Error( 'wpcy_site_blocklist_blocked', 'wpcy_site_blocklist_blocked' );
 	}
 

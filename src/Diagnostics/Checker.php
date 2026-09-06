@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Diagnostics;
 
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\Origins;
+use WenPai\ChinaYes\Stats\Events;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -88,6 +89,13 @@ final class Checker {
 	private $now;
 
 	/**
+	 * Optional event log. Null uses do_action( 'wpcy_events_record' ) path via Events instance.
+	 *
+	 * @var Events|null
+	 */
+	private $events;
+
+	/**
 	 * Wire HTTP, store, config, and clock. Constructor does not probe.
 	 *
 	 * @since 4.0.0
@@ -97,8 +105,9 @@ final class Checker {
 	 * @param callable|null $set_store Defaults to set_transient().
 	 * @param object|null   $config    Optional dotted-path config (Config or Repository).
 	 * @param callable|null $now       Defaults to gmdate UTC Z.
+	 * @param Events|null   $events    Optional event log for group transitions.
 	 */
-	public function __construct( $http_get = null, $get_store = null, $set_store = null, $config = null, $now = null ) {
+	public function __construct( $http_get = null, $get_store = null, $set_store = null, $config = null, $now = null, $events = null ) {
 		$this->http_get  = null !== $http_get ? $http_get : 'wp_remote_get';
 		$this->get_store = null !== $get_store ? $get_store : 'get_transient';
 		$this->set_store = null !== $set_store ? $set_store : 'set_transient';
@@ -106,6 +115,7 @@ final class Checker {
 		$this->now       = null !== $now ? $now : static function () {
 			return gmdate( 'Y-m-d\TH:i:s\Z' );
 		};
+		$this->events    = $events instanceof Events ? $events : null;
 	}
 
 	/**
@@ -116,6 +126,7 @@ final class Checker {
 	 * @return list<array{target: string, result: string, latency_ms: int|null, checked_at: string, suggestion: string|null}>
 	 */
 	public function run(): array {
+		$before     = $this->latest();
 		$checked_at = (string) ( $this->now )();
 		$results    = array();
 
@@ -124,8 +135,22 @@ final class Checker {
 		}
 
 		( $this->set_store )( self::STORE_KEY, $results, DAY_IN_SECONDS );
+		$this->events()->record_checker_transition( $before, $results );
 
 		return $results;
+	}
+
+	/**
+	 * Event log used for group-status transitions.
+	 *
+	 * @since 4.0.0
+	 */
+	private function events(): Events {
+		if ( ! $this->events instanceof Events ) {
+			$this->events = new Events( $this->config, $this->now );
+		}
+
+		return $this->events;
 	}
 
 	/**

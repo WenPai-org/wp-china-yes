@@ -24,6 +24,7 @@
 | `wpcy_providers` | `{ "schema_version": 1, "items": { "<id>": { "connection": "disconnected"\|"connected"\|"invalid"\|"unreachable", "email_masked": "a***@example.com"\|null, "email_hash": "<sha256>"\|null, "connected_at": ISO\|null, "last_checked_at": ISO\|null, "product_count": int\|null } } }`。**不含**密钥、不含完整邮箱 |
 | `wpcy_secure_provider_{id}_license_key` | 授权密钥密文。算法与 `wpcy_site_identity.binding.credential` 相同（sodium secretbox / 现有加密基元），派生 purpose 不同（`provider:{id}`）。解密失败 = 视为未连接（fail-closed），**不得**把占位符或空串发出站 |
 | `wpcy_secure_provider_{id}_instance` | WC AM `instance` 标识（UUID v4），首次连接生成后稳定；断开时删除 |
+| `wpcy_providers.items.{id}.activated_products` | 已对商城 `activate` 过的 `product_id` 列表（更新接通前逐产品激活一次，成功即记；不进 REST 响应）。2026-09-07 按 M-PROVIDER-1b 实现补记 |
 | `wpcy_provider_{id}_products` | transient，已购产品缓存副本，TTL 15 分钟；`unreachable` 时允许沿用至多 72 小时（与权益不可达策略同方向） |
 
 不写进 `wpcy_settings`、`wpcy_network_settings`、`wpcy_site_identity`。导出（诊断报告、Site Health）不含以上 `wpcy_secure_*` 键。
@@ -70,7 +71,7 @@
 
 以云桥 `WooCommerceVendor` 的现网用法为事实（研究稿 §1.3）；叶子实现 `Providers\WcAmClient`：
 
-- 基址 `https://mall.weixiaoduo.com/wc-api/wc-am-api/`；请求 `wc-am-action` ∈ `activate` / `deactivate` / `status` / `update` / `product_list`（云桥实际用到的子集）。
+- 基址 `https://mall.weixiaoduo.com/wc-api/wc-am-api/`；请求参数 `wc_am_action`（下划线，现网实测；云桥文档写连字符是笔误）∈ `activate` / `deactivate` / `status` / `update` / `product_list`（云桥实际用到的子集）。
 - **2026-09-07 00:45 按 M-PROVIDER-1 的只读探测修正（随机无效密钥、无真实密钥）**：现网 `activate` / `status` **必须带 `product_id`**（缺则 `success:false`「缺少以下必需的查询字符串数据：product_id」），因此**连接与测试的密钥校验统一用 `product_list`**（不需 `product_id`；无效密钥返回 `success:false`「此许可证密钥不存在客户账户。」→ `invalid`）。`activate` 只在更新接通时对具体 `product_id` 调用；`status` 同理。密钥**只能走 GET query**（POST body 返回「未收到请求值。」），P6 的日志约束按"query 版"执行：任何日志、错误对象、事件不得含完整 URL，`api_key=` 值脱敏。**邮箱不参与服务端校验**：请求不带邮箱，界面仍收集邮箱用于显示掩码与本地去重（只存掩码 + sha256）。
 - 参数：`instance`（本站 UUID）、`api_key`（授权密钥）、`product_id`、`object`（站点 URL）。**密钥放置**：优先 POST body；若商城只接受 query（云桥现状），规格在此写明：允许 query，但日志与错误对象**不得**记完整 URL（P6）。**待定**：商城是否在服务端使用邮箱做二次校验（云桥代码里邮箱只存本地）。
 - 校验成功的判定（`product_list`）：响应 JSON `success: true` 且含产品数组（可为空数组）；`success: false` + 业务错误 → `invalid`；HTTP 非 2xx / 超时 / DNS / TLS 失败 → `unreachable`。

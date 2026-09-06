@@ -38,6 +38,13 @@ final class HeartbeatModule implements ConditionalModule {
 	private string $hook_suffix = '';
 
 	/**
+	 * In-request fallback when transients are unavailable: user|screen => claimed.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $heartbeat_claimed = array();
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -109,6 +116,8 @@ final class HeartbeatModule implements ConditionalModule {
 	public function register(): void {
 		add_action( 'admin_enqueue_scripts', array( $this, 'on_admin_enqueue_scripts' ) );
 		add_filter( 'heartbeat_settings', array( $this, 'filter_heartbeat_settings' ) );
+		add_action( 'heartbeat_received', array( $this, 'on_heartbeat_received' ), 10, 0 );
+		add_action( 'load-index.php', array( $this, 'on_load_index' ) );
 	}
 
 	/**
@@ -170,5 +179,82 @@ final class HeartbeatModule implements ConditionalModule {
 		}
 
 		return in_array( $this->hook_suffix, $pages, true );
+	}
+
+	/**
+	 * Lower-bound estimate: editor interval 15s → 60s saves 3 heartbeats per minute.
+	 *
+	 * At most one increment per user_id + screen every 60 seconds (transient,
+	 * else a request-static flag). Not a precise count of skipped admin-ajax
+	 * calls. Prefer undercount to inflation.
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_heartbeat_received(): void {
+		if ( ! $this->is_editor_screen() || ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		if ( ! $this->claim_heartbeat_minute() ) {
+			return;
+		}
+		do_action( 'wpcy_stats_increment', 'heartbeat_saved', 3 );
+	}
+
+	/**
+	 * Claim the once-per-minute slot for this user + screen.
+	 *
+	 * @since 4.0.0
+	 */
+	private function claim_heartbeat_minute(): bool {
+		$user_id = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+		$screen  = $this->heartbeat_screen_key();
+		$key     = 'wpcy_hb_saved_' . md5( (string) $user_id . '|' . $screen );
+
+		if ( function_exists( 'get_transient' ) && function_exists( 'set_transient' ) ) {
+			if ( false !== get_transient( $key ) ) {
+				return false;
+			}
+			set_transient( $key, 1, 60 );
+			return true;
+		}
+
+		if ( isset( $this->heartbeat_claimed[ $key ] ) ) {
+			return false;
+		}
+		$this->heartbeat_claimed[ $key ] = true;
+		return true;
+	}
+
+	/**
+	 * Screen id used as the heartbeat throttle key.
+	 *
+	 * @since 4.0.0
+	 */
+	private function heartbeat_screen_key(): string {
+		if ( isset( $GLOBALS['pagenow'] ) && is_string( $GLOBALS['pagenow'] ) && '' !== $GLOBALS['pagenow'] ) {
+			return $GLOBALS['pagenow'];
+		}
+		if ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( is_object( $screen ) ) {
+				$base = (string) $screen->base;
+				if ( '' !== $base ) {
+					return $base;
+				}
+			}
+		}
+		return $this->hook_suffix;
+	}
+
+	/**
+	 * Lower-bound estimate: dashboard Heartbeat off = 1 saved tick per page load.
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_load_index(): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		do_action( 'wpcy_stats_increment', 'heartbeat_saved', 1 );
 	}
 }

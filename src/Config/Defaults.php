@@ -31,9 +31,10 @@ final class Defaults {
 	 */
 	public static function settings(): array {
 		return array(
-			'schema_version' => Schema::VERSION,
-			'profile'        => 'domestic',
-			'connectivity'   => array(
+			'schema_version'       => Schema::VERSION,
+			'profile'              => 'domestic',
+			'profile_confirmed_at' => null,
+			'connectivity'         => array(
 				'wordpress_org'   => 'auto',
 				'public_assets'   => array(
 					'items' => Schema::PUBLIC_ASSETS,
@@ -46,7 +47,7 @@ final class Defaults {
 				'heartbeat'       => 'off',
 				'dashboard_feeds' => 'allow',
 			),
-			'modules'        => array(
+			'modules'              => array(
 				'notice_control' => true,
 				'windfonts'      => false,
 				'site_blocklist' => array(
@@ -57,26 +58,26 @@ final class Defaults {
 					'enabled' => true,
 				),
 			),
-			'integrations'   => array(
+			'integrations'         => array(
 				'windfonts' => array(
 					'fonts' => array(),
 				),
 			),
-			'diagnostics'    => array(
+			'diagnostics'          => array(
 				'scheduled_checks' => true,
 				'client_probe_url' => '',
 			),
-			'data_residency' => array(
+			'data_residency'       => array(
 				'ruleset_version' => 1,
 			),
-			'announcements'  => array(
+			'announcements'        => array(
 				'dismissed' => array(),
 			),
-			'apps'           => array(
+			'apps'                 => array(
 				'disabled' => array(),
 			),
-			'recovery_mode'  => false,
-			'admin_assets'   => 'off',
+			'recovery_mode'        => false,
+			'admin_assets'         => 'off',
 		);
 	}
 

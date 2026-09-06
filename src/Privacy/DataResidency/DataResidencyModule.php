@@ -235,6 +235,9 @@ final class DataResidencyModule implements Module {
 			return $preempt;
 		}
 
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'wpcy_stats_increment', 'outbound_blocked', 1 );
+		}
 		return new WP_Error( 'wpcy_noise_block_blocked', 'wpcy_noise_block_blocked' );
 	}
 

@@ -195,6 +195,55 @@ class ClientProbeTest extends TestCase {
 	}
 
 	/**
+	 * Googlefonts.admincdn.com and cn.cravatar.com are on the allow-list.
+	 */
+	public function test_new_allow_list_hosts_pass() {
+		$controller = new ClientProbeController( new Repository() );
+		$saved      = $controller->update_item(
+			$this->request(
+				array(
+					array(
+						'url'        => 'https://googlefonts.admincdn.com/css2?family=Roboto:wght@400',
+						'result'     => 'ok',
+						'latency_ms' => 11,
+					),
+					array(
+						'url'        => 'https://cn.cravatar.com/avatar/00000000000000000000000000000000?d=404',
+						'result'     => 'ok',
+						'latency_ms' => 9,
+					),
+				)
+			)
+		);
+		$this->assertNotInstanceOf( WP_Error::class, $saved );
+		$targets = array();
+		foreach ( $saved->get_data()['probes'] as $row ) {
+			$targets[] = $row['target'];
+		}
+		$this->assertSame( array( 'googlefonts.admincdn.com', 'cn.cravatar.com' ), $targets );
+	}
+
+	/**
+	 * Hosts outside the expanded allow-list are still 400.
+	 */
+	public function test_other_hosts_still_rejected() {
+		$controller = new ClientProbeController( new Repository() );
+		$result     = $controller->update_item(
+			$this->request(
+				array(
+					array(
+						'url'        => 'https://en.cravatar.com/avatar/',
+						'result'     => 'ok',
+						'latency_ms' => 1,
+					),
+				)
+			)
+		);
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+	}
+
+	/**
 	 * Route is registered.
 	 */
 	public function test_route_registered() {
