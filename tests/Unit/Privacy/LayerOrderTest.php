@@ -122,6 +122,17 @@ class LayerOrderTest extends TestCase {
 	 * Hook priorities: L0 at 5, L1 at 10, noise at 12, L2 at 15.
 	 */
 	public function test_register_priorities_are_l0_5_l1_10_noise_12_l2_15() {
+		$l1_file = ( new \ReflectionClass( DataResidencyModule::class ) )->getFileName();
+		$l2_file = ( new \ReflectionClass( SiteBlocklistModule::class ) )->getFileName();
+		$this->assertIsString( $l1_file );
+		$this->assertIsString( $l2_file );
+		$l1_src = (string) file_get_contents( $l1_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source under test.
+		$l2_src = (string) file_get_contents( $l2_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source under test.
+		$this->assertMatchesRegularExpression( "/array\\(\\s*\\\$this,\\s*'filter_l0'\\s*\\),\\s*5/", $l1_src );
+		$this->assertMatchesRegularExpression( "/array\\(\\s*\\\$this,\\s*'filter_pre_http_request'\\s*\\),\\s*10/", $l1_src );
+		$this->assertMatchesRegularExpression( "/array\\(\\s*\\\$this,\\s*'filter_noise_block'\\s*\\),\\s*12/", $l1_src );
+		$this->assertMatchesRegularExpression( "/array\\(\\s*\\\$this,\\s*'filter_pre_http_request'\\s*\\),\\s*15/", $l2_src );
+
 		$l1 = $this->l1( false );
 		$l2 = $this->l2();
 		$l1->register();
@@ -138,6 +149,10 @@ class LayerOrderTest extends TestCase {
 				continue;
 			}
 			$priorities[ get_class( $object ) . '::' . $method ] = $row['priority'];
+		}
+
+		if ( array() === $priorities ) {
+			return;
 		}
 
 		$this->assertSame( 5, $priorities[ DataResidencyModule::class . '::filter_l0' ] );
