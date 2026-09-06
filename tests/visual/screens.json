@@ -1,0 +1,188 @@
+{
+	"run": "sop-baseline",
+	"screens": [
+		{
+			"id": "overview-normal",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-正常.png",
+			"state": "正常",
+			"waitForText": "WordPress.org 源",
+			"prep": { "kind": "none" },
+			"notes": "Studio 预览站诊断七目标曾全 ok。概览文派服务卡写死未绑定（preview-site-review 第 1 条），故本图同时带未绑定文案。"
+		},
+		{
+			"id": "overview-unbound",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-未绑定.png",
+			"state": "未绑定",
+			"waitForText": "未绑定",
+			"prep": { "kind": "none" },
+			"notes": "当前站 GET /binding 为 unbound；即便写成 bound，概览卡也不会变。"
+		},
+		{
+			"id": "overview-line-error",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-线路异常.png",
+			"state": "线路异常",
+			"waitForText": "已回原始上游",
+			"prep": {
+				"kind": "rest-mock",
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "fallback",
+									"latency_ms": 1200,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": "国内镜像不可用，已回原始上游。"
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "fallback",
+									"latency_ms": 1400,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": "国内镜像不可用，已回原始上游。"
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "fallback",
+									"latency_ms": 800,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": "国内镜像不可用，已回原始上游。"
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 180,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "down",
+									"latency_ms": null,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": "目标不可达，请稍后重试或检查网络。"
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "fallback",
+									"latency_ms": 900,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": "国内镜像不可用，已回原始上游。"
+								}
+							]
+						}
+					}
+				]
+			},
+			"notes": "需 fixture：把 transient wpcy_diagnostics_results 写成 fallback/down。本机 Studio CLI 缺 main.mjs、无 Docker，截图用会话内 REST 拦截，不写入站点。"
+		},
+		{
+			"id": "connect-default",
+			"page": "wpcy-connect",
+			"url": "/wp-admin/admin.php?page=wpcy-connect",
+			"filename": "connect-默认.png",
+			"state": "默认",
+			"waitForText": "WordPress.org 源",
+			"prep": { "kind": "none" },
+			"notes": "连接优化默认 DataForm 四组。"
+		},
+		{
+			"id": "services-unbound",
+			"page": "wpcy-services",
+			"url": "/wp-admin/admin.php?page=wpcy-services",
+			"filename": "services-未绑定.png",
+			"state": "未绑定",
+			"waitForText": "绑定本站",
+			"prep": { "kind": "none" },
+			"notes": "当前站 unbound。点绑定会 503（preview-site-review 第 2 条），本状态不点按钮。"
+		},
+		{
+			"id": "services-bound",
+			"page": "wpcy-services",
+			"url": "/wp-admin/admin.php?page=wpcy-services",
+			"filename": "services-已绑定.png",
+			"state": "已绑定",
+			"waitForText": "已绑定",
+			"prep": {
+				"kind": "rest-mock",
+				"routes": [
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": {
+							"status": "bound",
+							"site_hash": "sitehashABCDEFGH",
+							"bound_at": "2026-09-05T12:00:00Z"
+						}
+					},
+					{
+						"path": "/wpcy/v1/entitlements",
+						"method": "GET",
+						"body": { "entitlements": [] }
+					},
+					{
+						"path": "/wpcy/v1/apps",
+						"method": "GET",
+						"body": { "apps": [], "index_status": "ok" }
+					}
+				]
+			},
+			"notes": "需 fixture：identity.binding.status=bound。本机无可用 Studio WP-CLI，截图用会话内 REST 拦截。"
+		},
+		{
+			"id": "services-index-unreachable",
+			"page": "wpcy-services",
+			"url": "/wp-admin/admin.php?page=wpcy-services",
+			"filename": "services-索引不可达.png",
+			"state": "索引不可达",
+			"waitForText": "小工具目录暂时不可用",
+			"prep": {
+				"kind": "rest-mock",
+				"routes": [
+					{
+						"path": "/wpcy/v1/apps",
+						"method": "GET",
+						"body": { "apps": [], "index_status": "unreachable" }
+					}
+				]
+			},
+			"notes": "需 fixture：wpcy_apps_index_source 指向不可达 URL 后 Index::refresh。空 source 被当成 index_status=ok（preview-site-review 第 3 条）。"
+		},
+		{
+			"id": "diagnose-default",
+			"page": "wpcy-diagnose",
+			"url": "/wp-admin/admin.php?page=wpcy-diagnose",
+			"filename": "diagnose-默认.png",
+			"state": "默认",
+			"waitForText": "立即检查",
+			"prep": { "kind": "none" },
+			"notes": "诊断默认「连接检查」Tab。出站主机仍是空表占位（preview-site-review 第 4 条），本状态不点该 Tab。"
+		},
+		{
+			"id": "recovery-default",
+			"page": "wpcy-recovery",
+			"url": "/wp-admin/admin.php?page=wpcy-recovery",
+			"filename": "recovery-默认.png",
+			"state": "默认",
+			"waitForText": "文派叶子 · 恢复模式",
+			"prep": { "kind": "none" },
+			"notes": "PHP 直出恢复页，不加载 React。"
+		}
+	]
+}

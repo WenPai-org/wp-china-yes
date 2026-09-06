@@ -15,6 +15,14 @@
 
 代理协议：[agents.md](agents.md)，仓根入口 [`AGENTS.md`](../../AGENTS.md)。
 
+SOP（设计门禁、任务书 DoD、验收含视觉、文案、公共规则副本）：
+
+1. [design-sop.md](design-sop.md) — UI 必须先有经产品认可的 HTML 原型
+2. [task-book-template.md](task-book-template.md) — 任务书块与 Definition of Done
+3. [acceptance-sop.md](acceptance-sop.md) — 三层验收；UI 任务含截图对照
+4. [copy-guidelines.md](copy-guidelines.md) — 词表、语气、错误句式、i18n
+5. [agent-common-rules.md](agent-common-rules.md) — 任务书附带的公共规则副本
+
 本地一键检查：`composer check && npm run lint:js && npm run build`
 
 产品合同不在本目录：先读 [`docs/4.0-rewrite-plan.md`](../4.0-rewrite-plan.md)，再读 `docs/architecture/adr-00*.md` 与相关 `docs/specs/*`。

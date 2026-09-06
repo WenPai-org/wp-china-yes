@@ -28,6 +28,16 @@
 
 待 M1 引入 Playwright 与 `@wordpress/scripts` 应用后再写具体 spec。
 
+### 视觉验收（Playwright，`tests/visual`）
+
+对着原型和带编号规格截每个状态，不替代 e2e 断言。约定见 [`acceptance-sop.md`](acceptance-sop.md)。
+
+```bash
+BASE_URL=http://localhost:8890 WP_USERNAME=admin WP_PASSWORD=wpcy-preview npm run visual
+```
+
+截图写入 `docs/design/screens/<run>/`。页面与状态登记在 `tests/visual/screens.json`。状态准备允许 WP-CLI 或 REST；造不出来的状态写「需 fixture」。本机无 Docker 时默认打 Studio 预览站 `http://localhost:8890`。
+
 ### 合同测试（服务端 mock）
 
 fixtures 在 `tests/fixtures/`。至少：
