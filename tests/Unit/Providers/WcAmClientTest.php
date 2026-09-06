@@ -135,9 +135,9 @@ class WcAmClientTest extends TestCase {
 	}
 
 	/**
-	 * Key is sent in POST body, not in the URL.
+	 * Mall probe: key travels in GET query. Result data must not echo it.
 	 */
-	public function test_key_is_in_post_body_not_url() {
+	public function test_key_travels_in_query_result_omits_it() {
 		$client = $this->client(
 			array(
 				array(
@@ -146,13 +146,16 @@ class WcAmClientTest extends TestCase {
 				),
 			)
 		);
-		$client->activate( 'WXD-SECRET-KEY', 'inst' );
+		$result = $client->activate( 'WXD-SECRET-KEY', 'inst' );
 		$this->assertCount( 1, BindingStore::$requests );
 		$url  = BindingStore::$requests[0]['url'];
 		$args = BindingStore::$requests[0]['args'];
-		$this->assertStringNotContainsString( 'WXD-SECRET-KEY', $url );
-		$this->assertSame( 'POST', $args['method'] );
-		$this->assertSame( 'WXD-SECRET-KEY', $args['body']['api_key'] );
+		$this->assertSame( 'GET', $args['method'] );
+		$this->assertStringContainsString( 'wc_am_action=activate', $url );
+		$this->assertStringContainsString( 'api_key=', $url );
+		$encoded = wp_json_encode( $result );
+		$this->assertIsString( $encoded );
+		$this->assertStringNotContainsString( 'WXD-SECRET-KEY', $encoded );
 	}
 
 	/**

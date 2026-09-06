@@ -3,14 +3,13 @@
  * WooCommerce API Manager client for the Weixiaoduo mall.
  *
  * Key placement (providers.md §4 / P6):
- * - Prefer POST body so api_key never appears in the request URL.
- * - Cloud-bridge WooCommerceVendor currently sends GET query
- *   (`?wc-api=wc-am-api&api_key=…`). That is treated as evidence the mall
- *   accepts query, not as a reason to log it. If a 2xx JSON body is missing
- *   after POST and the HTTP status is 404 or 405, a GET query retry is used
- *   for non-write actions (status / update / product_list) only.
- * - activate / deactivate are write actions and are not retried.
- * - Logger context never includes the full URL; only host + path.
+ * - Spec prefers POST body. 2026-09-06 read-only probe against
+ *   https://mall.weixiaoduo.com/wc-api/wc-am-api/ with a random invalid key:
+ *   POST body → HTTP 200 `success:false`「未收到请求值」; GET query → HTTP 200
+ *   `success:false`「此许可证密钥不存在客户账户」on product_list. The mall
+ *   therefore only reads query (same as cloud-bridge WooCommerceVendor).
+ * - All five actions use GET query. Logger context never includes the full
+ *   URL (host + path only); error objects never include the request URL.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -93,7 +92,7 @@ final class WcAmClient {
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
 	public function activate( string $api_key, string $instance, array $extra = array() ): array {
-		return $this->request( 'activate', $api_key, $instance, $extra, false );
+		return $this->request( 'activate', $api_key, $instance, $extra );
 	}
 
 	/**
@@ -107,7 +106,7 @@ final class WcAmClient {
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
 	public function deactivate( string $api_key, string $instance, array $extra = array() ): array {
-		return $this->request( 'deactivate', $api_key, $instance, $extra, false );
+		return $this->request( 'deactivate', $api_key, $instance, $extra );
 	}
 
 	/**
@@ -121,7 +120,7 @@ final class WcAmClient {
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
 	public function status( string $api_key, string $instance, array $extra = array() ): array {
-		return $this->request( 'status', $api_key, $instance, $extra, true );
+		return $this->request( 'status', $api_key, $instance, $extra );
 	}
 
 	/**
@@ -135,7 +134,7 @@ final class WcAmClient {
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
 	public function update( string $api_key, string $instance, array $extra = array() ): array {
-		return $this->request( 'update', $api_key, $instance, $extra, true );
+		return $this->request( 'update', $api_key, $instance, $extra );
 	}
 
 	/**
@@ -149,7 +148,7 @@ final class WcAmClient {
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
 	public function product_list( string $api_key, string $instance, array $extra = array() ): array {
-		return $this->request( 'product_list', $api_key, $instance, $extra, true );
+		return $this->request( 'product_list', $api_key, $instance, $extra );
 	}
 
 	/**
@@ -159,10 +158,9 @@ final class WcAmClient {
 	 * @param string               $api_key    License key.
 	 * @param string               $instance   UUID.
 	 * @param array<string, mixed> $extra      Extra fields.
-	 * @param bool                 $allow_get  Whether a 404/405 POST may retry as GET query.
 	 * @return array{ok: bool, kind: string, data: array<string, mixed>}
 	 */
-	private function request( string $action, string $api_key, string $instance, array $extra, bool $allow_get ): array {
+	private function request( string $action, string $api_key, string $instance, array $extra ): array {
 		if ( ! in_array( $action, self::ACTIONS, true ) ) {
 			return $this->result( false, 'unreachable', array() );
 		}
@@ -176,68 +174,37 @@ final class WcAmClient {
 			return $this->result( false, 'unreachable', array() );
 		}
 
-		$body = array(
-			'wc-am-action' => $action,
+		$params = array(
+			'wc-api'       => 'wc-am-api',
+			'wc_am_action' => $action,
 			'api_key'      => $api_key,
 			'instance'     => $instance,
 			'object'       => $this->object_value( $extra ),
 		);
 		foreach ( array( 'product_id', 'slug', 'plugin_name', 'version', 'software_version' ) as $key ) {
 			if ( isset( $extra[ $key ] ) && '' !== (string) $extra[ $key ] ) {
-				$body[ $key ] = $extra[ $key ];
+				$params[ $key ] = $extra[ $key ];
 			}
 		}
 
-		$posted = $this->send(
-			$endpoint,
+		$query = $endpoint . '?' . http_build_query( $params, '', '&' );
+		$got   = $this->send(
+			$query,
 			array(
-				'method'    => 'POST',
+				'method'    => 'GET',
 				'timeout'   => 10,
 				'sslverify' => true,
 				'headers'   => array(
-					'Accept'       => 'application/json',
-					'Content-Type' => 'application/x-www-form-urlencoded',
+					'Accept' => 'application/json',
 				),
-				'body'      => $body,
 			)
 		);
-
-		$kind = $this->classify( $posted );
+		$kind  = $this->classify( $got );
 		if ( 'ok' === $kind || 'invalid' === $kind ) {
-			return $this->result( 'ok' === $kind, $kind, $this->decode( $posted ) );
+			return $this->result( 'ok' === $kind, $kind, $this->decode( $got ) );
 		}
 
-		$code = $this->response_code( $posted );
-		if ( $allow_get && in_array( $code, array( 404, 405 ), true ) ) {
-			$query = $endpoint . '?' . http_build_query(
-				array_merge(
-					array(
-						'wc-api'       => 'wc-am-api',
-						'wc_am_action' => $action,
-					),
-					$body
-				),
-				'',
-				'&'
-			);
-			if ( UrlGuard::allows( $query ) ) {
-				$got  = $this->send(
-					$query,
-					array(
-						'method'    => 'GET',
-						'timeout'   => 10,
-						'sslverify' => true,
-						'headers'   => array(
-							'Accept' => 'application/json',
-						),
-					)
-				);
-				$kind = $this->classify( $got );
-				return $this->result( 'ok' === $kind, $kind, $this->decode( $got ) );
-			}
-		}
-
-		$this->warn( 'WC AM request unreachable.', $endpoint, $code );
+		$this->warn( 'WC AM request unreachable.', $endpoint, $this->response_code( $got ) );
 		return $this->result( false, 'unreachable', array() );
 	}
 
