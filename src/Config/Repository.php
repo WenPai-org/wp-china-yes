@@ -357,14 +357,45 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 			return $defaults;
 		}
 
+		$version       = isset( $raw['schema_version'] ) ? (int) $raw['schema_version'] : 0;
+		$needs_upgrade = $version < 2
+			&& in_array( $option, array( Schema::SETTINGS, Schema::NETWORK_SETTINGS, Schema::SITE_OVERRIDES ), true );
+
+		if ( $needs_upgrade ) {
+			$raw = SchemaMigrator::upgrade_1_to_2( $raw, Schema::SITE_OVERRIDES !== $option );
+		}
+
 		$clean = $this->validator->sanitize( $raw, $option );
 		$this->emit_validator_warnings();
+
+		if ( $needs_upgrade ) {
+			$this->persist_upgraded( $option, $clean );
+		}
 
 		if ( Schema::SITE_OVERRIDES === $option ) {
 			return $clean;
 		}
 
 		return $this->deep_merge( $defaults, $clean );
+	}
+
+	/**
+	 * Write an upgraded document back. save_option sanitizes again (idempotent).
+	 *
+	 * @param string               $option Option name.
+	 * @param array<string, mixed> $clean  Already-sanitized v2 document.
+	 */
+	private function persist_upgraded( string $option, array $clean ): void {
+		if ( Schema::NETWORK_SETTINGS === $option ) {
+			if ( function_exists( 'update_site_option' ) ) {
+				update_site_option( $option, $clean );
+			}
+			return;
+		}
+
+		if ( function_exists( 'update_option' ) ) {
+			update_option( $option, $clean, true );
+		}
 	}
 
 	/**
@@ -464,11 +495,11 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		$stored_raw = get_option( Schema::SITE_OVERRIDES, array() );
 		$stored     = is_array( $stored_raw ) ? $stored_raw : array();
 
-		if ( array_key_exists( 'connectivity', $value ) || array_key_exists( 'modules', $value ) ) {
+		if ( array_key_exists( 'connectivity', $value ) || array_key_exists( 'modules', $value ) || array_key_exists( 'profile', $value ) || array_key_exists( 'admin_assets', $value ) ) {
 			$this->warn( 'Site overrides ignored because allow_site_override is false.', array() );
 		}
 
-		foreach ( array( 'connectivity', 'modules' ) as $key ) {
+		foreach ( array( 'connectivity', 'modules', 'profile', 'admin_assets' ) as $key ) {
 			if ( array_key_exists( $key, $stored ) ) {
 				$value[ $key ] = $stored[ $key ];
 			} else {
@@ -487,7 +518,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 */
 	private function is_override_path( string $path ): bool {
 		$root = explode( '.', $path )[0];
-		return in_array( $root, array( 'connectivity', 'modules', 'recovery_mode' ), true );
+		return in_array( $root, array( 'profile', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' ), true );
 	}
 
 	/**

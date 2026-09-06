@@ -41,10 +41,17 @@ class ValidatorTest extends TestCase {
 	public function test_settings_fills_required_defaults() {
 		$out = $this->validator->sanitize( array(), Schema::SETTINGS );
 
-		$this->assertSame( 1, $out['schema_version'] );
+		$this->assertSame( 2, $out['schema_version'] );
+		$this->assertSame( 'domestic', $out['profile'] );
 		$this->assertSame( 'auto', $out['connectivity']['wordpress_org'] );
-		$this->assertSame( Schema::PUBLIC_ASSETS, $out['connectivity']['public_assets'] );
-		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
+		$this->assertSame( Schema::PUBLIC_ASSETS, $out['connectivity']['public_assets']['items'] );
+		$this->assertSame( 'both', $out['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'off', $out['connectivity']['heartbeat'] );
+		$this->assertSame( 'allow', $out['connectivity']['dashboard_feeds'] );
+		$this->assertSame( 'off', $out['admin_assets'] );
+		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
 		$this->assertFalse( $out['modules']['windfonts'] );
 		$this->assertTrue( $out['diagnostics']['scheduled_checks'] );
@@ -58,11 +65,11 @@ class ValidatorTest extends TestCase {
 	}
 
 	/**
-	 * Schema_version is integer const 1.
+	 * Schema_version is integer const 2.
 	 */
 	public function test_schema_version_const() {
-		$out = $this->validator->sanitize( array( 'schema_version' => 2 ), Schema::SETTINGS );
-		$this->assertSame( 1, $out['schema_version'] );
+		$out = $this->validator->sanitize( array( 'schema_version' => 1 ), Schema::SETTINGS );
+		$this->assertSame( 2, $out['schema_version'] );
 		$this->assertNotEmpty( $this->validator->warnings() );
 	}
 
@@ -90,13 +97,16 @@ class ValidatorTest extends TestCase {
 		$out = $this->validator->sanitize(
 			array(
 				'connectivity' => array(
-					'public_assets' => array( 'google_fonts', 'not-a-cdn', 'emoji', 'google_fonts' ),
+					'public_assets' => array(
+						'items' => array( 'google_fonts', 'not-a-cdn', 'emoji', 'google_fonts' ),
+						'scope' => 'both',
+					),
 				),
 			),
 			Schema::SETTINGS
 		);
-		$this->assertSame( array( 'google_fonts', 'emoji' ), $out['connectivity']['public_assets'] );
-		$this->assertTrue( $this->has_warning_path( 'connectivity.public_assets' ) );
+		$this->assertSame( array( 'google_fonts', 'emoji' ), $out['connectivity']['public_assets']['items'] );
+		$this->assertTrue( $this->has_warning_path( 'connectivity.public_assets.items' ) );
 	}
 
 	/**
@@ -105,16 +115,32 @@ class ValidatorTest extends TestCase {
 	public function test_avatar_enum() {
 		foreach ( Schema::AVATAR as $mode ) {
 			$out = $this->validator->sanitize(
-				array( 'connectivity' => array( 'avatar' => $mode ) ),
+				array(
+					'connectivity' => array(
+						'avatar' => array(
+							'admin'    => $mode,
+							'frontend' => $mode,
+						),
+					),
+				),
 				Schema::SETTINGS
 			);
-			$this->assertSame( $mode, $out['connectivity']['avatar'] );
+			$this->assertSame( $mode, $out['connectivity']['avatar']['admin'] );
+			$this->assertSame( $mode, $out['connectivity']['avatar']['frontend'] );
 		}
 		$bad = $this->validator->sanitize(
-			array( 'connectivity' => array( 'avatar' => 'gravatar' ) ),
+			array(
+				'connectivity' => array(
+					'avatar' => array(
+						'admin'    => 'gravatar',
+						'frontend' => 'gravatar',
+					),
+				),
+			),
 			Schema::SETTINGS
 		);
-		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar'] );
+		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar']['frontend'] );
 	}
 
 	/**
@@ -253,14 +279,19 @@ class ValidatorTest extends TestCase {
 	public function test_site_overrides_only_allowed_keys() {
 		$out = $this->validator->sanitize(
 			array(
-				'connectivity'  => array( 'avatar' => 'off' ),
+				'connectivity'  => array(
+					'avatar' => array(
+						'admin'    => 'off',
+						'frontend' => 'off',
+					),
+				),
 				'recovery_mode' => true,
 				'diagnostics'   => array( 'scheduled_checks' => false ),
 			),
 			Schema::SITE_OVERRIDES
 		);
 		$this->assertArrayHasKey( 'connectivity', $out );
-		$this->assertSame( 'off', $out['connectivity']['avatar'] );
+		$this->assertSame( 'off', $out['connectivity']['avatar']['admin'] );
 		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertArrayNotHasKey( 'diagnostics', $out );
 		$this->assertArrayNotHasKey( 'wordpress_org', $out['connectivity'] );
@@ -364,7 +395,7 @@ class ValidatorTest extends TestCase {
 	public function test_non_object_input() {
 		$out = $this->validator->sanitize( 'nope', Schema::SETTINGS );
 		$this->assertIsArray( $out );
-		$this->assertSame( 1, $out['schema_version'] );
+		$this->assertSame( 2, $out['schema_version'] );
 	}
 
 	/**

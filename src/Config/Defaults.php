@@ -32,10 +32,19 @@ final class Defaults {
 	public static function settings(): array {
 		return array(
 			'schema_version' => Schema::VERSION,
+			'profile'        => 'domestic',
 			'connectivity'   => array(
-				'wordpress_org' => 'auto',
-				'public_assets' => Schema::PUBLIC_ASSETS,
-				'avatar'        => 'cravatar_cn',
+				'wordpress_org'   => 'auto',
+				'public_assets'   => array(
+					'items' => Schema::PUBLIC_ASSETS,
+					'scope' => 'both',
+				),
+				'avatar'          => array(
+					'admin'    => 'cravatar_cn',
+					'frontend' => 'cravatar_cn',
+				),
+				'heartbeat'       => 'off',
+				'dashboard_feeds' => 'allow',
 			),
 			'modules'        => array(
 				'notice_control' => true,
@@ -48,6 +57,7 @@ final class Defaults {
 			),
 			'diagnostics'    => array(
 				'scheduled_checks' => true,
+				'client_probe_url' => '',
 			),
 			'data_residency' => array(
 				'ruleset_version' => 1,
@@ -59,6 +69,7 @@ final class Defaults {
 				'disabled' => array(),
 			),
 			'recovery_mode'  => false,
+			'admin_assets'   => 'off',
 		);
 	}
 
@@ -97,7 +108,7 @@ final class Defaults {
 	 */
 	public static function site_identity(): array {
 		return array(
-			'schema_version' => Schema::VERSION,
+			'schema_version' => Schema::IDENTITY_VERSION,
 			'site_uuid'      => '',
 			'binding'        => array(
 				'status'       => 'unbound',
