@@ -59,6 +59,13 @@ final class WordPressOrgModule implements ConditionalModule {
 	private array $last_request_args = array();
 
 	/**
+	 * Microtime when a direct (non-rewritten) version-check started.
+	 *
+	 * @var float
+	 */
+	private float $version_check_started = 0.0;
+
+	/**
 	 * Wire probe, optional HTTP request, and package-entitlement hook.
 	 *
 	 * @param MirrorProbe   $probe            Usability probe.
@@ -134,6 +141,7 @@ final class WordPressOrgModule implements ConditionalModule {
 	 */
 	public function register(): void {
 		add_filter( 'pre_http_request', array( $this, 'filter_wordpress_org' ), 100, 3 );
+		add_filter( 'http_response', array( $this, 'observe_version_check' ), 10, 3 );
 	}
 
 	/**
@@ -150,6 +158,9 @@ final class WordPressOrgModule implements ConditionalModule {
 		$mirror_url = $this->rewritten_url( is_string( $url ) ? $url : '' );
 
 		if ( null === $mirror_url ) {
+			if ( is_string( $url ) && $this->is_core_version_check( $url ) ) {
+				$this->version_check_started = microtime( true );
+			}
 			return $preempt;
 		}
 
@@ -165,7 +176,189 @@ final class WordPressOrgModule implements ConditionalModule {
 		$this->last_request_url  = $mirror_url;
 		$this->last_request_args = $args;
 
-		return ( $this->request )( $mirror_url, $args );
+		$started  = microtime( true );
+		$response = ( $this->request )( $mirror_url, $args );
+		$elapsed  = microtime( true ) - $started;
+		$this->count_mirror_response( $response, $url, $elapsed );
+
+		return $response;
+	}
+
+	/**
+	 * Direct (non-rewritten) version-check: record update_check with tone neutral.
+	 *
+	 * Mirror responses are counted in count_mirror_response(); this only
+	 * observes api.wordpress.org so the inner mirror request is skipped.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed                $response HTTP result.
+	 * @param array<string, mixed> $args     Request args.
+	 * @param mixed                $url      Request URL.
+	 * @return mixed
+	 */
+	public function observe_version_check( $response, $args, $url ) {
+		unset( $args );
+		if ( ! is_string( $url ) || ! $this->is_core_version_check( $url ) ) {
+			return $response;
+		}
+		if ( Origins::UPSTREAM_API_HOST !== $this->url_host( $url ) ) {
+			return $response;
+		}
+		$code = $this->response_code( $response );
+		if ( $code < 200 || $code >= 300 || ! function_exists( 'do_action' ) ) {
+			return $response;
+		}
+		$elapsed                     = $this->version_check_started > 0.0
+			? microtime( true ) - $this->version_check_started
+			: 0.0;
+		$this->version_check_started = 0.0;
+		do_action(
+			'wpcy_events_record',
+			'update_check',
+			array(
+				'version'    => $this->latest_core_version( $response ),
+				'seconds'    => number_format( $elapsed, 1, '.', '' ),
+				'via_mirror' => false,
+			)
+		);
+		return $response;
+	}
+
+	/**
+	 * Count 2xx rewritten responses and record update_check for version-check.
+	 *
+	 * @param mixed  $response HTTP result.
+	 * @param string $original Original WordPress.org URL.
+	 * @param float  $elapsed  Seconds.
+	 */
+	private function count_mirror_response( $response, string $original, float $elapsed ): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+
+		$code = $this->response_code( $response );
+		if ( $code < 200 || $code >= 300 ) {
+			return;
+		}
+
+		do_action( 'wpcy_stats_increment', 'mirror_downloads', 1 );
+		$bytes = $this->response_bytes( $response );
+		if ( $bytes > 0 ) {
+			do_action( 'wpcy_stats_increment', 'mirror_bytes_saved', $bytes );
+		}
+
+		if ( ! $this->is_core_version_check( $original ) ) {
+			return;
+		}
+
+		do_action(
+			'wpcy_events_record',
+			'update_check',
+			array(
+				'version'    => $this->latest_core_version( $response ),
+				'seconds'    => number_format( $elapsed, 1, '.', '' ),
+				'via_mirror' => true,
+			)
+		);
+	}
+
+	/**
+	 * HTTP status from a canned array or WP HTTP response.
+	 *
+	 * @param mixed $response HTTP result.
+	 */
+	private function response_code( $response ): int {
+		if ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) {
+			return 0;
+		}
+		if ( ! is_array( $response ) ) {
+			return 0;
+		}
+		if ( isset( $response['code'] ) ) {
+			return (int) $response['code'];
+		}
+		if ( function_exists( 'wp_remote_retrieve_response_code' ) ) {
+			return (int) wp_remote_retrieve_response_code( $response );
+		}
+		if ( isset( $response['response']['code'] ) ) {
+			return (int) $response['response']['code'];
+		}
+		return 0;
+	}
+
+	/**
+	 * Content-Length, else body length.
+	 *
+	 * @param mixed $response HTTP result.
+	 */
+	private function response_bytes( $response ): int {
+		if ( ! is_array( $response ) ) {
+			return 0;
+		}
+		$length = '';
+		if ( function_exists( 'wp_remote_retrieve_header' ) ) {
+			$header = wp_remote_retrieve_header( $response, 'content-length' );
+			$length = is_string( $header ) ? $header : '';
+		}
+		if ( '' === $length && isset( $response['headers'] ) && is_array( $response['headers'] ) ) {
+			foreach ( $response['headers'] as $key => $value ) {
+				if ( is_string( $key ) && 0 === strcasecmp( $key, 'content-length' ) ) {
+					$length = (string) $value;
+					break;
+				}
+			}
+		}
+		if ( '' !== $length && is_numeric( $length ) ) {
+			return max( 0, (int) $length );
+		}
+		$body = '';
+		if ( function_exists( 'wp_remote_retrieve_body' ) ) {
+			$body = (string) wp_remote_retrieve_body( $response );
+		} elseif ( isset( $response['body'] ) && is_string( $response['body'] ) ) {
+			$body = $response['body'];
+		}
+		return strlen( $body );
+	}
+
+	/**
+	 * Whether `$url` is a core version-check request.
+	 *
+	 * @param string $url Original URL.
+	 */
+	private function is_core_version_check( string $url ): bool {
+		$path = $this->url_part( $url, PHP_URL_PATH );
+		return false !== strpos( $path, '/core/version-check/' );
+	}
+
+	/**
+	 * Newest core version from a version-check body, else current WP version.
+	 *
+	 * @param mixed $response HTTP result.
+	 */
+	private function latest_core_version( $response ): string {
+		$body = '';
+		if ( is_array( $response ) ) {
+			if ( function_exists( 'wp_remote_retrieve_body' ) ) {
+				$body = (string) wp_remote_retrieve_body( $response );
+			} elseif ( isset( $response['body'] ) && is_string( $response['body'] ) ) {
+				$body = $response['body'];
+			}
+		}
+		if ( '' !== $body ) {
+			$decoded = json_decode( $body, true );
+			if ( is_array( $decoded ) && isset( $decoded['offers'] ) && is_array( $decoded['offers'] ) ) {
+				foreach ( $decoded['offers'] as $offer ) {
+					if ( is_array( $offer ) && isset( $offer['version'] ) && is_string( $offer['version'] ) && '' !== $offer['version'] ) {
+						return $offer['version'];
+					}
+				}
+			}
+		}
+		if ( isset( $GLOBALS['wp_version'] ) && is_string( $GLOBALS['wp_version'] ) && '' !== $GLOBALS['wp_version'] ) {
+			return $GLOBALS['wp_version'];
+		}
+		return '';
 	}
 
 	/**

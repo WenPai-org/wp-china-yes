@@ -165,6 +165,10 @@ final class MirrorHealth {
 	 * @param int    $ttl   Cache lifetime in seconds.
 	 */
 	public function remember( string $host, string $state, int $ttl ): void {
+		$was_healthy = $this->is_healthy( $host );
 		( $this->set_transient )( self::STATE_PREFIX . md5( $host ), $state, $ttl );
+		if ( 'down' === $state && $was_healthy && function_exists( 'do_action' ) ) {
+			do_action( 'wpcy_stats_increment', 'mirror_fallbacks', 1 );
+		}
 	}
 }

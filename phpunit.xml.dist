@@ -34,6 +34,9 @@
 		<testsuite name="diagnostics">
 			<directory>tests/Unit/Diagnostics</directory>
 		</testsuite>
+		<testsuite name="stats">
+			<directory>tests/Unit/Stats</directory>
+		</testsuite>
 		<testsuite name="cli">
 			<directory>tests/Unit/Cli</directory>
 		</testsuite>

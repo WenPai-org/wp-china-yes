@@ -109,6 +109,8 @@ final class HeartbeatModule implements ConditionalModule {
 	public function register(): void {
 		add_action( 'admin_enqueue_scripts', array( $this, 'on_admin_enqueue_scripts' ) );
 		add_filter( 'heartbeat_settings', array( $this, 'filter_heartbeat_settings' ) );
+		add_action( 'heartbeat_received', array( $this, 'on_heartbeat_received' ), 10, 0 );
+		add_action( 'load-index.php', array( $this, 'on_load_index' ) );
 	}
 
 	/**
@@ -170,5 +172,32 @@ final class HeartbeatModule implements ConditionalModule {
 		}
 
 		return in_array( $this->hook_suffix, $pages, true );
+	}
+
+	/**
+	 * Lower-bound estimate: editor interval 15s → 60s saves 3 heartbeats per minute.
+	 *
+	 * Only counted when this screen is already throttled to 60s. Not a precise
+	 * count of skipped admin-ajax calls.
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_heartbeat_received(): void {
+		if ( ! $this->is_editor_screen() || ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		do_action( 'wpcy_stats_increment', 'heartbeat_saved', 3 );
+	}
+
+	/**
+	 * Lower-bound estimate: dashboard Heartbeat off = 1 saved tick per page load.
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_load_index(): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		do_action( 'wpcy_stats_increment', 'heartbeat_saved', 1 );
 	}
 }

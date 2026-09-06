@@ -189,6 +189,10 @@ npx wp-env run tests-cli wp eval '
 
 节点被标故障时，断言 `$src` 仍是原始 jsDelivr URL。
 
+## 计数与事件
+
+连通性模块不要自己 `update_option( 'wpcy_stats' )` / `wpcy_events`。次数走 `do_action( 'wpcy_stats_increment', '<counter>', $n )`（`StatsModule` 转给 `Stats\Counters`，shutdown 一次写入）。事件走 `do_action( 'wpcy_events_record', '<type>', $vars )` 或直接 `Events::record()`；`title` / `detail` 只在 `Events` 按 rest-api §`/events` 模板生成。计数器名只允许 `/stats` 表里的 10 个；`outbound_blocked` 由 M-BLOCK-1 接 HttpBlock。恢复模式下 `increment` 不计，事件只记 `recovery_*`。
+
 ## 与服务端交互的模块
 
 适用于 `Telemetry` / `Privacy/DataResidency` / `Services/SiteBinding` / `Services/Entitlements` / `Services/Apps`：

@@ -149,12 +149,35 @@ final class AvatarModule implements ConditionalModule {
 
 		switch ( $mode ) {
 			case 'cravatar_cn':
-				return $this->replace_avatar_url( $url, 'cn.cravatar.com' );
+				$rewritten = $this->replace_avatar_url( $url, 'cn.cravatar.com' );
+				break;
 			case 'cravatar_global':
-				return $this->replace_avatar_url( $url, 'en.cravatar.com' );
+				$rewritten = $this->replace_avatar_url( $url, 'en.cravatar.com' );
+				break;
 			default:
 				return $url;
 		}
+
+		if ( $rewritten !== $url ) {
+			$this->count_rewrite();
+		}
+
+		return $rewritten;
+	}
+
+	/**
+	 * Count one get_avatar_url rewrite by current scope.
+	 *
+	 * @since 4.0.0
+	 */
+	private function count_rewrite(): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		$counter = Scope::ADMIN === Scope::current()
+			? 'avatar_rewrites_admin'
+			: 'avatar_rewrites_frontend';
+		do_action( 'wpcy_stats_increment', $counter, 1 );
 	}
 
 	/**
