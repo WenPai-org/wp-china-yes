@@ -88,6 +88,8 @@ class PluginCreateTest extends TestCase {
 		$this->assertArrayHasKey( Schema::SETTINGS, OptionStore::$options );
 		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
 		$this->assertSame( 'off', OptionStore::$options[ LegacyReader::OPTION ]['store'] );
+		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['wordpress_org'] );
+		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar'] );
 	}
 
 	/**
@@ -142,5 +144,48 @@ class PluginCreateTest extends TestCase {
 		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$site_options );
 		$this->assertSame( 'off', OptionStore::$site_options[ LegacyReader::OPTION ]['store'] );
 		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+	}
+
+	/**
+	 * Runner::execute() throwing must not Fatal boot; Logger warning includes class + message; 4.0 option stays absent.
+	 */
+	public function test_boot_survives_migration_throw_and_logs_warning() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'cravatar' => 'off',
+		);
+		OptionStore::$on_update                       = static function ( $key ) {
+			if ( Schema::SETTINGS === $key || Schema::MIGRATION_BACKUP === $key || Schema::NETWORK_SETTINGS === $key ) {
+				throw new \RuntimeException( 'forced migration failure' );
+			}
+		};
+
+		$log_file = tempnam( sys_get_temp_dir(), 'wpcy-migrate-' );
+		$this->assertNotFalse( $log_file );
+		// phpcs:disable WordPress.PHP.IniSet.Risky,WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_ini_restore -- capture Logger error_log sink.
+		$previous = ini_set( 'error_log', $log_file );
+
+		$threw = null;
+		try {
+			Plugin::boot();
+		} catch ( \Throwable $e ) {
+			$threw = $e;
+		}
+
+		$logged = (string) file_get_contents( $log_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local temp log, not a remote URL.
+		if ( is_string( $previous ) ) {
+			ini_set( 'error_log', $previous );
+		} else {
+			ini_restore( 'error_log' );
+		}
+		// phpcs:enable WordPress.PHP.IniSet.Risky,WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_ini_restore
+		unlink( $log_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- temp log file.
+
+		$this->assertNull( $threw, null === $threw ? '' : ( get_class( $threw ) . ': ' . $threw->getMessage() ) );
+		$this->assertStringContainsString( 'WPCY.warning:', $logged );
+		$this->assertStringContainsString( 'RuntimeException', $logged );
+		$this->assertStringContainsString( 'forced migration failure', $logged );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+		$this->assertArrayNotHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
 	}
 }

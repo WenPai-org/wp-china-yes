@@ -38,6 +38,9 @@ if ( ! function_exists( 'update_option' ) ) {
 	 */
 	function update_option( $key, $value, $autoload = null ) {
 		unset( $autoload );
+		if ( is_callable( OptionStore::$on_update ) ) {
+			( OptionStore::$on_update )( $key, $value );
+		}
 		OptionStore::$options[ $key ] = $value;
 		return true;
 	}
@@ -65,6 +68,9 @@ if ( ! function_exists( 'update_site_option' ) ) {
 	 * @return bool
 	 */
 	function update_site_option( $key, $value ) {
+		if ( is_callable( OptionStore::$on_update ) ) {
+			( OptionStore::$on_update )( $key, $value );
+		}
 		OptionStore::$site_options[ $key ] = $value;
 		return true;
 	}
