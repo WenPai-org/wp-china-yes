@@ -54,6 +54,8 @@
 
 ## 门禁
 
+面向用户的界面改动先走 [design-sop.md](design-sop.md)：HTML 原型经产品负责人书面认可后才拆任务。合并前的验收分层见 [acceptance-sop.md](acceptance-sop.md)；任务书 DoD 见 [task-book-template.md](task-book-template.md)。
+
 合入与发版前（脚本名待 M1 脚手架落地，见 [coding-standards.md](coding-standards.md) / [testing.md](testing.md)）：
 
 | 门 | 现状 / 目标 |

@@ -33,4 +33,4 @@ WordPress 中国连接优化插件，也是文派服务的站点接入端。仓�
 
 完成报告必须贴命令输出。无输出支撑的「完成」视为未完成。任务书矛盾或做不到：写进报告，不要绕。
 
-细则：[`docs/dev/agents.md`](docs/dev/agents.md)。
+细则：[`docs/dev/agents.md`](docs/dev/agents.md)。任务书模板与 DoD：[`docs/dev/task-book-template.md`](docs/dev/task-book-template.md)。UI 设计门禁：[`docs/dev/design-sop.md`](docs/dev/design-sop.md)。
