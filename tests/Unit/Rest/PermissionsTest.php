@@ -133,9 +133,9 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
-	 * PUT v1 public_assets array or string avatar is wpcy_invalid_schema.
+	 * PUT v1 public_assets array is wpcy_invalid_schema.
 	 */
-	public function test_put_v1_shapes_are_schema_error() {
+	public function test_put_v1_public_assets_array_is_schema_error() {
 		$controller    = $this->settings_controller();
 		$request       = new WP_REST_Request();
 		$request->json = array(
@@ -146,10 +146,48 @@ class PermissionsTest extends TestCase {
 		$result        = $controller->update_item( $request );
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+	}
 
+	/**
+	 * Frozen connect page PUTs a string avatar; both sides store that value.
+	 */
+	public function test_put_legacy_avatar_string_expands_both_sides() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
 		$request->json = array(
 			'connectivity' => array(
-				'avatar' => 'cravatar_cn',
+				'avatar' => 'off',
+			),
+		);
+		$response      = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$data = $response->get_data();
+		$this->assertSame( 'off', $data['connectivity']['avatar'] );
+		$this->assertSame( 'off', $data['connectivity']['avatar_admin'] );
+		$this->assertSame( 'off', $data['connectivity']['avatar_frontend'] );
+
+		$repo = new Repository();
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
+		$stored = $repo->all();
+		$this->assertSame(
+			array(
+				'admin'    => 'off',
+				'frontend' => 'off',
+			),
+			$stored['connectivity']['avatar']
+		);
+	}
+
+	/**
+	 * Unknown avatar string is still wpcy_invalid_schema.
+	 */
+	public function test_put_invalid_avatar_string_is_schema_error() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'connectivity' => array(
+				'avatar' => 'gravatar',
 			),
 		);
 		$result        = $controller->update_item( $request );
@@ -176,7 +214,9 @@ class PermissionsTest extends TestCase {
 		$this->assertSame( 'crossborder', $data['profile'] );
 		$this->assertSame( 'auto', $data['connectivity']['wordpress_org'] );
 		$this->assertSame( 'admin', $data['connectivity']['public_assets']['scope'] );
-		$this->assertSame( 'off', $data['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_admin'] );
+		$this->assertSame( 'off', $data['connectivity']['avatar_frontend'] );
 		$this->assertSame( 'on', $data['connectivity']['heartbeat'] );
 		$this->assertSame( 'block', $data['connectivity']['dashboard_feeds'] );
 		$this->assertSame( 'on', $data['admin_assets'] );
@@ -255,6 +295,9 @@ class PermissionsTest extends TestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertFalse( $data['recovery_mode'] );
 		$this->assertArrayHasKey( 'connectivity', $data );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_admin'] );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_frontend'] );
 		$this->assertArrayNotHasKey( 'credential', $data );
 	}
 
