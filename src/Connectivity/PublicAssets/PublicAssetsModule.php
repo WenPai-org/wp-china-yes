@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Connectivity\PublicAssets;
 
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
+use WenPai\ChinaYes\Connectivity\Scope;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
@@ -46,30 +47,18 @@ final class PublicAssetsModule implements ConditionalModule {
 	private MirrorHealth $health;
 
 	/**
-	 * Optional entitlement gate. Null means apply_filters default true
-	 * (no entitlements client yet: unbound still rewrites).
-	 *
-	 * Callable is not a valid PHP 7.4 property type.
-	 *
-	 * @var callable|null
-	 */
-	private $entitlement_allows;
-
-	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Config        $config             Config read model.
-	 * @param AssetMap      $map                Whitelist table.
-	 * @param MirrorHealth  $health             Node health.
-	 * @param callable|null $entitlement_allows `fn(): bool`; false keeps origin URLs.
+	 * @param Config       $config Config read model.
+	 * @param AssetMap     $map    Whitelist table.
+	 * @param MirrorHealth $health Node health.
 	 */
-	public function __construct( Config $config, AssetMap $map, MirrorHealth $health, ?callable $entitlement_allows = null ) {
-		$this->config             = $config;
-		$this->map                = $map;
-		$this->health             = $health;
-		$this->entitlement_allows = $entitlement_allows;
+	public function __construct( Config $config, AssetMap $map, MirrorHealth $health ) {
+		$this->config = $config;
+		$this->map    = $map;
+		$this->health = $health;
 	}
 
 	/**
@@ -104,7 +93,7 @@ final class PublicAssetsModule implements ConditionalModule {
 	}
 
 	/**
-	 * Empty public_assets, recovery_mode, or rewrite-disallowed scene → off.
+	 * Empty items, scope off/mismatch, recovery_mode, or rewrite-disallowed → off.
 	 *
 	 * @since 4.0.0
 	 *
@@ -120,9 +109,14 @@ final class PublicAssetsModule implements ConditionalModule {
 			return false;
 		}
 
-		$assets = $config->get( 'connectivity.public_assets', array() );
+		$items = $this->items_from( $config );
+		$scope = $this->scope_from( $config );
 
-		return is_array( $assets ) && array() !== $assets;
+		if ( array() === $items || 'off' === $scope ) {
+			return false;
+		}
+
+		return $this->scope_matches( $scope );
 	}
 
 	/**
@@ -145,15 +139,18 @@ final class PublicAssetsModule implements ConditionalModule {
 	}
 
 	/**
-	 * Rewrite a single URL. Off-whitelist, down node, or exhausted quota → origin.
+	 * Rewrite a single URL. Off-whitelist or down node → origin.
+	 *
+	 * Connectivity rewrites are free; this module does not consult entitlements.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param string $src Original URL.
 	 */
 	public function rewrite( string $src ): string {
-		$enabled = $this->config->get( 'connectivity.public_assets', array() );
-		if ( ! is_array( $enabled ) ) {
+		$enabled = $this->items_from( $this->config );
+		$scope   = $this->scope_from( $this->config );
+		if ( array() === $enabled || 'off' === $scope || ! $this->scope_matches( $scope ) ) {
 			return $src;
 		}
 
@@ -166,10 +163,6 @@ final class PublicAssetsModule implements ConditionalModule {
 			return $src;
 		}
 
-		if ( ! $this->entitlement_allows() ) {
-			return $src;
-		}
-
 		return $mapped;
 	}
 
@@ -179,26 +172,50 @@ final class PublicAssetsModule implements ConditionalModule {
 	 * @since 4.0.0
 	 */
 	private function emoji_enabled(): bool {
-		$enabled = $this->config->get( 'connectivity.public_assets', array() );
-
-		return is_array( $enabled ) && in_array( 'emoji', $enabled, true );
+		return in_array( 'emoji', $this->items_from( $this->config ), true );
 	}
 
 	/**
-	 * Limited-free adminCDN: exhausted / denied → keep origin. Default allow.
+	 * Whitelist tokens from connectivity.public_assets.items.
 	 *
-	 * @since 4.0.0
+	 * @param Config $config Config read model.
+	 * @return list<string>
 	 */
-	private function entitlement_allows(): bool {
-		if ( is_callable( $this->entitlement_allows ) ) {
-			return (bool) call_user_func( $this->entitlement_allows );
+	private function items_from( Config $config ): array {
+		$assets = $config->get( 'connectivity.public_assets', array() );
+		if ( is_array( $assets ) && isset( $assets['items'] ) && is_array( $assets['items'] ) ) {
+			return $assets['items'];
 		}
 
-		if ( function_exists( 'apply_filters' ) ) {
-			return (bool) apply_filters( 'wpcy_entitlement_allows', true, 'admincdn' );
+		return array();
+	}
+
+	/**
+	 * Scope enum from connectivity.public_assets.scope.
+	 *
+	 * @param Config $config Config read model.
+	 */
+	private function scope_from( Config $config ): string {
+		$assets = $config->get( 'connectivity.public_assets', array() );
+		if ( is_array( $assets ) && isset( $assets['scope'] ) && is_string( $assets['scope'] ) ) {
+			return $assets['scope'];
 		}
 
-		return true;
+		$dotted = $config->get( 'connectivity.public_assets.scope', null );
+		return is_string( $dotted ) ? $dotted : 'both';
+	}
+
+	/**
+	 * Whether $scope applies to Scope::current().
+	 *
+	 * @param string $scope both|admin|frontend|off.
+	 */
+	private function scope_matches( string $scope ): bool {
+		if ( 'both' === $scope ) {
+			return true;
+		}
+
+		return $scope === Scope::current();
 	}
 
 	/**

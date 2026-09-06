@@ -68,7 +68,7 @@ final class SettingsController {
 	public function update_item( WP_REST_Request $request ) {
 		$result = $this->writer->put(
 			Schema::SETTINGS,
-			$this->writer->site_document(),
+			$this->writer->stored_site_document(),
 			self::body( $request )
 		);
 		if ( is_wp_error( $result ) ) {

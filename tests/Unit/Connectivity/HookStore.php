@@ -29,10 +29,34 @@ final class HookStore {
 	public static $transients = array();
 
 	/**
+	 * Deregistered script handles.
+	 *
+	 * @var list<string>
+	 */
+	public static $deregistered = array();
+
+	/**
+	 * Removed meta-box calls.
+	 *
+	 * @var list<array{id: string, screen: string, context: string}>
+	 */
+	public static $removed_boxes = array();
+
+	/**
+	 * Fake get_current_screen()->base, or null.
+	 *
+	 * @var string|null
+	 */
+	public static $screen_base = null;
+
+	/**
 	 * Reset bags.
 	 */
 	public static function reset(): void {
-		self::$hooks      = array();
-		self::$transients = array();
+		self::$hooks         = array();
+		self::$transients    = array();
+		self::$deregistered  = array();
+		self::$removed_boxes = array();
+		self::$screen_base   = null;
 	}
 }

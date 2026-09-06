@@ -197,7 +197,10 @@ final class Mappers {
 			|| $has_v38_admincdn
 		) {
 			$mapped                                    = $this->map_public_assets( $legacy );
-			$settings['connectivity']['public_assets'] = $mapped['assets'];
+			$settings['connectivity']['public_assets'] = array(
+				'items' => $mapped['assets'],
+				'scope' => 'both',
+			);
 			foreach ( $mapped['unknown'] as $token ) {
 				$ignored[]                 = $token;
 				$ignored_reasons[ $token ] = 'unsupported_whitelist';
@@ -211,7 +214,21 @@ final class Mappers {
 			if ( array_key_exists( 'admincdn_dev', $legacy ) ) {
 				$kept[] = 'admincdn_dev';
 			}
+			if ( $mapped['admin_assets'] ) {
+				$settings['admin_assets'] = 'on';
+			}
 		}
+
+		if ( isset( $settings['connectivity']['avatar'] ) && is_string( $settings['connectivity']['avatar'] ) ) {
+			$mode                               = $settings['connectivity']['avatar'];
+			$settings['connectivity']['avatar'] = array(
+				'admin'    => $mode,
+				'frontend' => $mode,
+			);
+		}
+
+		$settings['profile']        = 'domestic';
+		$settings['schema_version'] = Schema::VERSION;
 
 		$kept    = array_values( array_unique( $kept ) );
 		$ignored = array_values( array_unique( $ignored ) );
@@ -289,7 +306,7 @@ final class Mappers {
 	 * wp-admin static rewrite.
 	 *
 	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
-	 * @return array{assets: array<int, string>, unknown: array<int, string>}
+	 * @return array{assets: array<int, string>, unknown: array<int, string>, admin_assets: bool}
 	 */
 	private function map_public_assets( array $legacy ): array {
 		$tokens = array_merge(
@@ -299,9 +316,14 @@ final class Mappers {
 			$this->as_token_list( $legacy['admincdn'] ?? array() )
 		);
 
-		$wanted  = array();
-		$unknown = array();
+		$wanted       = array();
+		$unknown      = array();
+		$admin_assets = false;
 		foreach ( $tokens as $token ) {
+			if ( 'admin' === $token ) {
+				$admin_assets = true;
+				continue;
+			}
 			if ( ! isset( self::PUBLIC_ASSET_MAP[ $token ] ) ) {
 				$unknown[] = $token;
 				continue;
@@ -317,8 +339,9 @@ final class Mappers {
 		}
 
 		return array(
-			'assets'  => $assets,
-			'unknown' => array_values( array_unique( $unknown ) ),
+			'assets'       => $assets,
+			'unknown'      => array_values( array_unique( $unknown ) ),
+			'admin_assets' => $admin_assets,
 		);
 	}
 

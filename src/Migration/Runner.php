@@ -149,6 +149,7 @@ final class Runner {
 		}
 
 		$this->backup->delete();
+		$this->delete_option( self::REPORT_OPTION, $this->reader->is_multisite() );
 
 		return true;
 	}

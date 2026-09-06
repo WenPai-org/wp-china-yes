@@ -60,9 +60,10 @@ class ReportFieldsTest extends TestCase {
 	public function test_collect_carries_2_1_fields_and_excludes_business_content() {
 		$report = ( new Report( new Repository() ) )->collect();
 
-		foreach ( array( 'site_uuid', 'site_url', 'wp_version', 'php_version', 'mysql_version', 'active_theme', 'locale', 'server_software', 'wpcy_version', 'telemetry_version', 'plugins', 'platform', 'themes', 'translations' ) as $required ) {
+		foreach ( array( 'site_uuid', 'profile', 'site_url', 'wp_version', 'php_version', 'mysql_version', 'active_theme', 'locale', 'server_software', 'wpcy_version', 'telemetry_version', 'plugins', 'platform', 'themes', 'translations' ) as $required ) {
 			$this->assertArrayHasKey( $required, $report, 'report missing field: ' . $required );
 		}
+		$this->assertSame( 'domestic', $report['profile'] );
 
 		$this->assertSame( 'https://site.example', $report['site_url'] );
 		$this->assertSame( PHP_VERSION, $report['php_version'] );

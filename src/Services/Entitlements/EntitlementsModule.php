@@ -61,7 +61,6 @@ final class EntitlementsModule implements Module {
 	 */
 	public const RESTRICTED_SERVICES = array(
 		'windfonts',
-		'admincdn',
 		'wpmirror-packages',
 		'motusnap',
 	);

@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Admin;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Rest\DocumentWriter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -294,7 +295,7 @@ final class AdminModule implements Module {
 				'manage_options'         => current_user_can( 'manage_options' ),
 				'manage_network_options' => current_user_can( 'manage_network_options' ),
 			),
-			'settings'      => $this->repository->all(),
+			'settings'      => DocumentWriter::present_legacy_avatar( $this->repository->all() ),
 			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
 			'siteContext'   => $this->site_context(),
 		);

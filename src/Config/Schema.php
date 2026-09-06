@@ -26,7 +26,9 @@ final class Schema {
 	public const SITE_OVERRIDES   = 'wpcy_site_overrides';
 	public const SITE_IDENTITY    = 'wpcy_site_identity';
 	public const MIGRATION_BACKUP = 'wpcy_migration_backup';
-	public const VERSION          = 1;
+	public const VERSION          = 2;
+	public const IDENTITY_VERSION = 1;
+	public const BACKUP_VERSION   = 1;
 
 	public const PUBLIC_ASSETS = array(
 		'google_fonts',
@@ -36,11 +38,24 @@ final class Schema {
 		'emoji',
 	);
 
+	public const SCOPES = array(
+		'both',
+		'admin',
+		'frontend',
+		'off',
+	);
+
 	public const AVATAR = array(
 		'cravatar_cn',
 		'cravatar_global',
 		'weavatar',
 		'off',
+	);
+
+	public const PROFILES = array(
+		'domestic',
+		'crossborder',
+		'mixed',
 	);
 
 	/**
@@ -107,6 +122,7 @@ final class Schema {
 			'additionalProperties' => false,
 			'required'             => array(
 				'schema_version',
+				'profile',
 				'connectivity',
 				'modules',
 				'diagnostics',
@@ -114,6 +130,7 @@ final class Schema {
 				'announcements',
 				'apps',
 				'recovery_mode',
+				'admin_assets',
 			),
 			'properties'           => self::settings_properties(),
 		);
@@ -158,8 +175,10 @@ final class Schema {
 			'additionalProperties' => false,
 			'properties'           => array(
 				'schema_version' => $props['schema_version'],
+				'profile'        => $props['profile'],
 				'connectivity'   => $props['connectivity'],
 				'modules'        => $props['modules'],
+				'admin_assets'   => $props['admin_assets'],
 				'recovery_mode'  => $props['recovery_mode'],
 			),
 		);
@@ -180,8 +199,8 @@ final class Schema {
 			'properties'           => array(
 				'schema_version' => array(
 					'type'    => 'integer',
-					'const'   => 1,
-					'default' => 1,
+					'const'   => self::IDENTITY_VERSION,
+					'default' => self::IDENTITY_VERSION,
 				),
 				'site_uuid'      => array(
 					'type'   => 'string',
@@ -241,8 +260,8 @@ final class Schema {
 			'properties'           => array(
 				'schema_version' => array(
 					'type'    => 'integer',
-					'const'   => 1,
-					'default' => 1,
+					'const'   => self::BACKUP_VERSION,
+					'default' => self::BACKUP_VERSION,
 				),
 				'from_version'   => array(
 					'type' => 'string',
@@ -274,8 +293,13 @@ final class Schema {
 		return array(
 			'schema_version' => array(
 				'type'    => 'integer',
-				'const'   => 1,
-				'default' => 1,
+				'const'   => self::VERSION,
+				'default' => self::VERSION,
+			),
+			'profile'        => array(
+				'type'    => 'string',
+				'enum'    => self::PROFILES,
+				'default' => 'domestic',
 			),
 			'connectivity'   => self::connectivity(),
 			'modules'        => self::modules(),
@@ -288,6 +312,11 @@ final class Schema {
 					'scheduled_checks' => array(
 						'type'    => 'boolean',
 						'default' => true,
+					),
+					'client_probe_url' => array(
+						'type'      => 'string',
+						'maxLength' => 2048,
+						'default'   => '',
 					),
 				),
 			),
@@ -340,6 +369,11 @@ final class Schema {
 				'type'    => 'boolean',
 				'default' => false,
 			),
+			'admin_assets'   => array(
+				'type'    => 'string',
+				'enum'    => array( 'on', 'off' ),
+				'default' => 'off',
+			),
 		);
 	}
 
@@ -354,26 +388,60 @@ final class Schema {
 		return array(
 			'type'                 => 'object',
 			'additionalProperties' => false,
-			'required'             => array( 'wordpress_org', 'public_assets', 'avatar' ),
+			'required'             => array( 'wordpress_org', 'public_assets', 'avatar', 'heartbeat', 'dashboard_feeds' ),
 			'properties'           => array(
-				'wordpress_org' => array(
+				'wordpress_org'   => array(
 					'type'    => 'string',
 					'enum'    => array( 'auto', 'off' ),
 					'default' => 'auto',
 				),
-				'public_assets' => array(
-					'type'        => 'array',
-					'uniqueItems' => true,
-					'items'       => array(
-						'type' => 'string',
-						'enum' => self::PUBLIC_ASSETS,
+				'public_assets'   => array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'required'             => array( 'items', 'scope' ),
+					'properties'           => array(
+						'items' => array(
+							'type'        => 'array',
+							'uniqueItems' => true,
+							'items'       => array(
+								'type' => 'string',
+								'enum' => self::PUBLIC_ASSETS,
+							),
+							'default'     => self::PUBLIC_ASSETS,
+						),
+						'scope' => array(
+							'type'    => 'string',
+							'enum'    => self::SCOPES,
+							'default' => 'both',
+						),
 					),
-					'default'     => self::PUBLIC_ASSETS,
 				),
-				'avatar'        => array(
+				'avatar'          => array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'required'             => array( 'admin', 'frontend' ),
+					'properties'           => array(
+						'admin'    => array(
+							'type'    => 'string',
+							'enum'    => self::AVATAR,
+							'default' => 'cravatar_cn',
+						),
+						'frontend' => array(
+							'type'    => 'string',
+							'enum'    => self::AVATAR,
+							'default' => 'cravatar_cn',
+						),
+					),
+				),
+				'heartbeat'       => array(
 					'type'    => 'string',
-					'enum'    => self::AVATAR,
-					'default' => 'cravatar_cn',
+					'enum'    => array( 'on', 'off' ),
+					'default' => 'off',
+				),
+				'dashboard_feeds' => array(
+					'type'    => 'string',
+					'enum'    => array( 'block', 'allow' ),
+					'default' => 'allow',
 				),
 			),
 		);

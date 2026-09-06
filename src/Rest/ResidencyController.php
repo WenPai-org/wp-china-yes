@@ -97,7 +97,15 @@ final class ResidencyController {
 	 * @return list<array{host: string, data_class: string, count: int, last_seen: string}>
 	 */
 	private function log_items(): array {
-		$items = array_values( $this->module->log() );
+		$items = array();
+		foreach ( array_values( $this->module->log() ) as $row ) {
+			$items[] = array(
+				'host'       => (string) $row['host'],
+				'data_class' => (string) $row['data_class'],
+				'count'      => (int) $row['count'],
+				'last_seen'  => (string) $row['last_seen'],
+			);
+		}
 
 		usort(
 			$items,

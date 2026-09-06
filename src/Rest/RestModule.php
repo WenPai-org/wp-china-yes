@@ -117,14 +117,16 @@ final class RestModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function register_routes(): void {
-		$writer      = new DocumentWriter( $this->repository );
-		$settings    = new SettingsController( $writer );
-		$network     = new NetworkSettingsController( $writer );
-		$diagnostics = new DiagnosticsController( $this->checker );
-		$residency   = new ResidencyController();
-		$migration   = new MigrationReportController();
-		$recovery    = new RecoveryController( new RecoveryActions( $this->repository ) );
-		$binding     = new BindingController( $this->repository );
+		$writer       = new DocumentWriter( $this->repository );
+		$settings     = new SettingsController( $writer );
+		$network      = new NetworkSettingsController( $writer );
+		$diagnostics  = new DiagnosticsController( $this->checker );
+		$client_probe = new ClientProbeController( $this->repository );
+		$profile      = new ProfileSuggestController();
+		$residency    = new ResidencyController();
+		$migration    = new MigrationReportController();
+		$recovery     = new RecoveryController( new RecoveryActions( $this->repository ) );
+		$binding      = new BindingController( $this->repository );
 
 		register_rest_route(
 			self::NAMESPACE,
@@ -177,6 +179,43 @@ final class RestModule implements Module {
 				'methods'             => 'POST',
 				'callback'            => array( $diagnostics, 'run' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/diagnostics/client-probe',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $client_probe, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $client_probe, 'update_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/profile/suggest',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $profile, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'locale'   => array(
+						'type'     => 'string',
+						'required' => false,
+					),
+					'timezone' => array(
+						'type'     => 'string',
+						'required' => false,
+					),
+				),
 			)
 		);
 

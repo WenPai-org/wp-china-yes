@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Rest;
 
+use WenPai\ChinaYes\Config\Profile;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Config\Validator;
@@ -57,6 +58,8 @@ final class DocumentWriter {
 			return RestError::invalid_schema();
 		}
 
+		$incoming  = $this->expand_legacy_avatar( $incoming );
+		$current   = $this->apply_profile_switch( $current, $incoming );
 		$merged    = $this->deep_merge( $current, $incoming );
 		$validator = new Validator();
 		$clean     = $validator->sanitize( $merged, $option );
@@ -72,11 +75,27 @@ final class DocumentWriter {
 	/**
 	 * Site settings document (effective, no identity/credential).
 	 *
+	 * Frozen connect UI still reads connectivity.avatar as a string, so the
+	 * REST presentation includes that scalar alongside admin/frontend.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @return array<string, mixed>
 	 */
 	public function site_document(): array {
+		return self::present_legacy_avatar( $this->stored_site_document() );
+	}
+
+	/**
+	 * Stored site settings (v2 objects, no REST presentation).
+	 *
+	 * PUT merge must start from this, not site_document().
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function stored_site_document(): array {
 		return $this->repository->all();
 	}
 
@@ -159,6 +178,106 @@ final class DocumentWriter {
 		}
 
 		return $base;
+	}
+
+	/**
+	 * Expand a v1 string connectivity.avatar into {admin, frontend} of the same value.
+	 *
+	 * Frozen React connect page still PUTs a single enum. Invalid strings are
+	 * left for Validator so they stay wpcy_invalid_schema.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $incoming PUT body.
+	 * @return array<string, mixed>
+	 */
+	private function expand_legacy_avatar( array $incoming ): array {
+		if ( ! isset( $incoming['connectivity'] ) || ! is_array( $incoming['connectivity'] ) ) {
+			return $incoming;
+		}
+		if ( ! array_key_exists( 'avatar', $incoming['connectivity'] ) ) {
+			return $incoming;
+		}
+
+		$avatar = $incoming['connectivity']['avatar'];
+		if ( ! is_string( $avatar ) ) {
+			return $incoming;
+		}
+		if ( ! in_array( $avatar, Schema::AVATAR, true ) ) {
+			return $incoming;
+		}
+
+		$incoming['connectivity']['avatar'] = array(
+			'admin'    => $avatar,
+			'frontend' => $avatar,
+		);
+
+		return $incoming;
+	}
+
+	/**
+	 * Present connectivity.avatar as both the v2 object and a legacy string.
+	 *
+	 * Frozen connect UI reads `connectivity.avatar` as a scalar. JSON cannot
+	 * be a string and an object at the same key, so the HTTP field is the
+	 * string (admin when the two sides differ). Split values stay on the
+	 * stored option and on sibling keys the frozen page ignores.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $document Settings document.
+	 * @return array<string, mixed>
+	 */
+	public static function present_legacy_avatar( array $document ): array {
+		if ( ! isset( $document['connectivity'] ) || ! is_array( $document['connectivity'] ) ) {
+			return $document;
+		}
+
+		$avatar = $document['connectivity']['avatar'] ?? null;
+		if ( ! is_array( $avatar ) ) {
+			return $document;
+		}
+
+		$admin    = isset( $avatar['admin'] ) && is_string( $avatar['admin'] ) ? $avatar['admin'] : null;
+		$frontend = isset( $avatar['frontend'] ) && is_string( $avatar['frontend'] ) ? $avatar['frontend'] : null;
+		if ( null === $admin ) {
+			return $document;
+		}
+
+		$frontend = is_string( $frontend ) ? $frontend : $admin;
+
+		$document['connectivity']['avatar']          = $admin;
+		$document['connectivity']['avatar_admin']    = $admin;
+		$document['connectivity']['avatar_frontend'] = $frontend;
+
+		return $document;
+	}
+
+	/**
+	 * When PUT profile differs from current, reset D2 connectivity keys first.
+	 *
+	 * Remaining incoming fields overlay those defaults (per-item override).
+	 *
+	 * @param array<string, mixed> $current  Stored document.
+	 * @param array<string, mixed> $incoming PUT body.
+	 * @return array<string, mixed>
+	 */
+	private function apply_profile_switch( array $current, array $incoming ): array {
+		if ( ! isset( $incoming['profile'] ) || ! is_string( $incoming['profile'] ) ) {
+			return $current;
+		}
+		if ( ! in_array( $incoming['profile'], Schema::PROFILES, true ) ) {
+			return $current;
+		}
+
+		$from = isset( $current['profile'] ) && is_string( $current['profile'] )
+			? $current['profile']
+			: 'domestic';
+		if ( $incoming['profile'] === $from ) {
+			return $current;
+		}
+
+		return Profile::apply_to( $current, $incoming['profile'] );
 	}
 
 	/**

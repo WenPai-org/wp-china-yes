@@ -116,11 +116,27 @@ final class Report {
 	 * @return array<string, mixed>
 	 */
 	public function to_array(): array {
-		return array(
+		$document = array(
 			'kept'            => $this->kept,
 			'ignored'         => $this->ignored,
 			'ignored_reasons' => $this->ignored_reasons,
 			'settings'        => $this->settings,
 		);
+
+		if ( $this->admin_assets_reserved() ) {
+			$document['notes']    = array( 'admin_assets_reserved' );
+			$document['messages'] = array(
+				__( '后台加速：已保留设置，4.1 起生效', 'wp-china-yes' ),
+			);
+		}
+
+		return $document;
+	}
+
+	/**
+	 * Whether 3.x admin-cdn intent was stored for 4.1.
+	 */
+	public function admin_assets_reserved(): bool {
+		return isset( $this->settings['admin_assets'] ) && 'on' === $this->settings['admin_assets'];
 	}
 }

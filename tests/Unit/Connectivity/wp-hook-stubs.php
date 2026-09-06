@@ -143,15 +143,69 @@ if ( ! function_exists( 'esc_attr' ) ) {
 
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
-	 * Return the value unchanged (no entitlement client in unit tests).
+	 * Run recorded callbacks when present; otherwise return $value.
 	 *
 	 * @param string $tag   Hook.
 	 * @param mixed  $value Value.
 	 * @return mixed
 	 */
 	function apply_filters( $tag, $value ) {
-		unset( $tag );
+		$args = func_get_args();
+		if ( isset( HookStore::$hooks[ $tag ] ) ) {
+			foreach ( HookStore::$hooks[ $tag ] as $callback ) {
+				$call  = array_merge( array( $value ), array_slice( $args, 2 ) );
+				$value = call_user_func_array( $callback, $call );
+			}
+		}
+
 		return $value;
+	}
+}
+
+if ( ! function_exists( 'wp_deregister_script' ) ) {
+	/**
+	 * Record a deregistered script handle.
+	 *
+	 * @param string $handle Script handle.
+	 * @return true
+	 */
+	function wp_deregister_script( $handle ) {
+		HookStore::$deregistered[] = (string) $handle;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'remove_meta_box' ) ) {
+	/**
+	 * Record a removed meta box.
+	 *
+	 * @param string $id      Box id.
+	 * @param string $screen  Screen.
+	 * @param string $context Context.
+	 * @return true
+	 */
+	function remove_meta_box( $id, $screen, $context ) {
+		HookStore::$removed_boxes[] = array(
+			'id'      => (string) $id,
+			'screen'  => (string) $screen,
+			'context' => (string) $context,
+		);
+		return true;
+	}
+}
+
+if ( ! function_exists( 'get_current_screen' ) ) {
+	/**
+	 * Fake current admin screen, or null.
+	 *
+	 * @return object|null
+	 */
+	function get_current_screen() {
+		if ( null === HookStore::$screen_base ) {
+			return null;
+		}
+
+		return (object) array( 'base' => HookStore::$screen_base );
 	}
 }
 

@@ -41,6 +41,19 @@ if ( ! function_exists( 'delete_site_option' ) ) {
 	}
 }
 
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Identity translation.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
 if ( ! function_exists( 'wp_json_encode' ) ) {
 	/**
 	 * JSON encode stand-in.

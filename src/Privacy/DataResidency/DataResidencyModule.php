@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Privacy\DataResidency;
 
+use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 
@@ -49,6 +50,13 @@ final class DataResidencyModule implements Module {
 	private $ingest_ready;
 
 	/**
+	 * Optional config for profile gate (scheme A + insurance). Null → domestic.
+	 *
+	 * @var Config|null
+	 */
+	private $config;
+
+	/**
 	 * In-memory B-tier log keyed by host.
 	 *
 	 * @var array<string, array{host: string, data_class: string, count: int, last_seen: string}>
@@ -62,10 +70,12 @@ final class DataResidencyModule implements Module {
 	 *
 	 * @param Ruleset|null  $ruleset      Host table. Null loads the shipped baseline.
 	 * @param bool|callable $ingest_ready Probe. False in this task.
+	 * @param Config|null   $config       Effective settings. Null treats profile as domestic.
 	 */
-	public function __construct( $ruleset = null, $ingest_ready = false ) {
+	public function __construct( $ruleset = null, $ingest_ready = false, $config = null ) {
 		$this->ruleset      = $ruleset instanceof Ruleset ? $ruleset : new Ruleset();
 		$this->ingest_ready = $ingest_ready;
+		$this->config       = $config instanceof Config ? $config : null;
 		$this->log          = $this->load_log();
 	}
 
@@ -171,6 +181,10 @@ final class DataResidencyModule implements Module {
 	 * @param array<string, mixed> $rule Matched rule.
 	 */
 	public function reroute_enabled( array $rule ): bool {
+		if ( 'domestic' !== $this->current_profile() ) {
+			return false;
+		}
+
 		$when = isset( $rule['enabled_when'] ) && is_string( $rule['enabled_when'] )
 			? $rule['enabled_when']
 			: 'ingest_ready';
@@ -279,6 +293,22 @@ final class DataResidencyModule implements Module {
 		$port   = isset( $target_parts['port'] ) ? ':' . $target_parts['port'] : '';
 
 		return $scheme . '://' . $host . $port . $path;
+	}
+
+	/**
+	 * Effective profile. Missing config → domestic (upgrade / unit default).
+	 *
+	 * Does not query geo. Scheme A + insurance: user-declared domestic wins.
+	 */
+	private function current_profile(): string {
+		if ( ! $this->config instanceof Config ) {
+			return 'domestic';
+		}
+		$profile = $this->config->get( 'profile', 'domestic' );
+
+		return in_array( $profile, array( 'domestic', 'crossborder', 'mixed' ), true )
+			? $profile
+			: 'domestic';
 	}
 
 	/**

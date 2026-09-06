@@ -44,6 +44,8 @@ class PluginCreateTest extends TestCase {
 				'connectivity.wordpress_org',
 				'connectivity.public_assets',
 				'connectivity.avatar',
+				'connectivity.heartbeat',
+				'connectivity.dashboard_feeds',
 				'modules.windfonts',
 				'telemetry',
 				'privacy.data_residency',
@@ -89,7 +91,8 @@ class PluginCreateTest extends TestCase {
 		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
 		$this->assertSame( 'off', OptionStore::$options[ LegacyReader::OPTION ]['store'] );
 		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['wordpress_org'] );
-		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar'] );
+		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar']['frontend'] );
 	}
 
 	/**

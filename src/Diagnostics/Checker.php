@@ -345,18 +345,31 @@ final class Checker {
 	 * @return array{target: string, url: string, upstream_url: string}|null
 	 */
 	private function avatar_target() {
-		$mode = 'cravatar_cn';
+		$modes = array( 'cravatar_cn', 'cravatar_cn' );
 		if ( is_object( $this->config ) && method_exists( $this->config, 'get' ) ) {
-			$mode = (string) $this->config->get( 'connectivity.avatar', 'cravatar_cn' );
+			$admin    = $this->config->get( 'connectivity.avatar.admin', null );
+			$frontend = $this->config->get( 'connectivity.avatar.frontend', null );
+			$legacy   = $this->config->get( 'connectivity.avatar', 'cravatar_cn' );
+			$modes    = array(
+				is_string( $admin ) ? $admin : ( is_string( $legacy ) ? $legacy : 'cravatar_cn' ),
+				is_string( $frontend ) ? $frontend : ( is_string( $legacy ) ? $legacy : 'cravatar_cn' ),
+			);
 		}
 
 		$host = '';
-		if ( 'cravatar_cn' === $mode ) {
-			$host = 'cn.cravatar.com';
-		} elseif ( 'cravatar_global' === $mode ) {
-			$host = 'en.cravatar.com';
-		} elseif ( 'weavatar' === $mode ) {
-			$host = 'weavatar.com';
+		foreach ( $modes as $mode ) {
+			if ( 'cravatar_cn' === $mode ) {
+				$host = 'cn.cravatar.com';
+				break;
+			}
+			if ( 'cravatar_global' === $mode ) {
+				$host = 'en.cravatar.com';
+				break;
+			}
+			if ( 'weavatar' === $mode ) {
+				$host = 'weavatar.com';
+				break;
+			}
 		}
 
 		if ( '' === $host ) {

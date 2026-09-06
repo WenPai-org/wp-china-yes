@@ -17,6 +17,8 @@ use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
+use WenPai\ChinaYes\Connectivity\DashboardFeeds\DashboardFeedsModule;
+use WenPai\ChinaYes\Connectivity\Heartbeat\HeartbeatModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\PublicAssets\AssetMap;
 use WenPai\ChinaYes\Connectivity\PublicAssets\PublicAssetsModule;
@@ -196,11 +198,13 @@ final class Plugin {
 		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
 
 		$registry->add( new AvatarModule( $config ) );
+		$registry->add( new HeartbeatModule( $config ) );
+		$registry->add( new DashboardFeedsModule( $config ) );
 		$catalog = new Catalog();
 		$container->set( 'windfonts.catalog', $catalog );
 		$registry->add( new WindfontsModule( $config ) );
 		$registry->add( new TelemetryModule( $config, $logger ) );
-		$registry->add( new DataResidencyModule() );
+		$registry->add( new DataResidencyModule( null, false, $config ) );
 
 		$checker = new Checker( null, null, null, $config );
 		$container->set( 'diagnostics.checker', $checker );
