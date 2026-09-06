@@ -177,7 +177,7 @@ error_log( 'bound with ' . $credential );
 | 规则 | 要求 |
 |------|------|
 | iframe `sandbox` | 含 `allow-scripts allow-forms`，**不含** `allow-same-origin` |
-| `postMessage` | 双向校验 `event.origin` 对白名单 |
+| `postMessage` | 宿主以 `event.source === iframe.contentWindow` 为身份判据（沙箱 iframe 的 `event.origin` 恒为 `"null"`，不能当身份）；`init` 下发会话令牌，工具每条消息回带，`ready` 每次挂载只认一次；工具侧校验 `event.origin === 宿主 origin`。详见规格 §3.1 |
 | nonce | 工具拿不到 WP nonce；桥只暴露 `wpcy/v1/apps/{app_id}/*` |
 | 权限 | 按 manifest `permissions[]` 裁剪，越权即拒 |
 | manifest | Ed25519 验签；签名失败不加载 |
