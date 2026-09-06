@@ -140,7 +140,7 @@ export default function PageShell( {
 					</div>
 				) : null }
 				{ notice ? (
-					<div className="wpcy-snackbar-slot" data-testid="snackbar">
+					<div className="wpcy-snackbar-slot">
 						<Snackbar onRemove={ () => clearNotice() }>
 							{ notice.message }
 						</Snackbar>
