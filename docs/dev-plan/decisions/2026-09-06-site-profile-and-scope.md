@@ -89,3 +89,4 @@ Windfonts、Cravatar、公共库等资源的限流由各平台自己做；叶子
 - **`admin_assets` 进 `wpcy_site_overrides`**：接受。
 - **不加 `profile_confirmed` 键**：接受，以"有迁移备份且从未 PUT `profile`"判断。
 - **M-SCOPE-1 任务书须补两节**（由 M-SCOPE-0b 完成）："商业前提"（本文件"补充决定"两节：连通性无配额、叶子是接入客户端与渠道、露出规则服务端下发）与"跨境场景免费体验层"（调研 F2/F3/F6/F10/F11 中属于引擎侧的：字体与头像后台作用域即 D2 本身；Heartbeat 分屏节流；挡仪表盘外部内容；从管理员浏览器测速的连接诊断 REST 端点。UI 呈现进 M-SCOPE-UI）。§4 词表删除"绑定后可用配额"一类文案。
+- **移除 `weavatar`（feibisi 2026-09-06："只留 Cravatar，去掉非我们自己的服务"）**：`connectivity.avatar.{admin,frontend}` 枚举收为 `cravatar_cn | cravatar_global | off`；3.x `cravatar=weavatar` 迁移为 `cravatar_cn` 并在迁移报告 `ignored` 记一条"WeAvatar 已不再支持，已改为 Cravatar 中国线路"；诊断探测目标去掉 `weavatar.com`。由 M-SCOPE-1c 落地。
