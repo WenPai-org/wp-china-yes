@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Connectivity\Avatar;
 
+use WenPai\ChinaYes\Connectivity\Scope;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
@@ -112,7 +113,7 @@ final class AvatarModule implements ConditionalModule {
 			return false;
 		}
 
-		$mode = $config->get( 'connectivity.avatar', 'off' );
+		$mode = $this->mode_for_current( $config );
 
 		return in_array( $mode, array( 'cravatar_cn', 'cravatar_global', 'weavatar' ), true );
 	}
@@ -144,7 +145,7 @@ final class AvatarModule implements ConditionalModule {
 			return $url;
 		}
 
-		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		$mode = $this->mode_for_current( $this->config );
 
 		switch ( $mode ) {
 			case 'cravatar_cn':
@@ -183,7 +184,7 @@ final class AvatarModule implements ConditionalModule {
 			return $avatar_defaults;
 		}
 
-		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		$mode = $this->mode_for_current( $this->config );
 		if ( 'weavatar' === $mode ) {
 			$avatar_defaults['gravatar_default'] = 'WeAvatar';
 		} else {
@@ -199,7 +200,7 @@ final class AvatarModule implements ConditionalModule {
 	 * @since 4.0.0
 	 */
 	public function set_user_profile_picture_for_cravatar(): string {
-		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		$mode = $this->mode_for_current( $this->config );
 		if ( 'weavatar' === $mode ) {
 			$href = function_exists( 'esc_url' ) ? esc_url( 'https://weavatar.com' ) : 'https://weavatar.com';
 			$text = function_exists( 'esc_html__' )
@@ -221,7 +222,7 @@ final class AvatarModule implements ConditionalModule {
 	 * @since 4.0.0
 	 */
 	public function add_avatar_preconnect(): void {
-		$mode = $this->config->get( 'connectivity.avatar', 'off' );
+		$mode = $this->mode_for_current( $this->config );
 		$host = '';
 
 		if ( 'cravatar_cn' === $mode ) {
@@ -241,5 +242,25 @@ final class AvatarModule implements ConditionalModule {
 
 		echo '<link rel="dns-prefetch" href="//' . $host_attr . '">' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above when helpers exist.
 		echo '<link rel="preconnect" href="' . $url_attr . '" crossorigin>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above when helpers exist.
+	}
+
+	/**
+	 * Avatar mode for Scope::current() (admin or frontend).
+	 *
+	 * @param Config $config Config read model.
+	 */
+	private function mode_for_current( Config $config ): string {
+		$side = Scope::current();
+		$mode = $config->get( 'connectivity.avatar.' . $side, null );
+		if ( is_string( $mode ) && '' !== $mode ) {
+			return $mode;
+		}
+
+		$avatar = $config->get( 'connectivity.avatar', 'off' );
+		if ( is_array( $avatar ) && isset( $avatar[ $side ] ) && is_string( $avatar[ $side ] ) ) {
+			return $avatar[ $side ];
+		}
+
+		return is_string( $avatar ) ? $avatar : 'off';
 	}
 }

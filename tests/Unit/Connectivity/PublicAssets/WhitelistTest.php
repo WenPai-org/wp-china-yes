@@ -179,7 +179,10 @@ class WhitelistTest extends TestCase {
 	public function test_keeps_origin_when_entitlement_exhausted() {
 		$config = new MapConfig(
 			array(
-				'connectivity.public_assets' => array( 'jsdelivr' ),
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'both',
+				),
 				'recovery_mode'              => false,
 			)
 		);
@@ -202,7 +205,10 @@ class WhitelistTest extends TestCase {
 	public function test_enabled_false_when_list_empty() {
 		$config = new MapConfig(
 			array(
-				'connectivity.public_assets' => array(),
+				'connectivity.public_assets' => array(
+					'items' => array(),
+					'scope' => 'both',
+				),
 				'recovery_mode'              => false,
 			)
 		);
@@ -218,7 +224,10 @@ class WhitelistTest extends TestCase {
 	public function test_enabled_false_in_recovery_mode() {
 		$config = new MapConfig(
 			array(
-				'connectivity.public_assets' => array( 'jsdelivr' ),
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'both',
+				),
 				'recovery_mode'              => true,
 			)
 		);
@@ -234,7 +243,10 @@ class WhitelistTest extends TestCase {
 	public function test_enabled_false_when_rewrite_disallowed() {
 		$config = new MapConfig(
 			array(
-				'connectivity.public_assets' => array( 'jsdelivr' ),
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'both',
+				),
 				'recovery_mode'              => false,
 			)
 		);
@@ -266,6 +278,46 @@ class WhitelistTest extends TestCase {
 	}
 
 	/**
+	 * Admin scope does not rewrite on a frontend request.
+	 */
+	public function test_admin_scope_does_not_rewrite_frontend() {
+		$config = new MapConfig(
+			array(
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'admin',
+				),
+				'recovery_mode'              => false,
+			)
+		);
+		$module = new PublicAssetsModule( $config, new AssetMap(), new MirrorHealth( array( 'jsd.admincdn.com' => true ) ) );
+		$env    = new Environment( Environment::FRONTEND, true );
+		$origin = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
+
+		$this->assertFalse( $module->enabled( $config, $env ) );
+		$this->assertSame( $origin, $module->rewrite( $origin ) );
+	}
+
+	/**
+	 * Off scope disables the module even with items.
+	 */
+	public function test_scope_off_disables() {
+		$config = new MapConfig(
+			array(
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'off',
+				),
+				'recovery_mode'              => false,
+			)
+		);
+		$module = new PublicAssetsModule( $config, new AssetMap(), new MirrorHealth() );
+		$env    = new Environment( Environment::ADMIN, true );
+
+		$this->assertFalse( $module->enabled( $config, $env ) );
+	}
+
+	/**
 	 * Build a module with the given enabled keys and host health map.
 	 *
 	 * @param string[]            $enabled Enabled public_assets keys.
@@ -274,7 +326,10 @@ class WhitelistTest extends TestCase {
 	private function module( array $enabled, array $health ): PublicAssetsModule {
 		$config = new MapConfig(
 			array(
-				'connectivity.public_assets' => $enabled,
+				'connectivity.public_assets' => array(
+					'items' => $enabled,
+					'scope' => 'both',
+				),
 				'recovery_mode'              => false,
 			)
 		);
