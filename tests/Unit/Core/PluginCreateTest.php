@@ -58,6 +58,7 @@ class PluginCreateTest extends TestCase {
 				'services.entitlements',
 				'admin.notice_control',
 				'admin.announcements',
+				'providers',
 			),
 			$plugin->registry()->ids()
 		);

@@ -128,6 +128,7 @@ final class RestModule implements Module {
 		$migration      = new MigrationReportController();
 		$recovery       = new RecoveryController( new RecoveryActions( $this->repository ) );
 		$binding        = new BindingController( $this->repository );
+		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
 			self::NAMESPACE,

@@ -33,6 +33,7 @@ use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Privacy\SiteBlocklist\SiteBlocklistModule;
+use WenPai\ChinaYes\Providers\UpdateBridge;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
@@ -219,6 +220,7 @@ final class Plugin {
 		$registry->add( $entitlements );
 		$registry->add( new NoticeControlModule( $config, '', null, $logger ) );
 		$registry->add( new AnnouncementsModule( $config ) );
+		$registry->add( new UpdateBridge( $config, null, null, $logger ) );
 
 		return new self( $container, $registry, $environment );
 	}

@@ -39,6 +39,7 @@
 		</testsuite>
 		<testsuite name="rest">
 			<directory>tests/Unit/Rest</directory>
+			<exclude>tests/Unit/Rest/ProvidersControllerTest.php</exclude>
 		</testsuite>
 		<testsuite name="integrations">
 			<directory>tests/Unit/Integrations</directory>
@@ -57,6 +58,10 @@
 		</testsuite>
 		<testsuite name="admin">
 			<directory>tests/Unit/Admin</directory>
+		</testsuite>
+		<testsuite name="providers">
+			<directory>tests/Unit/Providers</directory>
+			<file>tests/Unit/Rest/ProvidersControllerTest.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>
