@@ -163,7 +163,10 @@ final class UpdateBridge implements Module {
 				);
 				$package = $this->package_url( $data );
 				$new     = $this->new_version( $data );
-				if ( '' === $package && '' === $new ) {
+				if ( '' === $package || ! UrlGuard::allows( $package ) ) {
+					continue;
+				}
+				if ( '' === $new || ! version_compare( $new, $version, '>' ) ) {
 					continue;
 				}
 				$transient->response[ $file ] = (object) array(
