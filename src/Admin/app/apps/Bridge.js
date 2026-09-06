@@ -263,15 +263,14 @@ export function classify( event ) {
 	}
 
 	if ( type === 'ready' ) {
+		if ( event.ready ) {
+			return { action: 'discard' };
+		}
 		return { action: 'init' };
 	}
 
-	let sessionToken = '';
-	if ( typeof data.session_token === 'string' ) {
-		sessionToken = data.session_token;
-	} else if ( typeof event.session_token === 'string' ) {
-		sessionToken = event.session_token;
-	}
+	const sessionToken =
+		typeof data.session_token === 'string' ? data.session_token : '';
 	const expectedToken =
 		typeof event.expected_session_token === 'string'
 			? event.expected_session_token
@@ -543,6 +542,9 @@ export function attachBridge( options ) {
 			return;
 		}
 		if ( decision.action === 'init' ) {
+			if ( ready ) {
+				return;
+			}
 			ready = true;
 			sendInit();
 			return;

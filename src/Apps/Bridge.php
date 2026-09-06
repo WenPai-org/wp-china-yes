@@ -378,15 +378,15 @@ final class Bridge {
 		}
 
 		if ( 'ready' === $type ) {
+			if ( $ready ) {
+				return array( 'action' => 'discard' );
+			}
 			return array( 'action' => 'init' );
 		}
 
-		$session_token = '';
-		if ( isset( $data['session_token'] ) && is_string( $data['session_token'] ) ) {
-			$session_token = $data['session_token'];
-		} elseif ( isset( $event['session_token'] ) && is_string( $event['session_token'] ) ) {
-			$session_token = $event['session_token'];
-		}
+		$session_token          = isset( $data['session_token'] ) && is_string( $data['session_token'] )
+			? $data['session_token']
+			: '';
 		$expected_session_token = isset( $event['expected_session_token'] ) && is_string( $event['expected_session_token'] )
 			? $event['expected_session_token']
 			: '';
