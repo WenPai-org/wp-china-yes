@@ -177,7 +177,7 @@ final class Mappers {
 					break;
 
 				case 'admincdn':
-					// 3.8 admin static-rewrite key. Tokens join admincdn_files below; 4.0 has no admin rewrite.
+					// 3.8 checkbox group. Presence (even [] / '') drives public_assets below.
 					$ignored[]               = $key;
 					$ignored_reasons[ $key ] = 'unsupported_whitelist';
 					break;
@@ -189,8 +189,7 @@ final class Mappers {
 			}
 		}
 
-		$has_v38_admincdn = array_key_exists( 'admincdn', $legacy )
-			&& array() !== $this->as_token_list( $legacy['admincdn'] );
+		$has_v38_admincdn = array_key_exists( 'admincdn', $legacy );
 
 		if ( array_key_exists( 'admincdn_public', $legacy )
 			|| array_key_exists( 'admincdn_files', $legacy )
@@ -199,16 +198,7 @@ final class Mappers {
 		) {
 			$mapped                                    = $this->map_public_assets( $legacy );
 			$settings['connectivity']['public_assets'] = $mapped['assets'];
-			$covered_by_ignored_key                    = in_array( 'admincdn', $ignored, true )
-				? $this->as_token_list( $legacy['admincdn'] ?? array() )
-				: array();
 			foreach ( $mapped['unknown'] as $token ) {
-				if ( in_array( $token, $ignored, true ) || in_array( $token, $kept, true ) ) {
-					continue;
-				}
-				if ( in_array( $token, $covered_by_ignored_key, true ) ) {
-					continue;
-				}
 				$ignored[]                 = $token;
 				$ignored_reasons[ $token ] = 'unsupported_whitelist';
 			}
@@ -290,10 +280,13 @@ final class Mappers {
 	 * Merge admincdn_public ∪ admincdn_files ∪ admincdn_dev ∪ 3.8 admincdn
 	 * onto the 4.0 public_assets enum.
 	 *
-	 * Output follows Schema::PUBLIC_ASSETS order. Present keys with an empty
-	 * (or fully unsupported) list become []. That is an explicit choice, not a
-	 * cue to refill schema defaults. Unknown tokens (including `admin`) are
-	 * returned for ignored. 4.0 has no wp-admin static rewrite.
+	 * Output follows Schema::PUBLIC_ASSETS order. Present keys — including
+	 * 3.8 `admincdn` as [] or '' — with an empty (or fully unsupported) list
+	 * become []. That is an explicit choice, not a cue to refill schema
+	 * defaults. googlefonts / googleajax / cdnjs / jsdelivr (and 3.9 emoji)
+	 * map to the enum; admin / frontend / bootstrapcdn and any other unknown
+	 * token are returned for ignored (alongside the source key). 4.0 has no
+	 * wp-admin static rewrite.
 	 *
 	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
 	 * @return array{assets: array<int, string>, unknown: array<int, string>}

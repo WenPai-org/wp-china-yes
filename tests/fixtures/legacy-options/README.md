@@ -8,6 +8,7 @@
 | `single-3.6.2-01.json` | 3.6.2 | 单站 `option` | 最老样本，仅 5 个键 |
 | `single-3.8-02.json` | 3.8 | 单站 | 现网主力版本 |
 | `single-3.9.3-03.json` | 3.9.3 | 单站 | 候选版全字段（59 键，含 windfonts_list、adblock_rule 等） |
+| `single-3.9-07-store-proxy.json` | 3.9.3 | 单站 | 由 `single-3.9.3-03.json` 复制，仅 `store` 改为 `proxy` |
 | `multisite-3.7.1-04.json` | 3.7.1 | 网络 `site_option` | 多站点 |
 | `multisite-3.8-05.json` / `-06.json` | 3.8 | 网络 | 多站点主力版本 |
 

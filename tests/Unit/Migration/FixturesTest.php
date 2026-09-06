@@ -45,18 +45,19 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
-	 * Six files under tests/fixtures/legacy-options/.
+	 * Legacy-option fixtures under tests/fixtures/legacy-options/.
 	 *
 	 * @return array<string, array{0: string}>
 	 */
 	public function fixture_files(): array {
 		return array(
-			'single-3.6.2-01'    => array( 'single-3.6.2-01.json' ),
-			'single-3.8-02'      => array( 'single-3.8-02.json' ),
-			'single-3.9.3-03'    => array( 'single-3.9.3-03.json' ),
-			'multisite-3.7.1-04' => array( 'multisite-3.7.1-04.json' ),
-			'multisite-3.8-05'   => array( 'multisite-3.8-05.json' ),
-			'multisite-3.8-06'   => array( 'multisite-3.8-06.json' ),
+			'single-3.6.2-01'           => array( 'single-3.6.2-01.json' ),
+			'single-3.8-02'             => array( 'single-3.8-02.json' ),
+			'single-3.9.3-03'           => array( 'single-3.9.3-03.json' ),
+			'multisite-3.7.1-04'        => array( 'multisite-3.7.1-04.json' ),
+			'multisite-3.8-05'          => array( 'multisite-3.8-05.json' ),
+			'multisite-3.8-06'          => array( 'multisite-3.8-06.json' ),
+			'single-3.9-07-store-proxy' => array( 'single-3.9-07-store-proxy.json' ),
 		);
 	}
 
@@ -281,8 +282,7 @@ class FixturesTest extends TestCase {
 		$this->assertIsString( $json );
 		$this->assertStringNotContainsString( 'hide_option', $json );
 		$this->assertStringNotContainsString( 'hide_menu', $json );
-		$this->assertArrayNotHasKey( 'hide', $report->settings() );
-		$this->assertArrayNotHasKey( 'brand', $report->settings() );
+		$this->assert_modules_connectivity_keys_match_schema( $report->settings() );
 	}
 
 	/**
@@ -310,9 +310,35 @@ class FixturesTest extends TestCase {
 		$this->assertNotContains( 'admin', $from_v38->settings()['connectivity']['public_assets'] );
 		$this->assertNotContains( 'admin', $from_files->settings()['connectivity']['public_assets'] );
 		$this->assertContains( 'admincdn', $from_v38->ignored() );
+		$this->assertContains( 'admin', $from_v38->ignored() );
+		$this->assertSame( 'unsupported_whitelist', $from_v38->ignored_reasons()['admin'] );
 		$this->assertContains( 'admincdn_files', $from_files->kept() );
 		$this->assertContains( 'admin', $from_files->ignored() );
 		$this->assertSame( 'unsupported_whitelist', $from_files->ignored_reasons()['admin'] );
+	}
+
+	/**
+	 * 3.8 admincdn mixed tokens: mapped enum + ignored admin/bootstrapcdn.
+	 */
+	public function test_admincdn_v38_mixed_tokens_map_and_ignore() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'admincdn' => array( 'admin', 'googlefonts', 'jsdelivr', 'bootstrapcdn' ),
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertSame(
+			array( 'google_fonts', 'jsdelivr' ),
+			$report->settings()['connectivity']['public_assets']
+		);
+		$this->assertContains( 'admincdn', $report->ignored() );
+		$this->assertContains( 'admin', $report->ignored() );
+		$this->assertContains( 'bootstrapcdn', $report->ignored() );
+		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['admin'] );
+		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['bootstrapcdn'] );
+		$this->assertNotContains( 'googlefonts', $report->ignored() );
+		$this->assertNotContains( 'jsdelivr', $report->ignored() );
 	}
 
 	/**
@@ -339,7 +365,7 @@ class FixturesTest extends TestCase {
 		$this->assertIsString( $json );
 		$this->assertStringNotContainsString( 'wp_memory_limit', $json );
 		$this->assertStringNotContainsString( 'autosave_interval', $json );
-		$this->assertArrayNotHasKey( 'performance', $report->settings() );
+		$this->assert_modules_connectivity_keys_match_schema( $report->settings() );
 	}
 
 	/**
@@ -537,6 +563,7 @@ class FixturesTest extends TestCase {
 			case 'single-3.8-02.json':
 				return array( 'store', 'cravatar', 'windfonts', 'adblock' );
 			case 'single-3.9.3-03.json':
+			case 'single-3.9-07-store-proxy.json':
 				return array( 'store', 'admincdn_public', 'admincdn_files', 'admincdn_dev', 'cravatar', 'windfonts', 'windfonts_list', 'adblock' );
 			case 'multisite-3.7.1-04.json':
 			case 'multisite-3.8-05.json':
@@ -548,7 +575,7 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
-	 * Expected ignored keys: every fixture key that is not kept.
+	 * Expected ignored: unkept fixture keys plus explicit unknown tokens.
 	 *
 	 * @param string $file Fixture basename.
 	 * @return array<int, string>
@@ -563,7 +590,44 @@ class FixturesTest extends TestCase {
 				$out[] = $key;
 			}
 		}
+		foreach ( $this->expected_ignored_tokens( $file ) as $token ) {
+			if ( ! in_array( $token, $out, true ) ) {
+				$out[] = $token;
+			}
+		}
 		return $out;
+	}
+
+	/**
+	 * Unknown admincdn tokens that must appear in ignored alongside the key.
+	 *
+	 * @param string $file Fixture basename.
+	 * @return array<int, string>
+	 */
+	private function expected_ignored_tokens( string $file ): array {
+		switch ( $file ) {
+			case 'single-3.8-02.json':
+				return array( 'admin' );
+			default:
+				return array();
+		}
+	}
+
+	/**
+	 * Modules and connectivity key sets equal the schema.
+	 *
+	 * @param array<string, mixed> $settings Sanitized 4.0 document.
+	 */
+	private function assert_modules_connectivity_keys_match_schema( array $settings ): void {
+		$schema = Schema::definition( Schema::SETTINGS );
+		$this->assertEqualsCanonicalizing(
+			array_keys( $schema['properties']['modules']['properties'] ),
+			array_keys( $settings['modules'] )
+		);
+		$this->assertEqualsCanonicalizing(
+			array_keys( $schema['properties']['connectivity']['properties'] ),
+			array_keys( $settings['connectivity'] )
+		);
 	}
 
 	/**
@@ -579,7 +643,7 @@ class FixturesTest extends TestCase {
 		switch ( $file ) {
 			case 'single-3.6.2-01.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( Schema::PUBLIC_ASSETS, $connectivity['public_assets'] );
+				$this->assertSame( array(), $connectivity['public_assets'] );
 				$this->assertSame( 'weavatar', $connectivity['avatar'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
@@ -595,6 +659,7 @@ class FixturesTest extends TestCase {
 				break;
 
 			case 'single-3.9.3-03.json':
+			case 'single-3.9-07-store-proxy.json':
 				$this->assertSame( 'auto', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets'] );
 				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
@@ -615,7 +680,7 @@ class FixturesTest extends TestCase {
 			case 'multisite-3.8-05.json':
 			case 'multisite-3.8-06.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( Schema::PUBLIC_ASSETS, $connectivity['public_assets'] );
+				$this->assertSame( array(), $connectivity['public_assets'] );
 				$this->assertSame( 'weavatar', $connectivity['avatar'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
