@@ -173,12 +173,13 @@ final class Schema {
 			'type'                 => 'object',
 			'additionalProperties' => false,
 			'properties'           => array(
-				'schema_version' => $props['schema_version'],
-				'profile'        => $props['profile'],
-				'connectivity'   => $props['connectivity'],
-				'modules'        => $props['modules'],
-				'admin_assets'   => $props['admin_assets'],
-				'recovery_mode'  => $props['recovery_mode'],
+				'schema_version'       => $props['schema_version'],
+				'profile'              => $props['profile'],
+				'profile_confirmed_at' => $props['profile_confirmed_at'],
+				'connectivity'         => $props['connectivity'],
+				'modules'              => $props['modules'],
+				'admin_assets'         => $props['admin_assets'],
+				'recovery_mode'        => $props['recovery_mode'],
 			),
 		);
 	}
@@ -290,20 +291,25 @@ final class Schema {
 	 */
 	private static function settings_properties(): array {
 		return array(
-			'schema_version' => array(
+			'schema_version'       => array(
 				'type'    => 'integer',
 				'const'   => self::VERSION,
 				'default' => self::VERSION,
 			),
-			'profile'        => array(
+			'profile'              => array(
 				'type'    => 'string',
 				'enum'    => self::PROFILES,
 				'default' => 'domestic',
 			),
-			'connectivity'   => self::connectivity(),
-			'modules'        => self::modules(),
-			'integrations'   => self::integrations(),
-			'diagnostics'    => array(
+			'profile_confirmed_at' => array(
+				'type'    => array( 'string', 'null' ),
+				'format'  => 'date-time',
+				'default' => null,
+			),
+			'connectivity'         => self::connectivity(),
+			'modules'              => self::modules(),
+			'integrations'         => self::integrations(),
+			'diagnostics'          => array(
 				'type'                 => 'object',
 				'additionalProperties' => false,
 				'required'             => array( 'scheduled_checks' ),
@@ -319,7 +325,7 @@ final class Schema {
 					),
 				),
 			),
-			'data_residency' => array(
+			'data_residency'       => array(
 				'type'                 => 'object',
 				'additionalProperties' => false,
 				'required'             => array( 'ruleset_version' ),
@@ -331,7 +337,7 @@ final class Schema {
 					),
 				),
 			),
-			'announcements'  => array(
+			'announcements'        => array(
 				'type'                 => 'object',
 				'additionalProperties' => false,
 				'required'             => array( 'dismissed' ),
@@ -348,7 +354,7 @@ final class Schema {
 					),
 				),
 			),
-			'apps'           => array(
+			'apps'                 => array(
 				'type'                 => 'object',
 				'additionalProperties' => false,
 				'required'             => array( 'disabled' ),
@@ -364,11 +370,11 @@ final class Schema {
 					),
 				),
 			),
-			'recovery_mode'  => array(
+			'recovery_mode'        => array(
 				'type'    => 'boolean',
 				'default' => false,
 			),
-			'admin_assets'   => array(
+			'admin_assets'         => array(
 				'type'    => 'string',
 				'enum'    => array( 'on', 'off' ),
 				'default' => 'off',

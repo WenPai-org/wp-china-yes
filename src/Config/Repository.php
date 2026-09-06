@@ -516,7 +516,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 */
 	private function is_override_path( string $path ): bool {
 		$root = explode( '.', $path )[0];
-		return in_array( $root, array( 'profile', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' ), true );
+		return in_array( $root, array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' ), true );
 	}
 
 	/**
