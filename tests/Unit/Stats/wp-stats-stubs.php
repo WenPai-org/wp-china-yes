@@ -75,6 +75,20 @@ if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_generate_password' ) ) {
+	/**
+	 * Deterministic password used when ULID entropy falls back.
+	 *
+	 * @param int  $length              Length.
+	 * @param bool $special_chars       Unused.
+	 * @param bool $extra_special_chars Unused.
+	 */
+	function wp_generate_password( $length = 12, $special_chars = true, $extra_special_chars = false ) {
+		unset( $special_chars, $extra_special_chars );
+		return substr( str_repeat( 'abcdefghijklmnop', (int) $length ), 0, (int) $length );
+	}
+}
+
 if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
 	/**
 	 * Status from a canned WP HTTP array.

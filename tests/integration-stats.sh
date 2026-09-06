@@ -62,9 +62,13 @@ for name, points in data["series"].items():
     if dates != sorted(dates):
         raise SystemExit("%s dates not ascending" % name)
 blob = json.dumps(data, ensure_ascii=False)
-for needle in ("http://", "https://", "?"):
-    if needle in blob and needle != data.get("installed_at", "no"):
-        pass
+import re
+if "http" in blob.lower():
+    raise SystemExit("stats privacy: http in JSON")
+if "?" in blob:
+    raise SystemExit("stats privacy: ? in JSON")
+if re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", blob):
+    raise SystemExit("stats privacy: IPv4 literal in JSON")
 print("stats days:", data["days"])
 print("stats from/to:", data["from"], data["to"])
 print("stats counters:", ",".join(sorted(data["series"].keys())))
@@ -101,6 +105,14 @@ if len(row["id"]) != 26:
     raise SystemExit("event id length %d != 26" % len(row["id"]))
 if row["type"] != "first_check":
     raise SystemExit("expected first_check, got " + row["type"])
+blob = json.dumps(data, ensure_ascii=False)
+import re
+if "http" in blob.lower():
+    raise SystemExit("events privacy: http in JSON")
+if "?" in blob:
+    raise SystemExit("events privacy: ? in JSON")
+if re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", blob):
+    raise SystemExit("events privacy: IPv4 literal in JSON")
 print("event type:", row["type"])
 print("event title:", row["title"])
 print("event detail:", row["detail"])

@@ -156,6 +156,7 @@ final class Counters {
 		$current                           = isset( $this->buckets[ $day ][ $counter ] ) ? (int) $this->buckets[ $day ][ $counter ] : 0;
 		$this->buckets[ $day ][ $counter ] = $current + $n;
 		$this->dirty                       = true;
+		$this->flushed                     = false;
 	}
 
 	/**

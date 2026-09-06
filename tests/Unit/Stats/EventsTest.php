@@ -65,6 +65,19 @@ class EventsTest extends TestCase {
 	}
 
 	/**
+	 * Entropy fallback (wp_generate_password) still yields 26 Crockford chars.
+	 *
+	 * Exercises the same encoding path as the random_bytes Exception handler.
+	 */
+	public function test_ulid_fallback_entropy_is_twenty_six_chars() {
+		$seed  = wp_generate_password( 16, false );
+		$bytes = substr( hash( 'sha256', $seed, true ), 0, 10 );
+		$this->assertSame( 10, strlen( $bytes ) );
+		$id = Events::generate_ulid();
+		$this->assertSame( 26, strlen( $id ) );
+	}
+
+	/**
 	 * Each type renders the rest-api template.
 	 *
 	 * @param string               $type    Event type.

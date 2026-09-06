@@ -315,6 +315,9 @@ final class Events {
 	/**
 	 * 26-character Crockford ULID.
 	 *
+	 * Failures of random_bytes() fall back to wp_generate_password( 16, false )
+	 * (or microtime) hashed to 10 bytes; the result is still 26 characters.
+	 *
 	 * @since 4.0.0
 	 */
 	public static function generate_ulid(): string {
@@ -329,9 +332,17 @@ final class Events {
 			$time        = intdiv( $time, 32 );
 		}
 
-		$bytes = random_bytes( 10 );
-		$acc   = 0;
-		$bits  = 0;
+		try {
+			$bytes = random_bytes( 10 );
+		} catch ( \Exception $e ) {
+			unset( $e );
+			$seed  = function_exists( 'wp_generate_password' )
+				? wp_generate_password( 16, false )
+				: (string) microtime( true );
+			$bytes = substr( hash( 'sha256', $seed, true ), 0, 10 );
+		}
+		$acc  = 0;
+		$bits = 0;
 		for ( $i = 0; $i < 10; $i++ ) {
 			$acc   = ( $acc << 8 ) | ord( $bytes[ $i ] );
 			$bits += 8;

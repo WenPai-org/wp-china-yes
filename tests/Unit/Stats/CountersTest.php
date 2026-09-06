@@ -108,7 +108,10 @@ class CountersTest extends TestCase {
 	}
 
 	/**
-	 * Shutdown / flush writes once; a second flush is a no-op.
+	 * Shutdown / flush writes once; a second flush is a no-op until a new increment.
+	 *
+	 * Increments after flush must be persisted (lost deltas would inflate
+	 * honesty of the overview numbers).
 	 */
 	public function test_flush_writes_once() {
 		$writes                 = 0;
@@ -124,7 +127,9 @@ class CountersTest extends TestCase {
 		$counters->increment( 'heartbeat_saved', 1 );
 		$counters->flush();
 
-		$this->assertSame( 1, $writes );
+		$this->assertSame( 2, $writes );
+		$stored = OptionStore::$options[ Counters::OPTION ];
+		$this->assertSame( 2, $stored['buckets']['2026-09-06']['heartbeat_saved'] );
 	}
 
 	/**
