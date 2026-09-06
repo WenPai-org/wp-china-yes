@@ -4,7 +4,7 @@
 
 ## 怎么看
 
-本目录直接用浏览器打开任一 `.html`（样式在 `e.css` 与 `../_shared/shell.css`，无外部依赖，无 CDN）。右下角深色小条是**原型专用**的状态切换器，不属于产品。截图在 `screens/`（1440 宽，Playwright 生成）。
+本目录直接用浏览器打开任一 `.html`（样式在 `e.css` 与 `../_shared/shell.css`，无外部依赖，无 CDN；图标是 Phosphor regular 的 SVG 内联在页面里，`phosphor/` 目录存了用到的 35 个源文件供对照，`build.py` 生成时读的是 wpcy-proto 仓 `node_modules/@phosphor-icons/core`）。右下角深色小条是**原型专用**的状态切换器，不属于产品。截图在 `screens/`（1440 宽，Playwright 生成）。
 
 **唯一生成入口是 `build.py`**（`python3 build.py`，需要同目录 `parts_v3/4/5.py` 与 `_shell-head.html`）。所有面向用户的字符串都在 `build.py` 里，它同时是文案清单。改规格先改 `DESIGN-E.md` 与 `e.css`，再重新生成，再更新 wpcy-proto 仓（`~/wt/wpcy-proto/E/`，两处保持一致，以本目录为归档版）。
 

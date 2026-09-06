@@ -418,6 +418,104 @@ a.scope:hover { color: var(--wpcy-accent); }
 @keyframes wpcy-spin { to { transform: rotate(360deg); } }
 .notice.warn.act b { font-weight: 600; }
 .section-title .pill { font-weight: 500; }
+/* ===================== v5.4：图标换 Phosphor（regular、按需 SVG）+ 排版 / 颜色 / 间距调整 ===================== */
+/* 颜色：弱文字从 #757575 提到 wp-admin 的 #646970（对白底对比 5.7:1），次文字保持 #50575e */
+.wpcy-app { --wpcy-ink-3: #646970; --wpcy-mute: #646970; font-size: 14px; line-height: 22px; }
+/* 图标：Phosphor 是填充路径，不再需要 stroke 规则；统一光学尺寸 */
+.ph { display: inline-block; flex: none; vertical-align: -0.2em; }
+.wpcy-app svg.ph { max-width: none; max-height: none; }
+.tile svg { width: 20px; height: 20px; }
+.next .tile svg { width: 18px; height: 18px; }
+.btn svg { width: 16px; height: 16px; }
+.wpcy-tab svg { width: 18px; height: 18px; }
+.notice svg { width: 18px; height: 18px; margin-top: 1px; }
+.stat-a .k svg, .section-title svg, .field-label svg, .chip svg, .strip svg { width: 18px; height: 18px; }
+.hero-collapse svg, .hero-bar-more svg, .foot svg, .mode svg { width: 16px; height: 16px; }
+.hero-collapse svg { transform: rotate(180deg); }
+.res a svg { width: 14px; height: 14px; }
+.stat-a .delta svg { width: 12px; height: 12px; }
+/* 字阶：正文 14/22；次级 13/20；最小 12（原 11 全部提到 12）；中文不做大写字距 */
+.wpcy-name { font-size: 17px; }
+.wpcy-ver { font-size: 12px; }
+.wpcy-tab { font-size: 14px; }
+.wpcy-h1 { font-size: 24px; line-height: 32px; }
+.wpcy-lede { font-size: 14px; margin-top: 6px; }
+.card-title, .section-title, .sec-h h2, .r2-head h2 { font-size: 16px; line-height: 24px; }
+.card-sub, .meta, .field-help, .field-ctl .hint, .opt .d, .choice .d, .rows .d, .simple-row .d, .routes .d, .routes .ago, .routes .ms,
+.tl .d, .stat-a .d, .sec-h p, .sec-h a, .card-head .more, .notice, .hero-r .facts, .hero-sum, .tbl th, .tbl .d, .r2-head p, .chip, .foot, .mode, .saved,
+.empty .meta, .glance .k, .glance .s, .events time, .events .d, .steps .st, .steps .n, .res p { font-size: 13px; line-height: 20px; }
+.hero-l .eyebrow, .ring .l, .sec-h.caps h2, .tl time, .rlabel { font-size: 12px; line-height: 18px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+.sec-h.caps h2 { font-size: 13px; color: var(--wpcy-ink-2); }
+.hero-l h1 { font-size: 30px; line-height: 40px; margin: 10px 0 12px; }
+.hero-l p { font-size: 15px; line-height: 24px; max-width: 46ch; margin-bottom: 24px; }
+.ring .n { font-size: 36px; line-height: 40px; }
+.stat-a .k { font-size: 14px; }
+.stat-a .v { font-size: 32px; line-height: 40px; }
+.stat-a .v small, .stat-a .delta { font-size: 13px; }
+.big { font-size: 24px; line-height: 32px; }
+.pill, .scope { height: 24px; font-size: 13px; border-radius: 12px; padding: 0 10px 0 8px; }
+.scope { padding: 0 10px; }
+.btn { height: 36px; font-size: 14px; padding: 0 16px; }
+.notice .btn { height: 30px; font-size: 13px; }
+.seg span, .seg a { height: 32px; font-size: 14px; }
+.mode .seg a { height: 30px; font-size: 13px; }
+.choice .t, .rows .t, .simple-row .t, .routes .t, .tl .e, .field-label, .opt .t, .tbl .t { font-size: 14px; }
+.notice { padding: 12px 16px; border-radius: 10px; }
+.notice.warn.act { font-size: 14px; padding: 12px 16px; }
+.hero-sum-t { font-size: 14px; }
+.toggle { font-size: 14px; }
+.wizard h1 { font-size: 26px; line-height: 34px; }
+.wizard .lede { font-size: 14px; }
+/* 间距：卡内 24/28，节间 36，行距放宽 */
+.wpcy-main { padding: 32px 32px 48px; }
+.wpcy-page-head { margin-bottom: 24px; }
+.wpcy-stack > * + * { margin-top: 20px; }
+.wpcy-grid-2, .wpcy-grid-3, .grid2-w, .apps, .choice-cards { gap: 20px; }
+.card { padding: 24px 28px; }
+.card.tight { padding: 24px 28px 16px; }
+.card-head { gap: 14px; margin-bottom: 18px; }
+.card.tight .card-head { margin-bottom: 10px; }
+.card-foot { margin-top: 20px; padding-top: 18px; }
+.sec { margin-top: 36px; }
+.sec-h { margin-bottom: 14px; }
+.hero-body { padding: 32px 36px 36px; gap: 40px; grid-template-columns: minmax(0, 1fr) 280px; }
+.hero-r { gap: 16px; }
+.hero-r .facts { gap: 18px; }
+.hero-l .cta { gap: 10px; }
+.hero-collapse { top: 16px; right: 20px; }
+.stat-a { padding: 24px 28px; }
+.stat-a .v { margin-top: 14px; }
+.stat-a .area { margin-top: 18px; }
+.routes li { padding: 14px 0; gap: 16px; }
+.tl li { padding: 0 0 20px 26px; }
+.tl li::before { top: 7px; }
+.rows > div { padding: 14px 0; gap: 14px; }
+.rows.recover > div { padding: 18px 0; }
+.simple-row { padding: 18px 0; gap: 16px; }
+.simple-row:first-of-type { padding-top: 8px; }
+.simple-row .r { gap: 14px; }
+.section-desc { margin-bottom: 10px; }
+.field { padding: 22px 0; gap: 28px; grid-template-columns: 280px minmax(0, 1fr); }
+.field:first-of-type { padding-top: 14px; }
+.opts { gap: 10px; }
+.chk { gap: 10px; }
+.choice { padding: 16px 18px; gap: 12px; }
+.next { padding: 16px 22px; gap: 18px; }
+.tbl th { padding-bottom: 12px; }
+.tbl td { padding: 12px 0; }
+.resources2 { margin-top: 44px; padding-top: 28px; gap: 40px; grid-template-columns: 240px minmax(0, 1fr); }
+.r2-body { gap: 14px; }
+.rgrp { gap: 10px; }
+.rlabel { min-width: 88px; }
+.chip { height: 32px; padding: 0 14px; border-radius: 16px; }
+.foot { margin-top: 28px; padding-top: 18px; }
+.foot .r { gap: 20px; }
+.empty { padding: 32px 16px; }
+.wizard { padding: 44px 24px 64px; }
+.steps { margin-bottom: 36px; }
+.wizard .actions { margin-top: 28px; }
+.app { padding: 22px; }
+.app .t { font-size: 15px; }
 .proto-sw { position: fixed; right: 16px; bottom: 16px; z-index: 9; display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: #1e1e1e; color: #ccc; border-radius: 8px; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
 .proto-sw .seg { border-color: #444; }
 .proto-sw .seg a { height: 24px; font-size: 11px; color: #ccc; border-color: #444; padding: 0 10px; }

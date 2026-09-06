@@ -5,33 +5,27 @@ import pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).parent
 sys.path.insert(0, str(ROOT))
-from parts_v3 import MORE_ICONS
 from parts_v4 import pagehero as _ph, strip as _strip, sec, stats as _stats, resources as _res
 from parts_v5 import hero_white as _hw, stat_area as _sa, routes_list, timeline, resources_compact as _rc
 
 HEAD = (ROOT / "_shell-head.html").read_text(encoding="utf-8")
 TAIL = "    </div>\n  </div>\n</body>\n</html>\n"
 
-ICON = {
-    "globe": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
-    "bolt": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
-    "user": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
-    "link": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
-    "monitor": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
-    "check": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>',
-    "info": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
-    "arrow": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
-    "map": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.3 6-11a6 6 0 0 0-12 0c0 5.7 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></svg>',
-    "grid": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
-    "shield": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>',
-    "download": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M4 19h16"/></svg>',
-    "clock": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    "block": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg>',
-    "gauge": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="m12 15 4-5"/><path d="M3 19h18"/></svg>',
+# ---------------------------------------------------------------- 图标：Phosphor regular（开源，MIT），按需 SVG，本地包，不走 CDN
+PH_DIR = ROOT.parent / "node_modules" / "@phosphor-icons" / "core" / "assets" / "regular"
+PH = {  # 本文件用的语义名 → Phosphor 图标名（实现侧 icons.js 用同一张表）
+    "globe": "globe", "bolt": "lightning", "user": "user", "link": "link", "monitor": "monitor", "check": "check",
+    "info": "info", "arrow": "arrow-right", "map": "map-pin", "grid": "squares-four", "shield": "shield-check",
+    "download": "download-simple", "clock": "clock", "block": "prohibit", "gauge": "gauge", "font": "text-aa",
+    "leaf": "leaf", "book": "book-open", "chat": "chat-circle", "video": "video-camera", "help": "question",
+    "rss": "rss", "wechat": "wechat-logo", "store": "storefront", "sparkle": "sparkle", "layers": "stack",
+    "settings": "sliders-horizontal", "home": "house", "pulse": "pulse", "external": "arrow-square-out",
+    "sliders": "sliders", "image": "image", "chevron": "caret-down", "up": "arrow-up", "spinner": "circle-notch",
 }
-ICON.update(MORE_ICONS)
-ICON["chevron"] = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'
-ICON["up"] = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+def _ph_svg(name):
+    raw = (PH_DIR / f"{PH[name]}.svg").read_text(encoding="utf-8")
+    return raw.replace('<svg xmlns="http://www.w3.org/2000/svg" ', '<svg class="ph" aria-hidden="true" ', 1).strip()
+ICON = {k: _ph_svg(k) for k in PH}
 
 pagehero = lambda *a: _ph(ICON, *a)
 strip = lambda items: _strip(ICON, items)
@@ -44,6 +38,8 @@ stat_area = lambda *a: _sa(ICON, *a)
 # ---------------------------------------------------------------- 壳
 def shell(active, headright="", tabs=True, title="概览"):
     h = HEAD.replace("__HEADRIGHT__", headright).replace("<title>概览 · 文派叶子</title>", f"<title>{title} · 文派叶子</title>")
+    for k in ("leaf", "help", "chat"):
+        h = h.replace(f"__ICON_{k}__", ICON[k])
     for k in ("OVERVIEW", "SETTINGS", "SERVICES", "DIAGNOSE"):
         h = h.replace(f"__T_{k}__", "is-active" if k == active else "")
     for slug, ic, name in (("overview-domestic", "home", "概览"), ("settings", "settings", "设置"), ("services", "grid", "服务"), ("diagnose", "pulse", "诊断")):

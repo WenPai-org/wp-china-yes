@@ -47,7 +47,7 @@ v1.0（2026-09-04）被本版整体取代。取代的原因是三项产品决定
 | SH-04 | 页脚 | 一行 12px：左"文派叶子 {version} · 已运行 {N} 天"（N 由 `/stats.installed_at` 算；`N=0` 显示"刚安装"）；右"更新日志""wpcy.com"两个链接。**不放**帮助 / 反馈 |
 | SH-05 | 加载态 | 首屏数据（settings 由 bootstrap 注入，其余 REST）到达前：页头、标签、页面头正常显示，卡片区显示同结构的骨架（卡片边框 + 灰块，`aria-busy="true"`），**不写任何文字**（不写 Loading / 加载中）。超过 8 秒仍未返回按 SH-06 处理 |
 | SH-06 | 读取失败 | 某个 REST 读取失败：该区域换成注意色提示 `暂时无法读取{什么}，请刷新页面重试。` + "重试"次按钮；其它区域照常。不弹英文 `WP_Error`；不整页空白 |
-| SH-07 | 图标 | 只用原型 `build.py` 里 `ICON` 字典的内联 SVG（24 viewBox、stroke 1.75、round），随应用打包为 React 组件 `src/Admin/app/ui/icons.js`；不引 Phosphor 包、不引图标字体 |
+| SH-07 | 图标 | **Phosphor regular**（开源 MIT；linuxjoy `WPCY-DESIGN.md` §5 已定），按需 SVG：实现用 `@phosphor-icons/react`，只 import 用到的图标；映射表（语义名 → Phosphor 名）以原型 `build.py` 的 `PH` 字典为唯一来源，实现侧放 `src/Admin/app/ui/icons.js` 一一对应。尺寸三档 16 / 18 / 20（见 `DESIGN-E.md` §3a），颜色 `currentColor`。**不用图标字体、不从 CDN 加载、不手画图标** |
 | SH-08 | 作用域样式 | 所有 CSS 变量与类名在 `.wpcy-app` 作用域内声明；不改 `--wp-admin-theme-color`；不影响其它插件页面 |
 
 ## 4. 页面规格
@@ -271,7 +271,7 @@ v1.0 中「权益 / 配额 / 本期已用尽 / 已到期 / 获取」各行：**4
 
 ## 7. 视觉 token 映射
 
-以 [`DESIGN-E.md`](prototypes/e/DESIGN-E.md) §1–§4 为准，CSS 变量全部在 `.wpcy-app` 内：主色 `--wpcy-accent: #3858e9`（hover `#2c47c5`，浅底 `#eef1fd`）；文字三级 `#1e1e1e / #50575e / #757575`；线 `#e0e0e0`、分割 `#f0f0f1`；正常 `#02b930`（浅底 `#e9f8ec`，深字 `#128a2d`）；注意 `#dba617`（浅底 `#fbf3dc`，深字 `#9a7208`）；异常 `#d63638`（浅底 `#fbe9ea`）；卡圆角 12、边 `#e5e5e5`、无阴影；字体栈系统 + PingFang / Noto Sans CJK / 微软雅黑，不引 web font。**不再**覆盖 `--wp-admin-theme-color`、**不再**要求 Phosphor（SH-07）。`@wordpress/components` 只在需要可访问性行为的地方使用（`Modal`、`Button` 的键盘行为、`Spinner` 不用——旋转环自绘），外观一律由 `.wpcy-app` 样式覆盖为原型规格；`DataViews` 只用于 DG-05 小工具数据列表。
+以 [`DESIGN-E.md`](prototypes/e/DESIGN-E.md) §1–§4（v5.4 数值）为准，CSS 变量全部在 `.wpcy-app` 内：主色 `--wpcy-accent: #3858e9`（hover `#2c47c5`，浅底 `#eef1fd`）；文字三级 `#1e1e1e / #50575e / #646970`；线 `#e0e0e0`、分割 `#f0f0f1`；正常 `#02b930`（浅底 `#e9f8ec`，深字 `#128a2d`）；注意 `#dba617`（浅底 `#fbf3dc`，深字 `#9a7208`）；异常 `#d63638`（浅底 `#fbe9ea`）；卡圆角 12、边 `#e5e5e5`、无阴影、padding 24/28；正文 14/22，说明 13/20，最小 12，中文不做大写字距；字体栈系统 + PingFang / Noto Sans CJK / 微软雅黑，不引 web font；图标 Phosphor regular（SH-07）。**不再**覆盖 `--wp-admin-theme-color`。`@wordpress/components` 只在需要可访问性行为的地方使用（`Modal`、`Button` 的键盘行为、`Spinner` 不用——旋转环自绘），外观一律由 `.wpcy-app` 样式覆盖为原型规格；`DataViews` 只用于 DG-05 小工具数据列表。
 
 ## 8. 响应式与无障碍
 
