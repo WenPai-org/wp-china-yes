@@ -16,6 +16,7 @@ if ( is_array( $settings ) ) {
 	update_option( "wpcy_settings", $settings );
 }
 delete_option( "wpcy_events" );
+delete_transient( \WenPai\ChinaYes\Diagnostics\Checker::STORE_KEY ); // integration-cli.sh already ran a check; first_check needs an empty "before".
 echo "reset-ok\n";
 '
 
