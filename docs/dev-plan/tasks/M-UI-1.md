@@ -1,5 +1,15 @@
 # 任务 M-UI-1：产品化 UI 第一步——壳、组件集、概览页（六态）、恢复页
 
+> **状态：暂缓（2026-09-06 22:xx）。** feibisi 看过原型 v5.4 后要求改 Hero（去掉健康环，换核心服务连通栈）、「来自文派」（整块）、图标（RemixIcon），并加服务商品牌与供应商层——决定 [`decisions/2026-09-06-core-services-value-and-providers.md`](../decisions/2026-09-06-core-services-value-and-providers.md)。原型 v6 已在 `~/wt/wpcy-proto`（提交 `745435f`），CSS 去重与重新归档进行中。**本任务书按 v2.1 修订后才可启动**；下列正文里的 v2.0 引用按 §"v2.1 修订" 一节替换理解，正式启动前统筹会把正文改干净。
+>
+> **v2.1 修订（先记要点）**：
+> - 图标依赖 `@phosphor-icons/react` → **`@remixicon/react`**；映射表来源 `build.py` 的 `PH` → **`RI`**；`icons.js` 一一对应 RemixIcon line。
+> - 概览 Hero 右侧 OV-10b 健康环 / OV-10c 事实条 **作废**，改做 **OV-18 核心服务连通栈**（规格 §4.1 OV-18）；数据 = `/diagnostics` 分组 + `/settings` + `/binding`；服务商名来自 `wpcyAdmin.providers`（SH-09，由 `Diagnostics\RouteGroups` 导出——M-STATS-1 建类，本任务在 `AdminModule::bootstrap_payload()` 导出）。
+> - OV-15 「来自文派」按 v2.1 整块规格实现（`.eco`），链接表 `wpcyAdmin.links.brands`。
+> - OV-13 线路列表每行加 `.prov` 服务商标签。
+> - 组件集加 `Prov.js`（服务商标签）、`SvcStack.js`（连通栈）、`Eco.js`；去掉 `Ring`。
+> - 原型路径与截图对照以**重新归档后的** `docs/design/prototypes/e/`（v6 + CSS 去重）为准；`DESIGN-E.md` §3a（RemixIcon）、§5.1（v6 改义）。
+
 worktree 分支 `grok/m-ui-1`，基于 `main`（含 `docs/design/prototypes/e/` 与 `admin-ui-spec.md` v2.0）。预计 diff ≤ 2500 行（不含截图）。与后端任务 M-STATS-1（`grok/m-stats-1`，提供 `/stats` `/events`）**并行**：本任务按契约开发，用 REST mock 验收，不等它合并。
 
 设计门禁（`docs/dev/design-sop.md`）四件齐备：原型 `docs/design/prototypes/e/`；认可 `docs/design/prototypes/e/APPROVAL.md`（feibisi，2026-09-06）；规格编号见下；本任务书。**门禁缺任一项本任务书无效**——四件都在，动手前请逐一打开确认。
