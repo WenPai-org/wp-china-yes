@@ -8,6 +8,17 @@ WP_CLI="${WP_CLI:-npx wp-env run cli wp}"
 echo "==> activate plugin"
 $WP_CLI plugin activate wp-china-yes >/dev/null
 
+echo "==> reset state left by earlier integration scripts (integration-recovery.sh leaves recovery_mode=true; events would then only record recovery_*)"
+$WP_CLI eval '
+$settings = get_option( "wpcy_settings", array() );
+if ( is_array( $settings ) ) {
+	$settings["recovery_mode"] = false;
+	update_option( "wpcy_settings", $settings );
+}
+delete_option( "wpcy_events" );
+echo "reset-ok\n";
+'
+
 echo "==> run diagnostics checker (cron hook equivalent)"
 $WP_CLI eval '
 $events  = new \WenPai\ChinaYes\Stats\Events();
