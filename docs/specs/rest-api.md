@@ -499,6 +499,7 @@ apps 专用码见 apps 规格 §5.5。此处列出跨端点码：
 | `wpcy_forbidden` | 403 | 能力不足或 nonce 无效 |
 | `wpcy_recovery_unknown_action` | 400 | `/recovery` 的 `action` 不是三个枚举值之一 |
 | `wpcy_binding_not_pending` | 409 | 公开挑战端点在非 pending / 已过期时被拉 |
-| `wpcy_blocklist_protected_host` | 400 | `PUT /site-blocklist` 的某条 host 命中 L0 受保护主机 |
+| `wpcy_blocklist_protected_host` | 400 | `PUT /site-blocklist`、`PUT /settings`、`PUT /network-settings` 的某条 host 命中 L0 受保护主机 |
+| `wpcy_noise_block_blocked` | — | 噪声包命中；`pre_http_request` 返回该码，不落库 |
 
 其它业务码随模块补进，前缀必须 `wpcy_`。**待定（M0）**：诊断、驻留、绑定失败的完整 code 表由各模块作者在实现前补进本文。`wpcy_blocklist_protected_host` 已定，message 必须是「文派服务不可拦截」。

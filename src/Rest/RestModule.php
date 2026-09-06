@@ -117,16 +117,17 @@ final class RestModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function register_routes(): void {
-		$writer       = new DocumentWriter( $this->repository );
-		$settings     = new SettingsController( $writer );
-		$network      = new NetworkSettingsController( $writer );
-		$diagnostics  = new DiagnosticsController( $this->checker );
-		$client_probe = new ClientProbeController( $this->repository );
-		$profile      = new ProfileSuggestController();
-		$residency    = new ResidencyController();
-		$migration    = new MigrationReportController();
-		$recovery     = new RecoveryController( new RecoveryActions( $this->repository ) );
-		$binding      = new BindingController( $this->repository );
+		$writer         = new DocumentWriter( $this->repository );
+		$settings       = new SettingsController( $writer );
+		$network        = new NetworkSettingsController( $writer );
+		$diagnostics    = new DiagnosticsController( $this->checker );
+		$client_probe   = new ClientProbeController( $this->repository );
+		$profile        = new ProfileSuggestController();
+		$residency      = new ResidencyController();
+		$site_blocklist = new SiteBlocklistController( null, $this->repository );
+		$migration      = new MigrationReportController();
+		$recovery       = new RecoveryController( new RecoveryActions( $this->repository ) );
+		$binding        = new BindingController( $this->repository );
 
 		register_rest_route(
 			self::NAMESPACE,
@@ -228,6 +229,43 @@ final class RestModule implements Module {
 				'methods'             => 'GET',
 				'callback'            => array( $residency, 'get_ruleset' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/protected',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_protected' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/test',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $residency, 'test_url' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/site-blocklist',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $site_blocklist, 'get_item' ),
+					'permission_callback' => array( SiteBlocklistController::class, 'permission_read' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $site_blocklist, 'update_item' ),
+					'permission_callback' => array( SiteBlocklistController::class, 'permission_write' ),
+				),
 			)
 		);
 

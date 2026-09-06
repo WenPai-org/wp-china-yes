@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Privacy\DataResidency;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
+use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -64,6 +65,13 @@ final class DataResidencyModule implements Module {
 	private array $log = array();
 
 	/**
+	 * Noise rows skipped this request (L0 / .org / CDN). Not persisted.
+	 *
+	 * @var list<array{host: string, match: string, reason: string}>
+	 */
+	private array $noise_skipped = array();
+
+	/**
 	 * Create the module. Constructor does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -100,12 +108,36 @@ final class DataResidencyModule implements Module {
 	}
 
 	/**
-	 * Hook pre_http_request.
+	 * Hook pre_http_request: L0 at 5, L1 at 10, noise at 12.
 	 *
 	 * @since 4.0.0
 	 */
 	public function register(): void {
+		add_filter( 'pre_http_request', array( $this, 'filter_l0' ), 5, 3 );
 		add_filter( 'pre_http_request', array( $this, 'filter_pre_http_request' ), 10, 3 );
+		add_filter( 'pre_http_request', array( $this, 'filter_noise_block' ), 12, 3 );
+	}
+
+	/**
+	 * L0: protected hosts always leave. No reroute, no record.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed                $preempt Short-circuit value from earlier filters.
+	 * @param array<string, mixed> $args    Request arguments.
+	 * @param string               $url     Request URL.
+	 * @return mixed
+	 */
+	public function filter_l0( $preempt, $args, $url ) {
+		unset( $args );
+		if ( '' === $url ) {
+			return $preempt;
+		}
+		if ( $this->ruleset->is_protected( $this->request_host( $url ) ) ) {
+			return $preempt;
+		}
+
+		return $preempt;
 	}
 
 	/**
@@ -113,6 +145,7 @@ final class DataResidencyModule implements Module {
 	 *
 	 * Reroute with enabled_when=ingest_ready does not rewrite when the probe is false.
 	 * That miss does not fall back to record and does not copy-then-forward.
+	 * L0 hosts skip A/B entirely.
 	 *
 	 * @since 4.0.0
 	 *
@@ -124,6 +157,10 @@ final class DataResidencyModule implements Module {
 	public function filter_pre_http_request( $preempt, $args, $url ) {
 		unset( $args );
 		if ( '' === $url ) {
+			return $preempt;
+		}
+
+		if ( $this->ruleset->is_protected( $this->request_host( $url ) ) ) {
 			return $preempt;
 		}
 
@@ -151,6 +188,65 @@ final class DataResidencyModule implements Module {
 		}
 
 		return $preempt;
+	}
+
+	/**
+	 * Noise pack between L1 (10) and L2 (15). Does not override L0 or L1 A/B.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed                $preempt Short-circuit value from earlier filters.
+	 * @param array<string, mixed> $args    Request arguments.
+	 * @param string               $url     Request URL.
+	 * @return mixed
+	 */
+	public function filter_noise_block( $preempt, $args, $url ) {
+		unset( $args );
+		if ( false !== $preempt ) {
+			return $preempt;
+		}
+		if ( '' === $url || ! $this->noise_enabled() ) {
+			return $preempt;
+		}
+
+		$host = $this->request_host( $url );
+		if ( '' === $host || $this->ruleset->is_protected( $host ) ) {
+			return $preempt;
+		}
+
+		if ( $this->l1_claimed( $url ) ) {
+			return $preempt;
+		}
+
+		$hit = $this->ruleset->noise_match( $host );
+		if ( ! is_array( $hit ) ) {
+			return $preempt;
+		}
+
+		$skipped = isset( $hit['skipped'] ) && is_string( $hit['skipped'] ) ? $hit['skipped'] : '';
+		if ( '' !== $skipped ) {
+			$hit_host              = isset( $hit['host'] ) && is_string( $hit['host'] ) ? $hit['host'] : $host;
+			$hit_match             = isset( $hit['match'] ) && is_string( $hit['match'] ) ? $hit['match'] : 'exact';
+			$this->noise_skipped[] = array(
+				'host'   => $hit_host,
+				'match'  => $hit_match,
+				'reason' => $skipped,
+			);
+			return $preempt;
+		}
+
+		return new WP_Error( 'wpcy_noise_block_blocked', 'wpcy_noise_block_blocked' );
+	}
+
+	/**
+	 * Noise rows ignored at runtime (not persisted).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<array{host: string, match: string, reason: string}>
+	 */
+	public function noise_skipped(): array {
+		return $this->noise_skipped;
 	}
 
 	/**
@@ -329,6 +425,37 @@ final class DataResidencyModule implements Module {
 	private function target_is_usable( array $rule ): bool {
 		$target = isset( $rule['target'] ) && is_string( $rule['target'] ) ? $rule['target'] : '';
 		return 0 === strpos( $target, 'https://' );
+	}
+
+	/**
+	 * Whether L1 A/B already claimed this URL (reroute or record). C ignore does not claim.
+	 *
+	 * @param string $url Request URL.
+	 */
+	public function l1_claimed( string $url ): bool {
+		$rule = $this->ruleset->match( $url );
+		if ( ! is_array( $rule ) ) {
+			return false;
+		}
+		$action = isset( $rule['action'] ) && is_string( $rule['action'] ) ? $rule['action'] : '';
+
+		return in_array( $action, array( 'reroute', 'record' ), true );
+	}
+
+	/**
+	 * User switch for the signed noise pack. Off in recovery_mode.
+	 *
+	 * @since 4.0.0
+	 */
+	public function noise_enabled(): bool {
+		if ( ! $this->config instanceof Config ) {
+			return true;
+		}
+		if ( true === $this->config->get( 'recovery_mode', false ) ) {
+			return false;
+		}
+
+		return true === $this->config->get( 'modules.noise_block.enabled', true );
 	}
 
 	/**

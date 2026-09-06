@@ -17,12 +17,14 @@ use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Rest\DiagnosticsController;
 use WenPai\ChinaYes\Rest\DocumentWriter;
+use WenPai\ChinaYes\Rest\NetworkSettingsController;
 use WenPai\ChinaYes\Rest\Permissions;
 use WenPai\ChinaYes\Rest\RecoveryActions;
 use WenPai\ChinaYes\Rest\RecoveryController;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Rest\SettingsController;
+use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -42,7 +44,7 @@ class PermissionsTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		RestStore::reset();
-		\WenPai\ChinaYes\Tests\Unit\Config\OptionStore::reset();
+		OptionStore::reset();
 		RestError::reset();
 		$_POST = array();
 	}
@@ -324,6 +326,107 @@ class PermissionsTest extends TestCase {
 		$this->assertSame( 'cdnjs.admincdn.com', $data['targets'][0]['target'] );
 		$this->assertSame( Checker::RESULT_OK, $data['targets'][0]['result'] );
 		$this->assertNull( $data['targets'][0]['suggestion'] );
+	}
+
+	/**
+	 * Single-site PUT /settings with an L0 host is 400; option is unchanged.
+	 */
+	public function test_put_settings_protected_host_is_400_and_option_unchanged() {
+		$before        = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(
+						array(
+							'host'  => 'api.wenpai.net',
+							'match' => 'exact',
+						),
+					),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_blocklist_protected_host', $result->get_error_code() );
+		$this->assertSame( '文派服务不可拦截', $result->get_error_message() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * Multisite PUT /network-settings with an L0 host is 400; network option is unchanged.
+	 */
+	public function test_put_network_settings_protected_host_is_400_and_option_unchanged() {
+		OptionStore::$multisite = true;
+		$before                 = isset( OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] )
+			? OptionStore::$site_options[ Schema::NETWORK_SETTINGS ]
+			: null;
+		$controller             = new NetworkSettingsController( new DocumentWriter( new Repository() ) );
+		$request                = new WP_REST_Request();
+		$request->json          = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(
+						array(
+							'host'  => 'api.wenpai.net',
+							'match' => 'exact',
+						),
+					),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_blocklist_protected_host', $result->get_error_code() );
+		$this->assertSame( '文派服务不可拦截', $result->get_error_message() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] )
+			? OptionStore::$site_options[ Schema::NETWORK_SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * Subsite PUT /settings with modules.site_blocklist is 400 wpcy_settings_network_only_key.
+	 */
+	public function test_subsite_put_settings_site_blocklist_is_network_only_key() {
+		OptionStore::$multisite = true;
+		$before                 = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$controller             = $this->settings_controller();
+		$request                = new WP_REST_Request();
+		$request->json          = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_settings_network_only_key', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
 	}
 
 	/**

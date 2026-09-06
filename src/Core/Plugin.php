@@ -32,6 +32,7 @@ use WenPai\ChinaYes\Integrations\Windfonts\WindfontsModule;
 use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
+use WenPai\ChinaYes\Privacy\SiteBlocklist\SiteBlocklistModule;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
@@ -205,6 +206,7 @@ final class Plugin {
 		$registry->add( new WindfontsModule( $config ) );
 		$registry->add( new TelemetryModule( $config, $logger ) );
 		$registry->add( new DataResidencyModule( null, false, $config ) );
+		$registry->add( new SiteBlocklistModule( $config ) );
 
 		$checker = new Checker( null, null, null, $config );
 		$container->set( 'diagnostics.checker', $checker );

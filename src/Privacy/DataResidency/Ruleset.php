@@ -44,6 +44,58 @@ final class Ruleset {
 	);
 
 	/**
+	 * Built-in L0 hosts. Always in effect; signed increments may only append.
+	 *
+	 * Cravatar both domains are suffix (统筹拍板 2026-09-06).
+	 *
+	 * @since 4.0.0
+	 * @var list<array{host: string, match: string}>
+	 */
+	public const BUILTIN_PROTECTED_HOSTS = array(
+		array(
+			'host'  => 'wenpai.net',
+			'match' => 'suffix',
+		),
+		array(
+			'host'  => 'wpcy.com',
+			'match' => 'suffix',
+		),
+		array(
+			'host'  => 'cravatar.cn',
+			'match' => 'suffix',
+		),
+		array(
+			'host'  => 'cravatar.com',
+			'match' => 'suffix',
+		),
+		array(
+			'host'  => 'admincdn.com',
+			'match' => 'suffix',
+		),
+	);
+
+	/**
+	 * Cloud-bridge ingest hosts. FQDN 待定（M0 / M3-S2 devops）.
+	 *
+	 * Do not invent a hostname. Empty until devops supplies the FQDN.
+	 *
+	 * @since 4.0.0
+	 * @var list<array{host: string, match: string}>
+	 */
+	public const CLOUD_BRIDGE_INGEST_HOSTS = array(); // TODO: ingest hostname unset (M0 / M3-S2). Do not invent an FQDN.
+
+	/**
+	 * Known CDN hosts that noise_block must never intercept.
+	 *
+	 * @since 4.0.0
+	 * @var list<string>
+	 */
+	private const NOISE_SKIP_CDNS = array(
+		'cdnjs.cloudflare.com',
+		'cdn.jsdelivr.net',
+	);
+
+	/**
 	 * Absolute path of the loaded JSON file.
 	 *
 	 * @var string
@@ -171,6 +223,167 @@ final class Ruleset {
 		}
 
 		return $this->first_wildcard();
+	}
+
+	/**
+	 * Whether $host is on the L0 protected list (builtin ∪ verified increment).
+	 *
+	 * Failed verify uses builtin only. Increments cannot remove builtin rows.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $host Request host.
+	 */
+	public function is_protected( string $host ): bool {
+		$host = strtolower( $host );
+		if ( '' === $host ) {
+			return false;
+		}
+
+		foreach ( $this->protected_hosts() as $rule ) {
+			if ( $this->host_matches( $host, $rule ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Effective L0 list: hardcoded ∪ signed increment, de-duplicated.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<array{host: string, match: string}>
+	 */
+	public function protected_hosts(): array {
+		$merged = array();
+		foreach ( array_merge( self::BUILTIN_PROTECTED_HOSTS, self::CLOUD_BRIDGE_INGEST_HOSTS ) as $rule ) {
+			$merged[ $this->host_key( $rule ) ] = $this->normalize_host_rule( $rule );
+		}
+
+		if ( $this->verified || ! $this->require_signature ) {
+			$extra = isset( $this->document['protected_hosts'] ) && is_array( $this->document['protected_hosts'] )
+				? $this->document['protected_hosts']
+				: array();
+			foreach ( $extra as $rule ) {
+				if ( ! is_array( $rule ) ) {
+					continue;
+				}
+				$normalized = $this->normalize_host_rule( $rule );
+				if ( '' === $normalized['host'] ) {
+					continue;
+				}
+				$key = $this->host_key( $normalized );
+				if ( ! isset( $merged[ $key ] ) ) {
+					$merged[ $key ] = $normalized;
+				}
+			}
+		}
+
+		return array_values( $merged );
+	}
+
+	/**
+	 * L0 source label for REST / diagnostics.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return 'builtin'|'builtin+signed'
+	 */
+	public function protected_source(): string {
+		return $this->verified ? 'builtin+signed' : 'builtin';
+	}
+
+	/**
+	 * First matching noise_block row for $host, or null.
+	 *
+	 * Rows on L0, `.org`, or known CDNs are ignored (caller may record diagnostics).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $host Request host.
+	 * @return array<string, mixed>|null
+	 */
+	public function noise_match( string $host ) {
+		$host = strtolower( $host );
+		if ( '' === $host ) {
+			return null;
+		}
+
+		foreach ( $this->noise_hosts() as $rule ) {
+			if ( ! $this->host_matches( $host, $rule ) ) {
+				continue;
+			}
+			$skip = $this->noise_skip_reason( $rule );
+			if ( '' !== $skip ) {
+				$rule['skipped'] = $skip;
+			}
+			return $rule;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Signed noise_block rows (empty when verify failed).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<array{host: string, match: string, note: string}>
+	 */
+	public function noise_hosts(): array {
+		if ( $this->require_signature && ! $this->verified ) {
+			return array();
+		}
+
+		$raw = isset( $this->document['noise_block'] ) && is_array( $this->document['noise_block'] )
+			? $this->document['noise_block']
+			: array();
+
+		$out = array();
+		foreach ( $raw as $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+			$normalized = $this->normalize_host_rule( $rule );
+			if ( '' === $normalized['host'] ) {
+				continue;
+			}
+			$note  = isset( $rule['note'] ) && is_string( $rule['note'] ) ? $rule['note'] : '';
+			$out[] = array(
+				'host'  => $normalized['host'],
+				'match' => $normalized['match'],
+				'note'  => $note,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Why a noise row must be ignored at runtime, or empty when it may block.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $rule Noise row.
+	 */
+	public function noise_skip_reason( array $rule ): string {
+		$host = isset( $rule['host'] ) && is_string( $rule['host'] ) ? strtolower( $rule['host'] ) : '';
+		if ( '' === $host ) {
+			return 'empty';
+		}
+		if ( $this->is_protected( $host ) ) {
+			return 'l0';
+		}
+		if ( substr( $host, -4 ) === '.org' ) {
+			return 'org';
+		}
+		if ( in_array( $host, self::NOISE_SKIP_CDNS, true ) ) {
+			return 'cdn';
+		}
+
+		return '';
 	}
 
 	/**
@@ -344,6 +557,37 @@ final class Ruleset {
 		}
 
 		return $host === $needle;
+	}
+
+	/**
+	 * Normalize a host/match pair.
+	 *
+	 * @param array<string, mixed> $rule Raw rule.
+	 * @return array{host: string, match: string}
+	 */
+	private function normalize_host_rule( array $rule ): array {
+		$host  = isset( $rule['host'] ) && is_string( $rule['host'] ) ? strtolower( $rule['host'] ) : '';
+		$match = isset( $rule['match'] ) && is_string( $rule['match'] ) ? $rule['match'] : 'exact';
+		if ( 'suffix' !== $match ) {
+			$match = 'exact';
+		}
+
+		return array(
+			'host'  => $host,
+			'match' => $match,
+		);
+	}
+
+	/**
+	 * Dedup key for a host rule.
+	 *
+	 * @param array<string, mixed> $rule Rule.
+	 */
+	private function host_key( array $rule ): string {
+		$host  = isset( $rule['host'] ) && is_string( $rule['host'] ) ? strtolower( $rule['host'] ) : '';
+		$match = isset( $rule['match'] ) && is_string( $rule['match'] ) ? $rule['match'] : 'exact';
+
+		return $host . "\0" . $match;
 	}
 
 	/**

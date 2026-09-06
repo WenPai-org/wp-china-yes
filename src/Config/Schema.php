@@ -176,7 +176,7 @@ final class Schema {
 				'schema_version' => $props['schema_version'],
 				'profile'        => $props['profile'],
 				'connectivity'   => $props['connectivity'],
-				'modules'        => $props['modules'],
+				'modules'        => self::modules( false ),
 				'admin_assets'   => $props['admin_assets'],
 				'recovery_mode'  => $props['recovery_mode'],
 			),
@@ -451,21 +451,95 @@ final class Schema {
 	 *
 	 * @since 4.0.0
 	 *
+	 * @param bool $allow_site_blocklist Whether to include the network-only site_blocklist key.
 	 * @return array<string, mixed>
 	 */
-	private static function modules(): array {
+	private static function modules( bool $allow_site_blocklist = true ): array {
+		$properties = array(
+			'notice_control' => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'windfonts'      => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'noise_block'    => array(
+				'type'                 => 'object',
+				'additionalProperties' => false,
+				'required'             => array( 'enabled' ),
+				'default'              => array(
+					'enabled' => true,
+				),
+				'properties'           => array(
+					'enabled' => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+				),
+			),
+		);
+
+		if ( $allow_site_blocklist ) {
+			$properties['site_blocklist'] = self::site_blocklist();
+		}
+
 		return array(
 			'type'                 => 'object',
 			'additionalProperties' => false,
 			'required'             => array( 'notice_control', 'windfonts' ),
+			'properties'           => $properties,
+		);
+	}
+
+	/**
+	 * L2 site blocklist object. Network-level; not in site overrides.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function site_blocklist(): array {
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'required'             => array( 'enabled', 'hosts' ),
+			'default'              => array(
+				'enabled' => true,
+				'hosts'   => array(),
+			),
 			'properties'           => array(
-				'notice_control' => array(
+				'enabled' => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
-				'windfonts'      => array(
-					'type'    => 'boolean',
-					'default' => false,
+				'hosts'   => array(
+					'type'     => 'array',
+					'maxItems' => 20,
+					'default'  => array(),
+					'items'    => array(
+						'type'                 => 'object',
+						'additionalProperties' => false,
+						'required'             => array( 'host', 'match' ),
+						'properties'           => array(
+							'host'  => array(
+								'type'      => 'string',
+								'minLength' => 1,
+								'maxLength' => 253,
+								'pattern'   => '^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$',
+							),
+							'match' => array(
+								'type'    => 'string',
+								'enum'    => array( 'exact', 'suffix' ),
+								'default' => 'exact',
+							),
+							'note'  => array(
+								'type'      => 'string',
+								'maxLength' => 200,
+								'default'   => '',
+							),
+						),
+					),
 				),
 			),
 		);

@@ -41,6 +41,29 @@
             }
         ]
     },
+    "protected_hosts": [
+        {
+            "host": "wenpai.net",
+            "match": "suffix"
+        },
+        {
+            "host": "wpcy.com",
+            "match": "suffix"
+        },
+        {
+            "host": "cravatar.cn",
+            "match": "suffix"
+        },
+        {
+            "host": "cravatar.com",
+            "match": "suffix"
+        },
+        {
+            "host": "admincdn.com",
+            "match": "suffix"
+        }
+    ],
+    "noise_block": [],
     "kid": "wpcy-ruleset-2026",
-    "signature": "1dLWpZw0F4D/+ZYxHWQc6q5Fp4CmTByF4bl0Q5zT72ZScqxyyunaZV9rwi4dzF5jsau90xyRH/EUBsgx9u7aAw=="
+    "signature": "W27N6IHczQraZOGP6hPMLBu2JSFFPs8FFtupXZAJUjoYIXrLtX0yigWHRkhjc5IXgtoFqydgwkWAp0A6RBkJDA=="
 }
