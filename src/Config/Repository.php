@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Config;
 
+use WenPai\ChinaYes\Privacy\SiteBlocklist\Repository as BlocklistRepository;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -113,6 +115,15 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		if ( ! $this->is_writable_path( $path ) ) {
 			$this->warn( 'Unknown config path discarded.', array( 'path' => $path ) );
 			return false;
+		}
+
+		if ( 'modules.site_blocklist' === $path ) {
+			$checked = ( new BlocklistRepository( $this ) )->validate( $value );
+			if ( ! is_array( $checked ) ) {
+				$this->warn( 'Site blocklist write rejected.', array( 'path' => $path ) );
+				return false;
+			}
+			$value = $checked;
 		}
 
 		if ( $this->is_multisite() && $this->is_override_path( $path ) ) {
@@ -267,12 +278,91 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		$clean = $this->validator->sanitize( $value, $option );
 		$this->emit_validator_warnings();
 
+		if ( ! $this->blocklist_write_allowed( $option, $value, $clean ) ) {
+			$this->warn( 'Site blocklist write rejected.', array( 'option' => $option ) );
+			return false;
+		}
+
 		if ( Schema::NETWORK_SETTINGS === $option ) {
 			return (bool) update_site_option( $option, $clean );
 		}
 
 		$autoload = Schema::SITE_IDENTITY === $option ? false : true;
 		return (bool) update_option( $option, $clean, $autoload );
+	}
+
+	/**
+	 * Refuse a changed modules.site_blocklist that contains an L0 host.
+	 *
+	 * Unchanged persisted rows (including already-stored L0 pollution) do not
+	 * block writes of other keys. Runtime still skips those rows.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string               $option   Option name.
+	 * @param array<string, mixed> $incoming Raw document before sanitize.
+	 * @param array<string, mixed> $clean    Sanitized document.
+	 */
+	private function blocklist_write_allowed( string $option, array $incoming, array $clean ): bool {
+		if ( ! isset( $incoming['modules'] ) || ! is_array( $incoming['modules'] ) ) {
+			return true;
+		}
+		if ( ! array_key_exists( 'site_blocklist', $incoming['modules'] ) ) {
+			return true;
+		}
+
+		$segment = isset( $clean['modules']['site_blocklist'] ) && is_array( $clean['modules']['site_blocklist'] )
+			? $clean['modules']['site_blocklist']
+			: $incoming['modules']['site_blocklist'];
+
+		$stored         = $this->load_option( $option );
+		$stored_segment = ( isset( $stored['modules'] ) && is_array( $stored['modules'] ) && isset( $stored['modules']['site_blocklist'] ) )
+			? $stored['modules']['site_blocklist']
+			: null;
+
+		if ( $this->blocklist_fingerprint( $stored_segment ) === $this->blocklist_fingerprint( $segment ) ) {
+			return true;
+		}
+
+		$checked = ( new BlocklistRepository( $this ) )->validate( $segment );
+
+		return is_array( $checked );
+	}
+
+	/**
+	 * Enabled + host/match rows, ignoring note and key order.
+	 *
+	 * @param mixed $raw Stored or incoming segment.
+	 * @return array{enabled: bool, hosts: list<string>}
+	 */
+	private function blocklist_fingerprint( $raw ): array {
+		$enabled = true;
+		$hosts   = array();
+		if ( is_array( $raw ) ) {
+			if ( array_key_exists( 'enabled', $raw ) ) {
+				$enabled = (bool) $raw['enabled'];
+			}
+			if ( isset( $raw['hosts'] ) && is_array( $raw['hosts'] ) ) {
+				foreach ( $raw['hosts'] as $row ) {
+					if ( ! is_array( $row ) ) {
+						continue;
+					}
+					$host = isset( $row['host'] ) && is_string( $row['host'] ) ? strtolower( $row['host'] ) : '';
+					if ( '' === $host ) {
+						continue;
+					}
+					$match   = isset( $row['match'] ) && is_string( $row['match'] ) && 'suffix' === $row['match']
+						? 'suffix'
+						: 'exact';
+					$hosts[] = $host . "\t" . $match;
+				}
+			}
+		}
+
+		return array(
+			'enabled' => $enabled,
+			'hosts'   => $hosts,
+		);
 	}
 
 	/**

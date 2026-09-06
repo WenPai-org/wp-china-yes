@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Config\Profile;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Config\Validator;
+use WenPai\ChinaYes\Privacy\SiteBlocklist\Repository as BlocklistRepository;
 use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -74,6 +75,11 @@ final class DocumentWriter {
 
 		if ( $this->schema_failed( $validator->warnings() ) ) {
 			return RestError::invalid_schema();
+		}
+
+		$blocked = $this->reject_protected_blocklist( $incoming, $clean );
+		if ( is_wp_error( $blocked ) ) {
+			return $blocked;
 		}
 
 		$this->repository->save_option( $option, $clean );
@@ -297,6 +303,43 @@ final class DocumentWriter {
 	 */
 	private function has_site_blocklist( array $incoming ): bool {
 		return isset( $incoming['modules'] ) && is_array( $incoming['modules'] ) && array_key_exists( 'site_blocklist', $incoming['modules'] );
+	}
+
+	/**
+	 * L0 hosts in modules.site_blocklist reject the whole PUT. Does not persist.
+	 *
+	 * Runs after sanitize so schema failures stay wpcy_invalid_schema.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<string, mixed> $incoming PUT body.
+	 * @param array<string, mixed> $clean    Sanitized merge.
+	 * @return WP_Error|null
+	 */
+	private function reject_protected_blocklist( array $incoming, array $clean ) {
+		if ( ! $this->has_site_blocklist( $incoming ) ) {
+			return null;
+		}
+
+		if ( ! isset( $clean['modules']['site_blocklist'] ) || ! is_array( $clean['modules']['site_blocklist'] ) ) {
+			return null;
+		}
+
+		$list    = new BlocklistRepository( $this->repository );
+		$checked = $list->validate( $clean['modules']['site_blocklist'] );
+		if ( ! is_wp_error( $checked ) ) {
+			return null;
+		}
+
+		if ( 'wpcy_blocklist_protected_host' === $checked->get_error_code() ) {
+			return RestError::make(
+				'wpcy_blocklist_protected_host',
+				$checked->get_error_message(),
+				400
+			);
+		}
+
+		return $checked;
 	}
 
 	/**
