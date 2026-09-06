@@ -79,6 +79,23 @@ feibisi 看过原型 E v5.4 后的反馈（原话要点）：
 | 规格 | `docs/specs/providers.md` + `rest-api.md` `/providers*` + `admin-ui-spec.md` SV 段 | 统筹 |
 | 实现 | M-PROVIDER-1（后端）+ M-UI-3（服务页） | Grok |
 
+## 统筹拍板（2026-09-06 23:30，据 R-PROVIDERS-0 研究稿 linuxjoy `docs/research/2026-09-06-wpbridge-providers-model.md`）
+
+研究结论：云桥的"供应商"= 管理员用邮箱 + 授权密钥连上的商店账户，凭据加密进独立 option，连接后经 WooCommerce API Manager 拉已购产品并接管已装插件的更新；它与叶子的匿名 `/binding`、与云桥自己的文派账户配对都**不是**同一套身份。据此把 D4 细化为下列拍板，写进 `docs/specs/providers.md`（ADR-005 第三步）：
+
+| # | 拍板 | 理由 |
+|---|---|---|
+| P1 | 供应商层是**独立**的 option 与 REST 命名空间：`wpcy_providers`（公开摘要，无密钥）+ `wpcy_secure_provider_{id}_license_key`（加密）+ `wpcy_provider_instance_{id}`；REST `/providers*`。**不**写进 `wpcy_settings`、`wpcy_site_identity`、`/binding` | 身份层（文派）与商店账户层分开；导出 / Site Health / 备份不带密钥 |
+| P2 | 预置 ID 只有 `weixiaoduo-mall`（可连）与 `wenpai-marketplace`（`coming_soon`，无表单无按钮，文案「即将开放」）；`api_url` 写死，用户不可改；不做自定义供应商 | D4；研究稿 6.2 / 6.3 |
+| P3 | 连接前置条件：`GET /binding` 为 `bound`；否则 403 `wpcy_provider_binding_required` | D4"先绑文派" |
+| P4 | 连接状态四值：`disconnected` / `connected` / `invalid`（远端否认密钥）/ `unreachable`（网络失败，保留 ≤ 72h 缓存，不清密钥） | 研究稿 6.1 四状态 |
+| P5 | 邮箱只存掩码（`a***@example.com`）与哈希，不存明文；密钥只在 `wpcy_secure_provider_*`，与 binding 同算法、不同派生 purpose；REST 任何响应不含密钥与完整邮箱；日志脱敏 `license_key` / `api_key` 与含它们的 URL | 云桥把邮箱明文放设置对象、密钥进 URL query 会进代理日志——叶子不照抄 |
+| P6 | 出站：HTTPS only、证书校验、拒内网目标；密钥优先走 POST body / header，若商城只接受 query 则规格写明并禁记完整 URL | 研究稿 6.3 |
+| P7 | 更新接通（4.0 最小）：仅对已购产品里能与本站已装插件目录**精确**匹配的 slug 接管更新（`pre_set_site_transient_update_plugins`），其余只展示；**不**搬 `AutoMatcher`、**不**做 `LicenseProxy` | 研究稿 6.1 末段、6.3 |
+| P8 | 多站点：一站一密钥，按子站 option；不做网络级共享 | 研究稿 6.3 |
+| P9 | 文派系插件（含叶子自己）的更新走 `wenpai-updater` + `plugin-registry` + 云桥服务端，与供应商商业更新是**两条链**，界面上分别叫"文派服务"与"供应商" | 研究稿 §5 |
+| P10 | 实现拆两步：**M-PROVIDER-1**（后端：option、REST、WC AM 客户端、更新接管、单元测试）→ **M-UI-3**（服务页 SV-11 / SV-12 接真实数据） | 与 M-STATS-1 / M-UI-1 同一套并行方式 |
+
 ## 对在途任务的影响
 
 - **M-UI-1 暂缓**：原型要出 v6（D2 / D3 / D6）并重新归档后才启动；任务书里所有 Phosphor 引用改 RemixIcon，Hero 规格改连通栈。

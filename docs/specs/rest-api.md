@@ -40,6 +40,7 @@
 | DELETE | `/binding` | 同上 | 撤销绑定 |
 | GET | `/entitlements` | 同上 | 全部权益与配额 |
 | GET | `/migration/report` | 同上 | 最近一次 3.x→4.0 迁移报告；无历史 `{ "status": "none" }` |
+| GET / POST / DELETE | `/providers`、`/providers/{id}/connect`、`/providers/{id}`、`/providers/{id}/test`、`/providers/{id}/products` | `manage_options` | 供应商层（薇晓朵商城 / 文派集市）。形状、状态与错误码见 [`providers.md`](providers.md)。任何响应不含密钥与完整邮箱 |
 | GET | `/stats` | 同上 | 本地计数：最近 N 天（默认 7）每个计数器的按日序列与合计、安装时间。概览"过去 7 天为你处理"与"已运行 N 天"的唯一数据源。见 §`/stats` |
 | GET | `/events` | 同上 | 本地事件日志最近 N 条（默认 20，上限 50）：线路切换、更新检查、迁移、场景变更。概览"最近动态"与诊断"记录"的唯一数据源。见 §`/events` |
 | POST | `/recovery` | 同上 | `{ "action": "disable_rewrites" \| "disable_modules" \| "exit" }` |
@@ -499,6 +500,11 @@ apps 专用码见 apps 规格 §5.5。此处列出跨端点码：
 | `wpcy_forbidden` | 403 | 能力不足或 nonce 无效 |
 | `wpcy_recovery_unknown_action` | 400 | `/recovery` 的 `action` 不是三个枚举值之一 |
 | `wpcy_binding_not_pending` | 409 | 公开挑战端点在非 pending / 已过期时被拉 |
+| `wpcy_provider_unknown` | 404 | `/providers/{id}` 的 id 不在预置枚举 |
+| `wpcy_provider_binding_required` | 403 | 未绑定文派即尝试连接供应商 |
+| `wpcy_provider_coming_soon` | 400 | 对 `coming_soon` 供应商发起连接 |
+| `wpcy_provider_not_connected` | 400 | 未连接即 `test` |
+| `wpcy_provider_unreachable` | 503 | 供应商远端不可达（连接 / 测试时） |
 | `wpcy_blocklist_protected_host` | 400 | `PUT /site-blocklist`、`PUT /settings`、`PUT /network-settings` 的某条 host 命中 L0 受保护主机 |
 | `wpcy_noise_block_blocked` | — | 噪声包命中；`pre_http_request` 返回该码，不落库 |
 
