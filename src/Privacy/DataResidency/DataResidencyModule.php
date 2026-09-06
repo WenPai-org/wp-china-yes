@@ -443,11 +443,16 @@ final class DataResidencyModule implements Module {
 	}
 
 	/**
-	 * User switch for the signed noise pack.
+	 * User switch for the signed noise pack. Off in recovery_mode.
+	 *
+	 * @since 4.0.0
 	 */
-	private function noise_enabled(): bool {
+	public function noise_enabled(): bool {
 		if ( ! $this->config instanceof Config ) {
 			return true;
+		}
+		if ( true === $this->config->get( 'recovery_mode', false ) ) {
+			return false;
 		}
 
 		return true === $this->config->get( 'modules.noise_block.enabled', true );

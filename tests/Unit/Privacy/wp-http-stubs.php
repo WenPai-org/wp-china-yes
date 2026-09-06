@@ -109,9 +109,13 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! isset( $GLOBALS['wpcy_privacy_filters'] ) || ! is_array( $GLOBALS['wpcy_privacy_filters'] ) ) {
+	$GLOBALS['wpcy_privacy_filters'] = array();
+}
+
 if ( ! function_exists( 'add_filter' ) ) {
 	/**
-	 * No-op filter registration.
+	 * Record filter registration with priority.
 	 *
 	 * @param string   $hook     Hook.
 	 * @param callable $callback Callback.
@@ -120,7 +124,12 @@ if ( ! function_exists( 'add_filter' ) ) {
 	 * @return true
 	 */
 	function add_filter( $hook, $callback, $priority = 10, $accepted = 1 ) {
-		unset( $hook, $callback, $priority, $accepted );
+		$GLOBALS['wpcy_privacy_filters'][] = array(
+			'hook'     => (string) $hook,
+			'callback' => $callback,
+			'priority' => (int) $priority,
+			'accepted' => (int) $accepted,
+		);
 		return true;
 	}
 }

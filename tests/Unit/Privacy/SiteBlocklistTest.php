@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Config\Repository as ConfigRepository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Core\Environment;
+use WenPai\ChinaYes\Core\Logger;
+use WenPai\ChinaYes\Core\ModuleRegistry;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
 use WenPai\ChinaYes\Privacy\SiteBlocklist\Repository;
 use WenPai\ChinaYes\Privacy\SiteBlocklist\SiteBlocklistModule;
@@ -36,6 +38,7 @@ class SiteBlocklistTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		OptionStore::reset();
+		$GLOBALS['wpcy_privacy_filters'] = array();
 	}
 
 	/**
@@ -180,6 +183,77 @@ class SiteBlocklistTest extends TestCase {
 		$config                                   = new ConfigRepository();
 		$module                                   = new SiteBlocklistModule( $config, null, $this->unsigned_ruleset() );
 		$this->assertFalse( $module->enabled( $config, $env ) );
+
+		$registry = new ModuleRegistry(
+			$config,
+			$env,
+			new Logger(
+				'error',
+				static function (): void {
+				}
+			)
+		);
+		$registry->add( $module );
+		$registry->boot( $env->context() );
+		$this->assertSame( array(), $GLOBALS['wpcy_privacy_filters'] );
+	}
+
+	/**
+	 * Config::set of an L0 host does not persist.
+	 */
+	public function test_config_set_rejects_protected_host() {
+		$config = new ConfigRepository();
+		$before = isset( OptionStore::$options[ Schema::SETTINGS ] ) ? OptionStore::$options[ Schema::SETTINGS ] : null;
+		$ok     = $config->set(
+			'modules.site_blocklist',
+			array(
+				'enabled' => true,
+				'hosts'   => array(
+					array(
+						'host'  => 'api.wenpai.net',
+						'match' => 'exact',
+					),
+				),
+			)
+		);
+		$this->assertFalse( $ok );
+		$after = isset( OptionStore::$options[ Schema::SETTINGS ] ) ? OptionStore::$options[ Schema::SETTINGS ] : null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * Note maxLength is 200 UTF-8 characters, not bytes.
+	 */
+	public function test_note_max_length_is_utf8_characters() {
+		$list = new Repository( new ConfigRepository(), $this->unsigned_ruleset() );
+		$ok   = $list->validate(
+			array(
+				'enabled' => true,
+				'hosts'   => array(
+					array(
+						'host'  => 'tracker.example.com',
+						'match' => 'exact',
+						'note'  => str_repeat( '文', 200 ),
+					),
+				),
+			)
+		);
+		$this->assertIsArray( $ok );
+
+		$fail = $list->validate(
+			array(
+				'enabled' => true,
+				'hosts'   => array(
+					array(
+						'host'  => 'tracker.example.com',
+						'match' => 'exact',
+						'note'  => str_repeat( '文', 201 ),
+					),
+				),
+			)
+		);
+		$this->assertInstanceOf( WP_Error::class, $fail );
+		$this->assertSame( 'wpcy_invalid_schema', $fail->get_error_code() );
 	}
 
 	/**

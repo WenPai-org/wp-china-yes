@@ -37,6 +37,7 @@ class LayerOrderTest extends TestCase {
 		OptionStore::reset();
 		$GLOBALS['wpcy_privacy_remote_urls'] = array();
 		$GLOBALS['wpcy_privacy_remote_args'] = array();
+		$GLOBALS['wpcy_privacy_filters']     = array();
 	}
 
 	/**
@@ -111,6 +112,60 @@ class LayerOrderTest extends TestCase {
 			$out = $l1->filter_pre_http_request( $out, array(), 'https://api.wenpai.net/v1' );
 			$out = $l1->filter_noise_block( $out, array(), 'https://api.wenpai.net/v1' );
 
+			$this->assertFalse( $out );
+		} finally {
+			unlink( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- temp ruleset.
+		}
+	}
+
+	/**
+	 * Hook priorities: L0 at 5, L1 at 10, noise at 12, L2 at 15.
+	 */
+	public function test_register_priorities_are_l0_5_l1_10_noise_12_l2_15() {
+		$l1 = $this->l1( false );
+		$l2 = $this->l2();
+		$l1->register();
+		$l2->register();
+
+		$priorities = array();
+		foreach ( $GLOBALS['wpcy_privacy_filters'] as $row ) {
+			if ( 'pre_http_request' !== $row['hook'] || ! is_array( $row['callback'] ) ) {
+				continue;
+			}
+			$object = $row['callback'][0];
+			$method = $row['callback'][1];
+			if ( ! is_object( $object ) || ! is_string( $method ) ) {
+				continue;
+			}
+			$priorities[ get_class( $object ) . '::' . $method ] = $row['priority'];
+		}
+
+		$this->assertSame( 5, $priorities[ DataResidencyModule::class . '::filter_l0' ] );
+		$this->assertSame( 10, $priorities[ DataResidencyModule::class . '::filter_pre_http_request' ] );
+		$this->assertSame( 12, $priorities[ DataResidencyModule::class . '::filter_noise_block' ] );
+		$this->assertSame( 15, $priorities[ SiteBlocklistModule::class . '::filter_pre_http_request' ] );
+	}
+
+	/**
+	 * Recovery mode turns the noise pack off even when the user switch is on.
+	 */
+	public function test_recovery_mode_disables_noise() {
+		$path = $this->write_ruleset_with_noise( 'heartbeat.license.example' );
+		try {
+			OptionStore::$options[ Schema::SETTINGS ] = array(
+				'schema_version' => 2,
+				'recovery_mode'  => true,
+				'modules'        => array(
+					'noise_block' => array(
+						'enabled' => true,
+					),
+				),
+			);
+			$ruleset                                  = new Ruleset( $path, null, false );
+			$l1                                       = new DataResidencyModule( $ruleset, false, new ConfigRepository() );
+
+			$this->assertFalse( $l1->noise_enabled() );
+			$out = $l1->filter_noise_block( false, array(), 'https://heartbeat.license.example/ping' );
 			$this->assertFalse( $out );
 		} finally {
 			unlink( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- temp ruleset.

@@ -227,7 +227,13 @@ final class Repository {
 
 		$note = '';
 		if ( isset( $row['note'] ) ) {
-			if ( ! is_string( $row['note'] ) || strlen( $row['note'] ) > 200 ) {
+			if ( ! is_string( $row['note'] ) ) {
+				return $this->invalid_schema();
+			}
+			$length = function_exists( 'mb_strlen' )
+				? mb_strlen( $row['note'], 'UTF-8' )
+				: strlen( $row['note'] );
+			if ( $length > 200 ) {
 				return $this->invalid_schema();
 			}
 			$note = $row['note'];

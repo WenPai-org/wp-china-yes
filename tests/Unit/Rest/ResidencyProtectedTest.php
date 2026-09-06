@@ -91,6 +91,23 @@ class ResidencyProtectedTest extends TestCase {
 	}
 
 	/**
+	 * Ingest not ready does not report reroute; action is the actual allow and detail keeps enabled_when.
+	 */
+	public function test_residency_test_ingest_not_ready_falls_through() {
+		$ruleset    = new Ruleset( null, null, false );
+		$config     = new Repository();
+		$module     = new DataResidencyModule( $ruleset, false, $config );
+		$layers     = new OutboundLayers( $config, $ruleset, new BlocklistRepository( $config, $ruleset ), $module );
+		$controller = new ResidencyController( $module, $layers );
+		$data       = $controller->test_url( $this->url_request( 'https://tracking.woocommerce.com/v1' ) );
+		$body       = $data->get_data();
+		$this->assertSame( 'l1', $body['layer'] );
+		$this->assertSame( 'allow', $body['action'] );
+		$this->assertSame( 'ingest_ready', $body['detail']['enabled_when'] );
+		$this->assertSame( 'A', $body['detail']['tier'] );
+	}
+
+	/**
 	 * POST /residency/test L2 block.
 	 */
 	public function test_residency_test_l2_block() {

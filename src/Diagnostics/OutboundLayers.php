@@ -25,13 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class OutboundLayers {
 
 	/**
-	 * Settings.
-	 *
-	 * @var ConfigRepository
-	 */
-	private ConfigRepository $config;
-
-	/**
 	 * Host table.
 	 *
 	 * @var Ruleset
@@ -63,7 +56,6 @@ final class OutboundLayers {
 	 * @param DataResidencyModule|null $residency  L1 module.
 	 */
 	public function __construct( ConfigRepository $config, $ruleset = null, $blocklist = null, $residency = null ) {
-		$this->config    = $config;
 		$this->ruleset   = $ruleset instanceof Ruleset ? $ruleset : new Ruleset();
 		$this->blocklist = $blocklist instanceof BlocklistRepository
 			? $blocklist
@@ -82,7 +74,7 @@ final class OutboundLayers {
 	 */
 	public function snapshot(): array {
 		$l2          = $this->blocklist->get();
-		$noise_on    = true === $this->config->get( 'modules.noise_block.enabled', true );
+		$noise_on    = $this->residency->noise_enabled();
 		$noise_hosts = array();
 		foreach ( $this->ruleset->noise_hosts() as $row ) {
 			$noise_hosts[] = array(
@@ -138,12 +130,9 @@ final class OutboundLayers {
 			if ( 'reroute' === $action && $this->residency->reroute_enabled( $l1 ) ) {
 				return $this->result( $url, $host, 'l1', 'reroute', $detail );
 			}
-			if ( 'reroute' === $action ) {
-				return $this->result( $url, $host, 'l1', 'reroute', $detail );
-			}
 		}
 
-		if ( true === $this->config->get( 'modules.noise_block.enabled', true ) ) {
+		if ( $this->residency->noise_enabled() ) {
 			$noise = $this->ruleset->noise_match( $host );
 			if ( is_array( $noise ) && empty( $noise['skipped'] ) ) {
 				return $this->result(
@@ -166,6 +155,10 @@ final class OutboundLayers {
 
 		if ( is_array( $l1 ) ) {
 			$action = isset( $l1['action'] ) && is_string( $l1['action'] ) ? $l1['action'] : 'ignore';
+			if ( 'reroute' === $action && ! $this->residency->reroute_enabled( $l1 ) ) {
+				$action = 'allow';
+			}
+
 			return $this->result( $url, $host, 'l1', $action, $this->l1_detail( $l1 ) );
 		}
 
