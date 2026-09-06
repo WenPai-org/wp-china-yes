@@ -5,10 +5,11 @@
 
 先读：`docs/4.0-rewrite-plan.md` → `docs/architecture/adr-00[123]*.md` → `docs/dev/coding-standards.md` → `docs/dev/agents.md` → 本任务对应的 `docs/specs/*`。
 
+> **接手先读**：`HANDOFF-2026-09-06.md`（会话交接：状态、决定、在跑任务、工作流、下一步）。
+
 ## 0. 工作方式（不变量）
 
 - 分支：每个任务一个 worktree，分支 `grok/<task-id>`（或 `codex/<task-id>`），基于 `main` 最新。**不 push `main`**，统筹合并。
-- 外部插件功能并入按 [ADR-005](../architecture/adr-005-feature-absorption.md) 四步流程。
 - 一个任务 = 一个 PR 大小（≤ 1500 行 diff 为宜）。大了拆。
 - 报告格式见 `docs/dev/agents.md`：`git diff --stat`、每条验收命令与输出、没做/做不到/有疑问、提交哈希。
 - 任何"收不收数据 / 默认开不开 / 删不删功能"的判断不在任务里做；对照 `docs/4.0-rewrite-plan.md` §12，不符就停并写进报告。
@@ -89,9 +90,6 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | M4-02 ✅ | 升级矩阵（`tasks/M4-02.md`）。**已合入**（2026-09-06；Studio 真机 3.8/3.9.3→4.0→停用→装回全过；CI run 34019965572；产品决定：3.8 `admincdn` 键存在即按 token 推导 `public_assets`，空则 `[]`；矩阵 `verification/m4-upgrade-matrix-2026-09-06.md`；报告 `reports/M4-02*`） | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
 | M-UI-0 | 产品化后端前置（`tasks/M-UI-0.md`）：`/residency/*` 与 `/migration/report` REST、索引 `unconfigured` 态、面向用户错误串中文化、恢复页 title | M4-02 | 不改 `src/Admin/app/` | 见任务书 | `composer check` + CI 全绿；DoD |
 | M-UI-1… | 产品化 UI（原型定稿后拆；`docs/dev/design-sop.md` 门禁） | M-UI-0、原型认可 | — | 待写 | 三层验收 |
-| M-ABSORB-0 ✅ | 外部插件并入规范文档（ADR-005、插槽、L0/L2/噪声包规格、任务书） | 决定已定稿 | — | `docs/architecture/adr-005-feature-absorption.md`；specs 增量；`tasks/M-BLOCK-1.md` / `M-BLOCK-UI.md` | 纯文档；不改 `src/` / `tests/` |
-| M-BLOCK-1 | 出站三层引擎（L0 Ruleset + SiteBlocklist + 噪声包 + 三个 REST） | M-SCOPE-1 合入 | — | 见 `tasks/M-BLOCK-1.md` | 不改 `src/Admin/app/`；CI 全绿；DoD |
-| M-BLOCK-UI | 本站拦截清单与出站三层 — 需求说明（非任务书） | M-BLOCK-1、设计门禁 | — | `tasks/M-BLOCK-UI.md` | 随 M-UI；无认可不得写界面代码 |
 | M4-03 | RC 与文档（`tasks/M4-03.md`） | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧） |
 | M4-04 | 发版（`tasks/M4-04.md`） | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |
 
