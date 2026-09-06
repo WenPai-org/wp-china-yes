@@ -194,6 +194,21 @@ if ( ! function_exists( 'remove_meta_box' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_current_screen' ) ) {
+	/**
+	 * Fake current admin screen, or null.
+	 *
+	 * @return object|null
+	 */
+	function get_current_screen() {
+		if ( null === HookStore::$screen_base ) {
+			return null;
+		}
+
+		return (object) array( 'base' => HookStore::$screen_base );
+	}
+}
+
 if ( ! function_exists( 'apply_filters_deprecated' ) ) {
 	/**
 	 * Pass the first extra argument through (WordPress deprecated-filter stand-in).

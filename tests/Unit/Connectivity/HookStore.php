@@ -43,6 +43,13 @@ final class HookStore {
 	public static $removed_boxes = array();
 
 	/**
+	 * Fake get_current_screen()->base, or null.
+	 *
+	 * @var string|null
+	 */
+	public static $screen_base = null;
+
+	/**
 	 * Reset bags.
 	 */
 	public static function reset(): void {
@@ -50,5 +57,6 @@ final class HookStore {
 		self::$transients    = array();
 		self::$deregistered  = array();
 		self::$removed_boxes = array();
+		self::$screen_base   = null;
 	}
 }

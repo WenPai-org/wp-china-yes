@@ -174,32 +174,6 @@ class WhitelistTest extends TestCase {
 	}
 
 	/**
-	 * Exhausted entitlement keeps origin URLs.
-	 */
-	public function test_keeps_origin_when_entitlement_exhausted() {
-		$config = new MapConfig(
-			array(
-				'connectivity.public_assets' => array(
-					'items' => array( 'jsdelivr' ),
-					'scope' => 'both',
-				),
-				'recovery_mode'              => false,
-			)
-		);
-		$module = new PublicAssetsModule(
-			$config,
-			new AssetMap(),
-			new MirrorHealth( array( 'jsd.admincdn.com' => true ) ),
-			static function () {
-				return false;
-			}
-		);
-		$origin = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
-
-		$this->assertSame( $origin, $module->rewrite( $origin ) );
-	}
-
-	/**
 	 * Empty public_assets disables the module.
 	 */
 	public function test_enabled_false_when_list_empty() {

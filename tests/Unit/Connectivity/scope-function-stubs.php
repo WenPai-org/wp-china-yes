@@ -71,3 +71,15 @@ if ( ! function_exists( 'wp_unslash' ) ) {
 		return $value;
 	}
 }
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * Identity text sanitize for unit tests.
+	 *
+	 * @param mixed $value Value.
+	 * @return string
+	 */
+	function sanitize_text_field( $value ) {
+		return is_scalar( $value ) ? (string) $value : '';
+	}
+}

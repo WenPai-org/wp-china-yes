@@ -49,12 +49,22 @@ class HeartbeatModuleTest extends TestCase {
 		$module->on_admin_enqueue_scripts( 'index.php' );
 		$this->assertContains( 'heartbeat', HookStore::$deregistered );
 
-		$module->on_admin_enqueue_scripts( 'post.php' );
-		$out = $module->filter_heartbeat_settings( array( 'interval' => 15 ) );
+		HookStore::$screen_base = 'post.php';
+		$out                    = $module->filter_heartbeat_settings( array( 'interval' => 15 ) );
 		$this->assertSame( 60, $out['interval'] );
 
-		$module->on_admin_enqueue_scripts( 'post-new.php' );
-		$out = $module->filter_heartbeat_settings( array( 'interval' => 15 ) );
+		HookStore::$screen_base = 'post-new.php';
+		$out                    = $module->filter_heartbeat_settings( array( 'interval' => 15 ) );
+		$this->assertSame( 60, $out['interval'] );
+	}
+
+	/**
+	 * Editor interval is 60 from get_current_screen without enqueue first.
+	 */
+	public function test_editor_interval_from_screen_without_enqueue() {
+		$module                 = $this->module( 'on' );
+		HookStore::$screen_base = 'post.php';
+		$out                    = $module->filter_heartbeat_settings( array( 'interval' => 15 ) );
 		$this->assertSame( 60, $out['interval'] );
 	}
 

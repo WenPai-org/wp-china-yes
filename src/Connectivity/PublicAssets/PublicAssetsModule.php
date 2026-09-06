@@ -47,30 +47,18 @@ final class PublicAssetsModule implements ConditionalModule {
 	private MirrorHealth $health;
 
 	/**
-	 * Optional entitlement gate. Null means apply_filters default true
-	 * (no entitlements client yet: unbound still rewrites).
-	 *
-	 * Callable is not a valid PHP 7.4 property type.
-	 *
-	 * @var callable|null
-	 */
-	private $entitlement_allows;
-
-	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Config        $config             Config read model.
-	 * @param AssetMap      $map                Whitelist table.
-	 * @param MirrorHealth  $health             Node health.
-	 * @param callable|null $entitlement_allows `fn(): bool`; false keeps origin URLs.
+	 * @param Config       $config Config read model.
+	 * @param AssetMap     $map    Whitelist table.
+	 * @param MirrorHealth $health Node health.
 	 */
-	public function __construct( Config $config, AssetMap $map, MirrorHealth $health, ?callable $entitlement_allows = null ) {
-		$this->config             = $config;
-		$this->map                = $map;
-		$this->health             = $health;
-		$this->entitlement_allows = $entitlement_allows;
+	public function __construct( Config $config, AssetMap $map, MirrorHealth $health ) {
+		$this->config = $config;
+		$this->map    = $map;
+		$this->health = $health;
 	}
 
 	/**
@@ -151,7 +139,9 @@ final class PublicAssetsModule implements ConditionalModule {
 	}
 
 	/**
-	 * Rewrite a single URL. Off-whitelist, down node, or exhausted quota → origin.
+	 * Rewrite a single URL. Off-whitelist or down node → origin.
+	 *
+	 * Connectivity rewrites are free; this module does not consult entitlements.
 	 *
 	 * @since 4.0.0
 	 *
@@ -170,10 +160,6 @@ final class PublicAssetsModule implements ConditionalModule {
 		}
 
 		if ( ! $this->health->is_healthy( MirrorHealth::host_of( $mapped ) ) ) {
-			return $src;
-		}
-
-		if ( ! $this->entitlement_allows() ) {
 			return $src;
 		}
 
@@ -230,23 +216,6 @@ final class PublicAssetsModule implements ConditionalModule {
 		}
 
 		return $scope === Scope::current();
-	}
-
-	/**
-	 * Limited-free adminCDN: exhausted / denied → keep origin. Default allow.
-	 *
-	 * @since 4.0.0
-	 */
-	private function entitlement_allows(): bool {
-		if ( is_callable( $this->entitlement_allows ) ) {
-			return (bool) call_user_func( $this->entitlement_allows );
-		}
-
-		if ( function_exists( 'apply_filters' ) ) {
-			return (bool) apply_filters( 'wpcy_entitlement_allows', true, 'admincdn' );
-		}
-
-		return true;
 	}
 
 	/**

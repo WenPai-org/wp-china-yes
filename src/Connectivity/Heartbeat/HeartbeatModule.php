@@ -128,6 +128,9 @@ final class HeartbeatModule implements ConditionalModule {
 	/**
 	 * Editor screens (classic and block) use a 60-second interval.
 	 *
+	 * Reads $GLOBALS['pagenow'] because heartbeat_settings often runs during
+	 * wp_default_scripts, before admin_enqueue_scripts sets hook_suffix.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @param mixed $settings Heartbeat settings.
@@ -138,10 +141,34 @@ final class HeartbeatModule implements ConditionalModule {
 			return $settings;
 		}
 
-		if ( in_array( $this->hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+		if ( $this->is_editor_screen() ) {
 			$settings['interval'] = 60;
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * Whether the current admin screen is the post editor.
+	 *
+	 * @since 4.0.0
+	 */
+	private function is_editor_screen(): bool {
+		$pages = array( 'post.php', 'post-new.php' );
+
+		if ( isset( $GLOBALS['pagenow'] ) && is_string( $GLOBALS['pagenow'] )
+			&& in_array( $GLOBALS['pagenow'], $pages, true )
+		) {
+			return true;
+		}
+
+		if ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( is_object( $screen ) && in_array( (string) $screen->base, $pages, true ) ) {
+				return true;
+			}
+		}
+
+		return in_array( $this->hook_suffix, $pages, true );
 	}
 }

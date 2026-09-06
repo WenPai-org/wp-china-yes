@@ -70,10 +70,8 @@ final class Scope {
 	 */
 	private static function rest_from_wp_admin(): bool {
 		$nonce = '';
-		if ( isset( $_SERVER['HTTP_X_WP_NONCE'] ) && is_string( $_SERVER['HTTP_X_WP_NONCE'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified below.
-			$nonce = function_exists( 'wp_unslash' )
-				? wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified below.
-				: (string) $_SERVER['HTTP_X_WP_NONCE']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified below.
+		if ( isset( $_SERVER['HTTP_X_WP_NONCE'] ) && is_string( $_SERVER['HTTP_X_WP_NONCE'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) );
 		}
 
 		if ( '' === $nonce ) {
