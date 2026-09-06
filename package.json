@@ -17,7 +17,8 @@
 		"env:start": "wp-env start",
 		"env:stop": "wp-env stop",
 		"test:wordpress": "bash tests/wordpress-smoke.sh",
-		"test:e2e": "playwright test --config=tests/e2e/playwright.config.js"
+		"test:e2e": "playwright test --config=tests/e2e/playwright.config.js",
+		"visual": "playwright test --config=tests/visual/playwright.config.js"
 	},
 	"dependencies": {
 		"@wordpress/admin-ui": "^2.9.0",
