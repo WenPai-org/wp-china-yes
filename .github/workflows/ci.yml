@@ -80,6 +80,10 @@ jobs:
             echo 'Release archive missing build/ JavaScript.' >&2
             exit 1
           fi
+          if printf '%s\n' "$LIST" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
+            echo 'Release archive contains deleted 3.x paths.' >&2
+            exit 1
+          fi
           test -f dist/wp-china-yes-*.zip.sha256
           FILE_HASH="$(awk '{print $1}' dist/wp-china-yes-*.zip.sha256)"
           SUM_HASH="$(sha256sum dist/wp-china-yes-*.zip | awk '{print $1}')"
