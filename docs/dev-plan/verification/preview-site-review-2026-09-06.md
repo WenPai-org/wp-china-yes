@@ -130,3 +130,112 @@
 - `debug.log` 里另有一条 Fatal，是本次误跑 `ModuleRegistry::all()` 的 WP-CLI eval，不是站点运行时错误。
 - Studio `fileAccess` 是「站点目录」不是 `all-files`。插件是 rsync 进站内的，不是 symlink，所以能加载。
 - 有疑问：任务预期小工具页会显示「索引不可达」；当前实现空索引 = `ok`，负责人会看到「绑定后显示」而不是那条琥珀提示。
+
+
+---
+
+# 第二次走查（同日，含演示数据灌入：3.8 option 迁移、演示绑定态、mock 小工具）
+
+> 注意：预览站里的"已绑定"是直接写入 wpcy_site_identity 的演示数据，不是真绑定；权益表为空（无生产 license-server）。新增缺口：空索引源被记为 ok（永不出"不可达"）；迁移报告只在 CLI/option，诊断页看不到。
+
+先核对站点现状和 Studio CLI 用法，再按步骤配 4.0 预览站。Studio CLI 还在跑，先读配置和设计文档，等 status 回来再动手。站点在线，`WPCY_KERNEL` 已是 `v4`。接着查插件、语言和站点名。上一步已把常量、插件、语言和站名配好。接下来跑 `wp wpcy status` 并核对 HTTP。内核已是 v4，诊断目标全 `ok`。接着核 URL、REST 和模块列表。REST 命名空间已挂上。接着取站点在线：WP 7.1、PHP 8.2。接下来生成�预览站已经能打开：http://localhost:8890 ，后台左侧有「文派叶子」四个子页，内核是 v4。上一步中断前，常量、�登录成功，站点已是中文。接着逐页打后台并看 debug.log。默认 REST 已确认：`/apps` 是空列表且 `index_status=ok`。接下来写 3.8 option、跑迁移，并灌演示数据。预览站已经能打开看：浏览器进 `http://localhost:8890/wp-admin/`，账号 `admin` / `wpcy-preview`。左侧菜单「文派叶子」就是 4.0 后台。
+
+## 1. 站点事实
+
+| 项 | 值 |
+|---|---|
+| URL | `http://localhost:8890/` |
+| 后台 | `http://localhost:8890/wp-admin/` |
+| 免登（Studio） | `http://localhost:8890/studio-auto-login?redirect_to=%2Fwp-admin%2F` |
+| 账号 / 密码 | `admin` / `wpcy-preview` |
+| 站名 | `WPCY 4.0 预览站` |
+| 语言 | `zh_CN`（页面 `lang="zh-Hans"`） |
+| WordPress | 7.1 |
+| PHP | 8.2（Studio 原生运行时） |
+| `WPCY_KERNEL` | `v4`（`wp-config.php`） |
+| 插件列表显示版本 | **3.9.3**（包头 `Version` / `CHINA_YES_VERSION` 仍是 3.9.3，内核已是 v4） |
+| `wp wpcy status` | `{"kernel":"v4","recovery_mode":false,...}` 七条镜像探测均为 `ok` |
+
+激活、中文包、站名这三项原先就已经是目标状态，本次又写了一遍，结果是 already active / already installed / unchanged。
+
+## 2. 导览表
+
+登录后看左侧 **文派叶子**（概览 / 连接优化 / 文派服务 / 诊断）。3.x 的 `options-general.php?page=wp-china-yes` 在 v4 下 **403**，不要走那条。
+
+| 看什么 | 打开哪个 URL | 期望看到 | 本次实测 |
+|---|---|---|---|
+| 概览 | http://localhost:8890/wp-admin/admin.php?page=wpcy | React 壳 `#wpcy-admin-root`；WordPress.org / 公共库卡片；公告最多 5 条 | **200**，mount 点在。公告已灌 5 条（文派茶馆 / 薇晓朵）。探测数据来自 REST `/diagnostics`，七条均为 `ok` |
+| 连接优化 · WordPress.org 源 | http://localhost:8890/wp-admin/admin.php?page=wpcy-connect | 单选：自动 / 关闭 | **200**。迁移后当前是 **关闭**（3.8 `store=off` → `wordpress_org=off`） |
+| 连接优化 · 公共前端库 | 同上 | Google Fonts / Ajax / CDNJS / jsDelivr / Emoji 勾选 + 状态点 | **200**。五项全开。旁路状态点读上次诊断 |
+| 连接优化 · 头像 | 同上 | Cravatar 中国 / 国际 / WeAvatar / 关闭 | **200**。当前 **Cravatar 中国** |
+| 连接优化 · Windfonts | 同上，分组「字体」 | 开关，说明「绑定后可用配额」 | **200**。开关 **开**（3.8 `windfonts=optimize`）。字体列表空（fixture 的 `windfonts_list` 为空） |
+| 连通性 / 镜像健康 | 概览卡片，或诊断默认 tab | 国内镜像正常 / 已回原始上游 / 不可用 | REST `/diagnostics` 七条 `ok`，延迟 136–238 ms。点诊断页「立即检查」会再跑一遍 |
+| 诊断 · 连接检查 | http://localhost:8890/wp-admin/admin.php?page=wpcy-diagnose | 目标 / 结果 / 延迟 / 最近检查表 | **200**。默认 tab `connect` |
+| 诊断 · 被隐藏的通知 | 同上 `#/tab=notices` | 表；空态「暂无被隐藏的通知。」；说明核心/安全/站点健康永不隐藏 | **200**。已灌 2 行演示：`woocommerce / woo-connect-promo ×12`、`acme-seo / acme-dashboard-banner ×3` |
+| 诊断 · 出站主机记录 | 同上 `#/tab=hosts` | 「主机表由文派发布，用户不可编辑」+ 空表「暂无出站主机记录。」 | **200**。此 tab 是空表占位，没有真实主机数据 |
+| 诊断 · 数据与恢复 | 同上 `#/tab=data` | 「进入恢复模式」按钮 | **200**。只有跳转恢复页的按钮，**没有**迁移报告 UI |
+| Site Health | http://localhost:8890/wp-admin/site-health.php?tab=debug | 信息页手风琴「文派叶子」 | **200**。区块在，字段为 `api.wenpai.net` 等七条 `ok · N ms · 时间`。复制调试信息里键名被去掉点（`apiwenpainet`） |
+| 通知控制 | 诊断 `#/tab=notices`；设置项在 `modules.notice_control` | 无独立菜单。规则来自远端 JSON，本包 `PRODUCTION_URL` 为空 | 模块默认关生产拉取。演示日志是本地 `wpcy_notice_control_log`。3.8 迁移曾把该项写成 `false`（`adblock=off`），为让该 tab 的 REST 还在，已 PUT 回 `true` |
+| 公告 | 概览页下部 | 最多 5 条，可关闭 | REST `/announcements` **200**，5 条。第 6 条 fixture 按设计被裁掉。生产源默认空，不拉 `wpcy.com` |
+| 服务与绑定 | http://localhost:8890/wp-admin/admin.php?page=wpcy-services | 站点绑定卡片 + 权益配额表 | **200**。绑定被写成本地演示 `bound`（hash `previewlocalwpcy40hash0001`），**不是**文派账号真绑定。`/entitlements` 200 且列表空（没有许可证服务器） |
+| 小工具容器 | 文派服务页「小工具」 | 未绑定：「绑定后显示」。索引失败：琥珀 Notice「小工具目录暂时不可用」（文案不是「索引不可达」） | 默认：`{"apps":[],"index_status":"ok"}`（生产索引未启用，**不会**出琥珀条）。缓存写成 `unreachable` 且列表非空时，REST 返回 `index_status=unreachable`。现已挂本地 mock「站点体检」，`index_status=ok`。点卡片应出 iframe 沙箱，源 `http://localhost:8890/wp-content/uploads/wpcy-mock-app/index.html`（静态 **200**） |
+| 迁移报告 | CLI；设置页可对照迁移后的值 | `wp wpcy migrate --dry-run` / 真跑 JSON：kept / ignored / reasons | dry-run 与 execute 均成功。kept：`store, cravatar, windfonts, adblock`。备份 option `wpcy_migration_backup`：`from_version=3.x`，`migrated_at=2026-09-06T04:16:05Z`。诊断页看不到这份报告 |
+| 恢复页 | http://localhost:8890/wp-admin/?page=wpcy-recovery 或 `admin.php?page=wpcy-recovery` | 无 JS；「关闭全部 URL 改写」「停用全部模块」；链回概览 | 两 URL 都 **200**，h1「文派叶子 · 恢复模式」。**浏览器标题为空**（`<title> ‹ WPCY 4.0 预览站`） |
+| WP-CLI 子命令 | 站点目录下 `studio-cli.sh wp wpcy --help` | `status` / `doctor` / `config` / `migrate` | 实测有：`status`、`doctor`、`config export\|import`、`migrate [--dry-run] [--rollback]`。`wp wpcy config` 还列出 `export_document` / `import_document`（类的 public 方法漏进 CLI） |
+
+REST 命名空间 `GET http://localhost:8890/?rest_route=/wpcy/v1` **200**，带 `X-WPCY-Request-Id`。带 cookie + `X-WP-Nonce` 抽查：
+
+- `GET /wpcy/v1/settings` 200
+- `GET /wpcy/v1/diagnostics` 200
+- `GET /wpcy/v1/binding` 200
+- 另外 `/apps`、`/announcements`、`/entitlements`、`/notice-control/hidden` 在模块启用时也是 200
+
+## 3. 实测问题（未改插件）
+
+后台四个 React 页、恢复页、Site Health **没有 500 / 白屏 / PHP Fatal**。`WP_DEBUG` + `WP_DEBUG_LOG` 已开，`WP_DEBUG_DISPLAY` 仍为 false，浏览器里看不到这些 notice。
+
+**恢复页空标题 + Deprecated**（每次打开恢复页写一条）：
+
+```
+PHP Deprecated:  strip_tags(): Passing null to parameter #1 ($string) of type string is deprecated in .../wp-admin/admin-header.php on line 41
+```
+
+对应 HTML：`<title> &lsaquo; WPCY 4.0 预览站 — WordPress</title>`。`add_submenu_page( null, ...)` 的隐藏页拿不到 admin title。
+
+**翻译加载过早**（WP-CLI / 部分请求，WP 6.7+ doing_it_wrong）：
+
+```
+PHP Notice:  Function _load_textdomain_just_in_time was called incorrectly. Translation loading for the wp-china-yes domain was triggered too early. ... (This message was added in version 6.7.0.) in .../wp-includes/functions.php on line 6260
+```
+
+**debug.log 里有一条 CLI eval Fatal**（不是后台页面，堆栈是 `eval()'d code`）：
+
+```
+PHP Fatal error:  Uncaught Error: Call to undefined method WenPai\ChinaYes\Core\ModuleRegistry::all() in phar://.../Eval_Command.php(39) : eval()'d code:1
+```
+
+时间 2026-09-06 04:05:20 UTC。本次对 admin.php / REST 的访问没有再打出这条。
+
+**其它产品可见不一致：**
+
+- 插件页写「3.9.3 版本」，React bootstrap 的 `pluginVersion` 也是 `3.9.3`，内核已是 v4。
+- Site Health「复制站点信息」里 WPCY 字段键被去掉点：`apiwenpainet` 而不是 `api.wenpai.net`。手风琴表格本身显示正常。
+- 3.x 设置 URL `options-general.php?page=wp-china-yes` → **403**（v4 不注册 CSF 菜单）。
+
+## 4. 没做 / 做不到 / 有疑问
+
+- **生产小工具索引默认不拉。** `AppsModule` 里 `wpcy_apps_index_source` 默认空字符串，所以空目录时 `index_status` 是 `ok` 而不是 `unreachable`，页面不会出琥珀条。文案实际是「小工具目录暂时不可用」。
+- **空列表无法把 `unreachable` 保住。** `Index::apps()` 把空缓存当 miss，空 source 的 `refresh()` 会把状态写回 `ok`。要让 REST 返回 `unreachable`，缓存里必须至少有一条 app。有疑问：这是设计还是漏了。
+- **真绑定做不到。** `/binding/start` 要打文派 challenge。当前 `bound` 是写入 `wpcy_site_identity` 的演示数据。点「解除绑定」会清掉；再点绑定可能失败并出「暂时无法连接文派服务」。
+- **权益表是空的。** `/entitlements` 200、`entitlements: []`。没有许可证服务。
+- **mock 沙箱是 transient 注入，不是验签索引。** 文件在 `wp-content/uploads/wpcy-mock-app/`。签名校验只允许 `apps.wpcy.com` 一类 HTTPS origin，本地 `http://localhost` 过不了 `ManifestVerifier::origin_allowed`。iframe 能否在浏览器里完整走完 bridge（ready → init → data.*）未在有头浏览器里点过，只确认了 HTML 200 且 REST 已返回该 app。
+- **迁移报告不在诊断页。** 只在 CLI JSON 和 option `wpcy_migration_backup`。诊断「数据与恢复」只有进恢复模式。
+- **公告 / 通知规则生产 URL 默认不拉。** 概览公告、通知日志是本地 fixture/option。
+- **`wp wpcy config` 多出 `export_document` / `import_document`。** 有疑问：是不是不该暴露的内部方法。
+- 未跑 `wp wpcy doctor`（会再打一遍外网探测；`status` 里已有最近一次结果）。
+- 未点恢复页上的两个 POST 按钮（会关掉改写/模块，挡展示）。
+- 未改插件源码，未 push，未动其它 Studio 站。
+�推断。
+- `debug.log` 里另有一条 Fatal，是本次误跑 `ModuleRegistry::all()` 的 WP-CLI eval，不是站点运行时错误。
+- Studio `fileAccess` 是「站点目录」不是 `all-files`。插件是 rsync 进站内的，不是 symlink，所以能加载。
+- 有疑问：任务预期小工具页会显示「索引不可达」；当前实现空索引 = `ok`，负责人会看到「绑定后显示」而不是那条琥珀提示。
