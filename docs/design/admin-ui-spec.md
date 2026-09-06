@@ -3,7 +3,7 @@
 状态：定稿 v1.0 · 2026-09-04 · 设计 linuxjoy · 产品 feibisi
 用途：HTML 原型（`docs/design/mockups/`）与 M1-08 / M2-05 / M2-06 的实现依据。原型与实现不得偏离本文的信息架构与状态定义；视觉细节以原型为准。
 
-依据：ADR-002（React 应用 + 恢复页）、ADR-003（小工具容器）、`docs/specs/*`、linuxjoy `docs/plans/tokens/wpcy-brand-tokens.json`（品牌 token）、`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md`（官方组件方向）。
+依据：ADR-002（React 应用 + 恢复页）、ADR-003（小工具容器）、[ADR-004](../architecture/adr-004-site-profile-and-scope.md)（站点场景与作用域）、`docs/specs/*`、linuxjoy `docs/plans/tokens/wpcy-brand-tokens.json`（品牌 token）、`linuxjoy docs/research/2026-09-03-wordpress-admin-desktop-and-new-apis.md`（官方组件方向）。
 
 ## 1. 设计原则
 
@@ -26,6 +26,14 @@
 └── 诊断        ?page=wpcy-diagnose   检查结果 · 被隐藏的通知 · 出站主机记录 · 导出 · 恢复页入口
     (恢复模式)  ?page=wpcy-recovery   服务端渲染
 ```
+
+**场景**（[ADR-004](../architecture/adr-004-site-profile-and-scope.md)；信息架构条目，不写视觉、不写布局，原型 C 定稿）：
+
+- **向导第一步**（首次安装，非菜单页）：选场景。选项文案「国内站」「跨境 / 外贸站」「混合站」。插件给出建议值（`GET /profile/suggest`），用户确认。规格编号 `WZ-01`。
+- **概览确认提示**：3.x → 4.0 升级站未选场景前视为 `domestic`，概览给一条「确认你的站点场景」提示，不打断。规格编号 `OV-09`。
+- **连接优化页每项作用域呈现**：公共库等带 `scope` 的项显示「仅后台」「仅前台」「后台与前台」。`admin_assets` 显示「即将提供」；从 3.x 迁来且值为 `on` 时用「后台加速：已保留设置，4.1 起生效」。规格编号 `CO-07`。
+
+状态与文案原文见 §4 词表；各状态清单见 [`docs/dev-plan/tasks/M-SCOPE-UI.md`](../dev-plan/tasks/M-SCOPE-UI.md)。
 
 命令面板（⌘K）注册：「打开文派叶子概览」「打开连接优化」「打开文派服务」「运行连接诊断」「进入恢复模式」。
 
@@ -119,6 +127,15 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | recovery_mode | 恢复模式已开启 | 琥珀 Notice（概览）/ 绿 Notice（恢复页） |
 | binding pending | 等待验证 | Spinner |
 | app offline | 离线 | 灰角标 |
+| profile domestic | 国内站 | — |
+| profile crossborder | 跨境 / 外贸站 | — |
+| profile mixed | 混合站 | — |
+| profile unconfirmed | 确认你的站点场景 | 概览提示，不打断 |
+| scope admin | 仅后台 | — |
+| scope frontend | 仅前台 | — |
+| scope both | 后台与前台 | — |
+| admin_assets reserved | 即将提供 | `admin_assets` 开关位 |
+| admin_assets migrated | 后台加速：已保留设置，4.1 起生效 | 迁移报告；连接优化页对应项 |
 
 禁用词：遥测、匿名数据、opt-in、entitlement、SaaS、套餐（用「权益」）、Pro。
 
@@ -135,6 +152,7 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | SV | 文派服务 | §3.3 |
 | DG | 诊断 | §3.4 |
 | RC | 恢复模式 | §3.5 |
+| WZ | 向导（首次安装，非菜单页） | §2 场景 |
 
 条目写成 `<前缀>-<两位序号>`，如 `OV-03`。新增规格必须先编号再进代码。原型归档与认可见 [`docs/dev/design-sop.md`](../dev/design-sop.md)。
 
@@ -176,6 +194,9 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | RC-03 | 3.5 | 「停用全部模块」 |
 | RC-04 | 3.5 | 已在恢复模式 |
 | RC-05 | 3.5 | 「返回概览」 |
+| WZ-01 | 2 场景 | 向导第一步：选场景（国内站 / 跨境 / 外贸站 / 混合站），插件给建议、用户确认 |
+| OV-09 | 2 场景 | 概览「确认你的站点场景」提示（升级未选，不打断） |
+| CO-07 | 2 场景 | 连接优化页每项作用域呈现（仅后台 / 仅前台 / 后台与前台）；`admin_assets`「即将提供」与迁移保留文案 |
 
 词表行（§4 表内状态）验收时写界面文字本身，不必另编号。
 
