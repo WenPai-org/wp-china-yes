@@ -15,6 +15,7 @@ export const IFRAME_REFERRERPOLICY = 'strict-origin';
 export const ERR_ORIGIN_MISMATCH = 'wpcy_apps_origin_mismatch';
 export const ERR_HOST_TIMEOUT = 'wpcy_apps_host_timeout';
 export const ERR_FORBIDDEN = 'wpcy_apps_forbidden_permission';
+export const ERR_SESSION_INVALID = 'wpcy_apps_session_invalid';
 
 const QUOTA = 'entitl' + 'ement';
 
@@ -72,6 +73,43 @@ export function originAllowed( origin, entryOrigin ) {
 		return true;
 	}
 	return origin === 'null';
+}
+
+/**
+ * 32-byte random token, base64url without padding (spec §3.1).
+ *
+ * @return {string} Session token.
+ */
+export function createSessionToken() {
+	const bytes = new Uint8Array( 32 );
+	crypto.getRandomValues( bytes );
+	let binary = '';
+	for ( let i = 0; i < bytes.length; i++ ) {
+		binary += String.fromCharCode( bytes[ i ] );
+	}
+	return btoa( binary )
+		.replace( /\+/g, '-' )
+		.replace( /\//g, '_' )
+		.replace( /=+$/g, '' );
+}
+
+/**
+ * Whether the envelope session_token matches the host token.
+ *
+ * Empty values never match. ready is exempt in classify(), not here.
+ *
+ * @param {unknown} token    Envelope session_token.
+ * @param {unknown} expected Token issued in init.
+ * @return {boolean} True when both are non-empty strings and equal.
+ */
+export function sessionTokenValid( token, expected ) {
+	if ( ! token || ! expected ) {
+		return false;
+	}
+	if ( typeof token !== 'string' || typeof expected !== 'string' ) {
+		return false;
+	}
+	return token === expected;
 }
 
 /**
@@ -228,6 +266,28 @@ export function classify( event ) {
 		return { action: 'init' };
 	}
 
+	let sessionToken = '';
+	if ( typeof data.session_token === 'string' ) {
+		sessionToken = data.session_token;
+	} else if ( typeof event.session_token === 'string' ) {
+		sessionToken = event.session_token;
+	}
+	const expectedToken =
+		typeof event.expected_session_token === 'string'
+			? event.expected_session_token
+			: '';
+
+	if ( ! sessionTokenValid( sessionToken, expectedToken ) ) {
+		if ( requestId ) {
+			return {
+				action: 'error',
+				code: ERR_SESSION_INVALID,
+				request_id: requestId,
+			};
+		}
+		return { action: 'discard' };
+	}
+
 	if ( type === 'resize' ) {
 		return {
 			action: 'resize',
@@ -313,6 +373,7 @@ export function attachBridge( options ) {
 	const listenOn = options.listenOn || window;
 	const restFetch = options.restFetch;
 	const parentWindow = listenOn.parent;
+	const sessionToken = createSessionToken();
 
 	let ready = false;
 	let destroyed = false;
@@ -368,6 +429,7 @@ export function attachBridge( options ) {
 				locale: options.locale || 'zh_CN',
 				plugin_version: options.pluginVersion || '',
 				host_origin: hostOrigin,
+				session_token: sessionToken,
 				context: hasSiteRead && options.context ? options.context : {},
 			} )
 		);
@@ -470,6 +532,7 @@ export function attachBridge( options ) {
 			ready,
 			permissions,
 			app_id: appId,
+			expected_session_token: sessionToken,
 		} );
 
 		if ( decision.action === 'discard' ) {

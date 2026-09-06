@@ -86,6 +86,13 @@ final class Bridge {
 	public const ERR_FORBIDDEN = 'wpcy_apps_forbidden_permission';
 
 	/**
+	 * Envelope session_token missing or not the init token (bridge only).
+	 *
+	 * @since 4.0.0
+	 */
+	public const ERR_SESSION_INVALID = 'wpcy_apps_session_invalid';
+
+	/**
 	 * Tool → host types that require a permission (spec §3.2).
 	 *
 	 * @since 4.0.0
@@ -215,6 +222,40 @@ final class Bridge {
 	}
 
 	/**
+	 * Whether event.origin may be treated as the tool page (spec §3.1).
+	 *
+	 * Unique-origin sandbox serializes as the string "null".
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $origin       event.origin.
+	 * @param string $entry_origin Origin of manifest.entry_url.
+	 */
+	public static function origin_allowed( string $origin, string $entry_origin ): bool {
+		if ( '' !== $origin && $origin === $entry_origin ) {
+			return true;
+		}
+		return 'null' === $origin;
+	}
+
+	/**
+	 * Whether the envelope session_token matches the host token (spec §3.1).
+	 *
+	 * Empty values never match. `ready` is exempt in classify(), not here.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $session_token          Envelope token.
+	 * @param string $expected_session_token Token issued in init.
+	 */
+	public static function session_token_valid( string $session_token, string $expected_session_token ): bool {
+		if ( '' === $session_token || '' === $expected_session_token ) {
+			return false;
+		}
+		return hash_equals( $expected_session_token, $session_token );
+	}
+
+	/**
 	 * Clamp resize height: integer px, max 4000.
 	 *
 	 * @since 4.0.0
@@ -320,7 +361,7 @@ final class Bridge {
 		$origin       = isset( $event['origin'] ) && is_string( $event['origin'] ) ? $event['origin'] : '';
 		$entry_origin = isset( $event['entry_origin'] ) && is_string( $event['entry_origin'] ) ? $event['entry_origin'] : '';
 
-		if ( $origin !== $entry_origin ) {
+		if ( ! self::origin_allowed( $origin, $entry_origin ) ) {
 			if ( '' !== $request_id ) {
 				return array(
 					'action'     => 'error',
@@ -338,6 +379,27 @@ final class Bridge {
 
 		if ( 'ready' === $type ) {
 			return array( 'action' => 'init' );
+		}
+
+		$session_token = '';
+		if ( isset( $data['session_token'] ) && is_string( $data['session_token'] ) ) {
+			$session_token = $data['session_token'];
+		} elseif ( isset( $event['session_token'] ) && is_string( $event['session_token'] ) ) {
+			$session_token = $event['session_token'];
+		}
+		$expected_session_token = isset( $event['expected_session_token'] ) && is_string( $event['expected_session_token'] )
+			? $event['expected_session_token']
+			: '';
+
+		if ( ! self::session_token_valid( $session_token, $expected_session_token ) ) {
+			if ( '' !== $request_id ) {
+				return array(
+					'action'     => 'error',
+					'code'       => self::ERR_SESSION_INVALID,
+					'request_id' => $request_id,
+				);
+			}
+			return array( 'action' => 'discard' );
 		}
 
 		if ( 'resize' === $type ) {
