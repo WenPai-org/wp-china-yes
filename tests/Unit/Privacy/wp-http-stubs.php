@@ -8,6 +8,107 @@
 
 declare(strict_types=1);
 
+// phpcs:disable Generic.Files.OneObjectStructurePerFile -- WP stand-ins grouped like other unit stubs.
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO
+// phpcs:disable Generic.Classes.DuplicateClassName.Found -- richer WP_Error than Connectivity stub; suites run in separate processes.
+
+if ( ! class_exists( 'WP_Error', false ) ) {
+	/**
+	 * Minimal WP_Error for privacy unit tests.
+	 */
+	class WP_Error {
+
+		/**
+		 * Error code.
+		 *
+		 * @var string
+		 */
+		public $code;
+
+		/**
+		 * Error message.
+		 *
+		 * @var string
+		 */
+		public $message;
+
+		/**
+		 * Error data.
+		 *
+		 * @var mixed
+		 */
+		public $data;
+
+		/**
+		 * Constructor.
+		 *
+		 * @param string $code    Code.
+		 * @param string $message Message.
+		 * @param mixed  $data    Data.
+		 */
+		public function __construct( $code = '', $message = '', $data = '' ) {
+			$this->code    = (string) $code;
+			$this->message = (string) $message;
+			$this->data    = $data;
+		}
+
+		/**
+		 * Error code.
+		 *
+		 * @return string
+		 */
+		public function get_error_code() {
+			return $this->code;
+		}
+
+		/**
+		 * Error message.
+		 *
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+
+		/**
+		 * Error data.
+		 *
+		 * @param string $code Unused.
+		 * @return mixed
+		 */
+		public function get_error_data( $code = '' ) {
+			unset( $code );
+			return $this->data;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * Whether $thing is WP_Error.
+	 *
+	 * @param mixed $thing Candidate.
+	 * @return bool
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Identity translation.
+	 *
+	 * @param string $text   Text.
+	 * @param string $domain Domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
 if ( ! function_exists( 'add_filter' ) ) {
 	/**
 	 * No-op filter registration.
