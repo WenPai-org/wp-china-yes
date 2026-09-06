@@ -133,6 +133,57 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
+	 * PUT v1 public_assets array or string avatar is wpcy_invalid_schema.
+	 */
+	public function test_put_v1_shapes_are_schema_error() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'connectivity' => array(
+				'public_assets' => array( 'google_fonts' ),
+			),
+		);
+		$result        = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+
+		$request->json = array(
+			'connectivity' => array(
+				'avatar' => 'cravatar_cn',
+			),
+		);
+		$result        = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+	}
+
+	/**
+	 * PUT a different profile applies D2 defaults then merges the rest of the body.
+	 */
+	public function test_put_profile_switch_applies_defaults() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'profile'      => 'crossborder',
+			'modules'      => array( 'notice_control' => false ),
+			'connectivity' => array(
+				'wordpress_org' => 'auto',
+			),
+		);
+		$response      = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$data = $response->get_data();
+		$this->assertSame( 'crossborder', $data['profile'] );
+		$this->assertSame( 'auto', $data['connectivity']['wordpress_org'] );
+		$this->assertSame( 'admin', $data['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'off', $data['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'on', $data['connectivity']['heartbeat'] );
+		$this->assertSame( 'block', $data['connectivity']['dashboard_feeds'] );
+		$this->assertSame( 'on', $data['admin_assets'] );
+		$this->assertFalse( $data['modules']['notice_control'] );
+	}
+
+	/**
 	 * Illegal recovery action is wpcy_recovery_unknown_action.
 	 */
 	public function test_unknown_recovery_action_is_bad_request() {
@@ -157,8 +208,9 @@ class PermissionsTest extends TestCase {
 
 		$this->assertTrue( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
-		$this->assertSame( array(), $repo->get( 'connectivity.public_assets' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
 	}
 
 	/**
@@ -187,8 +239,9 @@ class PermissionsTest extends TestCase {
 
 		$this->assertFalse( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
-		$this->assertSame( array(), $repo->get( 'connectivity.public_assets' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
 	}
 
 	/**
@@ -247,6 +300,8 @@ class PermissionsTest extends TestCase {
 		$this->assertContains( '/network-settings', $routes );
 		$this->assertContains( '/diagnostics', $routes );
 		$this->assertContains( '/diagnostics/run', $routes );
+		$this->assertContains( '/diagnostics/client-probe', $routes );
+		$this->assertContains( '/profile/suggest', $routes );
 		$this->assertContains( '/residency/ruleset', $routes );
 		$this->assertContains( '/residency/log', $routes );
 		$this->assertContains( '/migration/report', $routes );
@@ -344,7 +399,7 @@ class PermissionsTest extends TestCase {
 		update_site_option(
 			Schema::NETWORK_SETTINGS,
 			array(
-				'schema_version'      => 1,
+				'schema_version'      => 2,
 				'allow_site_override' => true,
 				'recovery_mode'       => false,
 			)

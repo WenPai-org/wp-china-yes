@@ -98,8 +98,20 @@ final class RecoveryActions {
 	 */
 	private function disable_rewrites(): void {
 		$this->repository->set( 'connectivity.wordpress_org', 'off' );
-		$this->repository->set( 'connectivity.public_assets', array() );
-		$this->repository->set( 'connectivity.avatar', 'off' );
+		$this->repository->set(
+			'connectivity.public_assets',
+			array(
+				'items' => array(),
+				'scope' => 'off',
+			)
+		);
+		$this->repository->set(
+			'connectivity.avatar',
+			array(
+				'admin'    => 'off',
+				'frontend' => 'off',
+			)
+		);
 	}
 
 	/**

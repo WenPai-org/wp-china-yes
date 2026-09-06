@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Rest;
 
+use WenPai\ChinaYes\Config\Profile;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Config\Validator;
@@ -57,6 +58,7 @@ final class DocumentWriter {
 			return RestError::invalid_schema();
 		}
 
+		$current   = $this->apply_profile_switch( $current, $incoming );
 		$merged    = $this->deep_merge( $current, $incoming );
 		$validator = new Validator();
 		$clean     = $validator->sanitize( $merged, $option );
@@ -159,6 +161,33 @@ final class DocumentWriter {
 		}
 
 		return $base;
+	}
+
+	/**
+	 * When PUT profile differs from current, reset D2 connectivity keys first.
+	 *
+	 * Remaining incoming fields overlay those defaults (per-item override).
+	 *
+	 * @param array<string, mixed> $current  Stored document.
+	 * @param array<string, mixed> $incoming PUT body.
+	 * @return array<string, mixed>
+	 */
+	private function apply_profile_switch( array $current, array $incoming ): array {
+		if ( ! isset( $incoming['profile'] ) || ! is_string( $incoming['profile'] ) ) {
+			return $current;
+		}
+		if ( ! in_array( $incoming['profile'], Schema::PROFILES, true ) ) {
+			return $current;
+		}
+
+		$from = isset( $current['profile'] ) && is_string( $current['profile'] )
+			? $current['profile']
+			: 'domestic';
+		if ( $incoming['profile'] === $from ) {
+			return $current;
+		}
+
+		return Profile::apply_to( $current, $incoming['profile'] );
 	}
 
 	/**
