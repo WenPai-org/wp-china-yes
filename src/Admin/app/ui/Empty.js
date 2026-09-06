@@ -1,5 +1,5 @@
 /**
- * Empty state. Prototype .empty — never 「暂无数据」.
+ * Empty state. Prototype .empty — never a bare empty table.
  *
  */
 
