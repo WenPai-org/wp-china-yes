@@ -177,6 +177,7 @@ final class Mappers {
 					break;
 
 				case 'admincdn':
+					// 3.8 admin static-rewrite key. Tokens join admincdn_files below; 4.0 has no admin rewrite.
 					$ignored[]               = $key;
 					$ignored_reasons[ $key ] = 'unsupported_whitelist';
 					break;
@@ -188,13 +189,26 @@ final class Mappers {
 			}
 		}
 
+		$has_v38_admincdn = array_key_exists( 'admincdn', $legacy )
+			&& array() !== $this->as_token_list( $legacy['admincdn'] );
+
 		if ( array_key_exists( 'admincdn_public', $legacy )
 			|| array_key_exists( 'admincdn_files', $legacy )
 			|| array_key_exists( 'admincdn_dev', $legacy )
+			|| $has_v38_admincdn
 		) {
 			$mapped                                    = $this->map_public_assets( $legacy );
 			$settings['connectivity']['public_assets'] = $mapped['assets'];
+			$covered_by_ignored_key                    = in_array( 'admincdn', $ignored, true )
+				? $this->as_token_list( $legacy['admincdn'] ?? array() )
+				: array();
 			foreach ( $mapped['unknown'] as $token ) {
+				if ( in_array( $token, $ignored, true ) || in_array( $token, $kept, true ) ) {
+					continue;
+				}
+				if ( in_array( $token, $covered_by_ignored_key, true ) ) {
+					continue;
+				}
 				$ignored[]                 = $token;
 				$ignored_reasons[ $token ] = 'unsupported_whitelist';
 			}
@@ -241,7 +255,7 @@ final class Mappers {
 	}
 
 	/**
-	 * `store` → connectivity.wordpress_org.
+	 * `store` → connectivity.wordpress_org (`wenpai` and `proxy` → `auto`).
 	 *
 	 * @param mixed $value 3.x store value.
 	 * @return string|null
@@ -250,7 +264,7 @@ final class Mappers {
 		if ( ! is_string( $value ) ) {
 			return null;
 		}
-		if ( 'wenpai' === $value ) {
+		if ( 'wenpai' === $value || 'proxy' === $value ) {
 			return 'auto';
 		}
 		if ( 'off' === $value ) {
@@ -273,11 +287,13 @@ final class Mappers {
 	}
 
 	/**
-	 * Merge admincdn_public ∪ admincdn_files ∪ admincdn_dev onto the 4.0 public_assets enum.
+	 * Merge admincdn_public ∪ admincdn_files ∪ admincdn_dev ∪ 3.8 admincdn
+	 * onto the 4.0 public_assets enum.
 	 *
 	 * Output follows Schema::PUBLIC_ASSETS order. Present keys with an empty
 	 * (or fully unsupported) list become []. That is an explicit choice, not a
-	 * cue to refill schema defaults. Unknown tokens are returned for ignored.
+	 * cue to refill schema defaults. Unknown tokens (including `admin`) are
+	 * returned for ignored. 4.0 has no wp-admin static rewrite.
 	 *
 	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
 	 * @return array{assets: array<int, string>, unknown: array<int, string>}
@@ -286,7 +302,8 @@ final class Mappers {
 		$tokens = array_merge(
 			$this->as_token_list( $legacy['admincdn_public'] ?? array() ),
 			$this->as_token_list( $legacy['admincdn_files'] ?? array() ),
-			$this->as_token_list( $legacy['admincdn_dev'] ?? array() )
+			$this->as_token_list( $legacy['admincdn_dev'] ?? array() ),
+			$this->as_token_list( $legacy['admincdn'] ?? array() )
 		);
 
 		$wanted  = array();

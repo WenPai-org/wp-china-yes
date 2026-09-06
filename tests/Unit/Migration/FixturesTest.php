@@ -243,6 +243,169 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
+	 * §5: store=proxy is equivalent to wenpai → connectivity.wordpress_org=auto.
+	 */
+	public function test_store_proxy_maps_like_wenpai() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store' => 'proxy',
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertContains( 'store', $report->kept() );
+		$this->assertNotContains( 'store', $report->ignored() );
+		$this->assertSame( 'auto', $report->settings()['connectivity']['wordpress_org'] );
+	}
+
+	/**
+	 * §5: hide_option / hide_menu / hide_menu_confirm any true. 4.0 has no white-label menu.
+	 */
+	public function test_hide_keys_are_discarded_not_mapped() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'             => 'off',
+			'hide'              => true,
+			'hide_option'       => '1',
+			'hide_menu'         => true,
+			'hide_menu_confirm' => array( 'yes' ),
+		);
+
+		$report = ( new Runner() )->dry_run();
+		$json   = wp_json_encode( $report->settings() );
+
+		foreach ( array( 'hide', 'hide_option', 'hide_menu', 'hide_menu_confirm' ) as $key ) {
+			$this->assertContains( $key, $report->ignored(), $key );
+			$this->assertNotContains( $key, $report->kept(), $key );
+			$this->assertSame( 'feature_removed', $report->ignored_reasons()[ $key ], $key );
+		}
+
+		$this->assertIsString( $json );
+		$this->assertStringNotContainsString( 'hide_option', $json );
+		$this->assertStringNotContainsString( 'hide_menu', $json );
+		$this->assertArrayNotHasKey( 'hide', $report->settings() );
+		$this->assertArrayNotHasKey( 'brand', $report->settings() );
+	}
+
+	/**
+	 * §5: 3.8 admincdn=['admin'] and 3.9 admincdn_files=['admin'] land on the same 4.0 public_assets.
+	 */
+	public function test_admincdn_v38_and_files_admin_same_public_assets() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'admincdn' => array( 'admin' ),
+		);
+		$from_v38                                     = ( new Runner() )->dry_run();
+
+		OptionStore::reset();
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'          => 'off',
+			'admincdn_files' => array( 'admin' ),
+		);
+		$from_files                                   = ( new Runner() )->dry_run();
+
+		$this->assertSame( array(), $from_v38->settings()['connectivity']['public_assets'] );
+		$this->assertSame(
+			$from_v38->settings()['connectivity']['public_assets'],
+			$from_files->settings()['connectivity']['public_assets']
+		);
+		$this->assertNotContains( 'admin', $from_v38->settings()['connectivity']['public_assets'] );
+		$this->assertNotContains( 'admin', $from_files->settings()['connectivity']['public_assets'] );
+		$this->assertContains( 'admincdn', $from_v38->ignored() );
+		$this->assertContains( 'admincdn_files', $from_files->kept() );
+		$this->assertContains( 'admin', $from_files->ignored() );
+		$this->assertSame( 'unsupported_whitelist', $from_files->ignored_reasons()['admin'] );
+	}
+
+	/**
+	 * §5: memory four keys are dropped even when performance is true. 4.0 has no those constants.
+	 */
+	public function test_memory_keys_discarded_even_when_performance_true() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'               => 'off',
+			'performance'         => true,
+			'wp_memory_limit'     => '1024M',
+			'wp_max_memory_limit' => '512M',
+			'wp_post_revisions'   => 5,
+			'autosave_interval'   => 60,
+		);
+
+		$report = ( new Runner() )->dry_run();
+		$json   = wp_json_encode( $report->settings() );
+
+		foreach ( array( 'performance', 'wp_memory_limit', 'wp_max_memory_limit', 'wp_post_revisions', 'autosave_interval' ) as $key ) {
+			$this->assertContains( $key, $report->ignored(), $key );
+			$this->assertNotContains( $key, $report->kept(), $key );
+		}
+
+		$this->assertIsString( $json );
+		$this->assertStringNotContainsString( 'wp_memory_limit', $json );
+		$this->assertStringNotContainsString( 'autosave_interval', $json );
+		$this->assertArrayNotHasKey( 'performance', $report->settings() );
+	}
+
+	/**
+	 * §5: product shells and ghost enabled_sections values are discarded.
+	 */
+	public function test_product_shells_and_ghost_sections_discarded() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'            => 'off',
+			'arkpress'         => true,
+			'motucloud'        => 'cn',
+			'fewmail'          => 'cn',
+			'bisheng'          => 'cn',
+			'deerlogin'        => 'cn',
+			'woocn'            => 'cn',
+			'lelms'            => 'cn',
+			'wapuu'            => 'cn',
+			'yoodefender'      => 'cn',
+			'docs'             => 'cn',
+			'wordyeah'         => 'off',
+			'monitor'          => true,
+			'waimao'           => 'off',
+			'enabled_sections' => array(
+				'store',
+				'forums',
+				'forms',
+				'panel',
+				'domain',
+				'sms',
+				'chat',
+				'translate',
+				'ecosystem',
+			),
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$shells = array(
+			'arkpress',
+			'motucloud',
+			'fewmail',
+			'bisheng',
+			'deerlogin',
+			'woocn',
+			'lelms',
+			'wapuu',
+			'yoodefender',
+			'docs',
+			'wordyeah',
+			'monitor',
+			'waimao',
+			'enabled_sections',
+		);
+		foreach ( $shells as $key ) {
+			$this->assertContains( $key, $report->ignored(), $key );
+			$this->assertNotContains( $key, $report->kept(), $key );
+			$this->assertSame( 'feature_removed', $report->ignored_reasons()[ $key ], $key );
+		}
+
+		$json = wp_json_encode( $report->settings() );
+		$this->assertIsString( $json );
+		$this->assertStringNotContainsString( 'motucloud', $json );
+		$this->assertStringNotContainsString( 'enabled_sections', $json );
+		$this->assertStringNotContainsString( 'ecosystem', $json );
+	}
+
+	/**
 	 * CLI dry-run / execute / rollback JSON contracts.
 	 */
 	public function test_cli_dry_run_execute_rollback() {
@@ -425,7 +588,7 @@ class FixturesTest extends TestCase {
 
 			case 'single-3.8-02.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( Schema::PUBLIC_ASSETS, $connectivity['public_assets'] );
+				$this->assertSame( array(), $connectivity['public_assets'] );
 				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
 				$this->assertTrue( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
