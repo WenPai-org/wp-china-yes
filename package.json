@@ -11,7 +11,7 @@
 		"build": "wp-scripts build",
 		"start": "wp-scripts start",
 		"lint:js": "wp-scripts lint-js src/Admin/app",
-		"lint:css": "wp-scripts lint-style src/Admin/app",
+		"lint:css": "wp-scripts lint-style src/Admin/app/**/*.css",
 		"format": "wp-scripts format src/Admin/app",
 		"format:check": "wp-scripts format --check src/Admin/app",
 		"env:start": "wp-env start",
@@ -21,7 +21,7 @@
 		"visual": "playwright test --config=tests/visual/playwright.config.js"
 	},
 	"dependencies": {
-		"@wordpress/admin-ui": "^2.9.0",
+		"@remixicon/react": "^4.9.0",
 		"@wordpress/api-fetch": "^7.54.0",
 		"@wordpress/commands": "^1.54.0",
 		"@wordpress/components": "^40.0.0",
