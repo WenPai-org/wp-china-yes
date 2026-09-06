@@ -64,7 +64,7 @@
   - `profile`：`domestic` \| `crossborder` \| `mixed`
   - `connectivity.wordpress_org`：`auto` \| `off`
   - `connectivity.public_assets`：`{ "items": [...], "scope": "both"|"admin"|"frontend"|"off" }`（不再是字符串数组）
-  - `connectivity.avatar`：`{ "admin": <枚举>, "frontend": <枚举> }`（不再是单字符串；枚举 `cravatar_cn` \| `cravatar_global` \| `weavatar` \| `off`）
+  - `connectivity.avatar`：`{ "admin": <枚举>, "frontend": <枚举> }`（枚举 `cravatar_cn` \| `cravatar_global` \| `off`；**`weavatar` 已移除**，feibisi 2026-09-06：插件内只保留 Cravatar，非文派服务不出现）。**过渡兼容（到 M-UI 替换连接页为止）**：PUT 接受旧单值字符串，服务端展开为 admin/frontend 同值；响应同时含拆分对象与兄弟键 `avatar_admin` / `avatar_frontend`。M-UI 合入后删除该兼容并改回 400。
   - `admin_assets`：`on` \| `off`（4.0 预留，无运行时行为）
   - `connectivity.heartbeat`：`on` \| `off`
   - `connectivity.dashboard_feeds`：`block` \| `allow`
