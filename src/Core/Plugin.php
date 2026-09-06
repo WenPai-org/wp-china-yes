@@ -135,6 +135,7 @@ final class Plugin {
 			$relative = dirname( plugin_basename( CHINA_YES_PLUGIN_FILE ) ) . '/languages';
 		}
 
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- self-hosted languages/*.mo; not a WordPress.org plugin (M4-01).
 		load_plugin_textdomain( 'wp-china-yes', false, $relative );
 	}
 

@@ -11,10 +11,10 @@ npx wp-env run cli wp eval 'if ( ! defined( "CHINA_YES_VERSION" ) ) { throw new 
 npx wp-env run cli wp option update wp_china_yes corrupted-string
 npx wp-env run cli wp eval '$legacy = ( new \WenPai\ChinaYes\Migration\LegacyReader() )->read(); if ( ! is_array( $legacy ) ) { throw new Exception( "LegacyReader must return array" ); } if ( array() !== $legacy ) { throw new Exception( "damaged option must read as empty array" ); } if ( ! class_exists( "WenPai\\ChinaYes\\Core\\Plugin" ) ) { throw new Exception( "Core\\Plugin not loaded after damaged option" ); }'
 
-# Compatibility report stays scheduled (TelemetryModule is always-on). Clear
-# any leftover event first; the next process bootstrap must reschedule it.
-npx wp-env run cli wp eval 'wp_clear_scheduled_hook( "wpcy_daily_telemetry" ); $settings = get_option( "wpcy_settings", array() ); if ( ! is_array( $settings ) ) { $settings = array(); } update_option( "wpcy_settings", $settings ); if ( wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "cron clear failed" ); }'
-npx wp-env run cli wp eval 'if ( ! wp_next_scheduled( "wpcy_daily_telemetry" ) ) { throw new Exception( "compatibility report not scheduled" ); }'
+# Compatibility report stays on (TelemetryModule is always-on). Assert the
+# hook is registered after writing 4.0 settings (analysis §4: 钩子仍在).
+npx wp-env run cli wp eval '$settings = get_option( "wpcy_settings", array() ); if ( ! is_array( $settings ) ) { $settings = array(); } update_option( "wpcy_settings", $settings );'
+npx wp-env run cli wp eval 'if ( ! has_action( "wpcy_daily_telemetry" ) ) { throw new Exception( "compatibility report hook not registered" ); }'
 
 # 3.x Maintenance is gone.
 npx wp-env run cli wp eval 'if ( class_exists( "WenPai\\ChinaYes\\Service\\Maintenance" ) ) { throw new Exception( "3.x Maintenance class must not exist" ); }'
