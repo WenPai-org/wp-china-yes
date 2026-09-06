@@ -7,3 +7,7 @@
 - **admin_assets 不规划商业化**：4.1 作为免费体验项交付。
 - **跨境场景免费体验层**并入 M-SCOPE-1 范围（调研 F2/F3/F6/F10/F11：字体与头像后台作用域、Heartbeat 分屏节流、挡仪表盘外部内容、从管理员浏览器测速的连接诊断）。M-SCOPE-0 若已完成，ADR-004 与 M-SCOPE-1 任务书需按本节补一节"商业前提"，由统筹在审查时核。
 - 调研出处：linuxjoy `docs/research/2026-09-06-crossborder-wp-admin-grok.md`。
+
+## 补充（2026-09-06 晚，feibisi）：叶子只是接入客户端
+
+Windfonts、Cravatar、公共库等资源的限流由各平台自己做；叶子只是接入客户端，按场景与作用域决定接哪个源，**不管额度**。当前资源跑在 cybercdn 上，用量可控。因此：插件内不出现配额、"配额用尽降级到上游"逻辑；`Services/Entitlements` / `Degrade` 只服务于小工具与服务分发链；词表删除"绑定后可用配额"一类文案（Windfonts 是否需要绑定由 Windfonts 平台决定，插件按服务端应答呈现）。各平台限流策略另议。
