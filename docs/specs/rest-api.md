@@ -33,8 +33,9 @@
 | POST | `/binding/start` | 同上 | 发起挑战 |
 | DELETE | `/binding` | 同上 | 撤销绑定 |
 | GET | `/entitlements` | 同上 | 全部权益与配额 |
+| GET | `/migration/report` | 同上 | 最近一次 3.x→4.0 迁移报告；无历史 `{ "status": "none" }` |
 | POST | `/recovery` | 同上 | `{ "action": "disable_rewrites" \| "disable_modules" \| "exit" }` |
-| GET | `/apps` | 同上 | `{ apps, index_status }`，见 apps 规格 §4 |
+| GET | `/apps` | 同上 | `{ apps, index_status }`，见 apps 规格 §4。`index_status` 含 `unconfigured`（空 source） |
 | GET | `/apps/{id}/context` | 同上 + manifest `site:read` | 见 apps 规格 |
 | GET | `/apps/{id}/data` | 同上 + `data:read` | 见 apps 规格 |
 | GET | `/apps/{id}/data/{key}` | 同上 + `data:read` | 见 apps 规格 |
@@ -144,6 +145,26 @@ B 档记录。每条含：`host`、`data_class`、`count`、`last_seen`。**无�
 ### `/entitlements`
 
 返回服务端权益列表的缓存副本（最多 1h）。形状见 entitlements 规格。服务端不可达时返回最后一次缓存；无缓存返回空数组，不让站点功能失效。
+
+### `/migration/report`
+
+GET 最近一次 `Runner::execute()` 结果。权限同 `/diagnostics`（`manage_options`）。
+
+有迁移历史时返回 `Report::to_array()`（`kept` / `ignored` / `ignored_reasons` / `settings`）加上：
+
+| 字段 | 说明 |
+|---|---|
+| `migrated_at` | UTC ISO 8601 |
+| `source_version` | 3.x 版本；`wp_china_yes` 内无版本字段时为 `3.x` |
+| `ignored` | 未映射的 3.x 键列表（与 `to_array().ignored` 相同） |
+
+无迁移历史（option `wpcy_migration_report` 不存在或为空）返回：
+
+```json
+{ "status": "none" }
+```
+
+报告存 `wpcy_migration_report`，与 `wpcy_migration_backup` 同级，键名不含版本号。
 
 ### `/recovery`
 

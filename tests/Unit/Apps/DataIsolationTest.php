@@ -106,6 +106,70 @@ class DataIsolationTest extends TestCase {
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'wpcy_apps_unknown_app', $result->get_error_code() );
 		$this->assertSame( 404, $result->get_error_data()['status'] );
+		$this->assertSame( '暂时无法打开该小工具，请刷新目录后重试。', $result->get_error_message() );
+	}
+
+	/**
+	 * AppsController user-facing error messages are Chinese.
+	 */
+	public function test_apps_controller_error_messages_are_chinese() {
+		$controller = $this->controller();
+
+		$unknown         = new WP_REST_Request();
+		$unknown->params = array( 'id' => 'no-such-app' );
+		$unknown_err     = $controller->get_context( $unknown );
+		$this->assertSame( '暂时无法打开该小工具，请刷新目录后重试。', $unknown_err->get_error_message() );
+
+		$missing         = new WP_REST_Request();
+		$missing->params = array(
+			'id'  => 'motusnap',
+			'key' => 'notes',
+		);
+		$missing_err     = $controller->get_data( $missing );
+		$this->assertSame( '暂时无法读取该数据，请检查后重试。', $missing_err->get_error_message() );
+
+		$bad_key         = new WP_REST_Request();
+		$bad_key->params = array(
+			'id'  => 'motusnap',
+			'key' => 'Bad Key!',
+		);
+		$bad_key_err     = $controller->get_data( $bad_key );
+		$this->assertSame( '暂时无法保存该数据，请检查键名后重试。', $bad_key_err->get_error_message() );
+
+		$too_large         = new WP_REST_Request();
+		$too_large->params = array(
+			'id'  => 'motusnap',
+			'key' => 'blob',
+		);
+		$too_large->body   = str_repeat( 'a', DataStore::MAX_BYTES + 1 );
+		$too_large_err     = $controller->put_data( $too_large );
+		$this->assertSame( '暂时无法保存该数据，内容超过 64KB。', $too_large_err->get_error_message() );
+
+		$forbidden         = new WP_REST_Request();
+		$forbidden->params = array(
+			'id'  => 'noteboard',
+			'key' => 'settings',
+		);
+		$forbidden->json   = array( 'value' => 1 );
+		$forbidden_err     = $controller->put_data( $forbidden );
+		$this->assertSame( '暂时无法完成该操作，该小工具没有相应权限。', $forbidden_err->get_error_message() );
+
+		$paid             = $this->controller( null, new MissingEntitlements() );
+		$paid_req         = new WP_REST_Request();
+		$paid_req->params = array( 'id' => 'paidtool' );
+		$paid_err         = $paid->get_entitlement( $paid_req );
+		$this->assertSame( '暂时无法使用该小工具，请先获取权益。', $paid_err->get_error_message() );
+
+		$quota             = $this->controller( null, new ExhaustedEntitlements() );
+		$quota_req         = new WP_REST_Request();
+		$quota_req->params = array(
+			'id'  => 'motusnap',
+			'key' => 'settings',
+		);
+		$quota_req->json   = array( 'value' => 1 );
+		$quota_req->body   = '{"value":1}';
+		$quota_err         = $quota->put_data( $quota_req );
+		$this->assertSame( '暂时无法使用该小工具，本期配额已用尽。', $quota_err->get_error_message() );
 	}
 
 	/**
@@ -263,6 +327,17 @@ class DataIsolationTest extends TestCase {
 		}
 		$this->assertContains( '/apps', $routes );
 		$this->assertNotContains( '/settings', $routes );
+	}
+
+	/**
+	 * GET /apps passes through unconfigured when the index source is empty.
+	 */
+	public function test_list_apps_empty_source_is_unconfigured() {
+		$index      = new Index( new ManifestVerifier() );
+		$controller = new AppsController( new Registry( $index ), new DataStore(), new ActiveEntitlements() );
+		$body       = $controller->list_apps( new WP_REST_Request() )->get_data();
+		$this->assertSame( array(), $body['apps'] );
+		$this->assertSame( 'unconfigured', $body['index_status'] );
 	}
 
 	/**

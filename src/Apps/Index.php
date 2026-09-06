@@ -78,7 +78,7 @@ final class Index {
 	private string $plugin_version;
 
 	/**
-	 * Last index fetch outcome: ok, unreachable, or invalid.
+	 * Last index fetch outcome: ok, unreachable, invalid, or unconfigured.
 	 *
 	 * @var string
 	 */
@@ -111,6 +111,9 @@ final class Index {
 		} else {
 			$this->plugin_version = '4.0.0';
 		}
+		if ( '' === $this->source ) {
+			$this->index_status = 'unconfigured';
+		}
 	}
 
 	/**
@@ -138,7 +141,7 @@ final class Index {
 	public function refresh(): array {
 		$previous = $this->cached();
 		if ( '' === $this->source ) {
-			$this->index_status = 'ok';
+			$this->index_status = 'unconfigured';
 			return $previous;
 		}
 
@@ -184,11 +187,14 @@ final class Index {
 	}
 
 	/**
-	 * Last fetch outcome: ok (including empty catalog), unreachable, or invalid.
+	 * Last fetch outcome: ok (including empty catalog), unreachable, invalid, or unconfigured (empty source).
 	 *
 	 * @since 4.0.0
 	 */
 	public function index_status(): string {
+		if ( '' === $this->source ) {
+			return 'unconfigured';
+		}
 		return $this->index_status;
 	}
 
@@ -200,6 +206,10 @@ final class Index {
 	 * @return list<array<string, mixed>>
 	 */
 	public function apps(): array {
+		if ( '' === $this->source ) {
+			$this->index_status = 'unconfigured';
+			return $this->cached();
+		}
 		$cached = $this->cached();
 		if ( array() !== $cached ) {
 			return $cached;
@@ -346,7 +356,7 @@ final class Index {
 			$status = isset( $stored['index_status'] ) && is_string( $stored['index_status'] )
 				? $stored['index_status']
 				: 'ok';
-			if ( in_array( $status, array( 'ok', 'unreachable', 'invalid' ), true ) ) {
+			if ( in_array( $status, array( 'ok', 'unreachable', 'invalid', 'unconfigured' ), true ) ) {
 				$this->index_status = $status;
 			}
 			$stored = $stored['apps'];
