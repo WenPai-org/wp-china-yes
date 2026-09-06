@@ -118,10 +118,6 @@ class ProvidersControllerTest extends TestCase {
 		BindingStore::$responses = array(
 			array(
 				'code' => 200,
-				'body' => '{"success":true}',
-			),
-			array(
-				'code' => 200,
 				'body' => '{"success":true,"data":{"product_list":[]}}',
 			),
 		);
