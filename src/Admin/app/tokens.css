@@ -14,7 +14,7 @@
 	--wpcy-line: #e0e0e0;
 	--wpcy-line-soft: #f0f0f1;
 	--wpcy-bg: #f0f0f1;
-	--wpcy-card: #ffffff;
+	--wpcy-card: #fff;
 	--wpcy-ok: #00a32a;
 	--wpcy-ok-soft: #edfaef;
 	--wpcy-warn: #dba617;
@@ -25,7 +25,16 @@
 	--wpcy-mute-soft: #f0f0f1;
 	--wpcy-radius: 12px;
 	--wpcy-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-	--wpcy-font: -apple-system, "Noto Sans", "Helvetica Neue", Helvetica, Arial,
-		"PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
-		"Source Han Sans SC", "Microsoft YaHei", sans-serif;
+	--wpcy-font:
+		-apple-system,
+ "Noto Sans",
+ "Helvetica Neue",
+ helvetica,
+ arial,
+		"PingFang SC",
+ "Hiragino Sans GB",
+ "Noto Sans CJK SC",
+		"Source Han Sans SC",
+ "Microsoft YaHei",
+ sans-serif;
 }
