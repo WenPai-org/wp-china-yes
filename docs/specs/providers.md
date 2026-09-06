@@ -59,6 +59,7 @@
 
 | code | message |
 |---|---|
+| `wpcy_provider_unknown` | 暂时无法找到该供应商。 |
 | `wpcy_provider_binding_required` | 暂时无法连接供应商，请先绑定本站。 |
 | `wpcy_provider_coming_soon` | 文派集市即将开放，现在还不能连接。 |
 | `wpcy_provider_not_connected` | 暂时无法测试连接，请先连接该供应商。 |
@@ -70,8 +71,9 @@
 以云桥 `WooCommerceVendor` 的现网用法为事实（研究稿 §1.3）；叶子实现 `Providers\WcAmClient`：
 
 - 基址 `https://mall.weixiaoduo.com/wc-api/wc-am-api/`；请求 `wc-am-action` ∈ `activate` / `deactivate` / `status` / `update` / `product_list`（云桥实际用到的子集）。
+- **2026-09-07 00:45 按 M-PROVIDER-1 的只读探测修正（随机无效密钥、无真实密钥）**：现网 `activate` / `status` **必须带 `product_id`**（缺则 `success:false`「缺少以下必需的查询字符串数据：product_id」），因此**连接与测试的密钥校验统一用 `product_list`**（不需 `product_id`；无效密钥返回 `success:false`「此许可证密钥不存在客户账户。」→ `invalid`）。`activate` 只在更新接通时对具体 `product_id` 调用；`status` 同理。密钥**只能走 GET query**（POST body 返回「未收到请求值。」），P6 的日志约束按"query 版"执行：任何日志、错误对象、事件不得含完整 URL，`api_key=` 值脱敏。**邮箱不参与服务端校验**：请求不带邮箱，界面仍收集邮箱用于显示掩码与本地去重（只存掩码 + sha256）。
 - 参数：`instance`（本站 UUID）、`api_key`（授权密钥）、`product_id`、`object`（站点 URL）。**密钥放置**：优先 POST body；若商城只接受 query（云桥现状），规格在此写明：允许 query，但日志与错误对象**不得**记完整 URL（P6）。**待定**：商城是否在服务端使用邮箱做二次校验（云桥代码里邮箱只存本地）。
-- 校验成功的判定：响应 JSON `success: true`（或 `status_check = active`）；`success: false` + 业务错误 → `invalid`；HTTP 非 2xx / 超时 / DNS / TLS 失败 → `unreachable`。
+- 校验成功的判定（`product_list`）：响应 JSON `success: true` 且含产品数组（可为空数组）；`success: false` + 业务错误 → `invalid`；HTTP 非 2xx / 超时 / DNS / TLS 失败 → `unreachable`。
 - 出站：HTTPS only，`sslverify = true`，拒绝解析到内网地址的主机，超时 10 秒，不重试写操作。
 - 更新接通（4.0 最小，P7）：`product_list` 返回的项与本站 `get_plugins()` 目录名**精确**匹配才接管：钩 `pre_set_site_transient_update_plugins`，用 `update` action 的 `package` / `new_version` 填 `response`；不匹配的只展示（`update_managed = false`）。不做标题猜 slug、不做 `AutoMatcher`。
 
@@ -93,5 +95,5 @@
 ## 7. 待定
 
 - 文派集市 `api_url` 与协议（开放时补）。
-- 商城是否用邮箱做服务端校验；密钥能否走 POST body（需与薇晓朵确认，影响 P6 的日志约束强度）。
+- ~~商城是否用邮箱做服务端校验；密钥能否走 POST body~~ → 已由探测确定（§4）：邮箱不参与、密钥只能 query。仍待薇晓朵确认：是否愿意开放 POST body 或 header 传密钥（若开放，P6 收紧）。
 - 已购产品的到期 / 订阅字段（4.x 提醒功能依赖）。
