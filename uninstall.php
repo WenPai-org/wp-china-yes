@@ -14,32 +14,39 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-$ids = array(
-	'weixiaoduo-mall',
-	'wenpai-marketplace',
-);
+/**
+ * Delete provider options for the current blog.
+ *
+ * @since 4.0.0
+ *
+ * @return void
+ */
+function wpcy_uninstall_providers(): void {
+	$wpcy_ids = array(
+		'weixiaoduo-mall',
+		'wenpai-marketplace',
+	);
 
-$purge = static function ( array $ids ): void {
 	delete_option( 'wpcy_providers' );
-	foreach ( $ids as $id ) {
-		delete_option( 'wpcy_secure_provider_' . $id . '_license_key' );
-		delete_option( 'wpcy_secure_provider_' . $id . '_instance' );
-		delete_transient( 'wpcy_provider_' . $id . '_products' );
+	foreach ( $wpcy_ids as $wpcy_id ) {
+		delete_option( 'wpcy_secure_provider_' . $wpcy_id . '_license_key' );
+		delete_option( 'wpcy_secure_provider_' . $wpcy_id . '_instance' );
+		delete_transient( 'wpcy_provider_' . $wpcy_id . '_products' );
 	}
-};
+}
 
-$purge( $ids );
+wpcy_uninstall_providers();
 
 if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'get_sites' ) ) {
-	$sites = get_sites(
+	$wpcy_sites = get_sites(
 		array(
 			'fields' => 'ids',
 			'number' => 0,
 		)
 	);
-	foreach ( $sites as $site_id ) {
-		switch_to_blog( (int) $site_id );
-		$purge( $ids );
+	foreach ( $wpcy_sites as $wpcy_site_id ) {
+		switch_to_blog( (int) $wpcy_site_id );
+		wpcy_uninstall_providers();
 		restore_current_blog();
 	}
 }
