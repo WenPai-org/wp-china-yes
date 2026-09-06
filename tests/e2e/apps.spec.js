@@ -325,7 +325,7 @@ test.describe( 'apps A1–A10', () => {
 		const response = await openAdminPage( page, 'wpcy-services' );
 		expect( response && response.status() ).toBe( 200 );
 		await expect(
-			page.getByRole( 'heading', { name: '文派服务', level: 1 } )
+			page.getByRole( 'heading', { name: '服务', level: 1 } )
 		).toBeVisible();
 		await expect(
 			page.getByRole( 'button', { name: '绑定本站' } )
@@ -494,7 +494,7 @@ test.describe( 'apps A1–A10', () => {
 		const host = wrapper.frameLocator( '#host' );
 		await host.locator( '#wpcy-admin-root' ).waitFor( { state: 'attached' } );
 		await host
-			.getByRole( 'heading', { name: '文派服务', level: 1 } )
+			.getByRole( 'heading', { name: '服务', level: 1 } )
 			.waitFor( { state: 'visible' } );
 		await host.getByRole( 'button', { name: '站点体检' } ).click();
 		await expect( host.getByTestId( 'wpcy-app-iframe' ) ).toBeVisible();

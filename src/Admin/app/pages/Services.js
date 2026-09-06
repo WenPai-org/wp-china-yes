@@ -716,7 +716,7 @@ export default function Services() {
 	if ( openApp ) {
 		return (
 			<PageShell
-				title={ __( '文派服务', 'wp-china-yes' ) }
+				title={ __( '服务', 'wp-china-yes' ) }
 				lede={ __(
 					'文派服务与小工具，按站点场景显示',
 					'wp-china-yes'
@@ -732,7 +732,7 @@ export default function Services() {
 
 	return (
 		<PageShell
-			title={ __( '文派服务', 'wp-china-yes' ) }
+			title={ __( '服务', 'wp-china-yes' ) }
 			lede={ __( '文派服务与小工具，按站点场景显示', 'wp-china-yes' ) }
 		>
 			{ servicesNotice ? (

@@ -4,7 +4,8 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { Snackbar } from '@wordpress/components';
 import Icon from '../ui/icons';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, getPageSlug, PAGES } from '../routing';
@@ -41,14 +42,16 @@ export default function PageShell( {
 	children,
 } ) {
 	const slug = getPageSlug();
-	const { links, version, stats } = useSelect( ( select ) => {
+	const { links, version, stats, notice } = useSelect( ( select ) => {
 		const store = select( STORE_NAME );
 		return {
 			links: store.getLinks(),
 			version: store.getPluginVersion(),
 			stats: store.getStats(),
+			notice: store.getNotice(),
 		};
 	}, [] );
+	const { clearNotice } = useDispatch( STORE_NAME );
 
 	const days = daysSince( stats?.installed_at );
 	let uptime = __( '刚安装', 'wp-china-yes' );
@@ -134,6 +137,13 @@ export default function PageShell( {
 							) : null }
 						</div>
 						{ actions }
+					</div>
+				) : null }
+				{ notice ? (
+					<div className="wpcy-snackbar-slot" data-testid="snackbar">
+						<Snackbar onRemove={ () => clearNotice() }>
+							{ notice.message }
+						</Snackbar>
 					</div>
 				) : null }
 				{ children }

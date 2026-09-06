@@ -122,7 +122,8 @@ async function mockOverview( page, overrides = {} ) {
 			}
 		},
 		async ( route ) => {
-			const path = restPath( route.request().url() ).replace( /\/+$/, '' );
+			const raw = restPath( route.request().url() );
+			const path = raw.split( '?' )[ 0 ].replace( /\/+$/, '' );
 			const method = route.request().method().toUpperCase();
 			if ( method !== 'GET' ) {
 				await route.continue();
@@ -130,13 +131,18 @@ async function mockOverview( page, overrides = {} ) {
 			}
 			if ( path === '/wpcy/v1/diagnostics' ) {
 				await route.fulfill( {
-					status: 200,
+					status: status.diagnostics || 200,
 					contentType: 'application/json',
 					body: JSON.stringify( bodies.diagnostics ),
 				} );
 				return;
 			}
 			if ( path === '/wpcy/v1/stats' ) {
+				if ( overrides.hangStats ) {
+					await new Promise( ( resolve ) => {
+						setTimeout( resolve, 20000 );
+					} );
+				}
 				await route.fulfill( {
 					status: status.stats,
 					contentType: 'application/json',
@@ -296,7 +302,31 @@ test.describe( 'overview', () => {
 		expect( await page.locator( '.btn-primary' ).count() ).toBe( 1 );
 	} );
 
-	test( '折叠写入 localStorage', async ( { page } ) => {
+	test( '折叠写入 localStorage 并 POST user meta', async ( { page } ) => {
+		const posts = [];
+		await page.route( ( url ) => {
+			try {
+				return restPath( url.href ).indexOf( '/wp/v2/users/me' ) === 0;
+			} catch ( error ) {
+				void error;
+				return false;
+			}
+		}, async ( route ) => {
+			if ( route.request().method().toUpperCase() === 'POST' ) {
+				posts.push( route.request().postDataJSON() );
+				await route.fulfill( {
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify( { id: 1 } ),
+				} );
+				return;
+			}
+			await route.fulfill( {
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify( { id: 1, meta: {} } ),
+			} );
+		} );
 		await mockOverview( page );
 		await openAdminPage( page, 'wpcy' );
 		await page.locator( '.hero-collapse' ).click();
@@ -305,5 +335,66 @@ test.describe( 'overview', () => {
 		);
 		expect( stored ).toBe( '1' );
 		await expect( page.locator( '.hero-w' ) ).not.toHaveClass( /is-open/ );
+		await expect
+			.poll( () => posts.length )
+			.toBeGreaterThan( 0 );
+		expect(
+			posts.some(
+				( body ) =>
+					body &&
+					body.meta &&
+					body.meta.wpcy_overview_hero_collapsed === true
+			)
+		).toBe( true );
+	} );
+
+	test( '/stats 挂起 10 秒后出现 LoadError', async ( { page } ) => {
+		test.setTimeout( 30000 );
+		await mockOverview( page, { hangStats: true } );
+		await page.goto( '/wp-admin/admin.php?page=wpcy', {
+			waitUntil: 'domcontentloaded',
+		} );
+		await expect(
+			page.getByText( '暂时无法读取统计，请刷新页面重试。' )
+		).toBeVisible( { timeout: 12000 } );
+		await expect( page.getByText( '还没有数据' ) ).toHaveCount( 0 );
+	} );
+
+	test( '/stats 500 显示 LoadError 不显示还没有数据', async ( { page } ) => {
+		await mockOverview( page, { status: { stats: 500 } } );
+		await openAdminPage( page, 'wpcy' );
+		await expect(
+			page.getByText( '暂时无法读取统计，请刷新页面重试。' )
+		).toBeVisible();
+		await expect( page.getByText( '还没有数据' ) ).toHaveCount( 0 );
+	} );
+
+	test( '/diagnostics 500 Hero 不显示已接通', async ( { page } ) => {
+		await mockOverview( page, { status: { diagnostics: 500 } } );
+		await openAdminPage( page, 'wpcy' );
+		await expect(
+			page.getByText( '暂时无法读取线路状态，请刷新页面重试。' )
+		).toBeVisible();
+		await expect( page.locator( '.hero-svc .pill.ok' ) ).toHaveCount( 0 );
+		await expect( page.locator( '.hero-svc' ).getByText( '已接通' ) ).toHaveCount(
+			0
+		);
+	} );
+
+	test( '混合站用 OV-10 混合标题', async ( { page } ) => {
+		await mockOverview( page, {
+			settings: {
+				profile: 'mixed',
+				recovery_mode: false,
+				connectivity: {
+					wordpress_org: 'off',
+					public_assets: { items: [ 'google_fonts' ], scope: 'admin' },
+					avatar: { admin: 'cravatar_cn', frontend: 'off' },
+				},
+			},
+		} );
+		await openAdminPage( page, 'wpcy' );
+		await expect( page.getByText( '访客在哪都不等' ) ).toBeVisible();
+		await expect( page.getByText( '人在国内、站在海外' ) ).toHaveCount( 0 );
 	} );
 } );

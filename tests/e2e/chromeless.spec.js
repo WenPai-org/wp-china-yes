@@ -38,12 +38,12 @@ test.describe( 'chromeless', () => {
 				content:
 					':root { --wp-admin--admin-bar--height: 0 !important; } #wpadminbar { display: none !important; }',
 			} );
-			const body = page.locator( '.wpcy-page-body' );
+			const body = page.locator( '.wpcy-main' );
 			await expect( body ).toBeVisible();
 			const box = await body.boundingBox();
 			expect( box, slug ).toBeTruthy();
 			expect( box.width, slug ).toBeGreaterThan( 200 );
-			expect( box.width, slug ).toBeLessThanOrEqual( 1080 + 48 );
+			expect( box.width, slug ).toBeLessThanOrEqual( 1120 + 64 );
 			const top = await body.evaluate( ( el ) =>
 				getComputedStyle( el ).top
 			);

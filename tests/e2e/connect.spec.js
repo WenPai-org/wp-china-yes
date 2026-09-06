@@ -9,7 +9,7 @@ test.describe( 'connect', () => {
 	test( 'E3: 头像改为 off 保存后刷新仍为 off', async ( { page } ) => {
 		await openAdminPage( page, 'wpcy-connect' );
 		await expect(
-			page.getByRole( 'heading', { name: '连接优化', level: 1 } )
+			page.getByRole( 'heading', { name: '设置', level: 1 } )
 		).toBeVisible();
 
 		await expect( page.getByText( 'WeAvatar' ) ).toBeVisible();
@@ -31,7 +31,7 @@ test.describe( 'connect', () => {
 			await page.reload( { waitUntil: 'domcontentloaded' } );
 			await page
 				.locator( '#wpcy-admin-root' )
-				.getByRole( 'heading', { name: '连接优化', level: 1 } )
+				.getByRole( 'heading', { name: '设置', level: 1 } )
 				.waitFor( { state: 'visible' } );
 		}
 
@@ -43,7 +43,7 @@ test.describe( 'connect', () => {
 		await page.reload( { waitUntil: 'domcontentloaded' } );
 		await page
 			.locator( '#wpcy-admin-root' )
-			.getByRole( 'heading', { name: '连接优化', level: 1 } )
+			.getByRole( 'heading', { name: '设置', level: 1 } )
 			.waitFor( { state: 'visible' } );
 		await expect( off() ).toBeChecked();
 	} );

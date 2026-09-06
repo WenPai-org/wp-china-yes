@@ -45,12 +45,6 @@
 }
 
 /* --- 壳 --- */
-#wpcontent {
-	margin-left: 160px;
-	padding: 0;
-	min-height: calc(100vh - 32px);
-}
-
 #wpfooter {
 	display: none;
 }
@@ -126,6 +120,10 @@
 
 .wpcy-head-right a {
 	color: var(--wpcy-ink-2);
+}
+
+.wpcy-snackbar-slot {
+	margin: 0 0 16px;
 }
 
 .wpcy-tabs {

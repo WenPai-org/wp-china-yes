@@ -6,6 +6,52 @@ test.describe( 'diagnose', () => {
 		await loginAsAdmin( page );
 	} );
 
+	test( '进入诊断页不点按钮就有行', async ( { page } ) => {
+		await page.route(
+			( url ) => {
+				try {
+					const href = new URL( url.href );
+					const route = href.searchParams.get( 'rest_route' ) || '';
+					return (
+						route.indexOf( '/wpcy/v1/diagnostics' ) === 0 ||
+						href.pathname.indexOf( '/wpcy/v1/diagnostics' ) !== -1
+					);
+				} catch ( error ) {
+					void error;
+					return false;
+				}
+			},
+			async ( route ) => {
+				if ( route.request().method().toUpperCase() !== 'GET' ) {
+					await route.continue();
+					return;
+				}
+				await route.fulfill( {
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify( {
+						targets: [
+							{
+								target: 'api.wenpai.net',
+								result: 'ok',
+								latency_ms: 120,
+								checked_at: '2026-09-06T04:00:00Z',
+								suggestion: null,
+							},
+						],
+					} ),
+				} );
+			}
+		);
+		await openAdminPage( page, 'wpcy-diagnose' );
+		await expect( page.getByText( 'api.wenpai.net' ) ).toBeVisible( {
+			timeout: 15000,
+		} );
+		expect(
+			await page.locator( '.dataviews-view-table tbody tr' ).count()
+		).toBeGreaterThan( 0 );
+	} );
+
 	test( 'E5: 立即检查后 DataViews 至少一行目标', async ( { page } ) => {
 		await openAdminPage( page, 'wpcy-diagnose' );
 		await page.getByRole( 'button', { name: '立即检查' } ).click();
