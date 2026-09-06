@@ -221,7 +221,7 @@ final class Plugin {
 		$registry->add( new SiteBindingModule( $config, $logger ) );
 		$entitlements = new EntitlementsModule( $config, $logger );
 		$registry->add( new AppsModule( null, null, new CachedEntitlements( $entitlements ), null, $logger ) );
-		$registry->add( new RestModule( $config, $checker ) );
+		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
 		$registry->add( new NoticeControlModule( $config, '', null, $logger ) );
