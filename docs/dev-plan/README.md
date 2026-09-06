@@ -3,7 +3,9 @@
 状态：定稿 v1.0 · 2026-09-04 · 统筹 linuxjoy · 产品 feibisi
 用途：**代理按本表顺序领任务，不需要再问人。** 每个任务一份任务书在 `tasks/`，含目标、输入、交付物、禁区、验收命令。做完出报告，统筹验收后合并 `main`。
 
-先读：`docs/4.0-rewrite-plan.md` → `docs/architecture/adr-00[123]*.md` → `docs/dev/coding-standards.md` → `docs/dev/agents.md` → 本任务对应的 `docs/specs/*`。
+先读：`docs/4.0-rewrite-plan.md` → `docs/architecture/adr-00[1234]*.md` → `docs/dev/coding-standards.md` → `docs/dev/agents.md` → 本任务对应的 `docs/specs/*`。
+
+**4.0 首发必需项：ADR-004**（站点场景 `profile` 与连通性作用域 `scope`）。决定原文 `docs/dev-plan/decisions/2026-09-06-site-profile-and-scope.md`。
 
 ## 0. 工作方式（不变量）
 
@@ -87,8 +89,10 @@ M1 出口：`WPCY_KERNEL=v4` 打开时，站点在 wp-env 下完成安装 → �
 | M4-01 ✅ | 删旧（`tasks/M4-01.md`；影响分析 `verification/m4-delete-impact-2026-09-05.md`）。**已合入 `5a80e1c`**（2026-09-06；CI run 34013731394 全绿；独立审查阻断已修：Windfonts 断言接回 CI、首次启动迁移失败兜底；报告 `reports/M4-01*`） | 物理删除 `framework/`、`Service/`、`client/`、`templates/`、`assets/`（先搬 `src/Admin/app` 用到的图）、旧 `Plugin.php`、`helpers.php`、`autoload-guard.php`、3.x 独立测试与 `WPCY_KERNEL` 开关；composer 去 `./` 映射与 `files`、去 `plugin-update-checker`；**把 `Migration\Runner` 接进内核首次启动**（否则升级站吃默认值）；`load_plugin_textdomain`；`tests/bootstrap-unit.php` 垫 `ABSPATH`；PHP 下限已定 8.0（2026-09-06）；**撤掉 CI `plugin-check` job 对旧目录/旧文件的排除项**（2026-09-04 为让门禁只守 4.0 代码而加，Plugin Check 在旧代码里发现的文本域/转义/直接访问问题随删除一并消失） |
 | M4-02 ✅ | 升级矩阵（`tasks/M4-02.md`）。**已合入**（2026-09-06；Studio 真机 3.8/3.9.3→4.0→停用→装回全过；CI run 34019965572；产品决定：3.8 `admincdn` 键存在即按 token 推导 `public_assets`，空则 `[]`；矩阵 `verification/m4-upgrade-matrix-2026-09-06.md`；报告 `reports/M4-02*`） | 3.9.x → 4.0 → 停用 → 3.9.x；单站/多站点；损坏 option |
 | M-UI-0 | 产品化后端前置（`tasks/M-UI-0.md`）：`/residency/*` 与 `/migration/report` REST、索引 `unconfigured` 态、面向用户错误串中文化、恢复页 title | M4-02 | 不改 `src/Admin/app/` | 见任务书 | `composer check` + CI 全绿；DoD |
-| M-UI-1… | 产品化 UI（原型定稿后拆；`docs/dev/design-sop.md` 门禁） | M-UI-0、原型认可 | — | 待写 | 三层验收 |
-| M4-03 | RC 与文档（`tasks/M4-03.md`） | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧） |
+| M-SCOPE-0 | 站点场景与作用域文档（ADR-004、schema/REST/UI 词表、M-SCOPE-1 任务书、M-SCOPE-UI 需求） | — | 纯文档 | 见本行交付 | 决定展开，不改 `src/` |
+| M-SCOPE-1 | 引擎：profile / scope / admin_assets（`tasks/M-SCOPE-1.md`） | **M-UI-0 合入** | 不改 `src/Admin/app/` | Schema v2、三模块门控、Profile、REST、迁移 D3 | 见任务书；单元 + e2e 不红 |
+| M-UI-1… | 产品化 UI（原型定稿后拆；`docs/dev/design-sop.md` 门禁）。场景向导 / 概览提示 / 作用域呈现需求见 `tasks/M-SCOPE-UI.md` | M-UI-0、原型认可 | — | 待写 | 三层验收 |
+| M4-03 | RC 与文档（`tasks/M4-03.md`）；**依赖 M-SCOPE-1** | 升级说明、移除功能说明、readme.txt、官网 changelog/news 文案（交产品侧）；en_US 完整性；`admin_assets`「即将提供」 |
 | M4-04 | 发版（`tasks/M4-04.md`） | 按 `docs/dev/release.md`；分发切云桥；`plat-api` 停止返回 3.x 以外版本 |
 
 ## 3. 验收人清单（统筹用）

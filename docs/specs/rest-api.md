@@ -1,6 +1,6 @@
 # REST API `wpcy/v1`
 
-状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c
+状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 更新 `/settings` 字段并新增 `GET /profile/suggest`。
 
 本文列出 4.0 插件对 wp-admin React 应用与小工具宿主暴露的全部端点。apps 合同引用 `docs/specs/apps-manifest-and-bridge.md`，此处不重复字段表。不得在本文新增产品决定；空白处标「待定（M0）」。
 
@@ -21,8 +21,9 @@
 
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
-| GET / PUT | `/settings` | `manage_options` | 站点设置，schema 校验，返回完整对象 |
+| GET / PUT | `/settings` | `manage_options` | 站点设置，schema 校验，返回完整对象（含 `profile`、`admin_assets`、拆分后的 avatar / public_assets.scope） |
 | GET / PUT | `/network-settings` | `manage_network_options` | 多站点网络策略，返回完整对象 |
+| GET | `/profile/suggest` | `manage_options` | 向导建议场景；不自动切换；不返回 IP 原值 |
 | GET | `/diagnostics` | `manage_options` | 最近一次检查结果 |
 | POST | `/diagnostics/run` | 同上 | 触发检查，返回结果 |
 | GET | `/residency/ruleset` | 同上 | 当前生效主机表（版本、档位、条目） |
@@ -53,9 +54,61 @@
 
 ### `/settings`、`/network-settings`
 
-- GET 返回完整 option 对象（`wpcy_settings` / `wpcy_network_settings`），不含 `wpcy_site_identity.binding.credential`。
-- PUT body 为完整对象或与 schema 兼容的部分对象；服务端按 `docs/specs/config-schema.md` 校验后写入，响应完整对象。
+- GET 返回完整 option 对象（`wpcy_settings` / `wpcy_network_settings`），不含 `wpcy_site_identity.binding.credential`。自 `schema_version` 2 起对象含：
+  - `profile`：`domestic` \| `crossborder` \| `mixed`
+  - `connectivity.wordpress_org`：`auto` \| `off`
+  - `connectivity.public_assets`：`{ "items": [...], "scope": "both"|"admin"|"frontend"|"off" }`（不再是字符串数组）
+  - `connectivity.avatar`：`{ "admin": <枚举>, "frontend": <枚举> }`（不再是单字符串；枚举 `cravatar_cn` \| `cravatar_global` \| `weavatar` \| `off`）
+  - `admin_assets`：`on` \| `off`（4.0 预留，无运行时行为）
+  - 其余字段同 `docs/specs/config-schema.md`
+- PUT body 为完整对象或与 schema 兼容的部分对象；服务端按 `docs/specs/config-schema.md` 校验后写入，响应完整对象。PUT `profile` 且请求标明切换场景时，服务端走 `Profile::apply_defaults()` 重置连通性各项为该场景默认（改前由界面确认；本端点不代做确认对话框）。
 - 子站覆盖走 `wpcy_site_overrides`，经 `Config\Repository` 合并；本命名空间不另开 overrides 端点。**待定（M0）**：是否需要独立 `GET/PUT /site-overrides`，由实现方在写 `Rest/` 时与产品负责人确认。
+
+### `/profile/suggest`
+
+向导第一步用。权限同 `/settings`（`manage_options`）。**只建议，不写入、不自动切换。**
+
+查询参数（向导页 JS 采集，不存储原值）：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `locale` | string，可选 | 浏览器 `Accept-Language` 主标签，如 `zh-CN` |
+| `timezone` | string，可选 | IANA 时区，如 `Asia/Shanghai` |
+
+未传 `locale` 时可用请求头 `Accept-Language` 的第一项作同等 hint。不接受、不回传 IP。
+
+响应：
+
+```json
+{
+  "suggestion": "domestic",
+  "signals": {
+    "server_country": "CN",
+    "admin_locale_hint": "zh-CN",
+    "admin_tz_hint": "Asia/Shanghai"
+  }
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `suggestion` | `domestic` \| `crossborder` \| `mixed` \| `null`。`null` = 不建议，让用户选 |
+| `signals.server_country` | geo 得到的 ISO 3166-1 alpha-2（如 `CN`）；失败为 `null`。**不返回 IP 原值** |
+| `signals.admin_locale_hint` | 用于推断的 locale 结论（规范化后的参数或请求头）；未提供为 `null` |
+| `signals.admin_tz_hint` | 用于推断的时区结论；未提供为 `null` |
+
+建议规则（决定 D4，不得改）：
+
+- 服务器境外 + 管理员境内 → `crossborder`
+- 服务器境内 → `domestic`
+- 其它（含 geo 失败）→ `null`
+- 本规则不产生 `mixed`（`mixed` 只出现在用户手选）
+- 「境内」：`server_country === "CN"`（不含 HK / MO / TW）；管理员境内 = `locale` 匹配 `zh-CN` / `zh_CN`，或 `timezone` 为 `Asia/Shanghai` / `Asia/Chongqing` / `Asia/Urumqi` / `PRC`
+- 「境外」：`server_country` 非空且不是 `CN`
+
+geo：走 `api.wenpai.net`。接口路径与应答格式**待 wenpai-net 侧提供**；插件先按 `{ "country": "CN" }` 契约实现并可 mock。geo 失败 → `suggestion` 为 `null`，`server_country` 为 `null`。
+
+错误：权限不足 `wpcy_forbidden`（403），与 `/settings` 相同。geo 失败不是错误。
 
 ### `/diagnostics`、`/diagnostics/run`
 

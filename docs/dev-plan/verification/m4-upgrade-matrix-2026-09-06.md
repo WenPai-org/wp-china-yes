@@ -335,6 +335,18 @@ ignored 含 `huge_blob`（`feature_removed`）与 token `admin`。`wp_china_yes`
 
 ---
 
+## 待补用例（D3）
+
+决定 D3 撤销 M4-02b 的 `admin→ignored`：3.8 `admincdn` 含 `admin`，或 3.9 `admincdn_files` 含 `admin` → `wpcy_settings.admin_assets='on'`，迁移报告「后台加速：已保留设置，4.1 起生效」。下列用例由 **M-SCOPE-1** 补跑，本矩阵不在 M-SCOPE-0 改断言。
+
+| 用例编号 | 样本 | 期望（M-SCOPE-1 之后） | 状态 |
+|----------|------|------------------------|------|
+| S2 | `tests/fixtures/legacy-options/single-3.8-02.json`（`admincdn=["admin"]`） | `admin_assets=on`；`ignored` 不含 token `admin`；报告含「后台加速：已保留设置，4.1 起生效」；`profile=domestic` | 由 M-SCOPE-1 补跑 |
+| D2 | 超大 option（基于 S2 追加 `huge_blob`） | 同上（`admin` 不再 ignored）；`huge_blob` 仍 `feature_removed` | 由 M-SCOPE-1 补跑 |
+| S08 | `tests/fixtures/legacy-options/single-3.9-08-admincdn-files-admin.json`（M-SCOPE-1 新增；3.9 `admincdn_files` 含 `admin`） | `admin_assets=on`；token `admin` 不进 ignored | 由 M-SCOPE-1 补跑（含新增 fixture） |
+
+现矩阵 S2 dry-run 仍把 token `admin` 放进 `ignored`（`unsupported_whitelist`），`wpcy_settings` 无 `admin_assets` 键，这是 M4-02b 当时的正确结果，不是本文件回写。
+
 ## Definition of Done
 
 - [x] 规格条目 ↔ 实现对照表：见上节 §5 表；无 4.0 目标的两行标「未做写入」。
