@@ -92,6 +92,7 @@ final class Report {
 	public function collect(): array {
 		$report = array(
 			'site_uuid'         => $this->site_uuid(),
+			'profile'           => $this->profile(),
 			'site_url'          => function_exists( 'home_url' ) ? home_url() : '',
 			'wp_version'        => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : '',
 			'php_version'       => PHP_VERSION,
@@ -127,6 +128,22 @@ final class Report {
 			return isset( $identity['site_uuid'] ) ? (string) $identity['site_uuid'] : '';
 		}
 		return '';
+	}
+
+	/**
+	 * Effective settings profile. Defaults to domestic.
+	 *
+	 * @since 4.0.0
+	 */
+	private function profile(): string {
+		if ( $this->config instanceof Repository ) {
+			$profile = $this->config->get( 'profile', 'domestic' );
+			if ( in_array( $profile, array( 'domestic', 'crossborder', 'mixed' ), true ) ) {
+				return $profile;
+			}
+		}
+
+		return 'domestic';
 	}
 
 	/**
