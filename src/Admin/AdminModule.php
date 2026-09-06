@@ -173,7 +173,7 @@ final class AdminModule implements Module {
 	 */
 	public function render(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Forbidden.', 'wp-china-yes' ), 403 );
+			wp_die( esc_html__( '暂时无法打开该页面，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 		}
 
 		echo '<div class="wrap wpcy-admin-wrap"><div id="wpcy-admin-root"></div></div>';

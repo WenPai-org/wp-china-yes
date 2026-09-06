@@ -23,6 +23,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Runner {
 
 	/**
+	 * Option that holds the last execute() report. Sibling of wpcy_migration_backup.
+	 *
+	 * @since 4.0.0
+	 */
+	public const REPORT_OPTION = 'wpcy_migration_report';
+
+	/**
 	 * 3.x option reader.
 	 *
 	 * @var LegacyReader
@@ -96,8 +103,28 @@ final class Runner {
 
 		$option = $this->reader->is_multisite() ? Schema::NETWORK_SETTINGS : Schema::SETTINGS;
 		$this->repository->save_option( $option, $report->settings() );
+		$this->persist_report( $report, $legacy );
 
 		return $report;
+	}
+
+	/**
+	 * Last persisted execute() report, or empty when none.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function stored_report(): array {
+		$raw = $this->reader->is_multisite()
+			? ( function_exists( 'get_site_option' ) ? get_site_option( self::REPORT_OPTION, array() ) : array() )
+			: ( function_exists( 'get_option' ) ? get_option( self::REPORT_OPTION, array() ) : array() );
+
+		if ( ! is_array( $raw ) || array() === $raw ) {
+			return array();
+		}
+
+		return $raw;
 	}
 
 	/**
@@ -145,6 +172,53 @@ final class Runner {
 	 */
 	private function from_version(): string {
 		return '3.x';
+	}
+
+	/**
+	 * 3.x plugin version from `wp_china_yes` when present, else from_version().
+	 *
+	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
+	 */
+	private function source_version( array $legacy ): string {
+		foreach ( array( 'version', 'plugin_version' ) as $key ) {
+			if ( isset( $legacy[ $key ] ) && is_string( $legacy[ $key ] ) && '' !== $legacy[ $key ] ) {
+				return $legacy[ $key ];
+			}
+		}
+
+		return $this->from_version();
+	}
+
+	/**
+	 * Persist Report::to_array() plus migrated_at and source_version.
+	 *
+	 * @param Report               $report Mapping result.
+	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
+	 */
+	private function persist_report( Report $report, array $legacy ): void {
+		$backup      = $this->backup->read();
+		$migrated_at = isset( $backup['migrated_at'] ) && is_string( $backup['migrated_at'] )
+			? $backup['migrated_at']
+			: gmdate( 'Y-m-d\\TH:i:s\\Z' );
+
+		$document = array_merge(
+			$report->to_array(),
+			array(
+				'migrated_at'    => $migrated_at,
+				'source_version' => $this->source_version( $legacy ),
+			)
+		);
+
+		if ( $this->reader->is_multisite() ) {
+			if ( function_exists( 'update_site_option' ) ) {
+				update_site_option( self::REPORT_OPTION, $document );
+			}
+			return;
+		}
+
+		if ( function_exists( 'update_option' ) ) {
+			update_option( self::REPORT_OPTION, $document, false );
+		}
 	}
 
 	/**

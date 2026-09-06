@@ -25,6 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Apps routes. WordPress capability is manage_options; manifest permissions are extra.
  *
+ * GET /apps `index_status` is ok, unreachable, invalid, or unconfigured (empty source).
  * Does not emit wpcy_apps_origin_mismatch (bridge, M2-05). Constant is on Registry.
  */
 final class AppsController {
@@ -246,7 +247,7 @@ final class AppsController {
 		if ( ! $this->store->has( $id, $key ) ) {
 			return RestError::make(
 				'wpcy_apps_key_invalid',
-				__( 'The requested data key was not found for this app.', 'wp-china-yes' ),
+				__( '暂时无法读取该数据，请检查后重试。', 'wp-china-yes' ),
 				404
 			);
 		}
@@ -271,7 +272,7 @@ final class AppsController {
 		if ( ! $this->registry->has( $this->app_id( $request ) ) ) {
 			return RestError::make(
 				'wpcy_apps_unknown_app',
-				__( 'Unknown app.', 'wp-china-yes' ),
+				__( '暂时无法打开该小工具，请刷新目录后重试。', 'wp-china-yes' ),
 				404
 			);
 		}
@@ -284,7 +285,7 @@ final class AppsController {
 		if ( strlen( $raw ) > DataStore::MAX_BYTES ) {
 			return RestError::make(
 				'wpcy_apps_payload_too_large',
-				__( 'The request body exceeds 64KB.', 'wp-china-yes' ),
+				__( '暂时无法保存该数据，内容超过 64KB。', 'wp-china-yes' ),
 				413
 			);
 		}
@@ -390,14 +391,14 @@ final class AppsController {
 		if ( ! $this->registry->has( $id ) ) {
 			return RestError::make(
 				'wpcy_apps_unknown_app',
-				__( 'Unknown app.', 'wp-china-yes' ),
+				__( '暂时无法打开该小工具，请刷新目录后重试。', 'wp-china-yes' ),
 				404
 			);
 		}
 		if ( ! $this->registry->allows( $id, $permission ) ) {
 			return RestError::make(
 				'wpcy_apps_forbidden_permission',
-				__( 'This app is not allowed to use that permission.', 'wp-china-yes' ),
+				__( '暂时无法完成该操作，该小工具没有相应权限。', 'wp-china-yes' ),
 				403
 			);
 		}
@@ -432,7 +433,7 @@ final class AppsController {
 			if ( 'paid' === $tier ) {
 				return RestError::make(
 					'wpcy_apps_entitlement_required',
-					__( 'This app requires an entitlement.', 'wp-china-yes' ),
+					__( '暂时无法使用该小工具，请先获取权益。', 'wp-china-yes' ),
 					403
 				);
 			}
@@ -443,14 +444,14 @@ final class AppsController {
 		if ( $needs_quota && 'exhausted' === $status ) {
 			return RestError::make(
 				'wpcy_apps_quota_exceeded',
-				__( 'The entitlement quota is exhausted.', 'wp-china-yes' ),
+				__( '暂时无法使用该小工具，本期配额已用尽。', 'wp-china-yes' ),
 				403
 			);
 		}
 		if ( $needs_quota && 'expired' === $status ) {
 			return RestError::make(
 				'wpcy_apps_entitlement_required',
-				__( 'This app requires an entitlement.', 'wp-china-yes' ),
+				__( '暂时无法使用该小工具，请先获取权益。', 'wp-china-yes' ),
 				403
 			);
 		}
@@ -567,7 +568,7 @@ final class AppsController {
 		if ( ! DataStore::key_valid( $key ) ) {
 			return RestError::make(
 				'wpcy_apps_key_invalid',
-				__( 'The data key is invalid.', 'wp-china-yes' ),
+				__( '暂时无法保存该数据，请检查键名后重试。', 'wp-china-yes' ),
 				400
 			);
 		}

@@ -117,6 +117,29 @@ final class Ruleset {
 	}
 
 	/**
+	 * REST payload: version, issued_at, A/B/C entries. No signature, no request body.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array{ruleset_version: int, issued_at: string, tiers: array<string, mixed>}
+	 */
+	public function to_rest(): array {
+		$tiers = isset( $this->document['tiers'] ) && is_array( $this->document['tiers'] )
+			? $this->document['tiers']
+			: array();
+
+		$issued = isset( $this->document['issued_at'] ) && is_string( $this->document['issued_at'] )
+			? $this->document['issued_at']
+			: '';
+
+		return array(
+			'ruleset_version' => $this->version(),
+			'issued_at'       => $issued,
+			'tiers'           => $tiers,
+		);
+	}
+
+	/**
 	 * First matching rule for $url, A then B then C, document order.
 	 *
 	 * @since 4.0.0

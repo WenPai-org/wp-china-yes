@@ -132,6 +132,34 @@ class VerifyTest extends TestCase {
 	}
 
 	/**
+	 * Empty source is unconfigured, not ok.
+	 */
+	public function test_empty_source_is_unconfigured() {
+		$index = new Index( new ManifestVerifier() );
+		$apps  = $index->refresh();
+		$this->assertSame( array(), $apps );
+		$this->assertSame( 'unconfigured', $index->index_status() );
+		$this->assertSame( array(), $index->apps() );
+		$this->assertSame( 'unconfigured', $index->index_status() );
+	}
+
+	/**
+	 * Non-empty source that cannot be read is unreachable.
+	 */
+	public function test_nonempty_unreachable_source_is_unreachable() {
+		$index = new Index(
+			new ManifestVerifier(),
+			'https://apps.wpcy.com/index.json',
+			static function () {
+				return '';
+			}
+		);
+		$apps  = $index->refresh();
+		$this->assertSame( array(), $apps );
+		$this->assertSame( 'unreachable', $index->index_status() );
+	}
+
+	/**
 	 * HTTPS wpcy.com / wenpai.net hosts are allowed; others are not.
 	 */
 	public function test_origin_allowlist() {

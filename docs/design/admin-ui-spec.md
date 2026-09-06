@@ -136,6 +136,22 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | scope both | 后台与前台 | — |
 | admin_assets reserved | 即将提供 | `admin_assets` 开关位 |
 | admin_assets migrated | 后台加速：已保留设置，4.1 起生效 | 迁移报告；连接优化页对应项 |
+| binding unavailable | 暂时无法连接文派服务，请稍后重试。 | 琥珀 Notice |
+| binding start failed | 暂时无法完成站点绑定，请稍后重试。 | 琥珀 Notice |
+| entitlements unavailable | 暂时无法读取权益配额，请稍后重试。 | 琥珀 Notice |
+| binding not pending | 暂时无法验证站点绑定，请重新发起绑定。 | 琥珀 Notice |
+| forbidden | 暂时无法访问该内容，请确认你有管理权限。 | 红 Notice |
+| invalid schema | 暂时无法保存设置，请检查填写内容后重试。 | 红 Notice |
+| recovery unknown action | 暂时无法执行恢复操作，请刷新页面后重试。 | 红 Notice |
+| unknown app | 暂时无法打开该小工具，请刷新目录后重试。 | 红 Notice |
+| apps key missing | 暂时无法读取该数据，请检查后重试。 | 红 Notice |
+| apps key invalid | 暂时无法保存该数据，请检查键名后重试。 | 红 Notice |
+| apps payload too large | 暂时无法保存该数据，内容超过 64KB。 | 红 Notice |
+| apps forbidden permission | 暂时无法完成该操作，该小工具没有相应权限。 | 红 Notice |
+| apps entitlement required | 暂时无法使用该小工具，请先获取权益。 | 红 Notice |
+| apps quota exceeded | 暂时无法使用该小工具，本期配额已用尽。 | 琥珀 Notice |
+| recovery forbidden | 暂时无法打开恢复页，请确认你有管理权限。 | 红 Notice |
+| admin forbidden | 暂时无法打开该页面，请确认你有管理权限。 | 红 Notice |
 
 禁用词：遥测、匿名数据、opt-in、entitlement、SaaS、套餐（用「权益」）、Pro。
 

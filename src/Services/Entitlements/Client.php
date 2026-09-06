@@ -199,7 +199,7 @@ final class Client {
 	public static function unavailable(): WP_Error {
 		return new WP_Error(
 			'wpcy_entitlements_unavailable',
-			__( 'Quota status is not available.', 'wp-china-yes' ),
+			__( '暂时无法读取权益配额，请稍后重试。', 'wp-china-yes' ),
 			array(
 				'status' => 503,
 			)

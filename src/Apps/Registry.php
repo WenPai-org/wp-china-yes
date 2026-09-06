@@ -78,7 +78,7 @@ final class Registry {
 	}
 
 	/**
-	 * Last index fetch outcome: ok, unreachable, or invalid.
+	 * Last index fetch outcome: ok, unreachable, invalid, or unconfigured.
 	 *
 	 * @since 4.0.0
 	 */

@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers settings, network-settings, diagnostics, recovery, and binding.
+ * Registers settings, network-settings, diagnostics, residency, recovery, and binding.
  */
 final class RestModule implements Module {
 
@@ -121,6 +121,8 @@ final class RestModule implements Module {
 		$settings    = new SettingsController( $writer );
 		$network     = new NetworkSettingsController( $writer );
 		$diagnostics = new DiagnosticsController( $this->checker );
+		$residency   = new ResidencyController();
+		$migration   = new MigrationReportController();
 		$recovery    = new RecoveryController( new RecoveryActions( $this->repository ) );
 		$binding     = new BindingController( $this->repository );
 
@@ -175,6 +177,46 @@ final class RestModule implements Module {
 				'methods'             => 'POST',
 				'callback'            => array( $diagnostics, 'run' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/ruleset',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_ruleset' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/log',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_log' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'page'     => array(
+						'type'    => 'integer',
+						'default' => 1,
+					),
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => ResidencyController::PER_PAGE_DEFAULT,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/migration/report',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $migration, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
 			)
 		);
 
