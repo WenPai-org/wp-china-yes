@@ -1,5 +1,6 @@
 /**
  * Admin data store `wpcy/admin`.
+ *
  */
 
 import { createReduxStore, register } from '@wordpress/data';
@@ -14,6 +15,27 @@ const DEFAULT_STATE = {
 	settings: {},
 	capabilities: {},
 	diagnostics: DEFAULT_DIAGNOSTICS,
+	diagnosticsError: false,
+	diagnosticsLoaded: false,
+	diagnosticsMs: null,
+	stats: null,
+	statsError: false,
+	statsLoaded: false,
+	events: null,
+	eventsError: false,
+	eventsLoaded: false,
+	binding: null,
+	bindingError: false,
+	bindingLoaded: false,
+	migration: null,
+	migrationError: false,
+	migrationLoaded: false,
+	clientProbe: null,
+	clientProbeError: false,
+	clientProbeLoaded: false,
+	links: {},
+	providers: {},
+	pluginVersion: '',
 	draft: null,
 	saving: false,
 	running: false,
@@ -30,14 +52,23 @@ const DEFAULT_STATE = {
 export function connectDraftFromSettings( settings ) {
 	const connectivity = settings?.connectivity || {};
 	const modules = settings?.modules || {};
+	const publicAssets = connectivity.public_assets;
+	let items = [];
+	if ( Array.isArray( publicAssets ) ) {
+		items = publicAssets.slice();
+	} else if ( Array.isArray( publicAssets?.items ) ) {
+		items = publicAssets.items.slice();
+	}
 	return {
 		wordpress_org: connectivity.wordpress_org || 'auto',
-		public_assets: Array.isArray( connectivity.public_assets )
-			? connectivity.public_assets.slice()
-			: [],
+		public_assets: items,
 		avatar: connectivity.avatar || 'cravatar_cn',
 		windfonts: Boolean( modules.windfonts ),
 	};
+}
+
+function failFlag( type ) {
+	return { type, error: true };
 }
 
 const actions = {
@@ -73,22 +104,81 @@ const actions = {
 		}
 	},
 	*fetchDiagnostics() {
+		const started =
+			typeof performance !== 'undefined' ? performance.now() : 0;
 		try {
 			const diagnostics = yield {
 				type: 'API_FETCH',
 				request: { path: '/wpcy/v1/diagnostics' },
 			};
-			return { type: 'SET_DIAGNOSTICS', diagnostics };
+			const ms =
+				typeof performance !== 'undefined'
+					? Math.round( performance.now() - started )
+					: null;
+			return { type: 'SET_DIAGNOSTICS', diagnostics, latencyMs: ms };
 		} catch ( error ) {
-			return {
-				type: 'SET_NOTICE',
-				notice: {
-					status: 'error',
-					message:
-						error?.message ||
-						__( '无法读取诊断结果。', 'wp-china-yes' ),
-				},
+			void error;
+			return failFlag( 'SET_DIAGNOSTICS_ERROR' );
+		}
+	},
+	*fetchStats() {
+		try {
+			const stats = yield {
+				type: 'API_FETCH',
+				request: { path: '/wpcy/v1/stats?days=14' },
 			};
+			return { type: 'SET_STATS', stats };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_STATS_ERROR' );
+		}
+	},
+	*fetchEvents() {
+		try {
+			const payload = yield {
+				type: 'API_FETCH',
+				request: { path: '/wpcy/v1/events?per_page=4' },
+			};
+			return { type: 'SET_EVENTS', events: payload };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_EVENTS_ERROR' );
+		}
+	},
+	*fetchBinding() {
+		try {
+			const binding = yield {
+				type: 'API_FETCH',
+				request: { path: '/wpcy/v1/binding' },
+			};
+			return { type: 'SET_BINDING', binding };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_BINDING_ERROR' );
+		}
+	},
+	*fetchMigration() {
+		try {
+			const migration = yield {
+				type: 'API_FETCH',
+				request: { path: '/wpcy/v1/migration/report' },
+			};
+			return { type: 'SET_MIGRATION', migration };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_MIGRATION_ERROR' );
+		}
+	},
+	*fetchClientProbe() {
+		try {
+			const clientProbe = yield {
+				type: 'API_FETCH',
+				request: { path: '/wpcy/v1/diagnostics/client-probe' },
+			};
+			return { type: 'SET_CLIENT_PROBE', clientProbe };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_CLIENT_PROBE_ERROR' );
 		}
 	},
 	*saveSettings( draft ) {
@@ -170,16 +260,16 @@ const actions = {
 			};
 			yield { type: 'SET_SETTINGS', settings };
 			yield { type: 'SET_EXITED_RECOVERY', value: true };
-			return {
-				type: 'SET_NOTICE',
-				notice: {
-					status: 'warning',
-					message: __(
-						'改写与模块仍处于关闭，前往连接优化开启。',
-						'wp-china-yes'
-					),
-				},
-			};
+			try {
+				const diagnostics = yield {
+					type: 'API_FETCH',
+					request: { path: '/wpcy/v1/diagnostics' },
+				};
+				return { type: 'SET_DIAGNOSTICS', diagnostics };
+			} catch ( inner ) {
+				void inner;
+				return failFlag( 'SET_DIAGNOSTICS_ERROR' );
+			}
 		} catch ( error ) {
 			return {
 				type: 'SET_NOTICE',
@@ -208,6 +298,9 @@ function reducer( state = DEFAULT_STATE, action ) {
 				...state,
 				settings,
 				capabilities: action.bootstrap.capabilities || {},
+				links: action.bootstrap.links || {},
+				providers: action.bootstrap.providers || {},
+				pluginVersion: action.bootstrap.pluginVersion || '',
 				draft: connectDraftFromSettings( settings ),
 			};
 		}
@@ -226,6 +319,67 @@ function reducer( state = DEFAULT_STATE, action ) {
 			return {
 				...state,
 				diagnostics: action.diagnostics || DEFAULT_DIAGNOSTICS,
+				diagnosticsError: false,
+				diagnosticsLoaded: true,
+				diagnosticsMs:
+					action.latencyMs === undefined
+						? state.diagnosticsMs
+						: action.latencyMs,
+			};
+		case 'SET_DIAGNOSTICS_ERROR':
+			return {
+				...state,
+				diagnosticsError: true,
+				diagnosticsLoaded: true,
+			};
+		case 'SET_STATS':
+			return {
+				...state,
+				stats: action.stats,
+				statsError: false,
+				statsLoaded: true,
+			};
+		case 'SET_STATS_ERROR':
+			return { ...state, statsError: true, statsLoaded: true };
+		case 'SET_EVENTS':
+			return {
+				...state,
+				events: action.events,
+				eventsError: false,
+				eventsLoaded: true,
+			};
+		case 'SET_EVENTS_ERROR':
+			return { ...state, eventsError: true, eventsLoaded: true };
+		case 'SET_BINDING':
+			return {
+				...state,
+				binding: action.binding,
+				bindingError: false,
+				bindingLoaded: true,
+			};
+		case 'SET_BINDING_ERROR':
+			return { ...state, bindingError: true, bindingLoaded: true };
+		case 'SET_MIGRATION':
+			return {
+				...state,
+				migration: action.migration,
+				migrationError: false,
+				migrationLoaded: true,
+			};
+		case 'SET_MIGRATION_ERROR':
+			return { ...state, migrationError: true, migrationLoaded: true };
+		case 'SET_CLIENT_PROBE':
+			return {
+				...state,
+				clientProbe: action.clientProbe,
+				clientProbeError: false,
+				clientProbeLoaded: true,
+			};
+		case 'SET_CLIENT_PROBE_ERROR':
+			return {
+				...state,
+				clientProbeError: true,
+				clientProbeLoaded: true,
 			};
 		case 'SET_SAVING':
 			return { ...state, saving: Boolean( action.saving ) };
@@ -249,6 +403,69 @@ const selectors = {
 	},
 	getDiagnostics( state ) {
 		return state.diagnostics;
+	},
+	getDiagnosticsError( state ) {
+		return state.diagnosticsError;
+	},
+	isDiagnosticsLoaded( state ) {
+		return state.diagnosticsLoaded;
+	},
+	getDiagnosticsMs( state ) {
+		return state.diagnosticsMs;
+	},
+	getStats( state ) {
+		return state.stats;
+	},
+	getStatsError( state ) {
+		return state.statsError;
+	},
+	isStatsLoaded( state ) {
+		return state.statsLoaded;
+	},
+	getEvents( state ) {
+		return state.events;
+	},
+	getEventsError( state ) {
+		return state.eventsError;
+	},
+	isEventsLoaded( state ) {
+		return state.eventsLoaded;
+	},
+	getBinding( state ) {
+		return state.binding;
+	},
+	getBindingError( state ) {
+		return state.bindingError;
+	},
+	isBindingLoaded( state ) {
+		return state.bindingLoaded;
+	},
+	getMigration( state ) {
+		return state.migration;
+	},
+	getMigrationError( state ) {
+		return state.migrationError;
+	},
+	isMigrationLoaded( state ) {
+		return state.migrationLoaded;
+	},
+	getClientProbe( state ) {
+		return state.clientProbe;
+	},
+	getClientProbeError( state ) {
+		return state.clientProbeError;
+	},
+	isClientProbeLoaded( state ) {
+		return state.clientProbeLoaded;
+	},
+	getLinks( state ) {
+		return state.links || {};
+	},
+	getProviders( state ) {
+		return state.providers || {};
+	},
+	getPluginVersion( state ) {
+		return state.pluginVersion || '';
 	},
 	getDraft( state ) {
 		return state.draft || connectDraftFromSettings( state.settings );
