@@ -4,7 +4,7 @@ TEST ONLY fixture for the apps bridge. Signed with `tests/fixtures/keys/wpcy-tes
 
 | 文件 | 用途 |
 |------|------|
-| `index.html` | Sandbox 工具页：按序 ready → init/context.get → data.set/get/delete → entitlement.get → go.open → resize |
+| `index.html` | Sandbox 工具页：按序 ready → init/context.get → data.set/get/delete → entitlement.get → go.open → resize。记住 `init.payload.session_token` 并在后续信封顶层回带。`#send-bad-token` 或 `?bad_token=1` 会发一条错误 token 的 `data.set`。 |
 | `manifest.json` | 已签名 manifest（`id=mock-app`，`tier=free`） |
 | `chromeless.html` | 外层 chromeless iframe + 内层 sandbox 工具（双层场景） |
 

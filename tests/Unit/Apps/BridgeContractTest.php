@@ -272,6 +272,95 @@ class BridgeContractTest extends TestCase {
 	}
 
 	/**
+	 * Opaque sandbox origin ("null") is allowed when source is the iframe.
+	 */
+	public function test_opaque_null_origin_is_allowed() {
+		$ready           = $this->event( 'ready' );
+		$ready['origin'] = 'null';
+		$this->assertSame( 'init', Bridge::classify( $ready )['action'] );
+
+		$get           = $this->event( 'data.get', array( 'key' => 'smoke' ), 'r', true );
+		$get['origin'] = 'null';
+		$this->assertSame( 'rest', Bridge::classify( $get )['action'] );
+	}
+
+	/**
+	 * Origin that is neither "null" nor entry_url origin is rejected.
+	 */
+	public function test_unfamiliar_origin_is_rejected() {
+		$event           = $this->event( 'data.get', array( 'key' => 'smoke' ), 'req-x', true );
+		$event['origin'] = 'https://evil.example';
+		$out             = Bridge::classify( $event );
+		$this->assertSame( 'error', $out['action'] );
+		$this->assertSame( Bridge::ERR_ORIGIN_MISMATCH, $out['code'] );
+	}
+
+	/**
+	 * Non-ready messages without session_token are rejected.
+	 */
+	public function test_missing_session_token_is_rejected() {
+		$event = $this->event( 'data.get', array( 'key' => 'smoke' ), 'req-x', true );
+		unset( $event['data']['session_token'] );
+		$out = Bridge::classify( $event );
+		$this->assertSame( 'error', $out['action'] );
+		$this->assertSame( Bridge::ERR_SESSION_INVALID, $out['code'] );
+		$this->assertSame( 'req-x', $out['request_id'] );
+	}
+
+	/**
+	 * Non-ready messages with the wrong session_token are rejected.
+	 */
+	public function test_wrong_session_token_is_rejected() {
+		$event                          = $this->event(
+			'data.set',
+			array(
+				'key'   => 'hack',
+				'value' => 1,
+			),
+			'req-x',
+			true
+		);
+		$event['data']['session_token'] = 'invalid-session-token';
+		$out                            = Bridge::classify( $event );
+		$this->assertSame( 'error', $out['action'] );
+		$this->assertSame( Bridge::ERR_SESSION_INVALID, $out['code'] );
+	}
+
+	/**
+	 * Ready is the only tool message that does not need a session_token.
+	 */
+	public function test_ready_without_session_token_is_allowed() {
+		$event = $this->event( 'ready' );
+		$this->assertArrayNotHasKey( 'session_token', $event['data'] );
+		$out = Bridge::classify( $event );
+		$this->assertSame( 'init', $out['action'] );
+	}
+
+	/**
+	 * Same iframe source, origin flipped to a third party, no token: rejected.
+	 *
+	 * Simulates the tool page navigating away. Origin check fires first.
+	 */
+	public function test_same_source_third_party_origin_without_token_is_rejected() {
+		$event           = $this->event(
+			'data.set',
+			array(
+				'key'   => 'hack',
+				'value' => 1,
+			),
+			'req-nav',
+			true
+		);
+		$event['origin'] = 'https://third-party.example';
+		unset( $event['data']['session_token'] );
+		$event['source_is_iframe'] = true;
+		$event['source_is_parent'] = false;
+		$out                       = Bridge::classify( $event );
+		$this->assertSame( 'error', $out['action'] );
+		$this->assertSame( Bridge::ERR_ORIGIN_MISMATCH, $out['code'] );
+	}
+
+	/**
 	 * Host JS accepts opaque sandbox origin ("null") only after source is the iframe.
 	 */
 	public function test_host_js_accepts_opaque_sandbox_origin_via_source() {
@@ -319,6 +408,7 @@ class BridgeContractTest extends TestCase {
 		$this->assertSame( 10000, Bridge::HOST_TIMEOUT_MS );
 		$this->assertSame( 200, Bridge::RESIZE_DEBOUNCE_MS );
 		$this->assertSame( 'wpcy_apps_host_timeout', Bridge::ERR_HOST_TIMEOUT );
+		$this->assertSame( 'wpcy_apps_session_invalid', Bridge::ERR_SESSION_INVALID );
 	}
 
 	/**
@@ -367,6 +457,9 @@ class BridgeContractTest extends TestCase {
 		}
 		$this->assertNotFalse( strpos( $html, 'smoke' ) );
 		$this->assertNotFalse( strpos( $html, 'height: 320' ) );
+		$this->assertNotFalse( strpos( $html, 'session_token' ) );
+		$this->assertNotFalse( strpos( $html, 'send-bad-token' ) );
+		$this->assertNotFalse( strpos( $html, 'bad_token' ) );
 	}
 
 	/**
@@ -383,6 +476,10 @@ class BridgeContractTest extends TestCase {
 		$this->assertNotFalse( strpos( $js, 'source === iframe.contentWindow' ) );
 		$this->assertNotFalse( strpos( $js, '200' ) );
 		$this->assertNotFalse( strpos( $js, '10000' ) );
+		$this->assertNotFalse( strpos( $js, 'function createSessionToken' ) );
+		$this->assertNotFalse( strpos( $js, 'crypto.getRandomValues' ) );
+		$this->assertNotFalse( strpos( $js, 'session_token' ) );
+		$this->assertNotFalse( strpos( $js, 'wpcy_apps_session_invalid' ) );
 	}
 
 	/**
@@ -414,14 +511,17 @@ class BridgeContractTest extends TestCase {
 		if ( '' !== $request_id ) {
 			$data['request_id'] = $request_id;
 		}
+		if ( 'ready' !== $type ) {
+			$data['session_token'] = 'test-session-token';
+		}
 		return array(
-			'data'             => $data,
-			'origin'           => 'https://apps.wpcy.com',
-			'entry_origin'     => 'https://apps.wpcy.com',
-			'source_is_iframe' => true,
-			'source_is_parent' => false,
-			'ready'            => $ready,
-			'permissions'      => array(
+			'data'                   => $data,
+			'origin'                 => 'https://apps.wpcy.com',
+			'entry_origin'           => 'https://apps.wpcy.com',
+			'source_is_iframe'       => true,
+			'source_is_parent'       => false,
+			'ready'                  => $ready,
+			'permissions'            => array(
 				'site:read',
 				'data:read',
 				'data:write',
@@ -429,7 +529,8 @@ class BridgeContractTest extends TestCase {
 				'entitlement:read',
 				'go:open',
 			),
-			'app_id'           => 'mock-app',
+			'app_id'                 => 'mock-app',
+			'expected_session_token' => 'test-session-token',
 		);
 	}
 }

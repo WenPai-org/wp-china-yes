@@ -316,7 +316,7 @@ async function mockQuotas( target ) {
 	} );
 }
 
-test.describe( 'apps A1–A9', () => {
+test.describe( 'apps A1–A10', () => {
 	test.beforeEach( async ( { page } ) => {
 		await loginAsAdmin( page );
 	} );
@@ -511,5 +511,19 @@ test.describe( 'apps A1–A9', () => {
 			[ 'init', 'result', 'error' ].includes( message.type )
 		);
 		expect( hostTypes ).toEqual( [] );
+	} );
+
+	test( 'A10: 错误 session_token 被拒绝', async ( { page } ) => {
+		const entryUrl = fixtureEntryUrl();
+		const sep = entryUrl.indexOf( '?' ) === -1 ? '?' : '&';
+		await mockBound( page );
+		await mockApps( page, { entryUrl: entryUrl + sep + 'bad_token=1' } );
+		await openAdminPage( page, 'wpcy-services' );
+		await page.getByRole( 'button', { name: '站点体检' } ).click();
+
+		const frame = page.frameLocator( '[data-testid="wpcy-app-iframe"]' );
+		await expect( frame.getByTestId( 'log' ) ).toContainText(
+			'session_invalid'
+		);
 	} );
 } );

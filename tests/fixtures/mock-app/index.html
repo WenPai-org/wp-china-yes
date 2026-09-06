@@ -11,12 +11,18 @@
 <body>
 	<p id="status" data-testid="status">loading</p>
 	<ol id="log" data-testid="log"></ol>
+	<button type="button" id="send-bad-token" data-testid="send-bad-token">send bad token</button>
 	<script>
 	(function () {
 		var hostOrigin = '';
+		var sessionToken = '';
 		var step = 0;
 		var logEl = document.getElementById('log');
 		var statusEl = document.getElementById('status');
+		var badTokenMode = false;
+		try {
+			badTokenMode = new URLSearchParams(window.location.search).get('bad_token') === '1';
+		} catch (e) {}
 
 		function line(text) {
 			var li = document.createElement('li');
@@ -25,17 +31,29 @@
 			logEl.appendChild(li);
 		}
 
-		function envelope(type, payload, requestId) {
+		function envelope(type, payload, requestId, tokenOverride) {
 			var msg = { wpcy: 1, type: type, payload: payload || {} };
 			if (requestId) {
 				msg.request_id = requestId;
 			}
+			if (type !== 'ready') {
+				if (typeof tokenOverride === 'string') {
+					msg.session_token = tokenOverride;
+				} else if (sessionToken) {
+					msg.session_token = sessionToken;
+				}
+			}
 			return msg;
 		}
 
-		function send(type, payload, requestId) {
+		function send(type, payload, requestId, tokenOverride) {
 			var target = hostOrigin || '*';
-			window.parent.postMessage(envelope(type, payload, requestId), target);
+			window.parent.postMessage(envelope(type, payload, requestId, tokenOverride), target);
+		}
+
+		function sendBadToken() {
+			line('bad token');
+			send('data.set', { key: 'hack', value: 1 }, 'req-bad-token', 'invalid-session-token');
 		}
 
 		function next() {
@@ -82,6 +100,10 @@
 			}
 		}
 
+		document.getElementById('send-bad-token').addEventListener('click', function () {
+			sendBadToken();
+		});
+
 		window.addEventListener('message', function (event) {
 			var data = event.data;
 			if (!data || data.wpcy !== 1) {
@@ -93,8 +115,13 @@
 			}
 			if (data.type === 'init') {
 				hostOrigin = (data.payload && data.payload.host_origin) || event.origin;
+				sessionToken = (data.payload && data.payload.session_token) || '';
 				line('init');
 				statusEl.textContent = 'init';
+				if (badTokenMode) {
+					sendBadToken();
+					return;
+				}
 				next();
 				return;
 			}
@@ -114,6 +141,10 @@
 			}
 			if (data.type === 'error') {
 				line('error ' + ((data.payload && data.payload.code) || ''));
+				if (badTokenMode) {
+					statusEl.textContent = 'done';
+					return;
+				}
 				next();
 			}
 		});
