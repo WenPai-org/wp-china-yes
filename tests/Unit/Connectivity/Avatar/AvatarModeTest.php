@@ -195,6 +195,31 @@ class AvatarModeTest extends TestCase {
 	}
 
 	/**
+	 * Only the get_avatar_url rewrite increments the counter.
+	 */
+	public function test_only_get_avatar_url_counts_rewrite() {
+		$seen = 0;
+		add_action(
+			'wpcy_stats_increment',
+			static function ( $counter, $n ) use ( &$seen ) {
+				if ( 'avatar_rewrites_frontend' === $counter || 'avatar_rewrites_admin' === $counter ) {
+					$seen += (int) $n;
+				}
+			}
+		);
+
+		$module = $this->module( 'cravatar_cn' );
+		$module->get_cravatar_url( $this->gravatar );
+		$this->assertSame( 0, $seen );
+
+		$module->filter_get_avatar_url( $this->gravatar );
+		$this->assertSame( 1, $seen );
+
+		$module->get_cravatar_url( $this->gravatar );
+		$this->assertSame( 1, $seen );
+	}
+
+	/**
 	 * Module under the given avatar mode.
 	 *
 	 * @param string $mode connectivity.avatar value.

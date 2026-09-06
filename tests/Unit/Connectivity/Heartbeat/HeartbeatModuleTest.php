@@ -115,6 +115,29 @@ class HeartbeatModuleTest extends TestCase {
 	}
 
 	/**
+	 * Two heartbeat_received calls within 60s count once (lower-bound estimate).
+	 */
+	public function test_heartbeat_received_throttled_to_once_per_minute() {
+		$seen                   = 0;
+		HookStore::$screen_base = 'post.php';
+		HookStore::$user_id     = 7;
+		add_action(
+			'wpcy_stats_increment',
+			static function ( $counter, $n ) use ( &$seen ) {
+				if ( 'heartbeat_saved' === $counter ) {
+					$seen += (int) $n;
+				}
+			}
+		);
+
+		$module = $this->module( 'on' );
+		$module->on_heartbeat_received();
+		$module->on_heartbeat_received();
+
+		$this->assertSame( 3, $seen );
+	}
+
+	/**
 	 * Config bag.
 	 *
 	 * @param string $value on|off.

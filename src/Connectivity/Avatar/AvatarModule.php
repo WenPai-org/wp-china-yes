@@ -128,12 +128,15 @@ final class AvatarModule implements ConditionalModule {
 		add_filter( 'avatar_defaults', array( $this, 'set_defaults_for_cravatar' ), 1 );
 		add_filter( 'um_user_avatar_url_filter', array( $this, 'get_cravatar_url' ), 1 );
 		add_filter( 'bp_gravatar_url', array( $this, 'get_cravatar_url' ), 1 );
-		add_filter( 'get_avatar_url', array( $this, 'get_cravatar_url' ), 1 );
+		add_filter( 'get_avatar_url', array( $this, 'filter_get_avatar_url' ), 1 );
 		add_action( 'wp_head', array( $this, 'add_avatar_preconnect' ), 1 );
 	}
 
 	/**
-	 * Rewrite a gravatar URL for the configured Cravatar line.
+	 * Rewrite a gravatar URL without incrementing avatar_rewrites_*.
+	 *
+	 * Used by Ultimate Member / BuddyPress filters so the same URL is not
+	 * counted twice when get_avatar_url also runs.
 	 *
 	 * @since 4.0.0
 	 *
@@ -141,6 +144,31 @@ final class AvatarModule implements ConditionalModule {
 	 * @return mixed
 	 */
 	public function get_cravatar_url( $url ) {
+		return $this->rewrite_avatar_url( $url, false );
+	}
+
+	/**
+	 * Rewrite and count a get_avatar_url filter call.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $url Avatar URL.
+	 * @return mixed
+	 */
+	public function filter_get_avatar_url( $url ) {
+		return $this->rewrite_avatar_url( $url, true );
+	}
+
+	/**
+	 * Rewrite a gravatar URL for the configured Cravatar line.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $url   Avatar URL.
+	 * @param bool  $count Whether to increment avatar_rewrites_*.
+	 * @return mixed
+	 */
+	private function rewrite_avatar_url( $url, bool $count ) {
 		if ( ! is_string( $url ) ) {
 			return $url;
 		}
@@ -158,7 +186,7 @@ final class AvatarModule implements ConditionalModule {
 				return $url;
 		}
 
-		if ( $rewritten !== $url ) {
+		if ( $count && $rewritten !== $url ) {
 			$this->count_rewrite();
 		}
 

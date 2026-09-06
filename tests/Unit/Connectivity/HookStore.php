@@ -50,6 +50,13 @@ final class HookStore {
 	public static $screen_base = null;
 
 	/**
+	 * Fake get_current_user_id().
+	 *
+	 * @var int
+	 */
+	public static $user_id = 0;
+
+	/**
 	 * Reset bags.
 	 */
 	public static function reset(): void {
@@ -58,5 +65,6 @@ final class HookStore {
 		self::$deregistered  = array();
 		self::$removed_boxes = array();
 		self::$screen_base   = null;
+		self::$user_id       = 0;
 	}
 }

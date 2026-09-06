@@ -66,10 +66,18 @@ final class NetworkSettingsController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( WP_REST_Request $request ) {
+		$body = SettingsController::body( $request );
+		if ( is_array( $body ) ) {
+			unset( $body['profile_confirmed_at'] );
+			if ( array_key_exists( 'profile', $body ) ) {
+				$body['profile_confirmed_at'] = RestError::now();
+			}
+		}
+
 		$result = $this->writer->put(
 			Schema::NETWORK_SETTINGS,
 			$this->writer->network_document(),
-			SettingsController::body( $request )
+			$body
 		);
 		if ( is_wp_error( $result ) ) {
 			return $result;
