@@ -69,3 +69,14 @@ L0 并进 `Privacy/DataResidency/Ruleset`（新字段）；L2 为 `Privacy/SiteB
 ## 四、不做什么
 
 不迁移 HTTP Block 源码；不给用户正则/任意域名入口；不设付费墙；不新起品牌名；不在模块内写死场景判断或推广链接。
+
+## 统筹拍板（2026-09-06 夜，回应 M-ABSORB-0 疑问）
+
+1. **Cravatar 保护**：`cravatar.com` 与 `cravatar.cn` 均按 `suffix`（含全部子域）进硬编码 L0。
+2. **云桥 ingest 主机**：由 devops 在部署 M3-S2 时给出 FQDN 后写入；M-BLOCK-1 先以常量占位并禁止发明主机名（维持规格"待定"）。
+3. **噪声包位置**：接受"L0/L1 未认领之后、L2 之前，不算第四层"。
+4. **L1 C 档之后 L2 可拦**：接受。C 是"不改道不记正文"，不是终态放行。
+5. **能力**：多站点用 `manage_network_options`；单站用 `manage_options`。REST 权限回调按 `is_multisite()` 分流；规格照此改。
+6. **schema_version 维持 2**，新键缺省填充，不做 `upgrade_2_to_3`。
+7. **`match` 标签词表**：`exact` → "精确匹配"，`suffix` → "包含子域名"。登记 §4 词表。
+8. **站点覆盖袋含 `site_blocklist`**：整段 400 拒绝（`wpcy_settings_network_only_key`），不静默丢弃。
