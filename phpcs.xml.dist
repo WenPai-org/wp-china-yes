@@ -4,6 +4,7 @@
 
 	<file>src/</file>
 	<file>tests/Unit/</file>
+	<file>wp-china-yes.php</file>
 
 	<arg name="extensions" value="php"/>
 

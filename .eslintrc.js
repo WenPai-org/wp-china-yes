@@ -6,10 +6,6 @@ module.exports = {
 		'node_modules/',
 		'build/',
 		'dist/',
-		'framework/',
-		'client/',
-		'assets/',
 		'tests/',
-		'Service/',
 	],
 };

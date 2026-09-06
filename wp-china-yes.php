@@ -12,6 +12,8 @@
  * Tested up to: 7.1
  * Requires PHP: 8.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * @package WenPai\ChinaYes
  */
 
 defined( 'ABSPATH' ) || exit;

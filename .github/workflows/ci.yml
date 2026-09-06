@@ -208,6 +208,7 @@ jobs:
       - run: bash tests/wordpress-smoke.sh
       - run: bash tests/integration-cli.sh
       - run: bash tests/integration-recovery.sh
+      - run: bash tests/integration-windfonts.sh
       - if: always()
         run: npx wp-env stop
 
