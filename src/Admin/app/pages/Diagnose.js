@@ -226,11 +226,16 @@ export default function Diagnose() {
 		} ),
 		[]
 	);
-	const { runDiagnostics } = useDispatch( STORE_NAME );
+	const { runDiagnostics, fetchDiagnostics } = useDispatch( STORE_NAME );
 	const hash = parseHash();
 	const initial = TABS.some( ( tab ) => tab.name === hash.tab )
 		? hash.tab
 		: 'connect';
+
+	useEffect( () => {
+		fetchDiagnostics();
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- prefetch once
+	}, [] );
 
 	useEffect( () => {
 		if ( ! hash.tab ) {

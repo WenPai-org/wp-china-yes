@@ -17,6 +17,7 @@ const PILL_TONE = {
 	direct: '',
 	off: '',
 	paused: '',
+	unchecked: '',
 };
 
 /**

@@ -19,6 +19,7 @@ const META_KEY = 'wpcy_overview_hero_collapsed';
  * @param {import('react').ReactNode}                props.lede
  * @param {import('react').ReactNode}                props.actions
  * @param {Array}                                    props.stackRows
+ * @param {import('react').ReactNode}                [props.stack]
  * @param {{pill:string,tone:string,facts:string[]}} props.summary
  */
 export default function Hero( {
@@ -27,6 +28,7 @@ export default function Hero( {
 	lede,
 	actions,
 	stackRows,
+	stack,
 	summary,
 } ) {
 	const [ open, setOpen ] = useState( true );
@@ -96,7 +98,7 @@ export default function Hero( {
 					<p>{ lede }</p>
 					<div className="cta">{ actions }</div>
 				</div>
-				<SvcStack rows={ stackRows } />
+				{ stack || <SvcStack rows={ stackRows } /> }
 			</div>
 			<button
 				className="hero-bar"

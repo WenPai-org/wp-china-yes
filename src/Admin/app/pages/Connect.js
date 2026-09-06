@@ -4,12 +4,8 @@
 
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import {
-	Button,
-	CheckboxControl,
-	Snackbar,
-	ToggleControl,
-} from '@wordpress/components';
+import { useEffect } from '@wordpress/element';
+import { Button, CheckboxControl, ToggleControl } from '@wordpress/components';
 import { DataForm } from '@wordpress/dataviews/wp';
 import PageShell from '../components/PageShell';
 import StatusDot from '../components/StatusDot';
@@ -123,16 +119,21 @@ function PublicAssetsEdit( { data, field, onChange } ) {
 }
 
 export default function Connect() {
-	const { draft, isDirty, isSaving, notice } = useSelect(
+	const { draft, isDirty, isSaving } = useSelect(
 		( select ) => ( {
 			draft: select( STORE_NAME ).getDraft(),
 			isDirty: select( STORE_NAME ).isDirty(),
 			isSaving: select( STORE_NAME ).isSaving(),
-			notice: select( STORE_NAME ).getNotice(),
 		} ),
 		[]
 	);
-	const { setDraft, saveSettings, clearNotice } = useDispatch( STORE_NAME );
+	const { setDraft, saveSettings, fetchDiagnostics } =
+		useDispatch( STORE_NAME );
+
+	useEffect( () => {
+		fetchDiagnostics();
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- prefetch once
+	}, [] );
 
 	const fields = [
 		{
@@ -223,7 +224,7 @@ export default function Connect() {
 
 	return (
 		<PageShell
-			title={ __( '连接优化', 'wp-china-yes' ) }
+			title={ __( '设置', 'wp-china-yes' ) }
 			lede={ __( '改动即时生效，不需要保存', 'wp-china-yes' ) }
 			actions={ save }
 		>
@@ -235,13 +236,6 @@ export default function Connect() {
 					setDraft( edits );
 				} }
 			/>
-			{ notice ? (
-				<div className="wpcy-snackbar-slot">
-					<Snackbar onRemove={ () => clearNotice() }>
-						{ notice.message }
-					</Snackbar>
-				</div>
-			) : null }
 		</PageShell>
 	);
 }

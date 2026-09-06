@@ -35,7 +35,7 @@ export function areaPath( points, w = 300, h = 44 ) {
  * @param {number[]} props.points
  * @param {string}   [props.color]
  */
-export function Area( { points, color = '#3858e9' } ) {
+export function Area( { points, color = 'var(--wpcy-accent)' } ) {
 	const gid = 'g' + useId().replace( /:/g, '' );
 	if ( ! points || points.length < 2 ) {
 		return null;

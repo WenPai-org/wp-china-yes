@@ -83,6 +83,32 @@ function isCross( settings ) {
 	return p === 'crossborder' || p === 'mixed';
 }
 
+/**
+ * True when /stats 200 and every total is 0.
+ *
+ * @param {Object|null} stats
+ * @return {boolean} Value.
+ */
+function statsAllZero( stats ) {
+	if ( ! stats ) {
+		return false;
+	}
+	const totals = stats.totals;
+	if ( totals && typeof totals === 'object' ) {
+		const values = Object.values( totals );
+		if ( ! values.length ) {
+			return true;
+		}
+		return values.every( ( value ) => ! Number( value ) );
+	}
+	const series = stats.series || {};
+	const parts = Object.values( series );
+	if ( ! parts.length ) {
+		return true;
+	}
+	return parts.every( ( rows ) => sumSeries( rows ) === 0 );
+}
+
 export default function Overview() {
 	const slice = useSelect( ( select ) => {
 		const store = select( STORE_NAME );
@@ -155,6 +181,7 @@ export default function Overview() {
 			) : (
 				<OverviewBody
 					slice={ slice }
+					timedOut={ timedOut }
 					runDiagnostics={ runDiagnostics }
 					exitRecovery={ exitRecovery }
 					fetchDiagnostics={ fetchDiagnostics }
@@ -171,6 +198,7 @@ export default function Overview() {
 
 function OverviewBody( {
 	slice,
+	timedOut,
 	runDiagnostics,
 	exitRecovery,
 	fetchDiagnostics,
@@ -183,10 +211,28 @@ function OverviewBody( {
 	const settings = slice.settings || {};
 	const profile = settings.profile || 'domestic';
 	const domestic = profile === 'domestic';
+	const mixed = profile === 'mixed';
 	const cross = isCross( settings );
 	const recovery = slice.recovery;
+	const diagnosticsError =
+		slice.diagnosticsError || ( timedOut && ! slice.diagnosticsLoaded );
+	const statsError = slice.statsError || ( timedOut && ! slice.statsLoaded );
+	const eventsError =
+		slice.eventsError || ( timedOut && ! slice.eventsLoaded );
+	const bindingError =
+		slice.bindingError || ( timedOut && ! slice.bindingLoaded );
+	const migrationError =
+		slice.migrationError || ( timedOut && ! slice.migrationLoaded );
+	const clientProbeError =
+		slice.clientProbeError || ( timedOut && ! slice.clientProbeLoaded );
 	const days = daysSince( slice.stats?.installed_at );
 	const freshInstall = days < 7;
+	const emptyStats =
+		slice.statsLoaded &&
+		! statsError &&
+		Boolean( slice.stats?.installed_at ) &&
+		days < 7 &&
+		statsAllZero( slice.stats );
 	const bound = slice.binding?.status === 'bound';
 
 	const svcRows = buildSvcRows( {
@@ -213,7 +259,7 @@ function OverviewBody( {
 		! settings.profile_confirmed_at;
 
 	const showBindNext =
-		! needConfirm && ! domestic && ! bound && ! slice.bindingError;
+		! needConfirm && ! domestic && ! bound && ! bindingError;
 
 	const hasNext = Boolean( needConfirm || showBindNext );
 	const degraded = Boolean( degradedGroup ) && ! recovery;
@@ -235,8 +281,8 @@ function OverviewBody( {
 		degradedGroup,
 		hasDown,
 		freshInstall,
-		profile,
 		domestic,
+		mixed,
 	} );
 
 	const heroActions = heroButtons( {
@@ -279,20 +325,29 @@ function OverviewBody( {
 				</Notice>
 			) : null }
 
-			{ slice.diagnosticsError ? (
-				<LoadError
-					what={ __( '线路状态', 'wp-china-yes' ) }
-					onRetry={ () => fetchDiagnostics() }
-				/>
-			) : null }
-
 			<Hero
 				eyebrow={ eyebrow }
 				title={ copy.title }
 				lede={ copy.lede }
 				actions={ heroActions }
-				stackRows={ svcRows }
-				summary={ summary }
+				stackRows={ diagnosticsError ? [] : svcRows }
+				stack={
+					diagnosticsError ? (
+						<LoadError
+							what={ __( '线路状态', 'wp-china-yes' ) }
+							onRetry={ () => fetchDiagnostics() }
+						/>
+					) : null
+				}
+				summary={
+					diagnosticsError
+						? {
+								pill: __( '未检查', 'wp-china-yes' ),
+								tone: '',
+								facts: [],
+						  }
+						: summary
+				}
 			/>
 
 			{ needConfirm ? (
@@ -339,14 +394,14 @@ function OverviewBody( {
 				</Next>
 			) : null }
 
-			{ slice.bindingError ? (
+			{ bindingError ? (
 				<LoadError
 					what={ __( '绑定状态', 'wp-china-yes' ) }
 					onRetry={ () => fetchBinding() }
 				/>
 			) : null }
 
-			{ slice.migrationError ? (
+			{ migrationError ? (
 				<LoadError
 					what={ __( '迁移记录', 'wp-china-yes' ) }
 					onRetry={ () => fetchMigration() }
@@ -384,7 +439,7 @@ function OverviewBody( {
 					title={ __( '过去 7 天为你处理', 'wp-china-yes' ) }
 					note={ __( '数字来自本站计数', 'wp-china-yes' ) }
 				/>
-				{ slice.statsError ? (
+				{ statsError ? (
 					<LoadError
 						what={ __( '统计', 'wp-china-yes' ) }
 						onRetry={ () => fetchStats() }
@@ -393,7 +448,7 @@ function OverviewBody( {
 					<StatsGrid
 						stats={ slice.stats }
 						domestic={ domestic }
-						freshInstall={ freshInstall }
+						freshInstall={ emptyStats }
 					/>
 				) }
 			</section>
@@ -401,13 +456,11 @@ function OverviewBody( {
 			<section className="sec">
 				<div className="grid2-w">
 					<LeftStatus
-						diagnosticsError={ slice.diagnosticsError }
 						cross={ cross }
 						clientProbe={ slice.clientProbe }
-						clientProbeError={ slice.clientProbeError }
+						clientProbeError={ clientProbeError }
 						clientProbeLoaded={ slice.clientProbeLoaded }
 						diagnosticsMs={ slice.diagnosticsMs }
-						fetchDiagnostics={ fetchDiagnostics }
 						fetchClientProbe={ fetchClientProbe }
 						routeRows={ routeRows }
 						degraded={ degraded }
@@ -415,7 +468,7 @@ function OverviewBody( {
 					/>
 					<EventsCard
 						events={ slice.events }
-						error={ slice.eventsError }
+						error={ eventsError }
 						onRetry={ () => fetchEvents() }
 					/>
 				</div>
@@ -437,6 +490,7 @@ function heroCopy( {
 	hasDown,
 	freshInstall,
 	domestic,
+	mixed,
 } ) {
 	if ( recovery ) {
 		return {
@@ -462,8 +516,7 @@ function heroCopy( {
 		return {
 			title: (
 				<>
-					{ name }
-					{ __( '镜像暂时不可达，', 'wp-china-yes' ) }
+					{ name } { __( '镜像暂时不可达，', 'wp-china-yes' ) }
 					<br />
 					{ __( '已自动回原始上游。', 'wp-china-yes' ) }
 				</>
@@ -495,6 +548,21 @@ function heroCopy( {
 			),
 			lede: __(
 				'WordPress 更新、Google Fonts、Gravatar 头像已分别经 WenPai.org、adminCDN、Cravatar 接通。第一次自动线路检查已完成，计数从现在开始。',
+				'wp-china-yes'
+			),
+		};
+	}
+	if ( mixed ) {
+		return {
+			title: (
+				<>
+					{ __( '访客在哪都不等，', 'wp-china-yes' ) }
+					<br />
+					{ __( '你在后台也不等。', 'wp-china-yes' ) }
+				</>
+			),
+			lede: __(
+				'前台资源与头像走国内可达源，后台资源只在后台加速；更新直连 WordPress.org。',
 				'wp-china-yes'
 			),
 		};
@@ -546,7 +614,24 @@ function heroButtons( { recovery, degraded, hasNext, cross } ) {
 			</>
 		);
 	}
-	if ( degraded || hasNext ) {
+	const secondary = degraded || hasNext;
+	if ( cross ) {
+		return (
+			<>
+				<Btn
+					variant={ secondary ? 'secondary' : 'primary' }
+					href={ adminPageUrl( PAGES.diagnose, '#probe' ) }
+				>
+					<Icon name="gauge" size={ 16 } />
+					{ __( '从我的浏览器测速', 'wp-china-yes' ) }
+				</Btn>
+				<Btn variant="secondary" href={ adminPageUrl( PAGES.connect ) }>
+					{ __( '调整设置', 'wp-china-yes' ) }
+				</Btn>
+			</>
+		);
+	}
+	if ( secondary ) {
 		return (
 			<>
 				<Btn
@@ -555,22 +640,6 @@ function heroButtons( { recovery, degraded, hasNext, cross } ) {
 				>
 					<Icon name="pulse" size={ 16 } />
 					{ __( '查看线路详情', 'wp-china-yes' ) }
-				</Btn>
-				<Btn variant="secondary" href={ adminPageUrl( PAGES.connect ) }>
-					{ __( '调整设置', 'wp-china-yes' ) }
-				</Btn>
-			</>
-		);
-	}
-	if ( cross ) {
-		return (
-			<>
-				<Btn
-					variant="primary"
-					href={ adminPageUrl( PAGES.diagnose, '#probe' ) }
-				>
-					<Icon name="gauge" size={ 16 } />
-					{ __( '从我的浏览器测速', 'wp-china-yes' ) }
 				</Btn>
 				<Btn variant="secondary" href={ adminPageUrl( PAGES.connect ) }>
 					{ __( '调整设置', 'wp-china-yes' ) }
@@ -775,7 +844,7 @@ function StatsGrid( { stats, domestic, freshInstall } ) {
 						0
 					)
 				);
-				const empty = lastSum === 0 && freshInstall;
+				const empty = Boolean( freshInstall );
 				const bytes = card.bytesKey
 					? sumSeries( split14( series[ card.bytesKey ] ).last )
 					: 0;
@@ -802,28 +871,16 @@ function StatsGrid( { stats, domestic, freshInstall } ) {
 }
 
 function LeftStatus( {
-	diagnosticsError,
 	cross,
 	clientProbe,
 	clientProbeError,
 	clientProbeLoaded,
 	diagnosticsMs,
-	fetchDiagnostics,
 	fetchClientProbe,
 	routeRows,
 	degraded,
 	recovery,
 } ) {
-	if ( diagnosticsError ) {
-		return (
-			<Card tight>
-				<LoadError
-					what={ __( '线路状态', 'wp-china-yes' ) }
-					onRetry={ () => fetchDiagnostics() }
-				/>
-			</Card>
-		);
-	}
 	if ( cross ) {
 		return (
 			<ProbeCard
@@ -903,8 +960,15 @@ function ProbeCard( { probe, error, loaded, serverMs, onRetry } ) {
 			</Card>
 		);
 	}
+	if ( ! loaded ) {
+		return (
+			<Card tight>
+				<div aria-busy="true" className="skel" />
+			</Card>
+		);
+	}
 	const probes = probe?.probes || [];
-	const never = loaded && ( ! probe || ! probe.checked_at );
+	const never = ! probe || ! probe.checked_at;
 	const ago = probe?.checked_at ? relTime( probe.checked_at ) : '';
 	const rows = [];
 	if ( serverMs !== null && serverMs !== undefined ) {
