@@ -48,7 +48,6 @@ final class Schema {
 	public const AVATAR = array(
 		'cravatar_cn',
 		'cravatar_global',
-		'weavatar',
 		'off',
 	);
 

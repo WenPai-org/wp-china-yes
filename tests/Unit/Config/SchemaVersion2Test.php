@@ -70,13 +70,30 @@ class SchemaVersion2Test extends TestCase {
 			array(
 				'schema_version' => 1,
 				'connectivity'   => array(
+					'avatar' => 'cravatar_global',
+				),
+			)
+		);
+
+		$this->assertSame( 'cravatar_global', $out['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_global', $out['connectivity']['avatar']['frontend'] );
+	}
+
+	/**
+	 * Stored v1 weavatar string becomes cravatar_cn on both sides.
+	 */
+	public function test_weavatar_string_becomes_cravatar_cn() {
+		$out = SchemaMigrator::upgrade_1_to_2(
+			array(
+				'schema_version' => 1,
+				'connectivity'   => array(
 					'avatar' => 'weavatar',
 				),
 			)
 		);
 
-		$this->assertSame( 'weavatar', $out['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'weavatar', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['frontend'] );
 	}
 
 	/**
@@ -124,6 +141,30 @@ class SchemaVersion2Test extends TestCase {
 
 		$this->assertSame( $v2, SchemaMigrator::upgrade_1_to_2( $v2 ) );
 		$this->assertSame( $v2, SchemaMigrator::upgrade_1_to_2( SchemaMigrator::upgrade_1_to_2( $v2 ) ) );
+	}
+
+	/**
+	 * A v1 document upgraded twice yields the same v2 object.
+	 */
+	public function test_upgrade_v1_twice_is_idempotent() {
+		$v1 = array(
+			'schema_version' => 1,
+			'connectivity'   => array(
+				'wordpress_org' => 'off',
+				'public_assets' => array( 'jsdelivr' ),
+				'avatar'        => 'off',
+			),
+		);
+
+		$once  = SchemaMigrator::upgrade_1_to_2( $v1 );
+		$twice = SchemaMigrator::upgrade_1_to_2( $once );
+
+		$this->assertSame( 2, $once['schema_version'] );
+		$this->assertSame( $once, $twice );
+		$this->assertSame( array( 'jsdelivr' ), $once['connectivity']['public_assets']['items'] );
+		$this->assertSame( 'both', $once['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'off', $once['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'off', $once['connectivity']['avatar']['frontend'] );
 	}
 
 	/**

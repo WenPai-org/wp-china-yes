@@ -16,8 +16,10 @@ use WenPai\ChinaYes\Connectivity\PublicAssets\PublicAssetsModule;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Tests\Unit\Connectivity\HookStore;
 use WenPai\ChinaYes\Tests\Unit\Connectivity\MapConfig;
+use WenPai\ChinaYes\Tests\Unit\Connectivity\ScopeHarness;
 
 require_once dirname( __DIR__ ) . '/wp-hook-stubs.php';
+require_once dirname( __DIR__ ) . '/scope-function-stubs.php';
 
 /**
  * Unit: off-whitelist unchanged; down node unchanged; emoji optional.
@@ -30,6 +32,7 @@ class WhitelistTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		HookStore::reset();
+		ScopeHarness::reset();
 	}
 
 	/**
@@ -267,6 +270,28 @@ class WhitelistTest extends TestCase {
 		$module = new PublicAssetsModule( $config, new AssetMap(), new MirrorHealth( array( 'jsd.admincdn.com' => true ) ) );
 		$env    = new Environment( Environment::FRONTEND, true );
 		$origin = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
+
+		$this->assertFalse( $module->enabled( $config, $env ) );
+		$this->assertSame( $origin, $module->rewrite( $origin ) );
+	}
+
+	/**
+	 * Frontend scope does not rewrite on an admin request.
+	 */
+	public function test_frontend_scope_does_not_rewrite_admin() {
+		ScopeHarness::$is_admin = true;
+		$config                 = new MapConfig(
+			array(
+				'connectivity.public_assets' => array(
+					'items' => array( 'jsdelivr' ),
+					'scope' => 'frontend',
+				),
+				'recovery_mode'              => false,
+			)
+		);
+		$module                 = new PublicAssetsModule( $config, new AssetMap(), new MirrorHealth( array( 'jsd.admincdn.com' => true ) ) );
+		$env                    = new Environment( Environment::ADMIN, true );
+		$origin                 = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
 
 		$this->assertFalse( $module->enabled( $config, $env ) );
 		$this->assertSame( $origin, $module->rewrite( $origin ) );

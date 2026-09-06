@@ -73,6 +73,75 @@ final class DocumentWriter {
 	}
 
 	/**
+	 * PUT /settings. Single-site writes wpcy_settings; multisite writes
+	 * site overrides and/or the network option, never an unread wpcy_settings.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $incoming PUT body.
+	 * @return true|WP_Error
+	 */
+	public function put_site( $incoming ) {
+		if ( ! function_exists( 'is_multisite' ) || ! is_multisite() ) {
+			return $this->put( Schema::SETTINGS, $this->stored_site_document(), $incoming );
+		}
+
+		if ( ! is_array( $incoming ) || $this->is_list( $incoming ) ) {
+			return RestError::invalid_schema();
+		}
+
+		$incoming  = $this->expand_legacy_avatar( $incoming );
+		$before    = $this->stored_site_document();
+		$current   = $this->apply_profile_switch( $before, $incoming );
+		$merged    = $this->deep_merge( $current, $incoming );
+		$validator = new Validator();
+		$clean     = $validator->sanitize( $merged, Schema::NETWORK_SETTINGS );
+		if ( $this->schema_failed( $validator->warnings() ) ) {
+			return RestError::invalid_schema();
+		}
+
+		$from            = isset( $before['profile'] ) && is_string( $before['profile'] ) ? $before['profile'] : 'domestic';
+		$profile_switch  = isset( $incoming['profile'] ) && is_string( $incoming['profile'] )
+			&& in_array( $incoming['profile'], Schema::PROFILES, true )
+			&& $incoming['profile'] !== $from;
+		$override_roots  = array( 'profile', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' );
+		$overrides_touch = $profile_switch;
+		$overrides       = array( 'schema_version' => Schema::VERSION );
+		$stored_raw      = function_exists( 'get_option' ) ? get_option( Schema::SITE_OVERRIDES, array() ) : array();
+		$stored          = is_array( $stored_raw ) ? $stored_raw : array();
+		foreach ( $override_roots as $key ) {
+			if ( array_key_exists( $key, $stored ) ) {
+				$overrides[ $key ] = $stored[ $key ];
+			}
+		}
+		foreach ( $override_roots as $key ) {
+			$from_switch = $profile_switch && in_array( $key, array( 'profile', 'connectivity', 'modules', 'admin_assets' ), true );
+			if ( array_key_exists( $key, $incoming ) || $from_switch ) {
+				$overrides[ $key ] = $clean[ $key ];
+				$overrides_touch   = true;
+			}
+		}
+		if ( $overrides_touch ) {
+			$this->repository->save_option( Schema::SITE_OVERRIDES, $overrides );
+		}
+
+		$network_roots = array( 'diagnostics', 'data_residency', 'announcements', 'apps' );
+		$network       = $this->network_document();
+		$network_touch = false;
+		foreach ( $network_roots as $key ) {
+			if ( array_key_exists( $key, $incoming ) ) {
+				$network[ $key ] = $clean[ $key ];
+				$network_touch   = true;
+			}
+		}
+		if ( $network_touch ) {
+			$this->repository->save_option( Schema::NETWORK_SETTINGS, $network );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Site settings document (effective, no identity/credential).
 	 *
 	 * Frozen connect UI still reads connectivity.avatar as a string, so the

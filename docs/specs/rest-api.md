@@ -81,8 +81,8 @@
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `locale` | string，可选 | 浏览器 `Accept-Language` 主标签，如 `zh-CN` |
-| `timezone` | string，可选 | IANA 时区，如 `Asia/Shanghai` |
+| `locale` | string，可选，最长 64 | 浏览器 `Accept-Language` 主标签，如 `zh-CN` |
+| `timezone` | string，可选，最长 64 | IANA 时区，如 `Asia/Shanghai` |
 
 未传 `locale` 时可用请求头 `Accept-Language` 的第一项作同等 hint。不接受、不回传 IP。
 
@@ -173,7 +173,7 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 }
 ```
 
-探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com` / `weavatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
+探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
 
 ### `/diagnostics/client-probe`
 
