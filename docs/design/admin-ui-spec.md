@@ -137,7 +137,6 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | scope both | 后台与前台 | — |
 | admin_assets reserved | 即将提供 | `admin_assets` 开关位 |
 | admin_assets migrated | 后台加速：已保留设置，4.1 起生效 | 迁移报告；连接优化页对应项 |
-<<<<<<< HEAD
 | binding unavailable | 暂时无法连接文派服务，请稍后重试。 | 琥珀 Notice |
 | binding start failed | 暂时无法完成站点绑定，请稍后重试。 | 琥珀 Notice |
 | entitlements unavailable | 暂时无法读取权益配额，请稍后重试。 | 琥珀 Notice |
@@ -154,8 +153,6 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | apps quota exceeded | 暂时无法使用该小工具，本期配额已用尽。 | 琥珀 Notice |
 | recovery forbidden | 暂时无法打开恢复页，请确认你有管理权限。 | 红 Notice |
 | admin forbidden | 暂时无法打开该页面，请确认你有管理权限。 | 红 Notice |
-||||||| 09700e8
-=======
 | windfonts unbound | 绑定后可用 | 连接优化字体项；按服务端应答呈现 |
 | heartbeat throttle | 降低后台心跳 | 连接优化开关 |
 | heartbeat throttle help | 仪表盘关闭心跳，编辑器间隔 60 秒 | 连接优化说明 |
@@ -167,7 +164,6 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | client probe ok | 浏览器可达 | 绿点 |
 | client probe down | 浏览器不可达 | 红点 |
 | client probe fail | 暂时无法从浏览器测速，请稍后重试。 | 琥珀 Notice |
->>>>>>> grok/m-scope-0b
 
 禁用词：遥测、匿名数据、opt-in、entitlement、SaaS、套餐（用「权益」）、Pro。
 
