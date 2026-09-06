@@ -94,6 +94,7 @@ final class Plugin {
 	 * `wpcy_network_settings` (multisite) is missing (`get_option`/`get_site_option`
 	 * returns false) and `wp_china_yes` exists. Does not write `wp_china_yes`.
 	 * A damaged non-array legacy option is treated as empty by LegacyReader.
+	 * Runner failures are logged and left unwritten so the next boot retries.
 	 *
 	 * @since 4.0.0
 	 */
@@ -117,7 +118,19 @@ final class Plugin {
 			return;
 		}
 
-		( new Runner() )->execute();
+		try {
+			( new Runner() )->execute();
+		} catch ( \Throwable $e ) {
+			( new Logger() )->log(
+				'warning',
+				sprintf(
+					'First-boot legacy migration failed (%s): %s',
+					get_class( $e ),
+					$e->getMessage()
+				),
+				array( 'exception' => $e )
+			);
+		}
 	}
 
 	/**
