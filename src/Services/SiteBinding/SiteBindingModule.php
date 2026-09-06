@@ -477,7 +477,7 @@ final class SiteBindingModule implements Module {
 	private function not_pending(): WP_Error {
 		return new WP_Error(
 			'wpcy_binding_not_pending',
-			__( 'No pending site-binding challenge.', 'wp-china-yes' ),
+			__( '暂时无法验证站点绑定，请重新发起绑定。', 'wp-china-yes' ),
 			array(
 				'status' => 409,
 			)

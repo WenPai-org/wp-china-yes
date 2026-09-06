@@ -234,7 +234,7 @@ final class ChallengeClient {
 	public static function unavailable(): WP_Error {
 		return new WP_Error(
 			'wpcy_binding_unavailable',
-			__( 'Site binding is not available.', 'wp-china-yes' ),
+			__( '暂时无法连接文派服务，请稍后重试。', 'wp-china-yes' ),
 			array(
 				'status' => 503,
 			)
@@ -341,7 +341,7 @@ final class ChallengeClient {
 	private function failed(): WP_Error {
 		return new WP_Error(
 			'wpcy_binding_start_failed',
-			__( 'Site binding request failed.', 'wp-china-yes' ),
+			__( '暂时无法完成站点绑定，请稍后重试。', 'wp-china-yes' ),
 			array(
 				'status' => 502,
 			)

@@ -223,7 +223,7 @@ final class DataStore {
 		if ( ! self::key_valid( $key ) ) {
 			return $this->error(
 				'wpcy_apps_key_invalid',
-				__( 'The data key is invalid.', 'wp-china-yes' ),
+				__( '暂时无法保存该数据，请检查键名后重试。', 'wp-china-yes' ),
 				400
 			);
 		}
@@ -232,7 +232,7 @@ final class DataStore {
 		if ( '' === $encoded && null !== $value ) {
 			return $this->error(
 				'wpcy_apps_key_invalid',
-				__( 'The data key is invalid.', 'wp-china-yes' ),
+				__( '暂时无法保存该数据，请检查键名后重试。', 'wp-china-yes' ),
 				400
 			);
 		}
@@ -241,7 +241,7 @@ final class DataStore {
 		if ( $size > self::MAX_BYTES ) {
 			return $this->error(
 				'wpcy_apps_payload_too_large',
-				__( 'The request body exceeds 64KB.', 'wp-china-yes' ),
+				__( '暂时无法保存该数据，内容超过 64KB。', 'wp-china-yes' ),
 				413
 			);
 		}

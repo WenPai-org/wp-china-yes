@@ -215,6 +215,7 @@ class ChallengeFlowTest extends TestCase {
 		$result            = $module->start();
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'wpcy_binding_unavailable', $result->get_error_code() );
+		$this->assertSame( '暂时无法连接文派服务，请稍后重试。', $result->get_error_message() );
 		$this->assertSame( array(), BindingStore::$requests );
 
 		$module->register();
@@ -222,8 +223,14 @@ class ChallengeFlowTest extends TestCase {
 
 		BindingStore::$api = ChallengeClient::DEFAULT_API;
 		$this->assertFalse( ChallengeClient::outbound_allowed() );
-		$this->assertInstanceOf( WP_Error::class, $this->module()->start() );
+		$blocked = $this->module()->start();
+		$this->assertInstanceOf( WP_Error::class, $blocked );
+		$this->assertSame( '暂时无法连接文派服务，请稍后重试。', $blocked->get_error_message() );
 		$this->assertSame( array(), BindingStore::$requests );
+
+		$unavailable = ChallengeClient::unavailable();
+		$this->assertSame( 'wpcy_binding_unavailable', $unavailable->get_error_code() );
+		$this->assertSame( '暂时无法连接文派服务，请稍后重试。', $unavailable->get_error_message() );
 	}
 
 	/**

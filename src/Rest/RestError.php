@@ -83,7 +83,7 @@ final class RestError {
 	public static function forbidden(): WP_Error {
 		return self::make(
 			'wpcy_forbidden',
-			__( 'You are not allowed to access this resource.', 'wp-china-yes' ),
+			__( '暂时无法访问该内容，请确认你有管理权限。', 'wp-china-yes' ),
 			403
 		);
 	}
@@ -98,7 +98,7 @@ final class RestError {
 	public static function invalid_schema(): WP_Error {
 		return self::make(
 			'wpcy_invalid_schema',
-			__( 'The request body does not match the settings schema.', 'wp-china-yes' ),
+			__( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' ),
 			400
 		);
 	}
@@ -113,7 +113,7 @@ final class RestError {
 	public static function unknown_action(): WP_Error {
 		return self::make(
 			'wpcy_recovery_unknown_action',
-			__( 'Unknown recovery action.', 'wp-china-yes' ),
+			__( '暂时无法执行恢复操作，请刷新页面后重试。', 'wp-china-yes' ),
 			400
 		);
 	}
