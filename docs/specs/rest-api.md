@@ -1,6 +1,6 @@
 # REST API `wpcy/v1`
 
-状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 更新 `/settings` 字段并新增 `GET /profile/suggest`。
+状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 更新 `/settings` 字段并新增 `GET /profile/suggest`；同日按 [HTTP Block 并入决定](../dev-plan/decisions/2026-09-06-http-block-merge-and-feature-absorption.md) A 节新增 `/site-blocklist`、`GET /residency/protected`、`POST /residency/test`。
 
 本文列出 4.0 插件对 wp-admin React 应用与小工具宿主暴露的全部端点。apps 合同引用 `docs/specs/apps-manifest-and-bridge.md`，此处不重复字段表。不得在本文新增产品决定；空白处标「待定（M0）」。
 
@@ -30,6 +30,9 @@
 | POST | `/diagnostics/client-probe` | 同上 | 接收浏览器测速结果，只存最近一次摘要 |
 | GET | `/residency/ruleset` | 同上 | 当前生效主机表（版本、档位、条目） |
 | GET | `/residency/log` | 同上 | B 档记录（主机、数据类别、次数、最近时间；**无正文**） |
+| GET | `/residency/protected` | 同上 | L0 / L1 / L2 三层只读视图 |
+| POST | `/residency/test` | 同上 | 输入 URL，返回会被哪一层如何处理 |
+| GET / PUT | `/site-blocklist` | `manage_network_options` | L2 本站拦截清单；PUT 命中受保护主机返回 400 `wpcy_blocklist_protected_host` |
 | GET | `/announcements` | 同上 | 缓存的公告 |
 | POST | `/announcements/{id}/dismiss` | 同上 | 关闭一条公告 |
 | GET | `/binding` | 同上 | 绑定状态 |
@@ -224,6 +227,110 @@ POST body：
 
 B 档记录。每条含：`host`、`data_class`、`count`、`last_seen`。**无正文、无 URL 查询串**。支持 `page` / `per_page`。
 
+### `/residency/protected`
+
+只读三层视图。权限同 `/diagnostics`（`manage_options`）。不接受写入。多站点子站管理员可读、不可改 L2（改走 `/site-blocklist`，需要 `manage_network_options`）。
+
+响应：
+
+```json
+{
+  "l0": {
+    "source": "builtin+signed",
+    "hosts": [
+      { "host": "wenpai.net", "match": "suffix" },
+      { "host": "cravatar.cn", "match": "exact" }
+    ]
+  },
+  "l1": {
+    "ruleset_version": 1,
+    "tiers": { "A": [], "B": [], "C": [] }
+  },
+  "l2": {
+    "enabled": true,
+    "hosts": []
+  },
+  "noise_block": {
+    "enabled": true,
+    "hosts": []
+  }
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `l0.hosts` | 硬编码清单 ∪ 已验签增量，去重后的生效清单。不含 `signature` |
+| `l0.source` | `builtin` \| `builtin+signed`。验签失败只有内置时为 `builtin` |
+| `l1` | 与 `GET /residency/ruleset` 的 `ruleset_version` + `tiers` 相同形状；可省略 `issued_at` |
+| `l2` | 当前网络级 `modules.site_blocklist`（`enabled` + `hosts`）。子站只读到网络值 |
+| `noise_block.enabled` | `modules.noise_block.enabled` |
+| `noise_block.hosts` | 当前生效签名包条目（无则 `[]`）。用户不可编辑 |
+
+不返回完整 URL、不返回请求正文。
+
+### `/residency/test`
+
+输入一条 URL，按运行时同一顺序判定会被哪一层如何处理。不发真实出站请求。权限同 `/diagnostics`（`manage_options`）。
+
+请求：
+
+```json
+{ "url": "https://tracking.woocommerce.com/v1" }
+```
+
+| 字段 | 规则 |
+|------|------|
+| `url` | 必填；必须是带 host 的绝对 URL（`http` 或 `https`）。非法 → `wpcy_invalid_schema` 400 |
+
+响应：
+
+```json
+{
+  "url": "https://tracking.woocommerce.com/v1",
+  "host": "tracking.woocommerce.com",
+  "layer": "l1",
+  "action": "reroute",
+  "detail": {
+    "tier": "A",
+    "match": "exact",
+    "enabled_when": "ingest_ready"
+  }
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `layer` | `l0` \| `l1` \| `noise_block` \| `l2` \| `none` |
+| `action` | `allow`（L0 放行，或 `layer=none` 默认放行）\| `reroute` \| `record` \| `ignore` \| `block` |
+| `detail` | 命中条的只读摘要（host / match / tier）；未命中为 `{}` |
+
+判定顺序与 [`data-residency-ruleset.md`](data-residency-ruleset.md) §10.3 相同。L1 `ignore`（C 档）之后仍可被噪声包或 L2 拦；`layer=none` 且 `action=allow` 表示三层与噪声包都未拦。不把 IP、完整查询串策略以外的字段放进响应；`url` 回显请求值（诊断用途；界面「测一条地址」只展示 host + 层 + 处置）。
+
+### `/site-blocklist`
+
+L2 本站拦截清单。权限 **`manage_network_options`**（单站上拥有该能力的管理员，通常即超级管理员 / 单站管理员经 WordPress 映射；子站 `manage_options` 不够）。GET 读、PUT 写网络级 `modules.site_blocklist`。单站无多站点时：权限仍是 `manage_network_options`；实现把读写落到 `wpcy_settings.modules.site_blocklist`（与网络 option 同一段结构）。
+
+GET 响应：
+
+```json
+{
+  "enabled": true,
+  "hosts": [
+    { "host": "telemetry.example.com", "match": "exact", "note": "" }
+  ]
+}
+```
+
+PUT body 与 GET 相同形状。校验：
+
+- `hosts` 超过 20 → `wpcy_invalid_schema` 400
+- `match` 不是 `exact` \| `suffix` → `wpcy_invalid_schema` 400
+- `host` 含路径、scheme、端口、`*`、正则元字符，或不符合主机名 → `wpcy_invalid_schema` 400
+- 任一条命中 L0 受保护主机（硬编码 ∪ 签名增量）→ **400** `wpcy_blocklist_protected_host`，`message` 用词表原文「文派服务不可拦截」。整单不写入
+- 权限不足 → `wpcy_forbidden` 403
+
+成功响应完整对象（与 GET 相同）。不提供导入导出专用端点；本站清单随现有设置导出（若 export 已含 `modules`）。
+
 ### `/announcements`
 
 返回缓存中尚未关闭、最多 5 条的公告列表。格式见 `docs/specs/announcements.md`。无缓存时返回 `{ "generated_at": null, "items": [] }`，不返回错误。
@@ -290,5 +397,6 @@ apps 专用码见 apps 规格 §5.5。此处列出跨端点码：
 | `wpcy_forbidden` | 403 | 能力不足或 nonce 无效 |
 | `wpcy_recovery_unknown_action` | 400 | `/recovery` 的 `action` 不是三个枚举值之一 |
 | `wpcy_binding_not_pending` | 409 | 公开挑战端点在非 pending / 已过期时被拉 |
+| `wpcy_blocklist_protected_host` | 400 | `PUT /site-blocklist` 的某条 host 命中 L0 受保护主机 |
 
-其它业务码随模块补进，前缀必须 `wpcy_`。**待定（M0）**：诊断、驻留、绑定失败的完整 code 表由各模块作者在实现前补进本文。
+其它业务码随模块补进，前缀必须 `wpcy_`。**待定（M0）**：诊断、驻留、绑定失败的完整 code 表由各模块作者在实现前补进本文。`wpcy_blocklist_protected_host` 已定，message 必须是「文派服务不可拦截」。

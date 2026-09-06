@@ -204,6 +204,93 @@ npx wp-env run tests-cli wp eval '
 
 云桥入库接口未就位前，`DataResidency` **不改 URL**（只记录 B 档元数据）。A 档改写门禁见定稿 §7.1a。
 
+## 四个插槽（外部插件功能并入）
+
+并入规范见 [ADR-005](../architecture/adr-005-feature-absorption.md)。模块只经下列四个插槽接入产品，不得直写别的模块。需要时再加：迁移映射（向 `Migration\Mappers` 注册旧 option 键 → 新键）、服务端规则（向签名 ruleset 增加键，不新增规则类型）。
+
+### 1. 配置命名空间
+
+键路径 `modules.<name>`，与 `Module::id()` 同一路径（点分小写）。读写只经 `Config\Repository`。字段进 [`docs/specs/config-schema.md`](../specs/config-schema.md)。连通性与并入的免费能力不加「配额」字段。
+
+### 2. REST 子路径
+
+挂在同一命名空间 `wpcy/v1` 下，路径 `wpcy/v1/<name>/*`，或挂在既有资源下的子路径（例：`/residency/protected`）。不另起 REST 命名空间。错误码前缀 `wpcy_`，形状见 [`docs/specs/rest-api.md`](../specs/rest-api.md)。
+
+### 3. 设置界面注册
+
+向「简单 / 高级」两档各注册若干行。由 M-UI 定义的注册接口消费；模块不自己 `add_menu_page`，不直写 `src/Admin/app/`。
+
+接口名先定为（**待 M-UI 实现**）：
+
+```php
+SettingsRows::register( string $module, array $simple_rows, array $advanced_rows );
+```
+
+`$module` 为模块 id。`$simple_rows` / `$advanced_rows` 为行描述数组（键名由 M-UI 冻结；引擎任务只声明要注册哪些行，不实现本接口）。空数组表示该档无行。
+
+### 4. 诊断注册
+
+向诊断页注册一张只读卡或一段记录。不建独立请求日志表，不记完整 URL，不记来源回溯。数据由模块提供只读结构，UI 进设计门禁。
+
+## 场景与作用域声明
+
+场景与作用域是横切关注点（ADR-004 / ADR-005 B1-4）：模块声明每个开关在三种场景下的默认值与允许的作用域；**不在模块内自行判断「是不是国内站」**（不读 geo、不写 `if ( $profile === 'domestic' )` 一类分支来决定默认；运行时闸若规格写明——例如驻留 A 档跟 `profile`——由该规格指定的模块读取有效 `profile`，仍不是「判断是不是国内站」）。
+
+PHP 数组形态（方法名可微调，键名写死）：
+
+```php
+public function profile_defaults(): array {
+    return array(
+        'modules.site_blocklist.enabled' => array(
+            'domestic'    => true,
+            'crossborder' => true,
+            'mixed'       => true,
+            'scopes'      => array( 'network' ),
+        ),
+    );
+}
+```
+
+| 键 | 规则 |
+|----|------|
+| 外层键 | 配置路径，与 schema 一致 |
+| `domestic` / `crossborder` / `mixed` | 该场景默认值；类型与 schema 该字段相同 |
+| `scopes` | 允许的作用域。站点级开关用 `array( 'site' )`；网络级不可被站点覆盖用 `array( 'network' )`；可被覆盖用 `array( 'network', 'site' )`。不是连通性的 `admin` / `frontend` / `both`（那是 `Connectivity\Scope`） |
+
+`Profile::apply_defaults()` 只写入默认矩阵里列出的键；模块声明的默认若要进矩阵，必须先改 [`config-schema.md`](../specs/config-schema.md) D2 并经决定，不得在模块里偷偷写 option。
+
+## 删除路径
+
+每个并入模块的任务书必须写如何整体移除，保证以后能再拆出去（ADR-005 B1-7）。清单至少含：
+
+1. Schema / Defaults / 默认矩阵中的 `modules.<name>`（及子键）
+2. `RestModule` 上该模块的路由
+3. cron hook、transient、自定义 option、自定义表
+4. 词表行、诊断注册、设置行注册
+5. `Plugin::create()` 的模块注册
+6. 测试与 `tests/fixtures/` 中仅服务该模块的样本
+
+卸掉后其它模块不得再引用该 id。不允许用「隐藏 section」代替删除（ADR-001）。
+
+## 并入示例：`Privacy/SiteBlocklist`
+
+第一份按 ADR-005 并入的能力（决定 A 节；不是把 HTTP Block 源码搬进来）。
+
+| 项 | 值 |
+|----|----|
+| 目录 | `src/Privacy/SiteBlocklist/SiteBlocklistModule.php` |
+| `id()` | `privacy.site_blocklist` |
+| 配置 | `modules.site_blocklist`：`enabled`（boolean，默认 `true`）、`hosts[]`（上限 20，每条 `{ host, match: exact\|suffix, note }`）。**网络级，站点不可覆盖**（不进 `wpcy_site_overrides`） |
+| REST | `GET/PUT /wpcy/v1/site-blocklist`（权限 `manage_network_options`）；命中受保护主机 → 400 `wpcy_blocklist_protected_host`，message「文派服务不可拦截」 |
+| 设置行 | 简单档：无。高级档：一行「本站拦截清单」（编辑态由 M-BLOCK-UI）。`SettingsRows::register( 'privacy.site_blocklist', array(), array( /* 本站拦截清单 */ ) )`，待 M-UI |
+| 诊断 | 只读卡「出站请求三层」+「测一条地址」（数据由引擎提供；UI 进 M-BLOCK-UI） |
+| 场景默认 | 三场景 `enabled=true`；`scopes = array( 'network' )`。不在模块内判断国内站 |
+| 服务端规则 | L0 `protected_hosts`、噪声包 `noise_block` 加在现有驻留 ruleset 上，不新规则类型 |
+| 迁移 | 无（原插件未发布） |
+| 删除路径 | 见 [`M-BLOCK-1.md`](../dev-plan/tasks/M-BLOCK-1.md)「删除路径」：去掉 schema 键、三条 REST、`pre_http_request` 钩子、诊断数据源、模块注册；无 cron、无自定义表 |
+
+运行时：`pre_http_request` 顺序保证 L0 → L1 → L2。L2 只能 block，不能改道、不能放行 L0/L1。保存时拒绝保护主机；运行时对已存数据再过滤一层（静默忽略）。
+
 ## 模块清单与归属
 
 摘自定稿 §7.3（产品范围以定稿为准；本表只方便对照 id）：
@@ -216,6 +303,7 @@ npx wp-env run tests-cli wp eval '
 | 首发必须 | `Diagnostics` | `diagnostics` |
 | 首发必须 | `Telemetry`（2.1 全集，常开，界面不露出） | `telemetry` |
 | 首发必须 | `Privacy/DataResidency` | `privacy.data_residency` |
+| 首发（并入） | `Privacy/SiteBlocklist`（HTTP Block 能力重写，ADR-005） | `privacy.site_blocklist` |
 | 首发必须 | `Services/SiteBinding` | `services.site_binding` |
 | 首发必须 | `Services/Entitlements` | `services.entitlements` |
 | 首发必须 | `Services/Apps`（小工具容器，§7.5a-A） | `services.apps` |
@@ -236,6 +324,6 @@ npx wp-env run tests-cli wp eval '
 - 后台出现开关，但 `register()` 不挂钩
 - 只有 `https://wpcy.com/go/…` 按钮、没有对应模块或 entitlement 状态
 - 用「隐藏 section」代替删除（违反 ADR-001）
-- 把已删功能（飞行模式、评论、维护模式等，定稿 §7.1-8）用别的名字加回来
+- 把已删功能（飞行模式、评论、维护模式等，定稿 §7.1-8）用别的名字加回来。L2 本站拦截清单是已拍板的极窄例外（只拦、20 条、不能改道），不是飞行模式复活；不得借此口子加回正则/通配/全局屏蔽
 
 没有行为的能力：从注册、schema、迁移、宣传里删掉，不要留空壳。

@@ -33,8 +33,10 @@
 - **概览确认提示**：3.x → 4.0 升级站未选场景前视为 `domestic`，概览给一条「确认你的站点场景」提示，不打断。规格编号 `OV-09`。
 - **连接优化页每项作用域呈现**：公共库等带 `scope` 的项显示「仅后台」「仅前台」「后台与前台」。`admin_assets` 显示「即将提供」；从 3.x 迁来且值为 `on` 时用「后台加速：已保留设置，4.1 起生效」。规格编号 `CO-07`。心跳开关「降低后台心跳」（`CO-08`）；仪表盘开关「挡住仪表盘新闻和活动」（`CO-09`）。
 - **诊断页浏览器测速**：区块「从你的浏览器测速」（`DG-06`）。
+- **设置 → 高级 → 后台体验：本站拦截清单**（[ADR-005](../architecture/adr-005-feature-absorption.md) / 决定 A 节）：高级档注册一行「本站拦截清单」。规格编号 `CO-10`。状态与编辑态见 [`docs/dev-plan/tasks/M-BLOCK-UI.md`](../dev-plan/tasks/M-BLOCK-UI.md)。
+- **诊断：出站请求三层**（决定 A6）：诊断页只读卡，展示 L0 / L1 / L2；含「测一条地址」。规格编号 `DG-07`。
 
-状态与文案原文见 §4 词表；各状态清单见 [`docs/dev-plan/tasks/M-SCOPE-UI.md`](../dev-plan/tasks/M-SCOPE-UI.md)。
+状态与文案原文见 §4 词表；场景状态清单见 [`docs/dev-plan/tasks/M-SCOPE-UI.md`](../dev-plan/tasks/M-SCOPE-UI.md)；本站拦截清单与出站三层见 [`docs/dev-plan/tasks/M-BLOCK-UI.md`](../dev-plan/tasks/M-BLOCK-UI.md)。
 
 命令面板（⌘K）注册：「打开文派叶子概览」「打开连接优化」「打开文派服务」「运行连接诊断」「进入恢复模式」。
 
@@ -164,6 +166,13 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | client probe ok | 浏览器可达 | 绿点 |
 | client probe down | 浏览器不可达 | 红点 |
 | client probe fail | 暂时无法从浏览器测速，请稍后重试。 | 琥珀 Notice |
+| site blocklist | 本站拦截清单 | 高级设置行 |
+| site blocklist protected | 文派服务不可拦截 | 保存错误；REST `wpcy_blocklist_protected_host` |
+| site blocklist help | 只拦截，不改道 | 本站拦截清单说明 |
+| site blocklist max | 最多 20 条 | 本站拦截清单上限 |
+| noise block pack | 噪声拦截包 | 高级设置整包开关 |
+| residency test action | 测一条地址 | 诊断页输入 |
+| residency protected | 受保护 | L0 只读标记 |
 
 禁用词：遥测、匿名数据、opt-in、entitlement、SaaS、套餐（用「权益」）、Pro。
 
@@ -228,6 +237,8 @@ WP 原生 `wrap` 容器：`<h1>` 「文派叶子 · 恢复模式」；一段说�
 | CO-08 | 3.2 | 降低后台心跳 |
 | CO-09 | 3.2 | 挡住仪表盘新闻和活动 |
 | DG-06 | 3.4 | 从你的浏览器测速 |
+| CO-10 | 2 高级 | 设置 → 高级 → 后台体验：本站拦截清单 |
+| DG-07 | 2 诊断 | 诊断：出站请求三层（只读 + 测一条地址） |
 
 词表行（§4 表内状态）验收时写界面文字本身，不必另编号。
 

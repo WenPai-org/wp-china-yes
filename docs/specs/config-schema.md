@@ -1,6 +1,6 @@
 # 配置 Schema
 
-状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 将 `schema_version` 升至 2（`profile`、作用域、`admin_assets` 预留）。
+状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 将 `schema_version` 升至 2（`profile`、作用域、`admin_assets` 预留）；同日按 [HTTP Block 并入决定](../dev-plan/decisions/2026-09-06-http-block-merge-and-feature-absorption.md) A 节增加 `modules.site_blocklist`、`modules.noise_block.enabled`（不升 `schema_version`，缺省键读时填默认）。
 
 本文给出四个（加迁移备份共五个）option 的 JSON Schema（draft 2020-12）与读写规则。键名稳定不带版本；演进靠结构内 `schema_version` 与迁移器。不得在本文新增产品决定；空白处标「待定（M0）」。
 
@@ -32,6 +32,8 @@
 | `schema_version` `1` | `2` | |
 
 3.x → 4.0 映射器直接写出 v2，不先写 v1 再升级。3.x `admin` token → `admin_assets=on` 的规则见「3.x → 4.0 映射（D3）」与 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) D3。
+
+`modules.site_blocklist` / `modules.noise_block` 是 v2 上的缺省键：读取时若缺失则填默认（`enabled=true`、`hosts=[]`），**不**升 `schema_version`。无 `upgrade_2_to_3`。
 
 ## 1. `wpcy_settings`（站点，`autoload=yes`）
 
@@ -126,7 +128,43 @@
       "required": ["notice_control", "windfonts"],
       "properties": {
         "notice_control": { "type": "boolean", "default": true },
-        "windfonts": { "type": "boolean", "default": false }
+        "windfonts": { "type": "boolean", "default": false },
+        "site_blocklist": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "hosts"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "hosts": {
+              "type": "array",
+              "maxItems": 20,
+              "default": [],
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["host", "match"],
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 253,
+                    "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$"
+                  },
+                  "match": { "type": "string", "enum": ["exact", "suffix"], "default": "exact" },
+                  "note": { "type": "string", "maxLength": 200, "default": "" }
+                }
+              }
+            }
+          }
+        },
+        "noise_block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": true }
+          }
+        }
       }
     },
     "integrations": {
@@ -241,6 +279,10 @@
 - 多站点：网络策略写在 `wpcy_network_settings.profile`；子站可在 `wpcy_site_overrides.profile` 覆盖（受 `allow_site_override` 约束，与 `connectivity` / `modules` 相同）。缺省段表示不覆盖。覆盖 `profile` 而不覆盖 `connectivity` / `admin_assets` / `modules.windfonts` 时，读取仍用网络已存的连通性值——场景切换重置只发生在用户确认切换的写入路径（`Profile::apply_defaults()`），不在读取合并时隐式重置。
 - 场景只决定默认组合；每项仍可单独改。切换场景 = 重置连通性各项为该场景默认（改前确认）。
 
+`modules.site_blocklist`：**网络级，站点不可覆盖。** 单站写入 `wpcy_settings`；多站点只写 `wpcy_network_settings`，**不**出现在 `wpcy_site_overrides`。子站 PUT 本段 → `wpcy_invalid_schema` 或实现方等价拒绝（不得静默写入覆盖）。`enabled` 默认 `true`。`hosts[]` 上限 **20**；每条 `{ host, match: exact|suffix, note }`。`host` 是主机名，无 scheme、无路径、无端口、无正则、无通配。`note` 可选，最长 200，仅给人读。保存时若任一条命中 L0 受保护主机 → 整单拒绝（REST 见 `PUT /site-blocklist`），不部分写入。不加「配额」字段、不加条数套餐、不加保留天数。
+
+`modules.noise_block.enabled`：噪声拦截包整包开关，默认 `true`。条目不在本 option，在签名 ruleset 的 `noise_block` 数组。用户不可编辑条目。三场景默认皆 `true`；切换场景不改本键。
+
 `recovery_mode = true` 时：全部 URL 改写关闭、全部可选模块停用。退出恢复模式（`recovery_mode = false`）后是否自动恢复改写与模块 **待定（M0）**，见 `docs/specs/rest-api.md` `/recovery`。
 
 ## 2. `wpcy_network_settings`（网络）
@@ -258,6 +300,8 @@
 ## 3. `wpcy_site_overrides`（子站对网络策略的覆盖）
 
 允许 `profile`、`connectivity`、`modules`、`admin_assets`、`recovery_mode`。结构与站点设置对应段相同。不允许这些键与 `schema_version` 以外的其它顶层键。
+
+`modules.site_blocklist` **不得**出现在本 option。覆盖袋的 `modules` 只允许站点可覆盖的模块键（现有 `notice_control` / `windfonts` / `noise_block`）。实现校验：覆盖对象含 `site_blocklist` → 丢弃该键并记 warning，或整段 `wpcy_invalid_schema`（M-BLOCK-1 写死一种并测）。
 
 `recovery_mode` 是站点级：多站点下子站写入本 option，读取时站点值优先于网络 option。即使 `allow_site_override` 为 false，本站 `recovery_mode` 仍生效（恢复模式不是连接/模块覆盖）。
 
@@ -361,6 +405,9 @@
 | `admin_assets` | `"off"` |
 | `modules.notice_control` | `true` |
 | `modules.windfonts` | `false` |
+| `modules.site_blocklist.enabled` | `true` |
+| `modules.site_blocklist.hosts` | `[]` |
+| `modules.noise_block.enabled` | `true` |
 | `diagnostics.scheduled_checks` | `true` |
 | `diagnostics.client_probe_url` | `""` |
 | `data_residency.ruleset_version` | `1` |
@@ -384,6 +431,8 @@
 | `connectivity.heartbeat`（仪表盘关心跳、编辑器 60s） | `off` | `on` | `on` | 跨境免费体验层；filter 名见 M-SCOPE-1 |
 | `connectivity.dashboard_feeds`（挡 WP 新闻/事件 widget 与 dashboard feed） | `allow` | `block` | `block` | 跨境免费体验层；不挡支付/物流 |
 | `notice_control` / `announcements` / 诊断 / 恢复 | 不受场景影响 | 同 | 同 | |
+| `modules.site_blocklist` | `enabled=true`，`hosts=[]` | 同 | 同 | 网络级；站点不可覆盖；切换场景不改本键 |
+| `modules.noise_block.enabled` | `true` | 同 | 同 | 切换场景不改本键 |
 | `telemetry` | 不受场景影响（常开） | 同 | 同 | payload 增加 `profile` 字段 |
 | `privacy.data_residency` | 按主机表；A 档 `ingest_ready` 才改道 | 不执行 A 档改道；B 档记录仍做；C 档不碰 | 同 `crossborder` | 方案 A + 保险，原文见下 |
 
@@ -401,7 +450,7 @@
 | `connectivity.dashboard_feeds` | `allow` | `block` | `block` |
 | `admin_assets` | `off` | `on` | `on` |
 
-「五项」= `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]`。`notice_control` / `announcements` / 诊断 / 恢复 / `telemetry` / `privacy.data_residency` 切换场景时不改设置键。`privacy.data_residency` 采用方案 A + 保险（运行时按 `profile` 闸 A 档，不改主机表），见 [`data-residency-ruleset.md`](data-residency-ruleset.md)。
+「五项」= `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]`。`notice_control` / `announcements` / 诊断 / 恢复 / `telemetry` / `privacy.data_residency` / `modules.site_blocklist` / `modules.noise_block` 切换场景时不改设置键。`privacy.data_residency` 采用方案 A + 保险（运行时按 `profile` 闸 A 档，不改主机表），见 [`data-residency-ruleset.md`](data-residency-ruleset.md)。
 
 `privacy.data_residency`（统筹拍板原文）：采用方案 A + 保险。A 档改道跟 `profile` 闸：`domestic` 维持现状（`ingest_ready` 才改道）；`crossborder` / `mixed` 不执行 A 档改道，B 档记录仍做，C 档不碰。保险：`profile=domestic` 时即使 geo 判定服务器在海外也改道（用户自称国内站以用户为准）。理由：A 档要挡的是"中国站数据出境"，不是"海外站回中国"；海外服务器绕国内云桥增加失败面，与叶子要解的问题方向相反。
 
