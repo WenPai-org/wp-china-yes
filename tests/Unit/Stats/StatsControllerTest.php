@@ -121,6 +121,20 @@ class StatsControllerTest extends TestCase {
 	}
 
 	/**
+	 * Multisite: site_option report is used when the site option is empty.
+	 */
+	public function test_installed_at_from_site_option_on_multisite() {
+		OptionStore::$multisite = true;
+		update_site_option(
+			Runner::REPORT_OPTION,
+			array( 'migrated_at' => '2026-08-02T00:00:00Z' )
+		);
+		$data = ( new StatsController( $this->counters() ) )->get_item( new WP_REST_Request() )->get_data();
+		$this->assertSame( '2026-08-02T00:00:00Z', $data['installed_at'] );
+		$this->assertSame( '2026-08-02T00:00:00Z', OptionStore::$options[ StatsController::INSTALLED_AT_OPTION ] );
+	}
+
+	/**
 	 * Neither option nor report: write now.
 	 */
 	public function test_installed_at_writes_now_when_missing() {

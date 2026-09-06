@@ -126,17 +126,32 @@ final class StatsController {
 
 	/**
 	 * Migrated_at from the last execute() report.
+	 *
+	 * Same option scope as Runner::stored_report(): site_option on
+	 * multisite, get_option otherwise.
 	 */
 	private function migrated_at(): string {
-		if ( ! function_exists( 'get_option' ) ) {
-			return '';
-		}
-		$raw = get_option( Runner::REPORT_OPTION, array() );
-		if ( ! is_array( $raw ) ) {
-			return '';
-		}
-		$at = $raw['migrated_at'] ?? '';
+		$raw = $this->stored_migration_report();
+		$at  = $raw['migrated_at'] ?? '';
 		return is_string( $at ) ? $at : '';
+	}
+
+	/**
+	 * Last persisted migration report, or empty.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function stored_migration_report(): array {
+		$multisite = function_exists( 'is_multisite' ) && is_multisite();
+		if ( $multisite ) {
+			$raw = function_exists( 'get_site_option' ) ? get_site_option( Runner::REPORT_OPTION, array() ) : array();
+		} else {
+			$raw = function_exists( 'get_option' ) ? get_option( Runner::REPORT_OPTION, array() ) : array();
+		}
+
+		return is_array( $raw ) ? $raw : array();
 	}
 
 	/**
