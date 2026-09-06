@@ -517,13 +517,17 @@ test.describe( 'apps A1–A10', () => {
 		const entryUrl = fixtureEntryUrl();
 		const sep = entryUrl.indexOf( '?' ) === -1 ? '?' : '&';
 		await mockBound( page );
-		await mockApps( page, { entryUrl: entryUrl + sep + 'bad_token=1' } );
+		const bag = await mockApps( page, {
+			entryUrl: entryUrl + sep + 'bad_token=1',
+		} );
 		await openAdminPage( page, 'wpcy-services' );
 		await page.getByRole( 'button', { name: '站点体检' } ).click();
 
+		const before = bag.writes();
 		const frame = page.frameLocator( '[data-testid="wpcy-app-iframe"]' );
 		await expect( frame.getByTestId( 'log' ) ).toContainText(
 			'session_invalid'
 		);
+		expect( bag.writes() ).toBe( before );
 	} );
 } );

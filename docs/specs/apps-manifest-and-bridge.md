@@ -96,7 +96,8 @@
   "wpcy": 1,
   "type": "data.get",
   "request_id": "uuid",
-  "payload": { "key": "settings" }
+  "payload": { "key": "settings" },
+  "session_token": "base64url"
 }
 ```
 
@@ -111,7 +112,7 @@
 - **宿主的身份判据是 `event.source === iframe.contentWindow`**，不是 `event.origin`。同 origin 的其它窗口、同页第二个工具实例、`window.parent`/`window.top` 的消息一律丢弃。
 - 宿主对 `event.origin` 只做一致性检查：必须等于 `"null"`（沙箱 opaque origin）或 `new URL(manifest.entry_url).origin`（工具页因导航离开沙箱语义时的兜底）；其它值丢弃，错误码 `wpcy_apps_origin_mismatch`（仅当消息已通过信封校验、能回 `error` 时才回；无法确认来源时静默丢弃）。
 - 宿主向工具发送消息用 `iframe.contentWindow.postMessage(msg, '*')`：目标 WindowProxy 已经限定为该 iframe，`'*'` 只是 opaque origin 下唯一可用的 `targetOrigin`。**禁止**对 `window.parent`/`window.top`/任何其它窗口使用 `'*'`。
-- **会话令牌**：宿主在 `init.payload.session_token` 下发一个每次挂载随机生成的 32 字节 token（`crypto.getRandomValues`，base64url），工具之后每条消息在信封顶层带 `session_token`；不匹配丢弃，错误码 `wpcy_apps_session_invalid`。目的：工具页在沙箱内自行导航到第三方页面后，第三方仍是同一个 `event.source`，但拿不到 token。`ready` 是唯一不需要 token 的工具消息。
+- **会话令牌**：宿主在 `init.payload.session_token` 下发一个每次挂载随机生成的 32 字节 token（`crypto.getRandomValues`，base64url），工具之后每条消息在信封顶层带 `session_token`；不匹配丢弃，错误码 `wpcy_apps_session_invalid`。目的：工具页在沙箱内自行导航到第三方页面后，第三方仍是同一个 `event.source`，但拿不到 token。`ready` 是唯一不需要 token 的工具消息。`ready` 每个挂载只接受一次：宿主已发过 `init` 后再收到 `ready` 一律丢弃、不重发 token；工具需要重新初始化只能由宿主重新挂载 iframe。
 - 工具只接受 `event.origin === 宿主 origin`（宿主在 `init` 里告知；工具页面也可用 `document.referrer` 校验）。
 - **宿主 origin 在启动时快照进闭包**（`const HOST_ORIGIN = window.location.origin`），之后不再读可能被改写的 `location`。
 - 宿主页自身可能运行在别的壳（如 OpenStation 的 chromeless iframe）内：宿主**不向 `window.parent` / `window.top` 发送任何桥接消息**，也不把来自 `window.parent` 的消息当作工具消息处理。

@@ -337,6 +337,41 @@ class BridgeContractTest extends TestCase {
 	}
 
 	/**
+	 * A second ready after init is discarded; the host must not re-issue the token.
+	 */
+	public function test_second_ready_after_init_is_discarded() {
+		$event = $this->event( 'ready', array(), '', true );
+		$out   = Bridge::classify( $event );
+		$this->assertSame( 'discard', $out['action'] );
+	}
+
+	/**
+	 * Opaque sandbox origin still "null", iframe source, no token: session invalid.
+	 *
+	 * Simulates a unique-origin sandbox navigating to a third-party page.
+	 * event.source stays the iframe WindowProxy; origin does not change.
+	 */
+	public function test_null_origin_iframe_source_without_token_is_rejected() {
+		$event           = $this->event(
+			'data.set',
+			array(
+				'key'   => 'hack',
+				'value' => 1,
+			),
+			'req-nav',
+			true
+		);
+		$event['origin'] = 'null';
+		unset( $event['data']['session_token'] );
+		$event['source_is_iframe'] = true;
+		$event['source_is_parent'] = false;
+		$out                       = Bridge::classify( $event );
+		$this->assertSame( 'error', $out['action'] );
+		$this->assertSame( Bridge::ERR_SESSION_INVALID, $out['code'] );
+		$this->assertSame( 'req-nav', $out['request_id'] );
+	}
+
+	/**
 	 * Same iframe source, origin flipped to a third party, no token: rejected.
 	 *
 	 * Simulates the tool page navigating away. Origin check fires first.
