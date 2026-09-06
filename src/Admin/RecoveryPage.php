@@ -71,19 +71,19 @@ final class RecoveryPage {
 	}
 
 	/**
-	 * Hidden submenu: parent null so the item is not listed.
+	 * Hidden submenu: parent options.php is not a visible menu, so the item
+	 * is unlisted. Direct URL ?page=wpcy-recovery still works.
 	 *
-	 * Direct URL ?page=wpcy-recovery still works.
+	 * Empty string / null parents leave get_admin_page_title() empty and
+	 * add_submenu_page( null, … ) deprecates strip_tags(null) on PHP 8.2.
 	 *
 	 * @since 4.0.0
 	 */
 	public function add_page(): void {
 		$title = __( '文派叶子 · 恢复模式', 'wp-china-yes' );
 
-		$parent = null; // Hidden parent (ADR-002 / M1-11). WP stubs type this as string.
-
 		add_submenu_page(
-			$parent, // @phpstan-ignore argument.type
+			'options.php',
 			$title,
 			$title,
 			'manage_options',
@@ -103,7 +103,7 @@ final class RecoveryPage {
 		}
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Forbidden.', 'wp-china-yes' ), 403 );
+			wp_die( esc_html__( '暂时无法打开恢复页，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 		}
 
 		$action = sanitize_key( wp_unslash( (string) $_POST[ self::ACTION_FIELD ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer immediately below.
@@ -128,7 +128,7 @@ final class RecoveryPage {
 	 */
 	public function render(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Forbidden.', 'wp-china-yes' ), 403 );
+			wp_die( esc_html__( '暂时无法打开恢复页，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 		}
 
 		$in_recovery = (bool) $this->actions->settings()['recovery_mode'];

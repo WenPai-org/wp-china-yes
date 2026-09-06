@@ -247,6 +247,9 @@ class PermissionsTest extends TestCase {
 		$this->assertContains( '/network-settings', $routes );
 		$this->assertContains( '/diagnostics', $routes );
 		$this->assertContains( '/diagnostics/run', $routes );
+		$this->assertContains( '/residency/ruleset', $routes );
+		$this->assertContains( '/residency/log', $routes );
+		$this->assertContains( '/migration/report', $routes );
 		$this->assertContains( '/recovery', $routes );
 		$this->assertContains( '/binding', $routes );
 		$this->assertContains( '/binding/start', $routes );
@@ -255,14 +258,14 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
-	 * Recovery page is registered with a null parent and the wpcy-recovery slug.
+	 * Recovery page is registered under options.php (hidden) with the wpcy-recovery slug.
 	 */
 	public function test_recovery_page_is_hidden_submenu() {
 		$page = new RecoveryPage( new RecoveryActions( new Repository() ) );
 		$page->add_page();
 
 		$this->assertCount( 1, RestStore::$pages );
-		$this->assertNull( RestStore::$pages[0]['parent'] );
+		$this->assertSame( 'options.php', RestStore::$pages[0]['parent'] );
 		$this->assertSame( RecoveryPage::SLUG, RestStore::$pages[0]['menu_slug'] );
 		$this->assertSame( 'manage_options', RestStore::$pages[0]['capability'] );
 		$this->assertSame( '文派叶子 · 恢复模式', RestStore::$pages[0]['page_title'] );
