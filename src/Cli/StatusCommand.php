@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Prints kernel switch, recovery_mode, and latest target results as JSON.
+ * Prints 4.0 kernel, recovery_mode, and latest target results as JSON.
  */
 final class StatusCommand {
 
@@ -93,11 +93,7 @@ final class StatusCommand {
 	 * @return array{kernel: string, recovery_mode: bool, targets: list<array<string, mixed>>}
 	 */
 	public static function build_payload( Checker $checker, $config = null ): array {
-		$kernel = 'legacy';
-		if ( defined( 'WPCY_KERNEL' ) ) {
-			$kernel = (string) WPCY_KERNEL;
-		}
-
+		$kernel   = 'v4';
 		$recovery = false;
 		if ( is_object( $config ) && method_exists( $config, 'get' ) ) {
 			$recovery = (bool) $config->get( 'recovery_mode', false );

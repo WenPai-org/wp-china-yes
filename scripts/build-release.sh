@@ -83,6 +83,10 @@ if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/\.git(/|$)|/tests/|/docs
 	echo "release archive contains excluded paths (.git, tests/, docs/, or src/Admin/app/)" >&2
 	exit 1
 fi
+if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
+	echo "release archive contains deleted 3.x paths" >&2
+	exit 1
+fi
 
 if command -v sha256sum >/dev/null 2>&1; then
 	SUM_LINE="$(sha256sum "$FINAL_ARCHIVE")"

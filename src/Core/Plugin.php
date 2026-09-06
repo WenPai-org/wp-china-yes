@@ -15,6 +15,7 @@ use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\PublicAssets\AssetMap;
@@ -26,6 +27,8 @@ use WenPai\ChinaYes\Diagnostics\DiagnosticsModule;
 use WenPai\ChinaYes\Diagnostics\SiteHealth;
 use WenPai\ChinaYes\Integrations\Windfonts\Catalog;
 use WenPai\ChinaYes\Integrations\Windfonts\WindfontsModule;
+use WenPai\ChinaYes\Migration\LegacyReader;
+use WenPai\ChinaYes\Migration\Runner;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
@@ -33,7 +36,7 @@ use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
 use WenPai\ChinaYes\Telemetry\TelemetryModule;
 
 /**
- * New kernel. Does not instantiate 3.x Plugin or Service\Base.
+ * 4.0 kernel. The only bootstrap path after 3.x was removed.
  */
 final class Plugin {
 
@@ -72,12 +75,97 @@ final class Plugin {
 	}
 
 	/**
-	 * Default wiring and scene boot. Called from wp-china-yes.php when WPCY_KERNEL=v4.
+	 * Default wiring and scene boot. Called from wp-china-yes.php after autoload.
 	 */
 	public static function boot(): void {
+		self::maybe_migrate_from_legacy();
+		self::load_textdomain();
+		self::load_cli();
+
 		$plugin = self::create();
 		$plugin->register_lifecycle_hooks();
 		$plugin->run();
+	}
+
+	/**
+	 * First boot: read `wp_china_yes` into 4.0 settings when the 4.0 option is absent.
+	 *
+	 * "Not yet migrated" means `wpcy_settings` (single site) or
+	 * `wpcy_network_settings` (multisite) is missing (`get_option`/`get_site_option`
+	 * returns false) and `wp_china_yes` exists. Does not write `wp_china_yes`.
+	 * A damaged non-array legacy option is treated as empty by LegacyReader.
+	 * Runner failures are logged and left unwritten so the next boot retries.
+	 *
+	 * @since 4.0.0
+	 */
+	public static function maybe_migrate_from_legacy(): void {
+		if ( ! function_exists( 'get_option' ) ) {
+			return;
+		}
+
+		$network = function_exists( 'is_multisite' ) && is_multisite();
+		$option  = $network ? Schema::NETWORK_SETTINGS : Schema::SETTINGS;
+		$stored  = $network
+			? ( function_exists( 'get_site_option' ) ? get_site_option( $option, false ) : false )
+			: get_option( $option, false );
+
+		if ( false !== $stored ) {
+			return;
+		}
+
+		$reader = new LegacyReader();
+		if ( ! $reader->exists() ) {
+			return;
+		}
+
+		try {
+			( new Runner() )->execute();
+		} catch ( \Throwable $e ) {
+			( new Logger() )->log(
+				'warning',
+				sprintf(
+					'First-boot legacy migration failed (%s): %s',
+					get_class( $e ),
+					$e->getMessage()
+				),
+				array( 'exception' => $e )
+			);
+		}
+	}
+
+	/**
+	 * Load the plugin text domain from languages/.
+	 *
+	 * @since 4.0.0
+	 */
+	private static function load_textdomain(): void {
+		if ( ! function_exists( 'load_plugin_textdomain' ) || ! defined( 'CHINA_YES_PLUGIN_FILE' ) ) {
+			return;
+		}
+
+		$relative = 'wp-china-yes/languages';
+		if ( function_exists( 'plugin_basename' ) ) {
+			$relative = dirname( plugin_basename( CHINA_YES_PLUGIN_FILE ) ) . '/languages';
+		}
+
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- self-hosted languages/*.mo; not a WordPress.org plugin (M4-01).
+		load_plugin_textdomain( 'wp-china-yes', false, $relative );
+	}
+
+	/**
+	 * Register WP-CLI commands. Composer autoload.files is empty, so boot loads this.
+	 *
+	 * @since 4.0.0
+	 */
+	private static function load_cli(): void {
+		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
+			return;
+		}
+
+		$path = ( defined( 'CHINA_YES_PLUGIN_PATH' ) ? CHINA_YES_PLUGIN_PATH : dirname( __DIR__, 2 ) . '/' ) . 'src/Cli/wp-cli.php';
+		if ( is_readable( $path ) ) {
+			require_once $path;
+		}
 	}
 
 	/**
@@ -151,7 +239,7 @@ final class Plugin {
 	}
 
 	/**
-	 * V4 activation: do not write the 3.x option wp_china_yes.
+	 * Activation: do not write the 3.x option wp_china_yes.
 	 */
 	public static function activate(): void {
 		// No-op. Do not write the 3.x option wp_china_yes.
@@ -167,9 +255,9 @@ final class Plugin {
 	}
 
 	/**
-	 * Activation / deactivation hooks for the v4 path.
+	 * Activation / deactivation hooks.
 	 *
-	 * The bootstrap returns before the 3.x hooks when WPCY_KERNEL=v4.
+	 * Does not register uninstall. 4.0 must not delete `wp_china_yes`.
 	 */
 	private function register_lifecycle_hooks(): void {
 		if ( ! defined( 'CHINA_YES_PLUGIN_FILE' ) ) {

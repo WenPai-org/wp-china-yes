@@ -23,6 +23,9 @@ if ( ! is_readable( $autoload ) ) {
 	fwrite( STDERR, "vendor/autoload.php is missing; run composer install.\n" );
 	exit( 1 );
 }
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', '/tmp/wordpress/' );
+}
 require $autoload;
 
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;

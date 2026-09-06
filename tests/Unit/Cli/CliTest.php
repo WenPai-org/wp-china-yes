@@ -57,6 +57,7 @@ class CliTest extends TestCase {
 		$payload = ( new StatusCommand( new Checker(), new MapConfig( array( 'recovery_mode' => true ) ) ) )->payload();
 
 		$this->assertArrayHasKey( 'kernel', $payload );
+		$this->assertSame( 'v4', $payload['kernel'] );
 		$this->assertArrayHasKey( 'recovery_mode', $payload );
 		$this->assertArrayHasKey( 'targets', $payload );
 		$this->assertTrue( $payload['recovery_mode'] );

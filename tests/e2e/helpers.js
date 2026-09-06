@@ -7,7 +7,7 @@
  *   WPCY_E2E_SSH_HOST=wenpai
  *   WPCY_E2E_WP='/home/parallels/.studio/bin/studio wp --path /home/parallels/Studio/wpcy-40'
  *
- * CI: wp-env at http://localhost:8888 after `wp config set WPCY_KERNEL v4`.
+ * CI: wp-env at http://localhost:8888.
  */
 
 const { execFileSync } = require( 'child_process' );
@@ -70,22 +70,21 @@ function wpEval( php ) {
 }
 
 /**
- * Fail the suite when the kernel is not v4. Never fall back to 3.x UI.
+ * Fail the suite when Core\\Plugin is not loaded.
  *
- * @return {string} Kernel value.
+ * @return {string} Kernel marker.
  */
-function requireV4Kernel() {
+function requireCoreKernel() {
 	const out = wpEval(
-		'echo defined("WPCY_KERNEL") ? (string) WPCY_KERNEL : "undefined";'
+		'echo class_exists("WenPai\\\\ChinaYes\\\\Core\\\\Plugin") ? "core" : "missing";'
 	);
-	const match = String( out ).match( /\b(v4|undefined)\b/ );
-	if ( ! match || match[ 1 ] !== 'v4' ) {
+	if ( ! /\bcore\b/.test( String( out ) ) ) {
 		throw new Error(
-			'WPCY_KERNEL is not v4; refusing to run 4.0 e2e against 3.x UI. Output: ' +
+			'4.0 kernel Core\\Plugin is not loaded; refusing to run e2e. Output: ' +
 				out
 		);
 	}
-	return match[ 1 ];
+	return 'core';
 }
 
 /**
@@ -139,7 +138,7 @@ module.exports = {
 	repoRoot,
 	wpCli,
 	wpEval,
-	requireV4Kernel,
+	requireCoreKernel,
 	loginAsAdmin,
 	openAdminPage,
 };

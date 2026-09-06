@@ -1,6 +1,6 @@
 <?php
 /**
- * WPCY_KERNEL switch: off path must not instantiate Core\Plugin.
+ * 4.0 is the only bootstrap path: Core\Plugin, no 3.x Plugin, no framework/.
  *
  * @package WenPai\ChinaYes
  */
@@ -12,77 +12,39 @@ namespace WenPai\ChinaYes\Tests\Unit\Core;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Bootstrap switch from wp-china-yes.php. M1-01 did not add Brain\Monkey.
+ * Bootstrap from wp-china-yes.php after 3.x was removed.
  */
 class KernelSwitchTest extends TestCase {
 
 	/**
-	 * Constant is not defined in the plugin file; 3.x new Plugin() remains.
+	 * Plugin file has no WPCY_KERNEL switch and no 3.x `new Plugin()`.
 	 */
-	public function test_source_keeps_legacy_new_plugin_and_does_not_define_constant() {
+	public function test_source_has_no_kernel_switch_or_legacy_plugin() {
 		$source = file_get_contents( $this->plugin_file() ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local plugin file, not a remote URL.
 		$this->assertNotFalse( $source );
 
-		$this->assertSame( 0, preg_match( '/define\s*\(\s*[\'"]WPCY_KERNEL[\'"]/', $source ) );
-		$this->assertStringContainsString( 'new Plugin()', $source );
-
-		$file_exists = strpos( $source, "file_exists(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')" );
-		$require     = strpos( $source, "require_once(CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php')" );
-		$switch      = strpos( $source, "defined( 'WPCY_KERNEL' ) && 'v4' === WPCY_KERNEL" );
-		$legacy      = strpos( $source, 'new Plugin()' );
-
-		$this->assertNotFalse( $file_exists );
-		$this->assertNotFalse( $require );
-		$this->assertNotFalse( $switch );
-		$this->assertNotFalse( $legacy );
-		$this->assertGreaterThan( $file_exists, $require, 'require autoload must be inside file_exists branch' );
-		$this->assertGreaterThan( $require, $switch, 'switch must be after vendor/autoload.php require' );
-		$this->assertGreaterThan( $switch, $legacy, 'legacy new Plugin() must remain after the v4 return' );
+		$this->assertSame( 0, preg_match( '/WPCY_KERNEL/', $source ) );
+		$this->assertSame( 0, preg_match( '/new\s+Plugin\s*\(/', $source ) );
+		$this->assertSame( 0, preg_match( '/framework\//', $source ) );
+		$this->assertStringContainsString( '\\WenPai\\ChinaYes\\Core\\Plugin::boot()', $source );
 	}
 
 	/**
-	 * Undefined WPCY_KERNEL loads 3.x Plugin and does not load Core\Plugin.
+	 * Bootstrap instantiates Core\Plugin and does not load 3.x Plugin.
 	 */
-	public function test_undefined_constant_does_not_instantiate_core_plugin() {
-		$result = $this->run_bootstrap( null );
-		$this->assertSame( 'core_no', $result['core'] );
-		$this->assertSame( 'legacy_yes', $result['legacy'] );
-	}
-
-	/**
-	 * A non-v4 value keeps the 3.x path.
-	 */
-	public function test_non_v4_value_does_not_instantiate_core_plugin() {
-		$result = $this->run_bootstrap( 'off' );
-		$this->assertSame( 'core_no', $result['core'] );
-		$this->assertSame( 'legacy_yes', $result['legacy'] );
-	}
-
-	/**
-	 * WPCY_KERNEL=v4 boots Core\Plugin and skips 3.x Plugin.
-	 */
-	public function test_v4_boots_core_and_skips_legacy_plugin() {
-		$result = $this->run_bootstrap( 'v4' );
+	public function test_bootstrap_instantiates_core_plugin() {
+		$result = $this->run_bootstrap();
 		$this->assertSame( 'core_yes', $result['core'] );
 		$this->assertSame( 'legacy_no', $result['legacy'] );
 	}
 
 	/**
-	 * V4 bootstrap must not include any framework/ path or define WP_CHINA_YES_Setup.
+	 * Bootstrap must not include any framework/ path or define WP_CHINA_YES_Setup.
 	 */
-	public function test_v4_bootstrap_does_not_include_framework() {
-		$result = $this->run_bootstrap( 'v4' );
+	public function test_bootstrap_does_not_include_framework() {
+		$result = $this->run_bootstrap();
 		$this->assertSame( 'framework_no', $result['framework'] );
 		$this->assertSame( 'setup_no', $result['setup'] );
-	}
-
-	/**
-	 * Undefined WPCY_KERNEL still loads setup.class.php after autoload.
-	 */
-	public function test_undefined_constant_includes_framework_setup() {
-		$result = $this->run_bootstrap( null );
-		$this->assertSame( 'framework_yes', $result['framework'] );
-		$this->assertSame( 'setup_yes', $result['setup'] );
 	}
 
 	/**
@@ -95,10 +57,9 @@ class KernelSwitchTest extends TestCase {
 	/**
 	 * Load the plugin bootstrap in a subprocess with WordPress stubs.
 	 *
-	 * @param string|null $kernel_value Null leaves WPCY_KERNEL undefined.
 	 * @return array{core: string, legacy: string, framework: string, setup: string, code: int, raw: string}
 	 */
-	private function run_bootstrap( ?string $kernel_value ): array {
+	private function run_bootstrap(): array {
 		$stub = <<<'PHP'
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
@@ -127,6 +88,14 @@ function get_option( $key, $default = false ) {
 function get_site_option( $key, $default = false ) {
 	unset( $key );
 	return $default;
+}
+function update_option( $key, $value, $autoload = null ) {
+	unset( $key, $value, $autoload );
+	return true;
+}
+function update_site_option( $key, $value ) {
+	unset( $key, $value );
+	return true;
 }
 function register_activation_hook( $file, $callback ) {
 	unset( $file, $callback );
@@ -252,10 +221,6 @@ function current_user_can( $capability ) {
 	return false;
 }
 
-if ( 'undef' !== $argv[2] ) {
-	define( 'WPCY_KERNEL', $argv[2] );
-}
-
 require $argv[1];
 
 $core      = class_exists( 'WenPai\\ChinaYes\\Core\\Plugin', false ) ? 'core_yes' : 'core_no';
@@ -276,13 +241,11 @@ PHP;
 		$this->assertNotFalse( $tmp );
 		file_put_contents( $tmp, $stub ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- test subprocess stub.
 
-		$kernel = null === $kernel_value ? 'undef' : $kernel_value;
-		$cmd    = sprintf(
-			'%s %s %s %s',
+		$cmd = sprintf(
+			'%s %s %s',
 			escapeshellarg( PHP_BINARY ),
 			escapeshellarg( $tmp ),
-			escapeshellarg( $this->plugin_file() ),
-			escapeshellarg( $kernel )
+			escapeshellarg( $this->plugin_file() )
 		);
 
 		$output = array();

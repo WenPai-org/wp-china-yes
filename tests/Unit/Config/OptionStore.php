@@ -44,6 +44,13 @@ final class OptionStore {
 	public static $salt = 'wpcy-unit-auth-salt';
 
 	/**
+	 * Optional callback for update_option stubs. Throw to simulate a write failure.
+	 *
+	 * @var callable|null
+	 */
+	public static $on_update = null;
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -52,5 +59,6 @@ final class OptionStore {
 		self::$options      = array();
 		self::$site_options = array();
 		self::$multisite    = false;
+		self::$on_update    = null;
 	}
 }
