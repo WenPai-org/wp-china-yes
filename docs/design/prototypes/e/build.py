@@ -11,21 +11,26 @@ from parts_v5 import hero_white as _hw, stat_area as _sa, routes_list, timeline,
 HEAD = (ROOT / "_shell-head.html").read_text(encoding="utf-8")
 TAIL = "    </div>\n  </div>\n</body>\n</html>\n"
 
-# ---------------------------------------------------------------- 图标：Phosphor regular（开源，MIT），按需 SVG，本地包，不走 CDN
-PH_DIR = ROOT.parent / "node_modules" / "@phosphor-icons" / "core" / "assets" / "regular"
-PH = {  # 本文件用的语义名 → Phosphor 图标名（实现侧 icons.js 用同一张表）
-    "globe": "globe", "bolt": "lightning", "user": "user", "link": "link", "monitor": "monitor", "check": "check",
-    "info": "info", "arrow": "arrow-right", "map": "map-pin", "grid": "squares-four", "shield": "shield-check",
-    "download": "download-simple", "clock": "clock", "block": "prohibit", "gauge": "gauge", "font": "text-aa",
-    "leaf": "leaf", "book": "book-open", "chat": "chat-circle", "video": "video-camera", "help": "question",
-    "rss": "rss", "wechat": "wechat-logo", "store": "storefront", "sparkle": "sparkle", "layers": "stack",
-    "settings": "sliders-horizontal", "home": "house", "pulse": "pulse", "external": "arrow-square-out",
-    "sliders": "sliders", "image": "image", "chevron": "caret-down", "up": "arrow-up", "spinner": "circle-notch",
+# ---------------------------------------------------------------- 图标：RemixIcon line（开源，Apache 2.0），按需 SVG，本地包，不走 CDN
+# feibisi 2026-09-06 夜：Phosphor 不喜欢，换 RemixIcon。React 实现用 @remixicon/react 的同名组件（Ri + PascalCase，如 RiGlobalLine）。
+RI_DIR = ROOT.parent / "node_modules" / "remixicon" / "icons"
+RI = {  # 本文件用的语义名 → RemixIcon 文件名（实现侧 icons.js 用同一张表）
+    "globe": "global-line", "bolt": "flashlight-line", "user": "user-3-line", "link": "link", "monitor": "computer-line",
+    "check": "check-line", "info": "information-line", "arrow": "arrow-right-line", "map": "map-pin-line", "grid": "apps-line",
+    "shield": "shield-check-line", "download": "download-2-line", "clock": "time-line", "block": "forbid-line", "gauge": "dashboard-3-line",
+    "font": "font-size", "leaf": "leaf-line", "book": "book-open-line", "chat": "chat-3-line", "video": "video-line", "help": "question-line",
+    "rss": "rss-line", "wechat": "wechat-line", "store": "store-2-line", "sparkle": "sparkling-line", "layers": "stack-line",
+    "settings": "equalizer-line", "home": "home-4-line", "pulse": "pulse-line", "external": "external-link-line",
+    "sliders": "eye-line", "image": "image-line", "chevron": "arrow-down-s-line", "up": "arrow-right-up-line", "spinner": "loader-4-line",
+    "stethoscope": "stethoscope-line", "lifebuoy": "lifebuoy-line", "x": "close-line", "warn": "error-warning-line", "retry": "refresh-line",
+    "plug": "plug-line", "server": "server-line", "cloud": "cloud-line", "bag": "shopping-bag-3-line", "key": "key-2-line",
+    "card": "bank-card-line", "bell": "notification-3-line",
 }
-def _ph_svg(name):
-    raw = (PH_DIR / f"{PH[name]}.svg").read_text(encoding="utf-8")
-    return raw.replace('<svg xmlns="http://www.w3.org/2000/svg" ', '<svg class="ph" aria-hidden="true" ', 1).strip()
-ICON = {k: _ph_svg(k) for k in PH}
+_RI_INDEX = {p.stem: p for p in RI_DIR.rglob("*.svg")}
+def _ri_svg(name):
+    raw = _RI_INDEX[RI[name]].read_text(encoding="utf-8")
+    return raw.replace('<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">', '<svg class="ph" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">', 1).strip()
+ICON = {k: _ri_svg(k) for k in RI}
 
 pagehero = lambda *a: _ph(ICON, *a)
 strip = lambda items: _strip(ICON, items)
@@ -34,6 +39,10 @@ resources = lambda cb=False: _res(ICON, cb)
 hero_white = lambda *a, **kw: _hw(ICON, *a, **kw)
 resources_compact = lambda cb=False: _rc(ICON, cb)
 stat_area = lambda *a: _sa(ICON, *a)
+from parts_v6 import hero_stack as _hs, routes_list as routes_list6, eco_block as _eco
+hero_stack = lambda *a, **kw: _hs(ICON, *a, **kw)
+eco_block = lambda cb=False: _eco(ICON, cb)
+ENABLE_FONT = f'<a class="btn btn-ghost" href="services.html">启用</a>'
 
 # ---------------------------------------------------------------- 壳
 def shell(active, headright="", tabs=True, title="概览"):
@@ -42,7 +51,7 @@ def shell(active, headright="", tabs=True, title="概览"):
         h = h.replace(f"__ICON_{k}__", ICON[k])
     for k in ("OVERVIEW", "SETTINGS", "SERVICES", "DIAGNOSE"):
         h = h.replace(f"__T_{k}__", "is-active" if k == active else "")
-    for slug, ic, name in (("overview-domestic", "home", "概览"), ("settings", "settings", "设置"), ("services", "grid", "服务"), ("diagnose", "pulse", "诊断")):
+    for slug, ic, name in (("overview-domestic", "home", "概览"), ("settings", "settings", "设置"), ("services", "grid", "服务"), ("diagnose", "stethoscope", "诊断")):
         h = re.sub(r'(<a class="wpcy-tab[^"]*" href="%s.html">)%s</a>' % (slug, name), lambda m: m.group(1) + ICON[ic] + name + "</a>", h)
     if not tabs:
         h = re.sub(r'<nav class="wpcy-tabs".*?</nav>\n', "", h, flags=re.S)
@@ -115,82 +124,108 @@ PROFILE_PROMPT = (f'<div class="next" style="margin-top:16px"><div class="tile">
 
 def overview(state):
     domestic = state in ("domestic", "degraded", "empty", "recovery", "upgraded")
-    if state in ("domestic", "recovery", "upgraded"):
-        hero = hero_white("国内站 · 已运行 37 天", "国内访问 WordPress 的事，<br>已经替你办好了。",
-                          "更新与安装包走国内镜像，常用前端资源与头像走国内节点。访客和你都不用再等海外线路。",
-                          f'<a class="btn btn-primary" href="diagnose.html">{ICON["pulse"]}运行诊断</a><a class="btn btn-secondary" href="settings.html">调整设置</a>',
-                          (100, "100", "线路健康"), [("镜像", "229 ms"), ("加速", "4 项"), ("最近检查", "3 分钟前")],
-                          ("一切正常", ["4 条线路正常", "4 项前端资源已加速", "头像走 Cravatar"]))
+    CTA_DOM = f'<a class="btn btn-primary" href="diagnose.html">{ICON["pulse"]}运行诊断</a><a class="btn btn-secondary" href="settings.html">调整设置</a>'
+    CTA_SEC = f'<a class="btn btn-secondary" href="diagnose.html">{ICON["pulse"]}查看线路详情</a><a class="btn btn-secondary" href="settings.html">调整设置</a>'
+    STACK_DOM = [("on", "download", "WordPress 更新与安装包", "经 WenPai.org 镜像接通 · 原始源在国内常超时", "", None),
+                 ("on", "bolt", "公共库", "经 adminCDN 接通 · 原始源在国内不可达", "", None),
+                 ("on", "user", "头像", "经 Cravatar 接通 · Gravatar 在国内空白", "", None),
+                 ("off", "font", "中文字体", "Windfonts 提供 · 绑定本站后可用", "", ENABLE_FONT)]
+    S7_DOM = f'<div class="wpcy-grid-3">{stat_area("download","更新与安装包","42","次","12%","经 WenPai.org 镜像完成 · 节省下载约 1.2 GB",[18,26,22,31,28,24,42])}{stat_area("bolt","公共库请求","18,430","次","8%","经 adminCDN 接通 · 访客首屏更快",[2100,2400,2300,2700,2900,2600,3200])}{stat_area("user","头像请求","3,210","次","5%","经 Cravatar 接通 · 评论区不再空头像",[380,410,470,440,520,480,560])}</div>'
+    if state in ("domestic", "upgraded"):
+        hero = hero_stack("国内站 · 已运行 37 天", "原本在国内打不开的，<br>现在都能用了。",
+                          "WordPress 更新、Google Fonts、Gravatar 头像这些在国内不可达或很慢的服务，已经由文派生态的 WenPai.org、adminCDN、Cravatar 接通。你和访客都不用再等海外线路。",
+                          CTA_SEC if state == "upgraded" else CTA_DOM, STACK_DOM,
+                          ("一切正常", ["3 项核心服务已接通", "1 项未启用", "最近检查 3 分钟前"]))
         nxt = PROFILE_PROMPT if state == "upgraded" else ""
-        if state == "recovery":
-            hero = hero_white("国内站 · 已运行 37 天", "恢复模式已开启，<br>叶子现在什么都不做。",
-                              "全部 URL 改写与模块已停用，站点回到未安装本插件时的行为。问题排除后退出恢复模式即可恢复之前的设置。",
-                              f'<a class="btn btn-secondary" href="diagnose.html">{ICON["pulse"]}查看诊断</a><a class="btn btn-secondary" href="settings.html">查看设置</a>',
-                              (0, "—", "已停用"), [("镜像", "未接管"), ("加速", "0 项"), ("最近检查", "3 分钟前")],
-                              ("恢复模式", ["全部改写已停用", "设置已保留"]), tone="mute")
-        s7 = f'<div class="wpcy-grid-3">{stat_area("download","更新与安装包","42","次","12%","经国内镜像完成 · 节省下载约 1.2 GB",[18,26,22,31,28,24,42])}{stat_area("bolt","前端资源请求","18,430","次","8%","改写到国内可达源 · 访客首屏更快",[2100,2400,2300,2700,2900,2600,3200])}{stat_area("user","头像请求","3,210","次","5%","走 Cravatar · 评论区不再空头像",[380,410,470,440,520,480,560])}</div>'
-        left = card_tight("线路状态", "每 10 分钟自动检查一次", ("查看全部", "diagnose.html"), routes_list([
-            ("ok", "WordPress.org 镜像", "更新检查与安装包", "229 ms", "3 分钟前"),
-            ("ok", "公共库源", "Google Fonts、Ajax、jsDelivr、Emoji", "61 ms", "3 分钟前"),
-            ("ok", "CDNJS 源", "昨天曾中断 18 分钟，已恢复", "74 ms", "3 分钟前"),
-            ("ok", "Cravatar", "评论头像 · cravatar.cn", "48 ms", "3 分钟前")]))
+        s7 = S7_DOM
+        left = card_tight("线路状态", "每 10 分钟自动检查一次", ("查看全部", "diagnose.html"), routes_list6([
+            ("ok", "WordPress.org 镜像", "WenPai.org", "更新检查与安装包", "229 ms", "3 分钟前"),
+            ("ok", "公共库源", "adminCDN", "Google Fonts、Ajax、jsDelivr、Emoji", "61 ms", "3 分钟前"),
+            ("ok", "CDNJS 源", "adminCDN", "昨天曾中断 18 分钟，已恢复", "74 ms", "3 分钟前"),
+            ("ok", "头像", "Cravatar", "评论头像 · cravatar.cn", "48 ms", "3 分钟前")]))
         right = card_tight("最近动态", "线路切换与自动处理", ("查看全部", "diagnose.html"), timeline([
-            ("ok", "今天 14:02", "完成 WordPress 7.1 更新检查", "经国内镜像，耗时 0.4 秒"),
-            ("ok", "昨天 22:33", "CDNJS 国内源恢复，已切回", "中断 18 分钟，期间走原始上游，访客不受影响"),
-            ("warn", "昨天 22:15", "CDNJS 国内源不可达，已回原始上游", "恢复后自动切回"),
+            ("ok", "今天 14:02", "完成 WordPress 7.1 更新检查", "经 WenPai.org 镜像，耗时 0.4 秒"),
+            ("ok", "昨天 22:33", "CDNJS 源恢复，已切回", "adminCDN 中断 18 分钟，期间走原始上游，访客不受影响"),
+            ("warn", "昨天 22:15", "CDNJS 源不可达，已回原始上游", "adminCDN 暂时不可达，恢复后自动切回"),
+            ("", "9 月 4 日", "插件更新到 4.0.0", "从 3.8 迁移 12 项设置")]))
+    elif state == "recovery":
+        hero = hero_stack("国内站 · 已运行 37 天", "恢复模式已开启，<br>叶子现在什么都不做。",
+                          "全部 URL 改写与模块已停用，站点回到未安装本插件时的行为。问题排除后退出恢复模式即可恢复之前的设置。",
+                          f'<a class="btn btn-secondary" href="diagnose.html">{ICON["pulse"]}查看诊断</a><a class="btn btn-secondary" href="settings.html">查看设置</a>',
+                          [("paused", "download", "WordPress 更新与安装包", "未接管 · 直连 WordPress.org", "", None),
+                           ("paused", "bolt", "公共库", "未接管 · 直连原始源", "", None),
+                           ("paused", "user", "头像", "未接管 · 直连 Gravatar", "", None),
+                           ("paused", "font", "中文字体", "未启用", "", None)],
+                          ("恢复模式", ["全部改写已停用", "设置已保留"]), tone="mute")
+        nxt = ""
+        s7 = S7_DOM
+        left = card_tight("线路状态", "每 10 分钟自动检查一次 · 恢复模式下只检查不接管", ("查看全部", "diagnose.html"), routes_list6([
+            ("ok", "WordPress.org 镜像", "WenPai.org", "更新检查与安装包", "229 ms", "3 分钟前"),
+            ("ok", "公共库源", "adminCDN", "Google Fonts、Ajax、jsDelivr、Emoji", "61 ms", "3 分钟前"),
+            ("ok", "CDNJS 源", "adminCDN", "备用公共库", "74 ms", "3 分钟前"),
+            ("ok", "头像", "Cravatar", "评论头像 · cravatar.cn", "48 ms", "3 分钟前")]))
+        right = card_tight("最近动态", "线路切换与自动处理", ("查看全部", "diagnose.html"), timeline([
+            ("warn", "今天 15:10", "已进入恢复模式", "全部 URL 改写与模块已停用"),
+            ("ok", "今天 14:02", "完成 WordPress 7.1 更新检查", "经 WenPai.org 镜像，耗时 0.4 秒"),
             ("", "9 月 4 日", "插件更新到 4.0.0", "从 3.8 迁移 12 项设置")]))
     elif state == "degraded":
-        hero = hero_white("国内站 · 已运行 37 天", "国内镜像暂时不可达，<br>已自动回原始上游。",
-                          "更新检查与安装包暂时直连 WordPress.org，会慢一些但不会失败；其余线路正常。恢复后自动切回，不需要你操作。",
-                          f'<a class="btn btn-secondary" href="diagnose.html">{ICON["pulse"]}查看线路详情</a><a class="btn btn-secondary" href="settings.html">调整设置</a>',
-                          (75, "3/4", "线路正常"), [("镜像", "不可达"), ("已回退", "22 分钟"), ("最近检查", "1 分钟前")],
-                          ("1 条线路回退", ["镜像不可达 22 分钟", "其余 3 条正常", "访客不受影响"]), tone="warn")
+        hero = hero_stack("国内站 · 已运行 37 天", "WenPai.org 镜像暂时不可达，<br>已自动回原始上游。",
+                          "更新检查与安装包暂时直连 WordPress.org，会慢一些但不会失败；公共库与头像照常经 adminCDN、Cravatar 接通。恢复后自动切回，不需要你操作。",
+                          CTA_SEC,
+                          [("fallback", "download", "WordPress 更新与安装包", "WenPai.org 不可达 22 分钟 · 已回原始上游", "", None),
+                           ("on", "bolt", "公共库", "经 adminCDN 接通 · 原始源在国内不可达", "", None),
+                           ("on", "user", "头像", "经 Cravatar 接通 · Gravatar 在国内空白", "", None),
+                           ("off", "font", "中文字体", "Windfonts 提供 · 绑定本站后可用", "", ENABLE_FONT)],
+                          ("1 项已回退", ["WenPai.org 镜像不可达 22 分钟", "其余 2 项已接通", "访客不受影响"]), tone="warn")
         nxt = (f'<div class="notice warn act" style="margin-top:16px">{ICON["info"]}<span>镜像连续不可达超过 1 小时会提醒你；现在不需要做任何事。</span>'
                f'<a class="btn btn-secondary" href="#">立即重试</a></div>')
-        s7 = f'<div class="wpcy-grid-3">{stat_area("download","更新与安装包","42","次","12%","经国内镜像完成 · 节省下载约 1.2 GB",[18,26,22,31,28,24,42])}{stat_area("bolt","前端资源请求","18,430","次","8%","改写到国内可达源 · 访客首屏更快",[2100,2400,2300,2700,2900,2600,3200])}{stat_area("user","头像请求","3,210","次","5%","走 Cravatar · 评论区不再空头像",[380,410,470,440,520,480,560])}</div>'
-        left = card_tight("线路状态", "每 10 分钟自动检查一次 · 不可达时每 1 分钟重试", ("查看全部", "diagnose.html"), routes_list([
-            ("warn", "WordPress.org 镜像", "不可达，已回原始上游（api.wordpress.org · 2,410 ms）", "—", "1 分钟前"),
-            ("ok", "公共库源", "Google Fonts、Ajax、jsDelivr、Emoji", "61 ms", "3 分钟前"),
-            ("ok", "CDNJS 源", "正常", "74 ms", "3 分钟前"),
-            ("ok", "Cravatar", "评论头像 · cravatar.cn", "48 ms", "3 分钟前")]))
+        s7 = S7_DOM
+        left = card_tight("线路状态", "每 10 分钟自动检查一次 · 不可达时每 1 分钟重试", ("查看全部", "diagnose.html"), routes_list6([
+            ("warn", "WordPress.org 镜像", "WenPai.org", "不可达，已回原始上游（api.wordpress.org · 2,410 ms）", "—", "1 分钟前"),
+            ("ok", "公共库源", "adminCDN", "Google Fonts、Ajax、jsDelivr、Emoji", "61 ms", "3 分钟前"),
+            ("ok", "CDNJS 源", "adminCDN", "备用公共库", "74 ms", "3 分钟前"),
+            ("ok", "头像", "Cravatar", "评论头像 · cravatar.cn", "48 ms", "3 分钟前")]))
         right = card_tight("最近动态", "线路切换与自动处理", ("查看全部", "diagnose.html"), timeline([
-            ("warn", "今天 14:20", "WordPress.org 镜像不可达，已回原始上游", "每 1 分钟重试，恢复后自动切回"),
-            ("ok", "今天 14:02", "完成 WordPress 7.1 更新检查", "经国内镜像，耗时 0.4 秒"),
-            ("ok", "昨天 22:33", "CDNJS 国内源恢复，已切回", "中断 18 分钟，访客不受影响"),
+            ("warn", "今天 14:20", "WordPress.org 镜像不可达，已回原始上游", "WenPai.org 镜像暂时不可达，每 1 分钟重试，恢复后自动切回"),
+            ("ok", "今天 14:02", "完成 WordPress 7.1 更新检查", "经 WenPai.org 镜像，耗时 0.4 秒"),
+            ("ok", "昨天 22:33", "CDNJS 源恢复，已切回", "adminCDN 中断 18 分钟，访客不受影响"),
             ("", "9 月 4 日", "插件更新到 4.0.0", "从 3.8 迁移 12 项设置")]))
     elif state == "empty":
-        hero = hero_white("国内站 · 刚安装", "已经开始为你处理，<br>数字稍后就有。",
-                          "更新与安装包走国内镜像，常用前端资源与头像走国内节点。第一次自动线路检查已完成，计数从现在开始。",
-                          f'<a class="btn btn-primary" href="diagnose.html">{ICON["pulse"]}运行诊断</a><a class="btn btn-secondary" href="settings.html">调整设置</a>',
-                          (100, "100", "线路健康"), [("镜像", "231 ms"), ("加速", "4 项"), ("最近检查", "刚刚")],
-                          ("一切正常", ["4 条线路正常", "刚安装，还没有统计"]))
+        hero = hero_stack("国内站 · 刚安装", "已经开始为你接通，<br>数字稍后就有。",
+                          "WordPress 更新、Google Fonts、Gravatar 头像已分别经 WenPai.org、adminCDN、Cravatar 接通。第一次自动线路检查已完成，计数从现在开始。",
+                          CTA_DOM, STACK_DOM,
+                          ("一切正常", ["3 项核心服务已接通", "刚安装，还没有统计"]))
         nxt = ""
-        s7 = f'<div class="wpcy-grid-3">{stat_area("download","更新与安装包","还没有数据","","","下次更新检查后开始计数",[])}{stat_area("bolt","前端资源请求","还没有数据","","","有访客打开页面后开始计数",[])}{stat_area("user","头像请求","还没有数据","","","有评论或用户头像加载后开始计数",[])}</div>'
-        left = card_tight("线路状态", "每 10 分钟自动检查一次", ("查看全部", "diagnose.html"), routes_list([
-            ("ok", "WordPress.org 镜像", "更新检查与安装包", "231 ms", "刚刚"),
-            ("ok", "公共库源", "Google Fonts、Ajax、jsDelivr、Emoji", "63 ms", "刚刚"),
-            ("ok", "CDNJS 源", "备用公共库", "70 ms", "刚刚"),
-            ("ok", "Cravatar", "评论头像 · cravatar.cn", "51 ms", "刚刚")]))
+        s7 = f'<div class="wpcy-grid-3">{stat_area("download","更新与安装包","还没有数据","","","下次更新检查后开始计数",[])}{stat_area("bolt","公共库请求","还没有数据","","","有访客打开页面后开始计数",[])}{stat_area("user","头像请求","还没有数据","","","有评论或用户头像加载后开始计数",[])}</div>'
+        left = card_tight("线路状态", "每 10 分钟自动检查一次", ("查看全部", "diagnose.html"), routes_list6([
+            ("ok", "WordPress.org 镜像", "WenPai.org", "更新检查与安装包", "231 ms", "刚刚"),
+            ("ok", "公共库源", "adminCDN", "Google Fonts、Ajax、jsDelivr、Emoji", "63 ms", "刚刚"),
+            ("ok", "CDNJS 源", "adminCDN", "备用公共库", "70 ms", "刚刚"),
+            ("ok", "头像", "Cravatar", "评论头像 · cravatar.cn", "51 ms", "刚刚")]))
         right = card_tight("最近动态", "线路切换与自动处理", ("查看全部", "diagnose.html"), timeline([
             ("ok", "刚刚", "首次线路检查完成", "4 条线路全部正常"),
-            ("", "刚刚", "已按「国内站」配置", "更新走国内镜像，前端资源与头像走国内节点")]))
+            ("", "刚刚", "已按「国内站」配置", "更新走 WenPai.org 镜像，公共库与头像经 adminCDN、Cravatar 接通")]))
     else:
-        hero = hero_white("跨境 · 外贸站 · 已运行 37 天", "人在国内、站在海外，<br>后台不该卡。",
-                          "只对你在后台看到的资源做国内加速，海外访客看到的前台一个字节不动；更新直连 WordPress.org。",
+        hero = hero_stack("跨境 · 外贸站 · 已运行 37 天", "人在国内、站在海外，<br>后台不该卡。",
+                          "只对你在后台看到的资源做接通——Google Fonts、Gravatar 这些在国内打不开的，后台里由 adminCDN、Cravatar 接通；海外访客看到的前台一个字节不动；更新直连 WordPress.org。",
                           f'<a class="btn btn-secondary" href="diagnose.html">{ICON["gauge"]}从我的浏览器测速</a><a class="btn btn-secondary" href="settings.html">调整设置</a>',
-                          (100, "100", "线路健康"), [("后台改写", "6,120 次"), ("最近检查", "3 分钟前")],
-                          ("一切正常", ["直连 WordPress.org", "后台资源已加速", "未绑定"]))
+                          [("direct", "download", "WordPress 更新与安装包", "直连 WordPress.org · 服务器在海外不需镜像", "", None),
+                           ("on", "bolt", "后台公共库", "后台里经 adminCDN 接通 · 原始源在国内打不开", "只在后台", None),
+                           ("on", "user", "后台头像", "后台里经 Cravatar 接通 · Gravatar 在国内空白", "只在后台", None),
+                           ("off", "font", "中文字体", "Windfonts 提供 · 绑定本站后可用", "", ENABLE_FONT)],
+                          ("一切正常", ["2 项核心服务已接通", "更新直连", "未绑定"]))
         nxt = NEXT_BIND
-        s7 = f'<div class="wpcy-grid-3">{stat_area("bolt","后台资源请求","6,120","次","9%","Google Fonts、Ajax 等改写到国内可达源 · 只在后台生效",[640,700,760,720,820,880,920])}{stat_area("clock","后台心跳请求","2,340","次","","已节省 · 仪表盘关闭、编辑器 60 秒一次",[300,310,290,330,350,340,380])}{stat_area("block","出站请求","418","次","","已屏蔽 · WordPress 新闻、活动等仪表盘外部内容",[50,58,52,61,66,60,70])}</div>'
-        left = card_tight("从你的浏览器测速", "上次 2 小时前 · 判断是插件层还是网络层的问题", ("重新测速", "diagnose.html"), routes_list([
-            ("warn", "你的服务器", "站点后台 TTFB", "1,840 ms", "2 小时前"),
-            ("bad", "fonts.googleapis.com", "原始源，后台已改写", "—", "2 小时前"),
-            ("ok", "国内公共库源", "后台改写目标", "210 ms", "2 小时前"),
-            ("bad", "gravatar.com", "原始源，后台已改写", "—", "2 小时前")]))
+        s7 = f'<div class="wpcy-grid-3">{stat_area("bolt","后台公共库请求","6,120","次","9%","经 adminCDN 接通 · 只在后台生效",[640,700,760,720,820,880,920])}{stat_area("clock","后台心跳请求","2,340","次","","已节省 · 仪表盘关闭、编辑器 60 秒一次",[300,310,290,330,350,340,380])}{stat_area("block","出站请求","418","次","","已屏蔽 · WordPress 新闻、活动等仪表盘外部内容",[50,58,52,61,66,60,70])}</div>'
+        left = card_tight("从你的浏览器测速", "上次 2 小时前 · 原始源与接通后对照", ("重新测速", "diagnose.html"), routes_list6([
+            ("warn", "你的服务器", "站点", "后台 TTFB", "1,840 ms", "2 小时前"),
+            ("bad", "fonts.googleapis.com", "原始源", "后台已改写", "超时", "2 小时前"),
+            ("ok", "googlefonts.admincdn.com", "adminCDN", "接通后", "210 ms", "2 小时前"),
+            ("bad", "gravatar.com", "原始源", "后台已改写", "超时", "2 小时前"),
+            ("ok", "cn.cravatar.com", "Cravatar", "接通后", "96 ms", "2 小时前")]))
         right = card_tight("最近动态", "线路切换与自动处理", ("查看全部", "diagnose.html"), timeline([
-            ("ok", "今天 14:02", "后台 Google Fonts 已改写到国内源", "本次会话 38 个请求"),
+            ("ok", "今天 14:02", "后台 Google Fonts 已经 adminCDN 接通", "本次会话 38 个请求"),
             ("", "今天 09:30", "完成 WordPress 7.1 更新检查", "直连 WordPress.org，耗时 1.1 秒"),
-            ("warn", "昨天 18:40", "浏览器测速：gravatar.com 超时", "后台头像已走 Cravatar，不受影响"),
+            ("warn", "昨天 18:40", "浏览器测速：gravatar.com 超时", "后台头像已经 Cravatar 接通，不受影响"),
             ("", "9 月 4 日", "插件更新到 4.0.0", "从 3.8 迁移 12 项设置；后台加速设置已保留，4.1 起生效")]))
     cur = f"overview-{state}.html"
     return f"""
@@ -200,7 +235,7 @@ def overview(state):
         {nxt}
         <section class="sec"><div class="sec-h caps"><h2>过去 7 天为你处理</h2><p>数字来自本站计数</p></div>{s7}</section>
         <section class="sec"><div class="grid2-w">{left}{right}</div></section>
-        {resources_compact(not domestic)}
+        {eco_block(not domestic)}
         {foot("刚安装") if state == "empty" else FOOT}
       </main>
       {proto_switch(OVERVIEW_STATES, cur)}
@@ -238,10 +273,10 @@ settings_simple = f"""
           <section class="card">
             <h2 class="section-title">{ICON["bolt"]} 加速与优化</h2>
             <p class="section-desc">按当前场景已配好，通常不需要改。想看具体走哪个源、只在后台还是前台生效，切到右上角的「高级」。</p>
-            {simple_row("download", "ok", "WordPress 更新与安装", "按场景自动选择：跨境站直连 WordPress.org，国内站走国内镜像", '<span class="pill ok">直连 WordPress.org</span>')}
-            {simple_row("bolt", "ok", "加速常用前端资源", "字体、脚本等第三方公共资源改到更快的源", '<span class="scope">只在后台</span><span class="toggle on"><i></i>已开启</span>')}
-            {simple_row("user", "ok", "头像走 Cravatar", "Gravatar 的中国替代，头像不再空白", '<span class="scope">只在后台</span><span class="toggle on"><i></i>已开启</span>')}
-            {simple_row("font", "", "中文字体（Windfonts）", "让站点用上更好看的中文字体", '<a class="scope" href="services.html">绑定本站后可用</a><span class="toggle off-dis"><i></i>未开启</span>')}
+            {simple_row("download", "ok", "WordPress 更新与安装", "按场景自动选择：跨境站直连 WordPress.org，国内站走 WenPai.org 镜像", '<span class="pill ok">直连 WordPress.org</span>')}
+            {simple_row("bolt", "ok", "公共库接通", "Google Fonts、Ajax、jsDelivr 等改到 adminCDN 的国内节点", '<span class="scope">只在后台</span><span class="toggle on"><i></i>已开启</span>')}
+            {simple_row("user", "ok", "头像接通", "Gravatar 在国内空白，改由 Cravatar 提供", '<span class="scope">只在后台</span><span class="toggle on"><i></i>已开启</span>')}
+            {simple_row("font", "", "中文字体", "由 Windfonts 提供，让站点用上更好看的中文字体", '<a class="scope" href="services.html">绑定本站后可用</a><span class="toggle off-dis"><i></i>未开启</span>')}
           </section>
           <section class="card">
             <h2 class="section-title">{ICON["monitor"]} 后台体验</h2>
@@ -263,11 +298,11 @@ settings_adv = f"""
           <section class="card">
             <h2 class="section-title">{ICON["globe"]} 连通性</h2>
             <p class="section-desc">每一项都可以选择只作用于后台、只作用于前台，或两者。</p>
-            {field("WordPress.org 源", "更新检查与安装包从哪里取", radios("org", [("国内镜像", "优先国内镜像，不可用时回原始上游 · 国内站默认"), ("直连 WordPress.org", "不经过镜像 · 跨境站默认")], 1) + '<span class="saved">已保存 ✓</span>', icon="download")}
-            {field("公共前端库", "把常用 CDN 改到国内可访问的源", '<div class="seg"><span>后台与前台</span><span class="on">仅后台</span><span>仅前台</span><span>关闭</span></div><div class="chk" style="margin-top:12px"><label><input type="checkbox" checked>Google Fonts</label><label><input type="checkbox" checked>Google Ajax</label><label><input type="checkbox">CDNJS</label><label><input type="checkbox" checked>jsDelivr</label><label><input type="checkbox" checked>Emoji</label></div>', icon="bolt")}
-            {field("后台头像", "管理员在后台看到的头像源", radios("ah", [("Cravatar 中国线路", "cravatar.cn · 国内节点"), ("Cravatar 国际线路", "cravatar.com · 全球节点"), ("关闭", "保留 Gravatar")], 0), icon="user")}
-            {field("前台头像", "访客在评论等处看到的头像源", radios("fh", [("Cravatar 中国线路", "cravatar.cn · 国内节点"), ("Cravatar 国际线路", "cravatar.com · 全球节点"), ("关闭", "保留 Gravatar")], 2), "跨境站默认关闭：海外访客直连 Gravatar 更快", icon="user")}
-            {field("字体（Windfonts）", "中文字体替换", '<span class="toggle off-dis"><i></i>启用 Windfonts</span>', "绑定本站后可用", icon="font")}
+            {field("WordPress.org 源", "更新检查与安装包从哪里取 · 镜像由 WenPai.org 提供", radios("org", [("国内镜像", "优先国内镜像，不可用时回原始上游 · 国内站默认"), ("直连 WordPress.org", "不经过镜像 · 跨境站默认")], 1) + '<span class="saved">已保存 ✓</span>', icon="download")}
+            {field("公共前端库", "把常用 CDN 改到 adminCDN 的国内节点", '<div class="seg"><span>后台与前台</span><span class="on">仅后台</span><span>仅前台</span><span>关闭</span></div><div class="chk" style="margin-top:12px"><label><input type="checkbox" checked>Google Fonts</label><label><input type="checkbox" checked>Google Ajax</label><label><input type="checkbox">CDNJS</label><label><input type="checkbox" checked>jsDelivr</label><label><input type="checkbox" checked>Emoji</label></div>', icon="bolt")}
+            {field("后台头像", "管理员在后台看到的头像源 · 由 Cravatar 提供", radios("ah", [("Cravatar 中国线路", "cravatar.cn · 国内节点"), ("Cravatar 国际线路", "cravatar.com · 全球节点"), ("关闭", "保留 Gravatar")], 0), icon="user")}
+            {field("前台头像", "访客在评论等处看到的头像源 · 由 Cravatar 提供", radios("fh", [("Cravatar 中国线路", "cravatar.cn · 国内节点"), ("Cravatar 国际线路", "cravatar.com · 全球节点"), ("关闭", "保留 Gravatar")], 2), "跨境站默认关闭：海外访客直连 Gravatar 更快", icon="user")}
+            {field("字体", "中文字体替换 · 由 Windfonts 提供", '<span class="toggle off-dis"><i></i>启用 Windfonts</span>', "绑定本站后可用", icon="font")}
             {field("后台加速", "压缩与合并后台静态资源", '<span class="toggle off-dis"><i></i>启用后台加速</span> <span class="pill">即将提供</span>', "3.x 的设置已保留，4.1 起生效", icon="layers")}
           </section>
           <section class="card">
@@ -300,6 +335,25 @@ page("settings-network.html", "设置", "SETTINGS", settings_network)
 # ---------------------------------------------------------------- 服务
 SERVICES_STATES = [("未绑定", "services.html"), ("绑定中", "services-pending.html"), ("已绑定", "services-bound.html"), ("服务端不可达", "services-unreachable.html")]
 
+def providers_block(state):
+    """供应商（决定 D4）：文派集市（即将开放）+ 薇晓朵商城（可连接）。state: locked / unconnected / connected"""
+    if state == "locked":
+        wxd = ('<div class="prov-card"><div class="prov-h">' + ICON["store"] + '<b>薇晓朵商城</b><span class="pill">未连接</span></div>'
+               '<p>薇晓朵的服务与产品：微信支付 for WooCommerce、订单微信通知、跨境店运维。已购的产品连接后自动接收更新。</p>'
+               '<div class="prov-f"><span class="scope">绑定本站后可连接</span></div></div>')
+    elif state == "unconnected":
+        wxd = ('<div class="prov-card"><div class="prov-h">' + ICON["store"] + '<b>薇晓朵商城</b><span class="pill">未连接</span></div>'
+               '<p>薇晓朵的服务与产品：微信支付 for WooCommerce、订单微信通知、跨境店运维。已购的产品连接后自动接收更新。</p>'
+               '<div class="prov-f"><span class="meta" style="margin:0">用购买时的邮箱和授权密钥连接</span><a class="btn btn-secondary" href="#">连接</a></div></div>')
+    else:
+        wxd = ('<div class="prov-card is-on"><div class="prov-h">' + ICON["store"] + '<b>薇晓朵商城</b><span class="pill ok">已连接</span></div>'
+               '<p>账户 <span class="mono">l***@example.com</span> · 连接于 2026-09-03 · 已购 2 项产品在"可用服务"里</p>'
+               '<div class="prov-f"><span class="meta" style="margin:0">授权密钥只保存在本站，已加密</span><a class="btn btn-ghost" href="#">断开</a></div></div>')
+    wp = ('<div class="prov-card is-soon"><div class="prov-h">' + ICON["bag"] + '<b>文派集市</b><span class="pill">即将开放</span></div>'
+          '<p>文派官方商城：文派系插件与主题的商业版本、模板与服务。开放后在这里连接。</p>'
+          '<div class="prov-f"><a class="btn btn-ghost" href="#">了解文派集市 ' + ICON["arrow"] + '</a></div></div>')
+    return f'<section class="sec">{sec("供应商", "连接后，你在该供应商购买的服务与产品会出现在下面并自动接收更新")}<div class="prov-grid">{wxd}{wp}</div></section>'
+
 def services_body(state):
     bound = state in ("bound", "unreachable")
     sw = proto_switch(SERVICES_STATES, "services.html" if state == "unbound" else f"services-{state}.html")
@@ -309,6 +363,7 @@ def services_body(state):
         {card("link", "accent", "尚未绑定本站", "绑定是匿名的：服务端只记录站点标识，不需要注册账号",
               '<p class="big">绑定后可使用文派服务与小工具</p><p class="meta">数据保存在本站 · 随时可解除 · 不影响任何加速功能</p>',
               '<a class="btn btn-ghost" href="#">了解文派服务 ' + ICON["arrow"] + '</a><a class="btn btn-primary" href="services-pending.html">绑定本站</a>', ("", "未绑定"))}
+        {providers_block("locked")}
         {empty_apps}
         """
     elif state == "pending":
@@ -316,13 +371,15 @@ def services_body(state):
         {card("link", "accent", "正在绑定本站", "等待文派服务器验证，通常几秒内完成",
               '<p class="big"><span class="spin"></span>等待验证</p><p class="meta">如果超过一分钟没有完成，可以取消后重试；不影响任何加速功能</p>',
               '<a class="btn btn-secondary" href="services.html">取消</a>', ("", "绑定中"))}
+        {providers_block("locked")}
         {empty_apps}
         """
     else:
-        rows = [("Windfonts 中文字体", "前台中文字体替换 · 由 Windfonts 平台提供", "ok", "已启用", '<a class="btn btn-ghost" href="settings.html">设置</a>'),
-                ("微信支付 for WooCommerce", "让中国买家在你的海外店用微信付款", "", "未安装", '<a class="btn btn-ghost" href="#">了解 ' + ICON["arrow"] + '</a>'),
-                ("订单微信通知", "新订单、退款实时推送到微信", "", "未安装", '<a class="btn btn-ghost" href="#">了解 ' + ICON["arrow"] + '</a>')]
-        rr = "".join(f'<div><div><div class="t">{a}</div><div class="d">{b}</div></div><span class="pill {c}">{d}</span><span class="r">{e}</span></div>' for a, b, c, d, e in rows)
+        rows = [("Windfonts 中文字体", "Windfonts", "前台中文字体替换", "ok", "已启用", '<a class="btn btn-ghost" href="settings.html">设置</a>'),
+                ("微信支付 for WooCommerce", "薇晓朵", "让中国买家在你的海外店用微信付款 · 已购，更新经供应商接收", "ok", "已安装", '<a class="btn btn-ghost" href="#">管理</a>'),
+                ("订单微信通知", "薇晓朵", "新订单、退款实时推送到微信 · 已购，尚未安装", "", "未安装", '<a class="btn btn-primary" href="#">安装</a>'),
+                ("跨境店运维", "薇晓朵", "海外服务器与线路的托管运维服务", "", "未购买", '<a class="btn btn-ghost" href="#">了解 ' + ICON["arrow"] + '</a>')]
+        rr = "".join(f'<div><div><div class="t">{a}<span class="prov">{pv}</span></div><div class="d">{b}</div></div><span class="pill {c}">{d}</span><span class="r">{e}</span></div>' for a, pv, b, c, d, e in rows)
         apps = "".join(f'<a class="app" href="#"><div class="tile accent">{ICON[i]}</div><div class="t">{n}</div><div class="d">{d}</div></a>' for i, n, d in
                        [("bolt", "连接测速", "从浏览器测各源耗时"), ("font", "字体预览", "看 Windfonts 在本站的效果"), ("clock", "通知设置", "订单通知的时间与渠道"), ("help", "帮助中心", "文档与反馈")])
         unreachable = (f'<div class="notice warn act" style="margin-bottom:16px">{ICON["info"]}<span>暂时无法连接文派服务，显示的是 3 小时前的状态。加速功能不受影响。</span><a class="btn btn-secondary" href="#">重试</a></div>'
@@ -333,7 +390,8 @@ def services_body(state):
         {unreachable}
         <article class="card"><div class="card-head"><div class="tile ok">{ICON["link"]}</div><div><h2 class="card-title">本站已绑定</h2><p class="card-sub">站点标识 <span class="mono">a3f9…c21e</span> · 绑定于 2026-09-02</p></div><span class="pill ok">已绑定</span></div>
           <div class="card-foot start"><span class="meta" style="margin:0">数据保存在本站；解除绑定后小工具数据保留 30 天</span><a class="btn btn-secondary" href="services.html">解除绑定</a></div></article>
-        <section class="sec">{sec("可用服务", "按你的站点场景与已安装插件显示")}<article class="card"><div class="rows svc">{rr}</div></article></section>
+        {providers_block("connected")}
+        <section class="sec">{sec("可用服务", "来自已连接供应商与文派服务，按你的站点场景与已安装插件显示")}<article class="card"><div class="rows svc">{rr}</div></article></section>
         {apps_block}
         """
     return f"""
@@ -354,11 +412,11 @@ diag = f"""
       <main class="wpcy-main wpcy-wrap">
         <div class="wpcy-page-head"><div><h1 class="wpcy-h1">诊断</h1><p class="wpcy-lede">线路检查、浏览器测速、迁移记录与恢复</p></div><a class="btn btn-secondary" href="#">{ICON["download"]} 导出诊断报告</a></div>
         <section class="sec">{sec("从你的服务器到各源", "每 10 分钟自动检查 · 上次 3 分钟前", ("立即检查", "#"))}
-          <article class="card tight">{routes_table([("WordPress.org 镜像", "更新检查与安装包 · 国内镜像", "ok", "正常", "229 ms", "3 分钟前"), ("WordPress.org 直连", "api.wordpress.org · 镜像不可达时的回退", "warn", "偏慢", "2,410 ms", "3 分钟前"), ("公共库源", "Google Fonts、Ajax、jsDelivr、Emoji 的国内可达源", "ok", "正常", "61 ms", "3 分钟前"), ("Cravatar", "cravatar.cn", "ok", "正常", "48 ms", "3 分钟前"), ("文派服务", "绑定与小工具", "ok", "正常", "112 ms", "3 分钟前")])}</article>
+          <article class="card tight">{routes_table([("WordPress.org 镜像", "WenPai.org · 更新检查与安装包", "ok", "正常", "229 ms", "3 分钟前"), ("WordPress.org 直连", "api.wordpress.org · 镜像不可达时的回退", "warn", "偏慢", "2,410 ms", "3 分钟前"), ("公共库源", "adminCDN · Google Fonts、Ajax、jsDelivr、Emoji", "ok", "正常", "61 ms", "3 分钟前"), ("头像", "Cravatar · cravatar.cn", "ok", "正常", "48 ms", "3 分钟前"), ("文派服务", "绑定与小工具", "ok", "正常", "112 ms", "3 分钟前")])}</article>
         </section>
         <section class="sec">{sec("从你的浏览器到各源", "用你现在的网络测，区分是插件层还是网络层的问题 · 上次 2 小时前", ("重新测速", "#"))}
           <article class="card tight">
-            {routes_table([("你的服务器", "站点后台 TTFB", "warn", "偏慢", "1,840 ms", "2 小时前"), ("fonts.googleapis.com", "原始源", "bad", "超时", "—", "2 小时前"), ("国内公共库源", "后台改写目标", "ok", "正常", "210 ms", "2 小时前"), ("gravatar.com", "原始源", "bad", "超时", "—", "2 小时前")])}
+            {routes_table([("你的服务器", "站点后台 TTFB", "warn", "偏慢", "1,840 ms", "2 小时前"), ("fonts.googleapis.com", "原始源", "bad", "超时", "—", "2 小时前"), ("googlefonts.admincdn.com", "adminCDN · 接通后", "ok", "正常", "210 ms", "2 小时前"), ("gravatar.com", "原始源", "bad", "超时", "—", "2 小时前"), ("cn.cravatar.com", "Cravatar · 接通后", "ok", "正常", "96 ms", "2 小时前")])}
             <div class="notice info" style="margin:12px 0 8px">{ICON["info"]}<span>后台慢主要来自你到服务器的往返（1,840 ms），插件层能改写的资源已改写；换线路或就近节点才能进一步改善。</span></div>
           </article>
         </section>
