@@ -90,6 +90,15 @@ class ResidencyControllerTest extends TestCase {
 		);
 		$second           = $controller->get_log( $page_two )->get_data();
 		$this->assertCount( 5, $second['items'] );
+		$hosts = array();
+		foreach ( $second['items'] as $row ) {
+			$hosts[] = $row['host'];
+			$this->assertSame( array( 'host', 'data_class', 'count', 'last_seen' ), array_keys( $row ) );
+		}
+		$this->assertSame(
+			array( 'host-05.example', 'host-04.example', 'host-03.example', 'host-02.example', 'host-01.example' ),
+			$hosts
+		);
 
 		$past         = new WP_REST_Request();
 		$past->params = array(
