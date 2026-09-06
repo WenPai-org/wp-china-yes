@@ -24,6 +24,7 @@
 | `wpcy_providers` | `{ "schema_version": 1, "items": { "<id>": { "connection": "disconnected"\|"connected"\|"invalid"\|"unreachable", "email_masked": "a***@example.com"\|null, "email_hash": "<sha256>"\|null, "connected_at": ISO\|null, "last_checked_at": ISO\|null, "product_count": int\|null } } }`。**不含**密钥、不含完整邮箱 |
 | `wpcy_secure_provider_{id}_license_key` | 授权密钥密文。算法与 `wpcy_site_identity.binding.credential` 相同（sodium secretbox / 现有加密基元），派生 purpose 不同（`provider:{id}`）。解密失败 = 视为未连接（fail-closed），**不得**把占位符或空串发出站 |
 | `wpcy_secure_provider_{id}_instance` | WC AM `instance` 标识（UUID v4），首次连接生成后稳定；断开时删除 |
+| `wpcy_providers.items.{id}.activated_products` | 已对商城 `activate` 过的 `product_id` 列表（更新接通前逐产品激活一次，成功即记；不进 REST 响应）。2026-09-07 按 M-PROVIDER-1b 实现补记 |
 | `wpcy_provider_{id}_products` | transient，已购产品缓存副本，TTL 15 分钟；`unreachable` 时允许沿用至多 72 小时（与权益不可达策略同方向） |
 
 不写进 `wpcy_settings`、`wpcy_network_settings`、`wpcy_site_identity`。导出（诊断报告、Site Health）不含以上 `wpcy_secure_*` 键。

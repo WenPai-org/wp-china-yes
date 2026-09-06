@@ -457,6 +457,7 @@ class PermissionsTest extends TestCase {
 		$this->assertContains( '/binding/challenge', $routes );
 		$this->assertContains( '/stats', $routes );
 		$this->assertContains( '/events', $routes );
+		$this->assertContains( '/providers', $routes );
 		$this->assertNotContains( '/apps', $routes );
 	}
 

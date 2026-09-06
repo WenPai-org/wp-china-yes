@@ -56,7 +56,8 @@
 			"phpunit --testsuite site-binding",
 			"phpunit --testsuite apps",
 			"phpunit --testsuite entitlements",
-			"phpunit --testsuite admin"
+			"phpunit --testsuite admin",
+			"phpunit --testsuite providers"
 		],
 		"check": [
 			"@lint",

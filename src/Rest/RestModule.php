@@ -152,6 +152,7 @@ final class RestModule implements Module {
 		$binding        = new BindingController( $this->repository );
 		$stats          = new StatsController( $this->counters() );
 		$event_log      = new EventsController( $this->events() );
+		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
 			self::NAMESPACE,
