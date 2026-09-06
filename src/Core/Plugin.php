@@ -196,14 +196,14 @@ final class Plugin {
 		$container->set( 'stats.events', $events );
 		$registry->add( new StatsModule( $counters, $events ) );
 
-		$probe = new MirrorProbe();
-		$container->set( 'wordpress_org.probe', $probe );
-		$registry->add( new WordPressOrgModule( $probe ) );
-
-		$map    = new AssetMap();
+		$probe  = new MirrorProbe();
 		$health = new MirrorHealth();
-		$container->set( 'public_assets.map', $map );
+		$container->set( 'wordpress_org.probe', $probe );
 		$container->set( 'mirror_health', $health );
+		$registry->add( new WordPressOrgModule( $probe, null, null, $health ) );
+
+		$map = new AssetMap();
+		$container->set( 'public_assets.map', $map );
 		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
 
 		$registry->add( new AvatarModule( $config ) );

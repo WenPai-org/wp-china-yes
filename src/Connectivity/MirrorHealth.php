@@ -158,7 +158,9 @@ final class MirrorHealth {
 	}
 
 	/**
-	 * Record a host state. Used by tests and later PublicAssets probes.
+	 * Record a host state. WordPressOrgModule calls this when a rewritten
+	 * request fails and the original upstream is used instead. Increments
+	 * mirror_fallbacks only on the healthy → down transition (TTL de-dupe).
 	 *
 	 * @param string $host  Mirror host.
 	 * @param string $state 'up' or 'down'.

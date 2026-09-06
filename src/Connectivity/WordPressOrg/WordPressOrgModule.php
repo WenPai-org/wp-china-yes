@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Connectivity\WordPressOrg;
 
+use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
@@ -66,15 +67,24 @@ final class WordPressOrgModule implements ConditionalModule {
 	private float $version_check_started = 0.0;
 
 	/**
-	 * Wire probe, optional HTTP request, and package-entitlement hook.
+	 * Per-host down TTL used to count mirror_fallbacks once per outage.
 	 *
-	 * @param MirrorProbe   $probe            Usability probe.
-	 * @param callable|null $request          Defaults to wp_remote_request().
-	 * @param callable|null $packages_allowed Defaults to entitlement filter, false if absent.
+	 * @var MirrorHealth
 	 */
-	public function __construct( MirrorProbe $probe, $request = null, $packages_allowed = null ) {
+	private MirrorHealth $health;
+
+	/**
+	 * Wire probe, optional HTTP request, package-entitlement hook, and health cache.
+	 *
+	 * @param MirrorProbe       $probe            Usability probe.
+	 * @param callable|null     $request          Defaults to wp_remote_request().
+	 * @param callable|null     $packages_allowed Defaults to entitlement filter, false if absent.
+	 * @param MirrorHealth|null $health           Defaults to a new MirrorHealth().
+	 */
+	public function __construct( MirrorProbe $probe, $request = null, $packages_allowed = null, $health = null ) {
 		$this->probe   = $probe;
 		$this->request = null !== $request ? $request : 'wp_remote_request';
+		$this->health  = $health instanceof MirrorHealth ? $health : new MirrorHealth();
 
 		if ( null !== $packages_allowed ) {
 			$this->packages_allowed = $packages_allowed;
@@ -179,6 +189,12 @@ final class WordPressOrgModule implements ConditionalModule {
 		$started  = microtime( true );
 		$response = ( $this->request )( $mirror_url, $args );
 		$elapsed  = microtime( true ) - $started;
+
+		if ( $this->mirror_request_failed( $response ) ) {
+			$this->health->remember( MirrorHealth::host_of( $mirror_url ), 'down', Origins::DOWN_TTL );
+			return $preempt;
+		}
+
 		$this->count_mirror_response( $response, $url, $elapsed );
 
 		return $response;
@@ -226,7 +242,10 @@ final class WordPressOrgModule implements ConditionalModule {
 	}
 
 	/**
-	 * Count 2xx rewritten responses and record update_check for version-check.
+	 * Count 2xx version-check / install-zip hits and record update_check.
+	 *
+	 * Other rewritten metadata (plugin info, update-check lists) is not counted:
+	 * overview numbers must stay explainable (prefer undercount to inflation).
 	 *
 	 * @param mixed  $response HTTP result.
 	 * @param string $original Original WordPress.org URL.
@@ -242,10 +261,12 @@ final class WordPressOrgModule implements ConditionalModule {
 			return;
 		}
 
-		do_action( 'wpcy_stats_increment', 'mirror_downloads', 1 );
-		$bytes = $this->response_bytes( $response );
-		if ( $bytes > 0 ) {
-			do_action( 'wpcy_stats_increment', 'mirror_bytes_saved', $bytes );
+		if ( $this->is_counted_mirror_download( $original ) ) {
+			do_action( 'wpcy_stats_increment', 'mirror_downloads', 1 );
+			$bytes = $this->response_bytes( $response );
+			if ( $bytes > 0 ) {
+				do_action( 'wpcy_stats_increment', 'mirror_bytes_saved', $bytes );
+			}
 		}
 
 		if ( ! $this->is_core_version_check( $original ) ) {
@@ -261,6 +282,41 @@ final class WordPressOrgModule implements ConditionalModule {
 				'via_mirror' => true,
 			)
 		);
+	}
+
+	/**
+	 * Whether a failed rewrite should fall back to the original upstream.
+	 *
+	 * WP_Error or a non-2xx HTTP code. Non-array canned responses used in
+	 * older unit tests are not treated as failures.
+	 *
+	 * @param mixed $response HTTP result.
+	 */
+	private function mirror_request_failed( $response ): bool {
+		if ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) {
+			return true;
+		}
+		if ( $response instanceof \WP_Error ) {
+			return true;
+		}
+		$code = $this->response_code( $response );
+		return $code >= 300 || ( $code > 0 && $code < 200 );
+	}
+
+	/**
+	 * Core version-check, or a package zip on downloads.wordpress.org.
+	 *
+	 * @param string $original Original WordPress.org URL.
+	 */
+	private function is_counted_mirror_download( string $original ): bool {
+		if ( $this->is_core_version_check( $original ) ) {
+			return true;
+		}
+		if ( Origins::UPSTREAM_PACKAGE_HOST !== $this->url_host( $original ) ) {
+			return false;
+		}
+		$path = $this->url_part( $original, PHP_URL_PATH );
+		return (bool) preg_match( '/\.zip$/i', $path );
 	}
 
 	/**
@@ -387,6 +443,10 @@ final class WordPressOrgModule implements ConditionalModule {
 		$origin = ( Origins::UPSTREAM_PACKAGE_HOST === $host )
 			? Origins::PACKAGE_ORIGIN
 			: Origins::API_ORIGIN;
+
+		if ( ! $this->health->is_healthy( MirrorHealth::host_of( $origin ) ) ) {
+			return null;
+		}
 
 		$mirror_url = $origin . $path;
 
