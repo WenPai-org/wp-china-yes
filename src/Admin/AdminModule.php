@@ -110,6 +110,7 @@ final class AdminModule implements Module {
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'add_pages' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+		add_action( 'init', array( $this, 'register_user_meta' ) );
 	}
 
 	/**
@@ -141,8 +142,8 @@ final class AdminModule implements Module {
 
 		add_submenu_page(
 			self::SLUG,
-			__( '连接优化', 'wp-china-yes' ),
-			__( '连接优化', 'wp-china-yes' ),
+			__( '设置', 'wp-china-yes' ),
+			__( '设置', 'wp-china-yes' ),
 			$cap,
 			'wpcy-connect',
 			array( $this, 'render' )
@@ -150,8 +151,8 @@ final class AdminModule implements Module {
 
 		add_submenu_page(
 			self::SLUG,
-			__( '文派服务', 'wp-china-yes' ),
-			__( '文派服务', 'wp-china-yes' ),
+			__( '服务', 'wp-china-yes' ),
+			__( '服务', 'wp-china-yes' ),
 			$cap,
 			'wpcy-services',
 			array( $this, 'render' )
@@ -271,11 +272,11 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Bootstrap object: nonce, REST root, capabilities, settings snapshot only.
+	 * Bootstrap object: nonce, REST root, capabilities, settings, links, providers.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{nonce: string, restRoot: string, capabilities: array<string, bool>, settings: array<string, mixed>, pluginVersion: string, siteContext: array<string, mixed>}
+	 * @return array<string, mixed>
 	 */
 	public function bootstrap_payload(): array {
 		$nonce = '';
@@ -298,6 +299,78 @@ final class AdminModule implements Module {
 			'settings'      => DocumentWriter::present_legacy_avatar( $this->repository->all() ),
 			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
 			'siteContext'   => $this->site_context(),
+			'links'         => self::links(),
+			'providers'     => self::providers(),
+		);
+	}
+
+	/**
+	 * Placeholder URLs for shell / eco block. Coordinator to confirm.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function links(): array {
+		return array(
+			'help'      => 'https://wpcy.com/docs/',
+			'feedback'  => 'https://wpcy.com/feedback/',
+			'changelog' => 'https://wpcy.com/changelog/',
+			'site'      => 'https://wpcy.com/',
+			'brands'    => array(
+				'wenpai_org'  => 'https://wenpai.org/',
+				'admincdn'    => 'https://admincdn.com/',
+				'cravatar'    => 'https://cravatar.com/',
+				'windfonts'   => 'https://windfonts.com/',
+				'weixiaoduo'  => 'https://weixiaoduo.com/',
+				'wenpai_open' => 'https://wenpai.org/',
+			),
+		);
+	}
+
+	/**
+	 * Group id → brand original. Temporary until Diagnostics\RouteGroups exists.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, string>
+	 */
+	public static function providers(): array {
+		return array(
+			'wordpress_org'  => 'WenPai.org',
+			'public_assets'  => 'adminCDN',
+			'cdnjs'          => 'adminCDN',
+			'cravatar'       => 'Cravatar',
+			'windfonts'      => 'Windfonts',
+			'wenpai_service' => '文派服务',
+		);
+	}
+
+	/**
+	 * User meta for Hero collapse (OV-10).
+	 *
+	 * @since 4.0.0
+	 */
+	public function register_user_meta(): void {
+		if ( ! function_exists( 'register_meta' ) ) {
+			return;
+		}
+
+		register_meta(
+			'user',
+			'wpcy_overview_hero_collapsed',
+			array(
+				'type'              => 'boolean',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'default'           => false,
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_user', get_current_user_id() );
+				},
+				'sanitize_callback' => static function ( $value ) {
+					return (bool) $value;
+				},
+			)
 		);
 	}
 
@@ -334,12 +407,12 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Phosphor-style leaf as a data-URI SVG (no icon font).
+	 * RemixIcon leaf (prototype .wpcy-mark path) as a data-URI SVG.
 	 *
 	 * @since 4.0.0
 	 */
 	private function menu_icon(): string {
-		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none"><path stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M3 17s6-2 7.3-12c7.3 1.3 8.7 7.3 8.7 10.7C11 15.7 3 17 3 17z"/><path stroke="white" stroke-width="1.5" stroke-linecap="round" d="M3 17c5.3-3.3 8-8 7.3-12"/></svg>';
+		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20.998 3V5C20.998 14.6274 15.6255 19 8.99805 19L5.24077 18.9999C5.0786 19.912 4.99805 20.907 4.99805 22H2.99805C2.99805 20.6373 3.11376 19.3997 3.34381 18.2682C3.1133 16.9741 2.99805 15.2176 2.99805 13C2.99805 7.47715 7.4752 3 12.998 3C14.998 3 16.998 4 20.998 3ZM12.998 5C8.57977 5 4.99805 8.58172 4.99805 13C4.99805 13.3624 5.00125 13.7111 5.00759 14.0459C6.26198 12.0684 8.09902 10.5048 10.5019 9.13176L11.4942 10.8682C8.6393 12.4996 6.74554 14.3535 5.77329 16.9998L8.99805 17C15.0132 17 18.8692 13.0269 18.9949 5.38766C17.6229 5.52113 16.3481 5.436 14.7754 5.20009C13.6243 5.02742 13.3988 5 12.998 5Z"/></svg>';
 
 		return 'data:image/svg+xml;base64,' . base64_encode( $svg ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- menu icon data URI, not obfuscation.
 	}

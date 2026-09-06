@@ -254,7 +254,14 @@ export default function Diagnose() {
 	);
 
 	return (
-		<PageShell title={ __( '诊断', 'wp-china-yes' ) } actions={ actions }>
+		<PageShell
+			title={ __( '诊断', 'wp-china-yes' ) }
+			lede={ __(
+				'线路检查、浏览器测速、迁移记录与恢复',
+				'wp-china-yes'
+			) }
+			actions={ actions }
+		>
 			<TabPanel
 				tabs={ TABS }
 				initialTabName={ initial }

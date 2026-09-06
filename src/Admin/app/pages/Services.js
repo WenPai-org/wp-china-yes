@@ -715,7 +715,13 @@ export default function Services() {
 
 	if ( openApp ) {
 		return (
-			<PageShell title={ __( '文派服务', 'wp-china-yes' ) }>
+			<PageShell
+				title={ __( '文派服务', 'wp-china-yes' ) }
+				lede={ __(
+					'文派服务与小工具，按站点场景显示',
+					'wp-china-yes'
+				) }
+			>
 				<AppSandbox
 					app={ openApp }
 					onBack={ () => setOpenApp( null ) }
@@ -725,7 +731,10 @@ export default function Services() {
 	}
 
 	return (
-		<PageShell title={ __( '文派服务', 'wp-china-yes' ) }>
+		<PageShell
+			title={ __( '文派服务', 'wp-china-yes' ) }
+			lede={ __( '文派服务与小工具，按站点场景显示', 'wp-china-yes' ) }
+		>
 			{ servicesNotice ? (
 				<Notice status="warning" isDismissible={ false }>
 					{ servicesNotice }

@@ -222,7 +222,11 @@ export default function Connect() {
 	);
 
 	return (
-		<PageShell title={ __( '连接优化', 'wp-china-yes' ) } actions={ save }>
+		<PageShell
+			title={ __( '连接优化', 'wp-china-yes' ) }
+			lede={ __( '改动即时生效，不需要保存', 'wp-china-yes' ) }
+			actions={ save }
+		>
 			<DataForm
 				data={ draft }
 				fields={ fields }

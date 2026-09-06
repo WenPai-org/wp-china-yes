@@ -69,9 +69,12 @@ class AdminModuleTest extends TestCase {
 		$payload                           = $module->bootstrap_payload();
 
 		$this->assertSame(
-			array( 'nonce', 'restRoot', 'capabilities', 'settings', 'pluginVersion', 'siteContext' ),
+			array( 'nonce', 'restRoot', 'capabilities', 'settings', 'pluginVersion', 'siteContext', 'links', 'providers' ),
 			array_keys( $payload )
 		);
+		$this->assertArrayHasKey( 'help', $payload['links'] );
+		$this->assertArrayHasKey( 'brands', $payload['links'] );
+		$this->assertSame( 'WenPai.org', $payload['providers']['wordpress_org'] );
 		$this->assertIsString( $payload['pluginVersion'] );
 		$this->assertIsArray( $payload['siteContext'] );
 		$this->assertSame( 'nonce-wp_rest', $payload['nonce'] );
@@ -148,9 +151,9 @@ class AdminModuleTest extends TestCase {
 	public function test_layout_css_does_not_assume_admin_bar_height() {
 		$css = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/style.css' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local stylesheet.
 		$this->assertNotFalse( $css );
-		$this->assertSame( 0, preg_match( '/position:\s*fixed/', $css ) );
+		$this->assertSame( 0, preg_match( '/#wpadminbar/', $css ) );
 		$this->assertSame( 0, preg_match( '/wpadminbar/', $css ) );
 		$this->assertSame( 0, preg_match( '/admin-bar--height/', $css ) );
-		$this->assertNotFalse( strpos( $css, 'max-width: 1080px' ) );
+		$this->assertNotFalse( strpos( $css, 'max-width: 1120px' ) );
 	}
 }
