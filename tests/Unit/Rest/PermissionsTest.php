@@ -483,13 +483,14 @@ class PermissionsTest extends TestCase {
 		$page->render();
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( 'wrap', $html );
-		$this->assertStringContainsString( '<h1>文派叶子 · 恢复模式</h1>', $html );
-		$this->assertStringContainsString( '如果后台样式错乱或站点无法访问，可在此一键停用所有 URL 改写与模块。此页不依赖 JavaScript。', $html );
-		$this->assertStringContainsString( '关闭全部 URL 改写', $html );
+		$this->assertStringContainsString( 'wpcy-rec', $html );
+		$this->assertStringContainsString( '文派叶子 · 恢复模式', $html );
+		$this->assertStringContainsString( '此页不依赖 JavaScript，后台样式错乱或站点无法访问时也能打开', $html );
+		$this->assertStringContainsString( '只关闭 URL 改写', $html );
+		$this->assertStringContainsString( '关闭 URL 改写', $html );
 		$this->assertStringContainsString( '停用全部模块', $html );
-		$this->assertStringContainsString( 'button-primary', $html );
-		$this->assertStringContainsString( 'button-secondary', $html );
+		$this->assertStringContainsString( 'btn-secondary', $html );
+		$this->assertStringContainsString( 'btn-danger', $html );
 		$this->assertStringContainsString( '返回概览', $html );
 		$this->assertStringNotContainsString( '遥测', $html );
 		$this->assertStringNotContainsString( '匿名数据', $html );
@@ -509,7 +510,7 @@ class PermissionsTest extends TestCase {
 		$page->render();
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( 'notice-success', $html );
+		$this->assertStringContainsString( 'class="notice"', $html );
 		$this->assertStringContainsString( '恢复模式已开启', $html );
 		$this->assertStringContainsString( '退出恢复模式', $html );
 	}
