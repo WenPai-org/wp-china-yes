@@ -48,20 +48,29 @@ final class Report {
 	private array $settings;
 
 	/**
+	 * Extra ignored rows with key / value / reason (weavatar rewrite, …).
+	 *
+	 * @var list<array{key: string, value: string, reason: string}>
+	 */
+	private array $ignored_entries;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param array<int, string>    $kept             Mapped 3.x keys.
-	 * @param array<int, string>    $ignored          Unmapped 3.x keys.
-	 * @param array<string, string> $ignored_reasons  Key → reason.
-	 * @param array<string, mixed>  $settings         Sanitized 4.0 document.
+	 * @param array<int, string>                                      $kept             Mapped 3.x keys.
+	 * @param array<int, string>                                      $ignored          Unmapped 3.x keys.
+	 * @param array<string, string>                                   $ignored_reasons  Key → reason.
+	 * @param array<string, mixed>                                    $settings         Sanitized 4.0 document.
+	 * @param list<array{key: string, value: string, reason: string}> $ignored_entries  Extra ignored rows.
 	 */
-	public function __construct( array $kept, array $ignored, array $ignored_reasons, array $settings ) {
+	public function __construct( array $kept, array $ignored, array $ignored_reasons, array $settings, array $ignored_entries = array() ) {
 		$this->kept            = array_values( $kept );
 		$this->ignored         = array_values( $ignored );
 		$this->ignored_reasons = $ignored_reasons;
 		$this->settings        = $settings;
+		$this->ignored_entries = $ignored_entries;
 	}
 
 	/**
@@ -116,9 +125,14 @@ final class Report {
 	 * @return array<string, mixed>
 	 */
 	public function to_array(): array {
+		$ignored = $this->ignored;
+		foreach ( $this->ignored_entries as $entry ) {
+			$ignored[] = $entry;
+		}
+
 		$document = array(
 			'kept'            => $this->kept,
-			'ignored'         => $this->ignored,
+			'ignored'         => $ignored,
 			'ignored_reasons' => $this->ignored_reasons,
 			'settings'        => $this->settings,
 		);

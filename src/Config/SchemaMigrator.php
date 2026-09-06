@@ -81,7 +81,10 @@ final class SchemaMigrator {
 		}
 
 		if ( isset( $connectivity['avatar'] ) && is_string( $connectivity['avatar'] ) ) {
-			$mode                   = $connectivity['avatar'];
+			$mode = $connectivity['avatar'];
+			if ( 'weavatar' === $mode ) {
+				$mode = 'cravatar_cn';
+			}
 			$connectivity['avatar'] = array(
 				'admin'    => $mode,
 				'frontend' => $mode,

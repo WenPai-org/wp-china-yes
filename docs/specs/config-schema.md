@@ -24,7 +24,7 @@
 |----|----|------|
 | （无 `profile`） | `profile` | `"domestic"`（已有 4.0 安装未选过场景；升级站同此，概览提示确认） |
 | `connectivity.public_assets` 数组 | `{ "items": <原数组>, "scope": "both" }` | `scope` 用 domestic 默认 `both`；`items` 保持用户已选，不回填五项 |
-| `connectivity.avatar` 字符串 | `{ "admin": <原值>, "frontend": <原值> }` | 旧单值 → 两个值都等于它 |
+| `connectivity.avatar` 字符串 | `{ "admin": <原值>, "frontend": <原值> }` | 旧单值 → 两个值都等于它。原值为 `weavatar` 时两边均为 `cravatar_cn`（该枚举已移除） |
 | （无 `admin_assets`） | `admin_assets` | `"off"`（domestic 默认；3.x `admin` token 的意图由 3.x→4.0 映射写入，不走本函数） |
 | （无 `connectivity.heartbeat`） | `connectivity.heartbeat` | `"off"`（domestic 默认） |
 | （无 `connectivity.dashboard_feeds`） | `connectivity.dashboard_feeds` | `"allow"`（domestic 默认） |
@@ -100,12 +100,12 @@
           "properties": {
             "admin": {
               "type": "string",
-              "enum": ["cravatar_cn", "cravatar_global", "weavatar", "off"],
+              "enum": ["cravatar_cn", "cravatar_global", "off"],
               "default": "cravatar_cn"
             },
             "frontend": {
               "type": "string",
-              "enum": ["cravatar_cn", "cravatar_global", "weavatar", "off"],
+              "enum": ["cravatar_cn", "cravatar_global", "off"],
               "default": "cravatar_cn"
             }
           }
@@ -257,7 +257,7 @@
 
 连通性全部免费、无配额。本文与其它规格里若出现配额 / 降级字段，**仅服务 / 小工具链使用**（`Services/Entitlements`、小工具），不作用于 `wordpress_org` / `public_assets` / `avatar` / `admin_assets` / `heartbeat` / `dashboard_feeds`。
 
-`connectivity.avatar` 是两个独立值，替代 v1 单值。旧单值 → `admin` 与 `frontend` 都等于它。`weavatar` 仍在枚举内（M0 已关闭的 3.x 映射）。
+`connectivity.avatar` 是两个独立值，替代 v1 单值。旧单值 → `admin` 与 `frontend` 都等于它。枚举为 `cravatar_cn` \| `cravatar_global` \| `off`（`weavatar` 已移除，见决定 2026-09-06）。
 
 `admin_assets`：4.0 **预留**，枚举 `on` \| `off`，默认按场景（见 D2 矩阵）。**无运行时行为**——4.0 不做任何后台静态资源改写。界面显示「即将提供」；从 3.x 迁来且值为 `on` 时迁移报告写「后台加速：已保留设置，4.1 起生效」。不规划商业化。
 
@@ -461,7 +461,7 @@
 | 3.x | 4.0 | 规则 |
 |-----|-----|------|
 | （无场景数据） | `profile` | 一律 `"domestic"`；概览提示确认；不猜 |
-| `cravatar` 单值 | `connectivity.avatar.admin` 与 `connectivity.avatar.frontend` | 两个值都等于映射后的枚举值（`cn`→`cravatar_cn` 等，与既有 `AVATAR_MAP` 相同） |
+| `cravatar` 单值 | `connectivity.avatar.admin` 与 `connectivity.avatar.frontend` | 两个值都等于映射后的枚举值（`cn`→`cravatar_cn`，`global`→`cravatar_global`，`off`→`off`；`weavatar`→`cravatar_cn`，并在迁移报告 `ignored` 追加 `{ key: "cravatar", value: "weavatar", reason: "WeAvatar 已不再支持，已改为 Cravatar 中国线路" }`） |
 | `admincdn_public` / `admincdn_files` / `admincdn_dev` / 3.8 `admincdn` 中的白名单 token | `connectivity.public_assets.items` | 与 M4-02b 相同：键存在则推导，空则 `[]`，不回落五项；`scope` 写 domestic 默认 `both` |
 | 3.8 `admincdn` 含 `admin`，或 3.9 `admincdn_files` 含 `admin` | `admin_assets` | `"on"`；迁移报告列出「后台加速：已保留设置，4.1 起生效」；**token `admin` 不再进 `ignored`** |
 | `frontend` token、`bootstrapcdn` | — | 仍进 `ignored`（`unsupported_whitelist`） |

@@ -110,7 +110,7 @@ class ValidatorTest extends TestCase {
 	}
 
 	/**
-	 * Avatar enum includes weavatar (spec; task book omitted it).
+	 * Avatar enum is cravatar_cn / cravatar_global / off.
 	 */
 	public function test_avatar_enum() {
 		foreach ( Schema::AVATAR as $mode ) {

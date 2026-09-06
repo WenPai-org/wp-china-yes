@@ -173,7 +173,7 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 }
 ```
 
-探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com` / `weavatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
+探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
 
 ### `/diagnostics/client-probe`
 

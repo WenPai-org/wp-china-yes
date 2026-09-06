@@ -46,8 +46,19 @@ final class Mappers {
 	private const AVATAR_MAP = array(
 		'cn'       => 'cravatar_cn',
 		'global'   => 'cravatar_global',
-		'weavatar' => 'weavatar',
+		'weavatar' => 'cravatar_cn',
 		'off'      => 'off',
+	);
+
+	/**
+	 * Ignored-report row when 3.x cravatar=weavatar is rewritten to cravatar_cn.
+	 *
+	 * @var array{key: string, value: string, reason: string}
+	 */
+	private const WEAVATAR_IGNORED = array(
+		'key'    => 'cravatar',
+		'value'  => 'weavatar',
+		'reason' => 'WeAvatar 已不再支持，已改为 Cravatar 中国线路',
 	);
 
 	/**
@@ -63,6 +74,13 @@ final class Mappers {
 	 * @var Validator
 	 */
 	private Validator $validator;
+
+	/**
+	 * Extra ignored rows (key/value/reason) appended after mapping, e.g. weavatar.
+	 *
+	 * @var list<array{key: string, value: string, reason: string}>
+	 */
+	private array $ignored_entries = array();
 
 	/**
 	 * Constructor.
@@ -86,10 +104,11 @@ final class Mappers {
 	 * @param array<string, mixed>     $defaults Base document (site or network).
 	 */
 	public function map( array $legacy, array $defaults ): Report {
-		$kept            = array();
-		$ignored         = array();
-		$ignored_reasons = array();
-		$settings        = $defaults;
+		$kept                  = array();
+		$ignored               = array();
+		$ignored_reasons       = array();
+		$this->ignored_entries = array();
+		$settings              = $defaults;
 
 		foreach ( $legacy as $key => $_value ) {
 			unset( $_value );
@@ -236,7 +255,7 @@ final class Mappers {
 		$option = isset( $defaults['allow_site_override'] ) ? Schema::NETWORK_SETTINGS : Schema::SETTINGS;
 		$clean  = $this->validator->sanitize( $settings, $option );
 
-		return new Report( $kept, $ignored, $ignored_reasons, $clean );
+		return new Report( $kept, $ignored, $ignored_reasons, $clean, $this->ignored_entries );
 	}
 
 	/**
@@ -289,6 +308,9 @@ final class Mappers {
 	private function map_avatar( $value ) {
 		if ( ! is_string( $value ) ) {
 			return null;
+		}
+		if ( 'weavatar' === $value ) {
+			$this->ignored_entries[] = self::WEAVATAR_IGNORED;
 		}
 		return self::AVATAR_MAP[ $value ] ?? null;
 	}

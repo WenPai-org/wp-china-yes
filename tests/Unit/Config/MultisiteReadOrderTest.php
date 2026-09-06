@@ -251,8 +251,8 @@ class MultisiteReadOrderTest extends TestCase {
 				'connectivity'        => array(
 					'wordpress_org' => 'off',
 					'avatar'        => array(
-						'admin'    => 'weavatar',
-						'frontend' => 'weavatar',
+						'admin'    => 'cravatar_global',
+						'frontend' => 'cravatar_global',
 					),
 				),
 				'allow_site_override' => true,

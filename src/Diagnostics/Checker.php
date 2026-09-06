@@ -366,10 +366,6 @@ final class Checker {
 				$host = 'en.cravatar.com';
 				break;
 			}
-			if ( 'weavatar' === $mode ) {
-				$host = 'weavatar.com';
-				break;
-			}
 		}
 
 		if ( '' === $host ) {

@@ -347,6 +347,49 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
+	 * 3.x frontend token is ignored as unsupported_whitelist.
+	 */
+	public function test_frontend_token_is_ignored() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'admincdn' => array( 'frontend', 'googlefonts' ),
+		);
+
+		$report = ( new Runner() )->dry_run();
+
+		$this->assertContains( 'frontend', $report->ignored() );
+		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['frontend'] );
+		$this->assertSame( array( 'google_fonts' ), $report->settings()['connectivity']['public_assets']['items'] );
+		$this->assertNotContains( 'frontend', $report->settings()['connectivity']['public_assets']['items'] );
+	}
+
+	/**
+	 * 3.x cravatar=weavatar maps to cravatar_cn and records an ignored row.
+	 */
+	public function test_weavatar_maps_to_cravatar_cn_with_ignored_entry() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'cravatar' => 'weavatar',
+		);
+
+		$report  = ( new Runner() )->dry_run();
+		$ignored = $report->to_array()['ignored'];
+		$entry   = null;
+		foreach ( $ignored as $row ) {
+			if ( is_array( $row ) && isset( $row['key'] ) && 'cravatar' === $row['key'] ) {
+				$entry = $row;
+				break;
+			}
+		}
+
+		$this->assertSame( 'cravatar_cn', $report->settings()['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_cn', $report->settings()['connectivity']['avatar']['frontend'] );
+		$this->assertContains( 'cravatar', $report->kept() );
+		$this->assertIsArray( $entry );
+		$this->assertSame( 'weavatar', $entry['value'] );
+		$this->assertSame( 'WeAvatar 已不再支持，已改为 Cravatar 中国线路', $entry['reason'] );
+	}
+
+	/**
 	 * §5: memory four keys are dropped even when performance is true. 4.0 has no those constants.
 	 */
 	public function test_memory_keys_discarded_even_when_performance_true() {
@@ -647,8 +690,8 @@ class FixturesTest extends TestCase {
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
 				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
 				$this->assertSame( 'domestic', $settings['profile'] );
 				$this->assertSame( 'off', $settings['admin_assets'] );
 				$this->assertFalse( $modules['windfonts'] );
@@ -702,8 +745,8 @@ class FixturesTest extends TestCase {
 			case 'multisite-3.8-06.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				$this->assertTrue( $settings['allow_site_override'] );
