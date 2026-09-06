@@ -63,16 +63,19 @@ final class RecoveryActions {
 		if ( self::DISABLE_REWRITES === $action ) {
 			$this->disable_rewrites();
 			$this->repository->set( 'recovery_mode', true );
+			$this->record_event( 'recovery_entered' );
 			return true;
 		}
 
 		if ( self::DISABLE_MODULES === $action ) {
 			$this->disable_modules();
 			$this->repository->set( 'recovery_mode', true );
+			$this->record_event( 'recovery_entered' );
 			return true;
 		}
 
 		if ( self::EXIT === $action ) {
+			$this->record_event( 'recovery_exited' );
 			$this->repository->set( 'recovery_mode', false );
 			return true;
 		}
@@ -122,5 +125,18 @@ final class RecoveryActions {
 	private function disable_modules(): void {
 		$this->repository->set( 'modules.notice_control', false );
 		$this->repository->set( 'modules.windfonts', false );
+	}
+
+	/**
+	 * Append a recovery_* event. No I/O here; StatsModule flushes on shutdown.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $type recovery_entered|recovery_exited.
+	 */
+	private function record_event( string $type ): void {
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'wpcy_events_record', $type, array() );
+		}
 	}
 }

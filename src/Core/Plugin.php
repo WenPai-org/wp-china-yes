@@ -36,6 +36,9 @@ use WenPai\ChinaYes\Privacy\SiteBlocklist\SiteBlocklistModule;
 use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
+use WenPai\ChinaYes\Stats\Counters;
+use WenPai\ChinaYes\Stats\Events;
+use WenPai\ChinaYes\Stats\StatsModule;
 use WenPai\ChinaYes\Telemetry\TelemetryModule;
 
 /**
@@ -188,14 +191,20 @@ final class Plugin {
 		$container->set( 'logger', $logger );
 		$container->set( 'registry', $registry );
 
-		$probe = new MirrorProbe();
-		$container->set( 'wordpress_org.probe', $probe );
-		$registry->add( new WordPressOrgModule( $probe ) );
+		$counters = new Counters( $config, $logger );
+		$events   = new Events( $config );
+		$container->set( 'stats.counters', $counters );
+		$container->set( 'stats.events', $events );
+		$registry->add( new StatsModule( $counters, $events ) );
 
-		$map    = new AssetMap();
+		$probe  = new MirrorProbe();
 		$health = new MirrorHealth();
-		$container->set( 'public_assets.map', $map );
+		$container->set( 'wordpress_org.probe', $probe );
 		$container->set( 'mirror_health', $health );
+		$registry->add( new WordPressOrgModule( $probe, null, null, $health ) );
+
+		$map = new AssetMap();
+		$container->set( 'public_assets.map', $map );
 		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
 
 		$registry->add( new AvatarModule( $config ) );
@@ -208,13 +217,13 @@ final class Plugin {
 		$registry->add( new DataResidencyModule( null, false, $config ) );
 		$registry->add( new SiteBlocklistModule( $config ) );
 
-		$checker = new Checker( null, null, null, $config );
+		$checker = new Checker( null, null, null, $config, null, $events );
 		$container->set( 'diagnostics.checker', $checker );
 		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new SiteBindingModule( $config, $logger ) );
 		$entitlements = new EntitlementsModule( $config, $logger );
 		$registry->add( new AppsModule( null, null, new CachedEntitlements( $entitlements ), null, $logger ) );
-		$registry->add( new RestModule( $config, $checker ) );
+		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
 		$registry->add( new NoticeControlModule( $config, '', null, $logger ) );
@@ -245,10 +254,35 @@ final class Plugin {
 	}
 
 	/**
-	 * Activation: do not write the 3.x option wp_china_yes.
+	 * Activation: write installed_at per site; do not write the 3.x option wp_china_yes.
 	 */
 	public static function activate(): void {
-		// No-op. Do not write the 3.x option wp_china_yes.
+		if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'get_sites' ) && function_exists( 'switch_to_blog' ) && function_exists( 'restore_current_blog' ) ) {
+			foreach ( get_sites( array( 'fields' => 'ids' ) ) as $id ) {
+				switch_to_blog( (int) $id );
+				self::maybe_write_installed_at();
+				restore_current_blog();
+			}
+			return;
+		}
+
+		self::maybe_write_installed_at();
+	}
+
+	/**
+	 * Write wpcy_installed_at once, UTC ISO 8601, autoload=false.
+	 *
+	 * @since 4.0.0
+	 */
+	private static function maybe_write_installed_at(): void {
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
+			return;
+		}
+		$existing = get_option( 'wpcy_installed_at', '' );
+		if ( is_string( $existing ) && '' !== $existing ) {
+			return;
+		}
+		update_option( 'wpcy_installed_at', gmdate( 'Y-m-d\TH:i:s\Z' ), false );
 	}
 
 	/**

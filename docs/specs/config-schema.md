@@ -62,6 +62,11 @@
       "enum": ["domestic", "crossborder", "mixed"],
       "default": "domestic"
     },
+    "profile_confirmed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "default": null
+    },
     "connectivity": {
       "type": "object",
       "additionalProperties": false,
@@ -276,6 +281,7 @@
 | `mixed` | 混合站 | 服务器在海外，访客中外都有，管理员在中国大陆 |
 
 - 缺省 / 升级站未选：`domestic`。
+- `profile_confirmed_at`：ISO 8601 或 `null`，默认 `null`。只读——`PUT /settings` body 带该键则忽略。`SettingsController` 在 PUT body **含 `profile` 键**时（不论值是否变化）写入当前 UTC 时间。
 - 多站点：网络策略写在 `wpcy_network_settings.profile`；子站可在 `wpcy_site_overrides.profile` 覆盖（受 `allow_site_override` 约束，与 `connectivity` / `modules` 相同）。缺省段表示不覆盖。覆盖 `profile` 而不覆盖 `connectivity` / `admin_assets` / `modules.windfonts` 时，读取仍用网络已存的连通性值——场景切换重置只发生在用户确认切换的写入路径（`Profile::apply_defaults()`），不在读取合并时隐式重置。
 - 场景只决定默认组合；每项仍可单独改。切换场景 = 重置连通性各项为该场景默认（改前确认）。
 
@@ -395,6 +401,7 @@
 |---|---|
 | `schema_version` | `2`（`wpcy_site_identity` / `wpcy_migration_backup` 仍为 `1`） |
 | `profile` | `"domestic"` |
+| `profile_confirmed_at` | `null` |
 | `connectivity.wordpress_org` | `"auto"` |
 | `connectivity.public_assets.items` | `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]` |
 | `connectivity.public_assets.scope` | `"both"` |

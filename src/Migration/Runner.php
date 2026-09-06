@@ -104,6 +104,7 @@ final class Runner {
 		$option = $this->reader->is_multisite() ? Schema::NETWORK_SETTINGS : Schema::SETTINGS;
 		$this->repository->save_option( $option, $report->settings() );
 		$this->persist_report( $report, $legacy );
+		$this->record_migrated( $report, $legacy );
 
 		return $report;
 	}
@@ -223,10 +224,33 @@ final class Runner {
 	}
 
 	/**
+	 * Record a migrated event after a successful execute().
+	 *
+	 * @param Report               $report Mapping result.
+	 * @param array<string, mixed> $legacy Raw `wp_china_yes`.
+	 */
+	private function record_migrated( Report $report, array $legacy ): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+
+		$version = defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '4.0.0';
+		do_action(
+			'wpcy_events_record',
+			'migrated',
+			array(
+				'version'        => $version,
+				'source_version' => $this->source_version( $legacy ),
+				'kept'           => count( $report->kept() ),
+			)
+		);
+	}
+
+	/**
 	 * Drop a 4.0 option. Missing delete_* is treated as success in unit tests.
 	 *
-	 * @param string $option      Option name.
-	 * @param bool   $network     Use site_option APIs.
+	 * @param string $option  Option name.
+	 * @param bool   $network Use site_option APIs.
 	 */
 	private function delete_option( string $option, bool $network ): void {
 		if ( $network ) {

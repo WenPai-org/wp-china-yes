@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO -- WP_Error plus is_wp_error() live together like WordPress.
+
 if ( ! class_exists( 'WP_Error', false ) ) {
 	/**
 	 * Transport-error stand-in.
@@ -71,5 +73,16 @@ if ( ! class_exists( 'WP_Error', false ) ) {
 			unset( $code );
 			return $this->data;
 		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * Whether $thing is WP_Error.
+	 *
+	 * @param mixed $thing Candidate.
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
 	}
 }

@@ -47,6 +47,13 @@ final class PublicAssetsModule implements ConditionalModule {
 	private MirrorHealth $health;
 
 	/**
+	 * Whether this request already counted one rewrite.
+	 *
+	 * @var bool
+	 */
+	private bool $counted = false;
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -163,7 +170,24 @@ final class PublicAssetsModule implements ConditionalModule {
 			return $src;
 		}
 
+		$this->count_once();
 		return $mapped;
+	}
+
+	/**
+	 * Count one rewrite per output (admin or frontend). Not per URL.
+	 *
+	 * @since 4.0.0
+	 */
+	private function count_once(): void {
+		if ( $this->counted || ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		$this->counted = true;
+		$counter       = Scope::ADMIN === Scope::current()
+			? 'assets_rewrites_admin'
+			: 'assets_rewrites_frontend';
+		do_action( 'wpcy_stats_increment', $counter, 1 );
 	}
 
 	/**

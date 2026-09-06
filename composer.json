@@ -48,6 +48,7 @@
 			"phpunit --testsuite telemetry",
 			"phpunit --testsuite privacy",
 			"phpunit --testsuite diagnostics",
+			"phpunit --testsuite stats",
 			"phpunit --testsuite cli",
 			"phpunit --testsuite rest",
 			"phpunit --testsuite integrations",

@@ -147,7 +147,20 @@ final class DashboardFeedsModule implements ConditionalModule {
 			return $preempt;
 		}
 
+		$this->count_block();
 		return new WP_Error( 'wpcy_dashboard_feed_blocked', 'wpcy_dashboard_feed_blocked' );
+	}
+
+	/**
+	 * One blocked dashboard-feed request.
+	 *
+	 * @since 4.0.0
+	 */
+	private function count_block(): void {
+		if ( ! function_exists( 'do_action' ) ) {
+			return;
+		}
+		do_action( 'wpcy_stats_increment', 'dashboard_feeds_blocked', 1 );
 	}
 
 	/**
