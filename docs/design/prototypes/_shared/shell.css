@@ -1,0 +1,259 @@
+/**
+ * WordPress 后台壳（静态近似）
+ * 顶栏 32px、左侧菜单 160px、#1d2327。
+ * 内容区从 x=160 开始；box-sizing + minmax(0,1fr) 防止卡片撑出。
+ * 壳层颜色是 wp-admin 原色，不是品牌 token。
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #1e1e1e;
+  background: #f0f0f1;
+}
+
+a {
+  color: var(--wpcy-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--wpcy-accent-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--wpcy-accent);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* —— 顶栏 32px —— */
+#wpadminbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  height: 32px;
+  background: #1d2327;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 0;
+  font-size: 13px;
+}
+
+#wpadminbar .ab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  color: #c3c4c7;
+  white-space: nowrap;
+}
+
+#wpadminbar .ab-item:hover {
+  background: #2c3338;
+  color: #fff;
+}
+
+#wpadminbar .ab-wp {
+  width: 32px;
+  justify-content: center;
+  padding: 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: -0.04em;
+}
+
+#wpadminbar .ab-site {
+  font-weight: 500;
+  color: #fff;
+}
+
+#wpadminbar .ab-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+#wpadminbar .ab-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3c434a;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+/* —— 左侧菜单 160px —— */
+#adminmenu {
+  position: fixed;
+  top: 32px;
+  left: 0;
+  bottom: 0;
+  z-index: 30;
+  width: 160px;
+  background: #1d2327;
+  color: #f0f0f1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 32px;
+}
+
+#adminmenu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#adminmenu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px 0 10px;
+  color: #f0f0f1;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+#adminmenu .menu-item i {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  color: #a7aaad;
+  flex-shrink: 0;
+}
+
+#adminmenu .menu-item:hover {
+  background: #2c3338;
+  color: #00b9eb;
+}
+
+#adminmenu .menu-item:hover i {
+  color: #00b9eb;
+}
+
+#adminmenu .menu-sep {
+  height: 1px;
+  margin: 6px 10px;
+  background: #3c434a;
+}
+
+#adminmenu .wp-has-current-submenu > .menu-item {
+  background: var(--wpcy-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+#adminmenu .wp-has-current-submenu > .menu-item i {
+  color: #fff;
+}
+
+#adminmenu .wp-submenu {
+  background: #2c3338;
+  padding: 6px 0 8px;
+}
+
+#adminmenu .wp-submenu a {
+  display: block;
+  padding: 6px 8px 6px 38px;
+  color: #c3c4c7;
+  font-size: 13px;
+}
+
+#adminmenu .wp-submenu a:hover {
+  color: #00b9eb;
+}
+
+#adminmenu .wp-submenu a.is-current {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* —— 内容区：从 x=160 开始，不允许溢出 —— */
+#wpcontent {
+  margin-left: 160px;
+  margin-top: 32px;
+  width: calc(100% - 160px);
+  max-width: calc(100% - 160px);
+  min-height: calc(100vh - 32px);
+  overflow-x: hidden;
+  position: relative;
+}
+
+.wpcy-foot {
+  margin-top: var(--wpcy-space-5);
+  padding: var(--wpcy-space-sm) 0 var(--wpcy-space-lg);
+  font-size: var(--wpcy-fs-xs);
+  color: var(--wpcy-text-muted);
+  line-height: var(--wpcy-lh-normal);
+}
+
+.wpcy-foot a {
+  color: var(--wpcy-text-secondary);
+}
+
+.wpcy-foot a:hover {
+  color: var(--wpcy-accent);
+}
+
+.wpcy-foot span {
+  margin: 0 8px;
+  color: var(--wpcy-text-muted);
+}
+
+@media (max-width: 782px) {
+  #adminmenu {
+    width: 36px;
+  }
+
+  #adminmenu .menu-item span,
+  #adminmenu .wp-submenu,
+  #adminmenu .menu-sep {
+    display: none;
+  }
+
+  #wpcontent {
+    margin-left: 36px;
+    width: calc(100% - 36px);
+    max-width: calc(100% - 36px);
+  }
+}

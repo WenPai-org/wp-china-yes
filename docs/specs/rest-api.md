@@ -1,6 +1,6 @@
 # REST API `wpcy/v1`
 
-状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 更新 `/settings` 字段并新增 `GET /profile/suggest`；同日按 [HTTP Block 并入决定](../dev-plan/decisions/2026-09-06-http-block-merge-and-feature-absorption.md) A 节新增 `/site-blocklist`、`GET /residency/protected`、`POST /residency/test`。
+状态：草案（M0）· 来源：linuxjoy 定稿 §7.5a / §7.1a / §7.1c；2026-09-06 按 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 更新 `/settings` 字段并新增 `GET /profile/suggest`；同日按 [HTTP Block 并入决定](../dev-plan/decisions/2026-09-06-http-block-merge-and-feature-absorption.md) A 节新增 `/site-blocklist`、`GET /residency/protected`、`POST /residency/test`；同日夜按原型 E 定稿新增 `GET /stats`、`GET /events`、诊断目标界面分组表、浏览器测速允许名单补充（实现任务 M-STATS-1）。
 
 本文列出 4.0 插件对 wp-admin React 应用与小工具宿主暴露的全部端点。apps 合同引用 `docs/specs/apps-manifest-and-bridge.md`，此处不重复字段表。不得在本文新增产品决定；空白处标「待定（M0）」。
 
@@ -40,6 +40,8 @@
 | DELETE | `/binding` | 同上 | 撤销绑定 |
 | GET | `/entitlements` | 同上 | 全部权益与配额 |
 | GET | `/migration/report` | 同上 | 最近一次 3.x→4.0 迁移报告；无历史 `{ "status": "none" }` |
+| GET | `/stats` | 同上 | 本地计数：最近 N 天（默认 7）每个计数器的按日序列与合计、安装时间。概览"过去 7 天为你处理"与"已运行 N 天"的唯一数据源。见 §`/stats` |
+| GET | `/events` | 同上 | 本地事件日志最近 N 条（默认 20，上限 50）：线路切换、更新检查、迁移、场景变更。概览"最近动态"与诊断"记录"的唯一数据源。见 §`/events` |
 | POST | `/recovery` | 同上 | `{ "action": "disable_rewrites" \| "disable_modules" \| "exit" }` |
 | GET | `/apps` | 同上 | `{ apps, index_status }`，见 apps 规格 §4。`index_status` 含 `unconfigured`（空 source） |
 | GET | `/apps/{id}/context` | 同上 + manifest `site:read` | 见 apps 规格 |
@@ -174,6 +176,17 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 ```
 
 探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
+
+**界面分组（2026-09-06，供概览"线路状态"与 `/events` 的 `{route}` 使用）**。概览不逐个列目标，按下表分组；组状态取成员里**最差**的（`down` > `fallback` > `ok`），组延迟取成员里**最大**的 `latency_ms`，组"最近检查"取最早的 `checked_at`。诊断页仍逐个列目标。
+
+| 组（人读名） | 说明文案 | 成员目标 |
+|---|---|---|
+| WordPress.org 镜像 | 更新检查与安装包 | `api.wenpai.net`、`downloads.wenpai.net` |
+| 公共库源 | Google Fonts、Ajax、jsDelivr、Emoji | `googlefonts.admincdn.com`、`googleajax.admincdn.com`、`jsd.admincdn.com` |
+| CDNJS 源 | 备用公共库 | `cdnjs.admincdn.com` |
+| Cravatar | 评论头像 · `{host}` | 当前头像线路主机（一个） |
+
+`connectivity.wordpress_org=off`（直连）时"WordPress.org 镜像"组不出现在概览线路列表（跨境站默认如此）；`public_assets.scope=off` 时两个公共库组不出现；`avatar` 两侧都 `off` 时 Cravatar 组不出现。
 
 ### `/diagnostics/client-probe`
 
@@ -374,6 +387,93 @@ GET 最近一次 `Runner::execute()` 结果。权限同 `/diagnostics`（`manage
 ```
 
 报告存 `wpcy_migration_report`，与 `wpcy_migration_backup` 同级，键名不含版本号。
+
+### `/stats`
+
+2026-09-06 按原型 E 定稿新增（[`docs/design/admin-ui-spec.md`](../design/admin-ui-spec.md) v2.0 §3.1 OV-12 / OV-13）。GET，权限 `manage_options`。查询参数 `days`：整数，默认 `7`，允许 `1`–`30`；非法值 → `wpcy_invalid_schema` 400。
+
+数据来自插件**本地**计数器（`Stats\Counters`），不依赖服务端、不出站。按 UTC 自然日分桶，每个站点一份（多站点每子站独立），保留最近 31 天，更早的桶滚动删除。
+
+```json
+{
+  "installed_at": "2026-07-31T06:12:00Z",
+  "days": 7,
+  "from": "2026-08-31",
+  "to": "2026-09-06",
+  "series": {
+    "mirror_downloads": [ { "date": "2026-08-31", "value": 4 }, … ],
+    "mirror_bytes_saved": [ … ],
+    "assets_rewrites_admin": [ … ],
+    "assets_rewrites_frontend": [ … ],
+    "avatar_rewrites_admin": [ … ],
+    "avatar_rewrites_frontend": [ … ],
+    "heartbeat_saved": [ … ],
+    "dashboard_feeds_blocked": [ … ],
+    "outbound_blocked": [ … ],
+    "mirror_fallbacks": [ … ]
+  },
+  "totals": {
+    "mirror_downloads": 42,
+    "mirror_bytes_saved": 1288490188,
+    …
+  }
+}
+```
+
+| 计数器 | 单位 | 何时 +1（或 +N） |
+|---|---|---|
+| `mirror_downloads` | 次 | 一次更新检查或安装包下载经国内镜像完成（`Connectivity\WordPressOrg` 改写生效且响应 2xx） |
+| `mirror_bytes_saved` | 字节 | 同上，累加响应体字节数（`Content-Length` 或实际读取） |
+| `assets_rewrites_admin` / `assets_rewrites_frontend` | 次 | 一次输出中 `Connectivity\PublicAssets` 改写了至少一个 URL，按作用域计（一次页面输出记 1，不按 URL 数） |
+| `avatar_rewrites_admin` / `avatar_rewrites_frontend` | 次 | `get_avatar_url` 被改写一次，按作用域计 |
+| `heartbeat_saved` | 次 | 心跳节流使一次原本会发出的 `admin-ajax` 心跳没有发出（服务端按 `heartbeat_settings` 过滤的间隔差估算：仪表盘关闭 = 每分钟 1 次；编辑器 15s→60s = 每分钟 3 次；只在该页面会话存活期间累计，实现方式见 M-STATS-1 任务书） |
+| `dashboard_feeds_blocked` | 次 | 一次仪表盘外部内容请求（新闻 / 活动 / 插件推荐）被 `Connectivity\DashboardFeeds` 拦下 |
+| `outbound_blocked` | 次 | `HttpBlock` L2 本站清单或噪声包拦下一次出站请求 |
+| `mirror_fallbacks` | 次 | 镜像不可达、回原始上游一次 |
+
+`series` 每个键都是长度 = `days` 的数组，缺桶补 `0`，日期升序。`totals` 是同一区间求和。`installed_at`：首次激活时写入 `wpcy_installed_at`（UTC ISO 8601）；3.x 升级站若无该值，用迁移报告的 `migrated_at`；两者都没有则用本端点第一次被调用的时间写入。**不返回**任何 URL、主机名、IP。
+
+写入策略：请求内累计在内存，`shutdown` 时一次 `update_option( 'wpcy_stats' )`（`autoload=false`）；无变化不写。WP-Cron 请求同样计入。恢复模式下不计数。
+
+### `/events`
+
+GET，权限 `manage_options`。查询参数 `per_page`：默认 `20`，上限 `50`；`type`：可选，按下表过滤。
+
+```json
+{
+  "events": [
+    {
+      "id": "01J9…",
+      "at": "2026-09-06T06:02:11Z",
+      "type": "mirror_fallback",
+      "tone": "warn",
+      "title": "WordPress.org 镜像不可达，已回原始上游",
+      "detail": "每 1 分钟重试，恢复后自动切回"
+    }
+  ]
+}
+```
+
+`title` / `detail` 由服务端按下表模板生成（`__()`，用户可见文案只在这一处），界面**不得**自己拼句子；`tone` 只有 `ok` / `warn` / `neutral` 三值。
+
+| `type` | `tone` | `title` 模板 | `detail` 模板 |
+|---|---|---|---|
+| `first_check` | ok | 首次线路检查完成 | `{ok}` 条线路全部正常 / `{ok}`/`{total}` 条线路正常 |
+| `route_recovered` | ok | `{route}` 恢复，已切回 | 中断 `{minutes}` 分钟，期间走原始上游，访客不受影响 |
+| `mirror_fallback` | warn | WordPress.org 镜像不可达，已回原始上游 | 每 1 分钟重试，恢复后自动切回 |
+| `route_fallback` | warn | `{route}` 不可达，已回原始上游 | 恢复后自动切回 |
+| `route_down` | warn | `{route}` 不可达 | 该项已暂停改写，恢复后自动继续 |
+| `update_check` | ok / neutral | 完成 WordPress `{version}` 更新检查 | 经国内镜像，耗时 `{seconds}` 秒（ok）/ 直连 WordPress.org，耗时 `{seconds}` 秒（neutral） |
+| `migrated` | neutral | 插件更新到 `{version}` | 从 `{source_version}` 迁移 `{kept}` 项设置 |
+| `profile_set` | neutral | 已按「`{profile_label}`」配置 | 更新走国内镜像，前端资源与头像走国内节点（domestic）/ 后台资源只在后台加速，更新直连 WordPress.org（crossborder / mixed） |
+| `recovery_entered` | warn | 已进入恢复模式 | 全部 URL 改写与模块已停用 |
+| `recovery_exited` | ok | 已退出恢复模式 | 设置已恢复 |
+
+`{route}` 取诊断目标的人读名（见 §`/diagnostics` 的分组表，如「CDNJS 源」）。存储：环形缓冲 50 条，`wpcy_events`（`autoload=false`），`id` 为 ULID。恢复模式下仍记录 `recovery_*`，其余事件不产生。
+
+### `/diagnostics/client-probe` 允许名单补充（2026-09-06）
+
+为让"从你的浏览器测速"能对照"原始源 vs 改写目标"，允许名单在原有四个主机之外增加：`googlefonts.admincdn.com`、`cn.cravatar.com`。界面把 `fonts.googleapis.com` 与 `googlefonts.admincdn.com`、`secure.gravatar.com` 与 `cn.cravatar.com` 成对展示。
 
 ### `/recovery`
 
