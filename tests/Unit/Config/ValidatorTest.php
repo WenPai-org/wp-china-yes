@@ -54,6 +54,9 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
 		$this->assertFalse( $out['modules']['windfonts'] );
+		$this->assertTrue( $out['modules']['site_blocklist']['enabled'] );
+		$this->assertSame( array(), $out['modules']['site_blocklist']['hosts'] );
+		$this->assertTrue( $out['modules']['noise_block']['enabled'] );
 		$this->assertTrue( $out['diagnostics']['scheduled_checks'] );
 		$this->assertSame( 1, $out['data_residency']['ruleset_version'] );
 		$this->assertSame( array(), $out['announcements']['dismissed'] );
@@ -341,6 +344,53 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( '3.9.3', $out['from_version'] );
 		$this->assertSame( array( 'telemetry' ), $out['ignored_fields'] );
 		$this->assertArrayNotHasKey( 'secret', $out );
+	}
+
+	/**
+	 * Site blocklist hosts maxItems 20; extra rows dropped by Validator.
+	 */
+	public function test_site_blocklist_hosts_max_twenty() {
+		$hosts = array();
+		for ( $i = 1; $i <= 21; $i++ ) {
+			$hosts[] = array(
+				'host'  => sprintf( 'h%02d.example.com', $i ),
+				'match' => 'exact',
+			);
+		}
+		$out = $this->validator->sanitize(
+			array(
+				'modules' => array(
+					'site_blocklist' => array(
+						'enabled' => true,
+						'hosts'   => $hosts,
+					),
+				),
+			),
+			Schema::SETTINGS
+		);
+		$this->assertCount( 20, $out['modules']['site_blocklist']['hosts'] );
+		$this->assertTrue( $this->has_warning_path( 'modules.site_blocklist.hosts' ) );
+	}
+
+	/**
+	 * Site overrides schema does not accept modules.site_blocklist.
+	 */
+	public function test_site_overrides_rejects_site_blocklist_key() {
+		$out = $this->validator->sanitize(
+			array(
+				'modules' => array(
+					'site_blocklist' => array(
+						'enabled' => true,
+						'hosts'   => array(),
+					),
+					'windfonts'      => true,
+				),
+			),
+			Schema::SITE_OVERRIDES
+		);
+		$this->assertArrayNotHasKey( 'site_blocklist', $out['modules'] );
+		$this->assertTrue( $this->has_warning_path( 'modules.site_blocklist' ) );
+		$this->assertTrue( $out['modules']['windfonts'] );
 	}
 
 	/**

@@ -52,6 +52,9 @@ class RepositoryTest extends TestCase {
 		$this->assertSame( 'off', $repo->get( 'admin_assets' ) );
 		$this->assertTrue( $repo->get( 'modules.notice_control' ) );
 		$this->assertFalse( $repo->get( 'modules.windfonts' ) );
+		$this->assertTrue( $repo->get( 'modules.site_blocklist.enabled' ) );
+		$this->assertSame( array(), $repo->get( 'modules.site_blocklist.hosts' ) );
+		$this->assertTrue( $repo->get( 'modules.noise_block.enabled' ) );
 		$this->assertTrue( $repo->get( 'diagnostics.scheduled_checks' ) );
 		$this->assertSame( 1, $repo->get( 'data_residency.ruleset_version' ) );
 		$this->assertSame( array(), $repo->get( 'announcements.dismissed' ) );

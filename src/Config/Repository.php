@@ -143,6 +143,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 					? array( 'recovery_mode' => $overrides['recovery_mode'] )
 					: array();
 			}
+			$overrides = $this->strip_network_only_keys( $overrides );
 			return $this->deep_merge( $base, $overrides );
 		}
 
@@ -517,8 +518,36 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 * @return bool
 	 */
 	private function is_override_path( string $path ): bool {
+		if ( $this->is_network_only_path( $path ) ) {
+			return false;
+		}
 		$root = explode( '.', $path )[0];
 		return in_array( $root, array( 'profile', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' ), true );
+	}
+
+	/**
+	 * Network-only path: modules.site_blocklist must not enter site overrides.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $path Dotted path.
+	 */
+	private function is_network_only_path( string $path ): bool {
+		return 'modules.site_blocklist' === $path || 0 === strpos( $path, 'modules.site_blocklist.' );
+	}
+
+	/**
+	 * Drop network-only keys from a merged overlay. Does not persist.
+	 *
+	 * @param array<string, mixed> $overrides Overlay.
+	 * @return array<string, mixed>
+	 */
+	private function strip_network_only_keys( array $overrides ): array {
+		if ( isset( $overrides['modules'] ) && is_array( $overrides['modules'] ) ) {
+			unset( $overrides['modules']['site_blocklist'] );
+		}
+
+		return $overrides;
 	}
 
 	/**

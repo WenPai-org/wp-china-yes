@@ -49,6 +49,7 @@ class PluginCreateTest extends TestCase {
 				'modules.windfonts',
 				'telemetry',
 				'privacy.data_residency',
+				'privacy.site_blocklist',
 				'diagnostics',
 				'services.site_binding',
 				'services.apps',

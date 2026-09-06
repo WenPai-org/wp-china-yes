@@ -49,6 +49,13 @@ final class Defaults {
 			'modules'        => array(
 				'notice_control' => true,
 				'windfonts'      => false,
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(),
+				),
+				'noise_block'    => array(
+					'enabled' => true,
+				),
 			),
 			'integrations'   => array(
 				'windfonts' => array(
