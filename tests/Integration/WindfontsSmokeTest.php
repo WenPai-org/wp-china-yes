@@ -36,13 +36,9 @@ class WindfontsSmokeTest extends TestCase {
 	}
 
 	/**
-	 * WPCY_KERNEL=v4 + modules.windfonts + fonts list → family/subset, no crossorigin.
+	 * modules.windfonts + fonts list → family/subset, no crossorigin.
 	 */
 	public function test_wp_head_matches_legacy_smoke_assertions() {
-		if ( ! defined( 'WPCY_KERNEL' ) || 'v4' !== WPCY_KERNEL ) {
-			$this->markTestSkipped( 'Requires WPCY_KERNEL=v4.' );
-		}
-
 		$settings = get_option( Schema::SETTINGS, array() );
 		if ( ! is_array( $settings ) ) {
 			$settings = array();

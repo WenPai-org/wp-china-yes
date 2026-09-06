@@ -2,17 +2,16 @@
 # wp-env / Studio: 4.0 Windfonts wp_head (family=, subset=full, no crossorigin).
 # Usage: WP_CLI="npx wp-env run cli wp" bash tests/integration-windfonts.sh
 #        WP_CLI="studio wp --path ~/Studio/wpcy-40" bash tests/integration-windfonts.sh
-# Requires WPCY_KERNEL=v4 in wp-config (cannot be defined from wp eval).
 set -euo pipefail
 
 WP_CLI="${WP_CLI:-npx wp-env run cli wp}"
 
-echo "==> WPCY_KERNEL=v4"
+echo "==> 4.0 kernel"
 $WP_CLI eval '
-if ( ! defined( "WPCY_KERNEL" ) || "v4" !== WPCY_KERNEL ) {
-	throw new Exception( "WPCY_KERNEL is not v4; 4.0 Windfonts path not loaded" );
+if ( ! class_exists( "WenPai\\ChinaYes\\Core\\Plugin" ) ) {
+	throw new Exception( "Core\\Plugin is not loaded" );
 }
-echo "kernel-v4\n";
+echo "kernel-4.0\n";
 '
 
 echo "==> set modules.windfonts + fonts (avatar off so preconnect has no crossorigin)"

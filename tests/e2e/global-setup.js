@@ -1,10 +1,10 @@
-const { requireV4Kernel } = require( './helpers' );
+const { requireCoreKernel } = require( './helpers' );
 
 /**
- * Abort the whole suite when WPCY_KERNEL is not v4.
+ * Abort the whole suite when the 4.0 kernel is not loaded.
  *
  * @return {void}
  */
 module.exports = async function globalSetup() {
-	requireV4Kernel();
+	requireCoreKernel();
 };

@@ -2,8 +2,8 @@
 /**
  * Register `wp wpcy` commands when WP-CLI is the current SAPI.
  *
- * Plugin::create() wiring is M1-05b. This file is composer autoload.files
- * so status|doctor|config work on CLI without that wiring. No-op on web.
+ * Loaded from Core\Plugin::boot() on CLI. WPCY_CLI_REGISTERED prevents
+ * a second registration. No-op on web.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0

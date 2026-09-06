@@ -11,13 +11,27 @@ namespace WenPai\ChinaYes\Tests\Unit\Core;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Core\Plugin;
 use WenPai\ChinaYes\Integrations\Windfonts\Catalog;
+use WenPai\ChinaYes\Migration\LegacyReader;
+use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
 
 /**
  * Kernel create() contract from M1-05b.
  */
 class PluginCreateTest extends TestCase {
+
+	/**
+	 * Load option stubs for first-boot migration tests.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		require_once dirname( __DIR__ ) . '/Migration/wp-option-stubs.php';
+		OptionStore::reset();
+	}
 
 	/**
 	 * Module ids in registration order; config is Repository.
@@ -56,6 +70,77 @@ class PluginCreateTest extends TestCase {
 		$source = file_get_contents( dirname( __DIR__, 3 ) . '/src/Core/Plugin.php' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source file, not a remote URL.
 		$this->assertNotFalse( $source );
 		$this->assertSame( 0, preg_match( '/(?:update_option|update_site_option|add_option)\s*\(\s*[\'"]wp_china_yes[\'"]/', $source ) );
+		$this->assertSame( 0, preg_match( '/register_uninstall_hook/', $source ) );
 		Plugin::activate();
+	}
+
+	/**
+	 * Missing 4.0 option + existing wp_china_yes → Runner::execute().
+	 */
+	public function test_first_boot_migrates_when_settings_absent() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'cravatar' => 'off',
+		);
+
+		Plugin::maybe_migrate_from_legacy();
+
+		$this->assertArrayHasKey( Schema::SETTINGS, OptionStore::$options );
+		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
+		$this->assertSame( 'off', OptionStore::$options[ LegacyReader::OPTION ]['store'] );
+	}
+
+	/**
+	 * Existing 4.0 option must not be overwritten.
+	 */
+	public function test_first_boot_skips_when_settings_exist() {
+		OptionStore::$options[ Schema::SETTINGS ]     = array( 'schema_version' => 1 );
+		OptionStore::$options[ LegacyReader::OPTION ] = array( 'store' => 'off' );
+
+		Plugin::maybe_migrate_from_legacy();
+
+		$this->assertSame( array( 'schema_version' => 1 ), OptionStore::$options[ Schema::SETTINGS ] );
+		$this->assertArrayNotHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
+	}
+
+	/**
+	 * Fresh install with no 3.x option does not write 4.0 settings.
+	 */
+	public function test_first_boot_skips_when_legacy_absent() {
+		Plugin::maybe_migrate_from_legacy();
+
+		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+		$this->assertArrayNotHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
+	}
+
+	/**
+	 * Damaged non-array wp_china_yes is treated as empty; no Fatal; does not write the 3.x key.
+	 */
+	public function test_first_boot_treats_damaged_legacy_as_empty() {
+		OptionStore::$options[ LegacyReader::OPTION ] = 'corrupted-string';
+
+		Plugin::maybe_migrate_from_legacy();
+
+		$this->assertArrayHasKey( Schema::SETTINGS, OptionStore::$options );
+		$this->assertIsArray( OptionStore::$options[ Schema::SETTINGS ] );
+		$this->assertSame( 'corrupted-string', OptionStore::$options[ LegacyReader::OPTION ] );
+	}
+
+	/**
+	 * Multisite uses network settings + site_option for the 3.x key.
+	 */
+	public function test_first_boot_migrates_network_settings_on_multisite() {
+		OptionStore::$multisite                            = true;
+		OptionStore::$site_options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'cravatar' => 'off',
+		);
+
+		Plugin::maybe_migrate_from_legacy();
+
+		$this->assertArrayHasKey( Schema::NETWORK_SETTINGS, OptionStore::$site_options );
+		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$site_options );
+		$this->assertSame( 'off', OptionStore::$site_options[ LegacyReader::OPTION ]['store'] );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
 	}
 }

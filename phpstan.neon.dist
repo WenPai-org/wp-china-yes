@@ -6,9 +6,6 @@ parameters:
     paths:
         - src
     excludePaths:
-        - framework
-        - client
-        - Service
         - src/Admin/app
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
