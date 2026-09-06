@@ -58,6 +58,7 @@ class FixturesTest extends TestCase {
 			'multisite-3.8-05'          => array( 'multisite-3.8-05.json' ),
 			'multisite-3.8-06'          => array( 'multisite-3.8-06.json' ),
 			'single-3.9-07-store-proxy' => array( 'single-3.9-07-store-proxy.json' ),
+			'single-3.9-08-admincdn'    => array( 'single-3.9-08-admincdn-files-admin.json' ),
 		);
 	}
 
@@ -162,9 +163,11 @@ class FixturesTest extends TestCase {
 		if ( $this->is_network( $loaded ) ) {
 			$this->assertArrayNotHasKey( Schema::NETWORK_SETTINGS, OptionStore::$site_options );
 			$this->assertArrayNotHasKey( Schema::MIGRATION_BACKUP, OptionStore::$site_options );
+			$this->assertArrayNotHasKey( Runner::REPORT_OPTION, OptionStore::$site_options );
 		} else {
 			$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
 			$this->assertArrayNotHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
+			$this->assertArrayNotHasKey( Runner::REPORT_OPTION, OptionStore::$options );
 		}
 
 		$this->assertFalse( $runner->rollback() );
@@ -207,7 +210,7 @@ class FixturesTest extends TestCase {
 
 		$report = ( new Runner() )->dry_run();
 
-		$this->assertSame( array( 'google_fonts', 'cdnjs' ), $report->settings()['connectivity']['public_assets'] );
+		$this->assertSame( array( 'google_fonts', 'cdnjs' ), $report->settings()['connectivity']['public_assets']['items'] );
 		$this->assertContains( 'admincdn_public', $report->kept() );
 		$this->assertNotContains( 'admincdn_public', $report->ignored() );
 	}
@@ -222,7 +225,7 @@ class FixturesTest extends TestCase {
 
 		$report = ( new Runner() )->dry_run();
 
-		$this->assertSame( array( 'google_fonts' ), $report->settings()['connectivity']['public_assets'] );
+		$this->assertSame( array( 'google_fonts' ), $report->settings()['connectivity']['public_assets']['items'] );
 		$this->assertContains( 'jquery', $report->ignored() );
 		$this->assertContains( 'react', $report->ignored() );
 		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['jquery'] );
@@ -239,8 +242,8 @@ class FixturesTest extends TestCase {
 
 		$report = ( new Runner() )->dry_run();
 
-		$this->assertSame( Schema::PUBLIC_ASSETS, $report->settings()['connectivity']['public_assets'] );
-		$this->assertCount( 5, $report->settings()['connectivity']['public_assets'] );
+		$this->assertSame( Schema::PUBLIC_ASSETS, $report->settings()['connectivity']['public_assets']['items'] );
+		$this->assertCount( 5, $report->settings()['connectivity']['public_assets']['items'] );
 	}
 
 	/**
@@ -302,19 +305,21 @@ class FixturesTest extends TestCase {
 		);
 		$from_files                                   = ( new Runner() )->dry_run();
 
-		$this->assertSame( array(), $from_v38->settings()['connectivity']['public_assets'] );
+		$this->assertSame( array(), $from_v38->settings()['connectivity']['public_assets']['items'] );
+		$this->assertSame( 'both', $from_v38->settings()['connectivity']['public_assets']['scope'] );
 		$this->assertSame(
 			$from_v38->settings()['connectivity']['public_assets'],
 			$from_files->settings()['connectivity']['public_assets']
 		);
-		$this->assertNotContains( 'admin', $from_v38->settings()['connectivity']['public_assets'] );
-		$this->assertNotContains( 'admin', $from_files->settings()['connectivity']['public_assets'] );
+		$this->assertNotContains( 'admin', $from_v38->settings()['connectivity']['public_assets']['items'] );
+		$this->assertNotContains( 'admin', $from_files->settings()['connectivity']['public_assets']['items'] );
+		$this->assertSame( 'on', $from_v38->settings()['admin_assets'] );
+		$this->assertSame( 'on', $from_files->settings()['admin_assets'] );
 		$this->assertContains( 'admincdn', $from_v38->ignored() );
-		$this->assertContains( 'admin', $from_v38->ignored() );
-		$this->assertSame( 'unsupported_whitelist', $from_v38->ignored_reasons()['admin'] );
+		$this->assertNotContains( 'admin', $from_v38->ignored() );
 		$this->assertContains( 'admincdn_files', $from_files->kept() );
-		$this->assertContains( 'admin', $from_files->ignored() );
-		$this->assertSame( 'unsupported_whitelist', $from_files->ignored_reasons()['admin'] );
+		$this->assertNotContains( 'admin', $from_files->ignored() );
+		$this->assertStringContainsString( '后台加速：已保留设置，4.1 起生效', implode( ' ', $from_v38->to_array()['messages'] ) );
 	}
 
 	/**
@@ -330,12 +335,12 @@ class FixturesTest extends TestCase {
 
 		$this->assertSame(
 			array( 'google_fonts', 'jsdelivr' ),
-			$report->settings()['connectivity']['public_assets']
+			$report->settings()['connectivity']['public_assets']['items']
 		);
+		$this->assertSame( 'on', $report->settings()['admin_assets'] );
 		$this->assertContains( 'admincdn', $report->ignored() );
-		$this->assertContains( 'admin', $report->ignored() );
+		$this->assertNotContains( 'admin', $report->ignored() );
 		$this->assertContains( 'bootstrapcdn', $report->ignored() );
-		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['admin'] );
 		$this->assertSame( 'unsupported_whitelist', $report->ignored_reasons()['bootstrapcdn'] );
 		$this->assertNotContains( 'googlefonts', $report->ignored() );
 		$this->assertNotContains( 'jsdelivr', $report->ignored() );
@@ -564,6 +569,7 @@ class FixturesTest extends TestCase {
 				return array( 'store', 'cravatar', 'windfonts', 'adblock' );
 			case 'single-3.9.3-03.json':
 			case 'single-3.9-07-store-proxy.json':
+			case 'single-3.9-08-admincdn-files-admin.json':
 				return array( 'store', 'admincdn_public', 'admincdn_files', 'admincdn_dev', 'cravatar', 'windfonts', 'windfonts_list', 'adblock' );
 			case 'multisite-3.7.1-04.json':
 			case 'multisite-3.8-05.json':
@@ -605,12 +611,8 @@ class FixturesTest extends TestCase {
 	 * @return array<int, string>
 	 */
 	private function expected_ignored_tokens( string $file ): array {
-		switch ( $file ) {
-			case 'single-3.8-02.json':
-				return array( 'admin' );
-			default:
-				return array();
-		}
+		unset( $file );
+		return array();
 	}
 
 	/**
@@ -643,8 +645,12 @@ class FixturesTest extends TestCase {
 		switch ( $file ) {
 			case 'single-3.6.2-01.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( array(), $connectivity['public_assets'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar'] );
+				$this->assertSame( array(), $connectivity['public_assets']['items'] );
+				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
+				$this->assertSame( 'weavatar', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'weavatar', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'domestic', $settings['profile'] );
+				$this->assertSame( 'off', $settings['admin_assets'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				$this->assertArrayNotHasKey( 'allow_site_override', $settings );
@@ -652,8 +658,12 @@ class FixturesTest extends TestCase {
 
 			case 'single-3.8-02.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( array(), $connectivity['public_assets'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
+				$this->assertSame( array(), $connectivity['public_assets']['items'] );
+				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'domestic', $settings['profile'] );
+				$this->assertSame( 'on', $settings['admin_assets'] );
 				$this->assertTrue( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				break;
@@ -661,8 +671,12 @@ class FixturesTest extends TestCase {
 			case 'single-3.9.3-03.json':
 			case 'single-3.9-07-store-proxy.json':
 				$this->assertSame( 'auto', $connectivity['wordpress_org'] );
-				$this->assertSame( array(), $connectivity['public_assets'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
+				$this->assertSame( array(), $connectivity['public_assets']['items'] );
+				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'domestic', $settings['profile'] );
+				$this->assertSame( 'off', $settings['admin_assets'] );
 				$this->assertTrue( $modules['windfonts'] );
 				$this->assertTrue( $modules['notice_control'] );
 				$fonts = $settings['integrations']['windfonts']['fonts'];
@@ -676,12 +690,20 @@ class FixturesTest extends TestCase {
 				$this->assertFalse( $fonts[2]['enable'] );
 				break;
 
+			case 'single-3.9-08-admincdn-files-admin.json':
+				$this->assertSame( 'auto', $connectivity['wordpress_org'] );
+				$this->assertSame( array(), $connectivity['public_assets']['items'] );
+				$this->assertSame( 'on', $settings['admin_assets'] );
+				$this->assertSame( 'domestic', $settings['profile'] );
+				break;
+
 			case 'multisite-3.7.1-04.json':
 			case 'multisite-3.8-05.json':
 			case 'multisite-3.8-06.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
-				$this->assertSame( array(), $connectivity['public_assets'] );
-				$this->assertSame( 'weavatar', $connectivity['avatar'] );
+				$this->assertSame( array(), $connectivity['public_assets']['items'] );
+				$this->assertSame( 'weavatar', $connectivity['avatar']['admin'] );
+				$this->assertSame( 'weavatar', $connectivity['avatar']['frontend'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				$this->assertTrue( $settings['allow_site_override'] );

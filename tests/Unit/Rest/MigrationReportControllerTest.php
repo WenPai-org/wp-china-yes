@@ -77,6 +77,22 @@ class MigrationReportControllerTest extends TestCase {
 	}
 
 	/**
+	 * Legacy option without version/plugin_version → source_version 3.x.
+	 */
+	public function test_source_version_defaults_to_3x() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'    => 'off',
+			'cravatar' => 'cn',
+		);
+
+		$runner = new Runner();
+		$runner->execute();
+		$body = ( new MigrationReportController( $runner ) )->get_item( new WP_REST_Request() )->get_data();
+
+		$this->assertSame( '3.x', $body['source_version'] );
+	}
+
+	/**
 	 * REST index includes /migration/report.
 	 */
 	public function test_rest_index_includes_migration_report() {
