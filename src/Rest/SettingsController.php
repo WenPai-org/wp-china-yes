@@ -66,14 +66,14 @@ final class SettingsController {
 	 */
 	public function update_item( WP_REST_Request $request ) {
 		$body = self::body( $request );
-		if ( ! is_array( $body ) ) {
-			$body = array();
+		if ( is_array( $body ) ) {
+			unset( $body['profile_confirmed_at'] );
 		}
-		unset( $body['profile_confirmed_at'] );
 
 		$before  = $this->writer->stored_site_document();
-		$had_key = array_key_exists( 'profile', $body );
+		$had_key = is_array( $body ) && array_key_exists( 'profile', $body );
 		$from    = isset( $before['profile'] ) && is_string( $before['profile'] ) ? $before['profile'] : 'domestic';
+		$profile = $had_key && is_string( $body['profile'] ) ? $body['profile'] : $from;
 
 		$result = $this->writer->put_site( $body );
 		if ( is_wp_error( $result ) ) {
@@ -82,11 +82,10 @@ final class SettingsController {
 
 		if ( $had_key ) {
 			$this->writer->repository()->set( 'profile_confirmed_at', RestError::now() );
-			$to    = isset( $body['profile'] ) && is_string( $body['profile'] ) ? $body['profile'] : $from;
 			$stamp = $before['profile_confirmed_at'] ?? null;
 			$first = ! is_string( $stamp ) || '' === $stamp;
-			if ( $to !== $from || $first ) {
-				$this->record_profile_set( $to );
+			if ( $profile !== $from || $first ) {
+				$this->record_profile_set( $profile );
 			}
 		}
 
