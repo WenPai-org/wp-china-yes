@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Admin;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Diagnostics\RouteGroups;
 use WenPai\ChinaYes\Rest\DocumentWriter;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -329,21 +330,19 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Group id → brand original. Temporary until Diagnostics\RouteGroups exists.
+	 * Group id → brand original, from Diagnostics\RouteGroups.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @return array<string, string>
 	 */
 	public static function providers(): array {
-		return array(
-			'wordpress_org'  => 'WenPai.org',
-			'public_assets'  => 'adminCDN',
-			'cdnjs'          => 'adminCDN',
-			'cravatar'       => 'Cravatar',
-			'windfonts'      => 'Windfonts',
-			'wenpai_service' => '文派服务',
-		);
+		$out = array();
+		foreach ( RouteGroups::all() as $group ) {
+			$out[ $group['id'] ] = $group['provider'];
+		}
+
+		return $out;
 	}
 
 	/**
@@ -364,8 +363,10 @@ final class AdminModule implements Module {
 				'single'            => true,
 				'show_in_rest'      => true,
 				'default'           => false,
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_user', get_current_user_id() );
+				'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+					unset( $allowed, $meta_key );
+
+					return current_user_can( 'edit_user', (int) $object_id );
 				},
 				'sanitize_callback' => static function ( $value ) {
 					return (bool) $value;

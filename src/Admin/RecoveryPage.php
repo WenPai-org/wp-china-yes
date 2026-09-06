@@ -175,15 +175,10 @@ final class RecoveryPage {
 		echo '</div><div><h1 class="card-title">' . esc_html__( '文派叶子 · 恢复模式', 'wp-china-yes' ) . '</h1>';
 		echo '<p class="card-sub">' . esc_html__( '此页不依赖 JavaScript，后台样式错乱或站点无法访问时也能打开', 'wp-china-yes' ) . '</p></div></div>';
 
-		echo '<p style="margin:0 0 4px">' . esc_html__( '先试第一项；不够再用第二项。两项都不会删除你的设置，随时可在设置里重新开启。', 'wp-china-yes' ) . '</p>';
-
 		if ( $in_recovery ) {
 			echo '<div class="notice"><span>' . esc_html__( '恢复模式已开启', 'wp-china-yes' ) . '</span></div>';
-			echo '<div class="rows recover">';
-			echo '<div><div></div>';
-			$this->action_form( RecoveryActions::EXIT, __( '退出恢复模式', 'wp-china-yes' ), 'btn btn-secondary r' );
-			echo '</div></div>';
 		} else {
+			echo '<p style="margin:0 0 4px">' . esc_html__( '先试第一项；不够再用第二项。两项都不会删除你的设置，随时可在设置里重新开启。', 'wp-china-yes' ) . '</p>';
 			echo '<div class="rows recover">';
 			echo '<div><div><div class="t">' . esc_html__( '只关闭 URL 改写', 'wp-china-yes' ) . '</div>';
 			echo '<div class="d">' . esc_html__( '页面里的资源地址回到原始来源；心跳节流、仪表盘屏蔽等其它功能保留。后台样式错乱时通常这一步就够。', 'wp-china-yes' ) . '</div></div>';
@@ -195,7 +190,12 @@ final class RecoveryPage {
 			echo '</div></div>';
 		}
 
-		echo '<div class="card-foot"><a class="btn btn-ghost" href="' . esc_url( $overview ) . '">' . esc_html__( '返回概览', 'wp-china-yes' ) . '</a></div>';
+		echo '<div class="card-foot">';
+		if ( $in_recovery ) {
+			$this->action_form( RecoveryActions::EXIT, __( '退出恢复模式', 'wp-china-yes' ), 'btn btn-secondary' );
+		}
+		echo '<a class="btn btn-ghost" href="' . esc_url( $overview ) . '">' . esc_html__( '返回概览', 'wp-china-yes' ) . '</a>';
+		echo '</div>';
 		echo '</article></div>';
 	}
 
@@ -220,7 +220,8 @@ final class RecoveryPage {
 	 * @param string $button_class CSS classes.
 	 */
 	private function action_form( string $action, string $label, string $button_class ): void {
-		echo '<form method="post" action="" class="r">';
+		$in_row = false !== strpos( $button_class, ' r' );
+		echo $in_row ? '<form method="post" action="" class="r">' : '<form method="post" action="">';
 		wp_nonce_field( $this->nonce_action( $action ), self::NONCE_FIELD );
 		echo '<input type="hidden" name="' . esc_attr( self::ACTION_FIELD ) . '" value="' . esc_attr( $action ) . '" />';
 		echo '<button type="submit" class="' . esc_attr( $button_class ) . '">' . esc_html( $label ) . '</button>';

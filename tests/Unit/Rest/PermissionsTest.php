@@ -516,6 +516,10 @@ class PermissionsTest extends TestCase {
 		$this->assertStringContainsString( 'class="notice"', $html );
 		$this->assertStringContainsString( '恢复模式已开启', $html );
 		$this->assertStringContainsString( '退出恢复模式', $html );
+		$this->assertStringContainsString( '返回概览', $html );
+		$this->assertStringNotContainsString( '先试第一项', $html );
+		$this->assertStringNotContainsString( '只关闭 URL 改写', $html );
+		$this->assertStringNotContainsString( '停用全部模块', $html );
 	}
 
 	/**

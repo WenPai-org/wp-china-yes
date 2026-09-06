@@ -75,6 +75,9 @@ class AdminModuleTest extends TestCase {
 		$this->assertArrayHasKey( 'help', $payload['links'] );
 		$this->assertArrayHasKey( 'brands', $payload['links'] );
 		$this->assertSame( 'WenPai.org', $payload['providers']['wordpress_org'] );
+		$this->assertSame( 'adminCDN', $payload['providers']['public_assets'] );
+		$this->assertSame( 'Cravatar', $payload['providers']['cravatar'] );
+		$this->assertArrayNotHasKey( 'windfonts', $payload['providers'] );
 		$this->assertIsString( $payload['pluginVersion'] );
 		$this->assertIsArray( $payload['siteContext'] );
 		$this->assertSame( 'nonce-wp_rest', $payload['nonce'] );
@@ -155,5 +158,26 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 0, preg_match( '/wpadminbar/', $css ) );
 		$this->assertSame( 0, preg_match( '/admin-bar--height/', $css ) );
 		$this->assertNotFalse( strpos( $css, 'max-width: 1120px' ) );
+		$this->assertSame( 0, preg_match( '/#wpcontent\s*\{[^}]*margin-left:\s*160px/', $css ) );
+	}
+
+	/**
+	 * Providers map is RouteGroups id to brand, not a parallel table.
+	 */
+	public function test_providers_reads_route_groups() {
+		$expected = array();
+		foreach ( \WenPai\ChinaYes\Diagnostics\RouteGroups::all() as $group ) {
+			$expected[ $group['id'] ] = $group['provider'];
+		}
+		$this->assertSame( $expected, AdminModule::providers() );
+	}
+
+	/**
+	 * Hero collapse meta auth_callback uses the object id being written.
+	 */
+	public function test_hero_meta_auth_callback_uses_object_id() {
+		$src = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/AdminModule.php' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
+		$this->assertNotFalse( $src );
+		$this->assertNotFalse( strpos( $src, 'current_user_can( \'edit_user\', (int) $object_id )' ) );
 	}
 }
