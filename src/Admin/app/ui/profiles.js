@@ -83,6 +83,11 @@ export function sceneDefaults( profile ) {
 			avatar: 'cravatar_cn',
 			heartbeat: 'off',
 			dashboard_feeds: 'allow',
+			icon_photos: {
+				enabled: 'on',
+				mirrored_base: '',
+				native_api_base: '',
+			},
 			windfonts: false,
 		},
 		crossborder: {
@@ -91,6 +96,11 @@ export function sceneDefaults( profile ) {
 			avatar: 'cravatar_cn',
 			heartbeat: 'on',
 			dashboard_feeds: 'block',
+			icon_photos: {
+				enabled: 'admin',
+				mirrored_base: '',
+				native_api_base: '',
+			},
 			windfonts: false,
 		},
 		inbound: {
@@ -99,6 +109,11 @@ export function sceneDefaults( profile ) {
 			avatar: 'cravatar_cn',
 			heartbeat: 'off',
 			dashboard_feeds: 'allow',
+			icon_photos: {
+				enabled: 'on',
+				mirrored_base: '',
+				native_api_base: '',
+			},
 			windfonts: false,
 		},
 		mixed: {
@@ -107,6 +122,11 @@ export function sceneDefaults( profile ) {
 			avatar: 'cravatar_cn',
 			heartbeat: 'on',
 			dashboard_feeds: 'block',
+			icon_photos: {
+				enabled: 'admin',
+				mirrored_base: '',
+				native_api_base: '',
+			},
 			windfonts: false,
 		},
 	};

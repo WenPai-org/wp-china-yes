@@ -44,6 +44,11 @@ final class Defaults {
 				'heartbeat'           => 'off',
 				'dashboard_feeds'     => 'allow',
 				'admin_locale_follow' => true,
+				'icon_photos'         => array(
+					'enabled'         => 'off',
+					'mirrored_base'   => '',
+					'native_api_base' => '',
+				),
 			),
 			'admin'                => array(
 				'hide_promo' => true,

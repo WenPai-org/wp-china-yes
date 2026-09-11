@@ -10,8 +10,10 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Diagnostics;
 
+use WenPai\ChinaYes\Connectivity\IconPhotos\Origins as IconOrigins;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\Origins;
+use WenPai\ChinaYes\Providers\UrlGuard;
 use WenPai\ChinaYes\Stats\Events;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -236,6 +238,11 @@ final class Checker {
 			$plan[] = $avatar;
 		}
 
+		$icons = $this->icon_photos_target();
+		if ( null !== $icons ) {
+			$plan[] = $icons;
+		}
+
 		return $plan;
 	}
 
@@ -403,6 +410,42 @@ final class Checker {
 			'target'       => $host,
 			'url'          => 'https://' . $host . '/avatar/',
 			'upstream_url' => 'https://secure.gravatar.com/avatar/',
+		);
+	}
+
+	/**
+	 * MotuCloud mirror probe, or null when off / empty base (server not ready).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array{target: string, url: string, upstream_url: string}|null
+	 */
+	private function icon_photos_target() {
+		if ( ! is_object( $this->config ) || ! method_exists( $this->config, 'get' ) ) {
+			return null;
+		}
+
+		$row = $this->config->get( 'connectivity.icon_photos', array() );
+		if ( ! is_array( $row ) ) {
+			return null;
+		}
+
+		$enabled = isset( $row['enabled'] ) && is_string( $row['enabled'] ) ? $row['enabled'] : 'off';
+		if ( ! in_array( $enabled, array( 'on', 'admin' ), true ) ) {
+			return null;
+		}
+
+		$base = isset( $row['mirrored_base'] ) && is_string( $row['mirrored_base'] )
+			? rtrim( trim( $row['mirrored_base'] ), '/' )
+			: '';
+		if ( '' === $base || ! UrlGuard::allows( $base ) ) {
+			return null;
+		}
+
+		return array(
+			'target'       => IconOrigins::TARGET_ID,
+			'url'          => $base . IconOrigins::PROBE_PATH,
+			'upstream_url' => IconOrigins::CORE_SEARCH_ORIGIN . IconOrigins::CORE_IMAGES_PATH,
 		);
 	}
 

@@ -49,6 +49,14 @@ class RepositoryTest extends TestCase {
 		$this->assertSame( Schema::PUBLIC_ASSETS, $repo->get( 'connectivity.public_assets.items' ) );
 		$this->assertSame( 'both', $repo->get( 'connectivity.public_assets.scope' ) );
 		$this->assertTrue( $repo->get( 'connectivity.admin_locale_follow' ) );
+		$this->assertSame(
+			array(
+				'enabled'         => 'off',
+				'mirrored_base'   => '',
+				'native_api_base' => '',
+			),
+			$repo->get( 'connectivity.icon_photos' )
+		);
 		$this->assertSame( 'domestic', $repo->get( 'profile' ) );
 		$this->assertNull( $repo->get( 'admin_assets' ) );
 		$this->assertTrue( $repo->get( 'admin.hide_promo' ) );
@@ -145,6 +153,8 @@ class RepositoryTest extends TestCase {
 		$this->assertSame( Schema::PUBLIC_ASSETS, Defaults::get( 'connectivity.public_assets.items' ) );
 		$this->assertSame( 'cravatar_cn', Defaults::get( 'connectivity.avatar' ) );
 		$this->assertTrue( Defaults::get( 'connectivity.admin_locale_follow' ) );
+		$this->assertSame( 'off', Defaults::get( 'connectivity.icon_photos.enabled' ) );
+		$this->assertSame( '', Defaults::get( 'connectivity.icon_photos.mirrored_base' ) );
 		$this->assertSame( 'domestic', Defaults::get( 'profile' ) );
 		$this->assertNull( Defaults::get( 'admin_assets' ) );
 		$this->assertTrue( Defaults::get( 'modules.notice_control' ) );

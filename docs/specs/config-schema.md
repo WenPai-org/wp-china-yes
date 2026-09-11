@@ -125,6 +125,33 @@
           "type": "string",
           "enum": ["block", "allow"],
           "default": "allow"
+        },
+        "icon_photos": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "mirrored_base", "native_api_base"],
+          "default": {
+            "enabled": "off",
+            "mirrored_base": "",
+            "native_api_base": ""
+          },
+          "properties": {
+            "enabled": {
+              "type": "string",
+              "enum": ["off", "on", "admin"],
+              "default": "off"
+            },
+            "mirrored_base": {
+              "type": "string",
+              "maxLength": 2048,
+              "default": ""
+            },
+            "native_api_base": {
+              "type": "string",
+              "maxLength": 2048,
+              "default": ""
+            }
+          }
         }
       }
     },
@@ -269,7 +296,7 @@
 
 `connectivity.public_assets.scope` 枚举 `both` / `admin` / `frontend` / `off`。判定当前请求是 admin 还是 frontend：`is_admin()`（含 `admin-ajax` / REST 带 `X-WP-Nonce` 的后台请求视为 admin；前台 REST 视为 frontend；WP-CLI 视为 admin；WP-Cron 视为 frontend）。cron / WP-CLI（统筹拍板原文）：`WP-CLI` 视为 `admin`；`WP-Cron` 视为 `frontend`（保守：不做任何仅后台的改写；服务器侧取 .org 的行为不受作用域影响）。实现为共享 `Connectivity\Scope::current()`，见 [ADR-004](../architecture/adr-004-site-profile-and-scope.md) 与 [`docs/dev-plan/tasks/M-SCOPE-1.md`](../dev-plan/tasks/M-SCOPE-1.md)。`wordpress_org` 是服务器侧行为，无 admin/frontend 之分，取值仍是 `auto` / `off`。
 
-连通性全部免费、无配额。本文与其它规格里若出现配额 / 降级字段，**仅服务 / 小工具链使用**（`Services/Entitlements`、小工具），不作用于 `wordpress_org` / `public_assets` / `avatar` / `admin_assets` / `heartbeat` / `dashboard_feeds`。
+连通性全部免费、无配额。本文与其它规格里若出现配额 / 降级字段，**仅服务 / 小工具链使用**（`Services/Entitlements`、小工具），不作用于 `wordpress_org` / `public_assets` / `avatar` / `admin_assets` / `heartbeat` / `dashboard_feeds` / `icon_photos`。
 
 `connectivity.avatar` 是两个独立值，替代 v1 单值。旧单值 → `admin` 与 `frontend` 都等于它。枚举为 `cravatar_cn` \| `cravatar_global` \| `off`（`weavatar` 已移除，见决定 2026-09-06）。
 
@@ -278,6 +305,8 @@
 `connectivity.heartbeat`：枚举 `on` \| `off`。`on` = 仪表盘关闭 Heartbeat，编辑器 `heartbeat_settings.interval = 60`。domestic 默认 `off`；`crossborder` / `mixed` 默认 `on`。钩子与 filter 名见 M-SCOPE-1。
 
 `connectivity.dashboard_feeds`：枚举 `block` \| `allow`。`block` = 去掉 WP 新闻/事件 widget，并短路核心 dashboard feed 请求；支付/物流不在本项范围内（主机表 C 档，不挡）。domestic 默认 `allow`；`crossborder` / `mixed` 默认 `block`。
+
+`connectivity.icon_photos`：MotuCloud（第 5 核心服务）。对象 `{ enabled, mirrored_base, native_api_base }`。`enabled` 枚举 `off` \| `on` \| `admin`（`on` = 全站换源，`admin` = 只在后台）。JSON Schema `default` 为 `enabled=off` 且两个基址 `""`：MotuCloud 服务端地址就绪前功能保持关闭。缺省键读取时填该默认，**不**升 `schema_version`。场景矩阵只改 `enabled`（国内/内贸 `on`，跨境/混合 `admin`），不写入基址。基址为空时模块不挂钩、诊断不探测。设置页不放用户字段（基础服务默认提供）。双轨：①镜像反代：对 WP 核心图标 API 与媒体库图片搜索换 `mirrored_base`；②自建 API：`native_api_base` 上 list/search，失败回核心源。
 
 `diagnostics.client_probe_url`：可选 HTTPS 探针 URL，默认 `""`。空则浏览器测速只打允许名单内的固定目标（`fonts.googleapis.com`、Gravatar）。非空时其主机加入 POST `/diagnostics/client-probe` 允许名单。不在 `PUT /settings` 以外的路径写入。
 
@@ -418,6 +447,9 @@
 | `connectivity.avatar.frontend` | `"cravatar_cn"` |
 | `connectivity.heartbeat` | `"off"` |
 | `connectivity.dashboard_feeds` | `"allow"` |
+| `connectivity.icon_photos.enabled` | `"off"` |
+| `connectivity.icon_photos.mirrored_base` | `""` |
+| `connectivity.icon_photos.native_api_base` | `""` |
 | `admin_assets` | `"off"` |
 | `modules.notice_control` | `true` |
 | `modules.windfonts` | `false` |
@@ -446,6 +478,7 @@
 | `admin_assets`（后台静态资源加速） | `off` | `on` | `on` | **4.1 交付**；4.0 只预留 schema 键与开关位，界面显示「即将提供」，不做任何改写 |
 | `connectivity.heartbeat`（仪表盘关心跳、编辑器 60s） | `off` | `on` | `on` | 跨境免费体验层；filter 名见 M-SCOPE-1 |
 | `connectivity.dashboard_feeds`（挡 WP 新闻/事件 widget 与 dashboard feed） | `allow` | `block` | `block` | 跨境免费体验层；不挡支付/物流 |
+| `connectivity.icon_photos.enabled`（MotuCloud 图标与图片） | `on` | `admin` | `admin` | 内贸同国内 `on`。Schema 缺省仍为 `off`+空基址；基址空则不开 |
 | `notice_control` / `announcements` / 诊断 / 恢复 | 不受场景影响 | 同 | 同 | |
 | `modules.site_blocklist` | `enabled=true`，`hosts=[]` | 同 | 同 | 网络级；站点不可覆盖；切换场景不改本键 |
 | `modules.noise_block.enabled` | `true` | 同 | 同 | 切换场景不改本键 |
@@ -464,6 +497,7 @@
 | `modules.windfonts` | `false`（绑定后可开，不默认 true；无配额文案） | `false` | `false` |
 | `connectivity.heartbeat` | `off` | `on` | `on` |
 | `connectivity.dashboard_feeds` | `allow` | `block` | `block` |
+| `connectivity.icon_photos.enabled` | `on` | `admin` | `admin` |
 | `admin_assets` | `off` | `on` | `on` |
 
 「五项」= `["google_fonts","google_ajax","cdnjs","jsdelivr","emoji"]`。`notice_control` / `announcements` / 诊断 / 恢复 / `telemetry` / `privacy.data_residency` / `modules.site_blocklist` / `modules.noise_block` 切换场景时不改设置键。`privacy.data_residency` 采用方案 A + 保险（运行时按 `profile` 闸 A 档，不改主机表），见 [`data-residency-ruleset.md`](data-residency-ruleset.md)。

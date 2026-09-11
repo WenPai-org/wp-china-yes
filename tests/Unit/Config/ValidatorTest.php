@@ -50,6 +50,14 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( 'off', $out['connectivity']['heartbeat'] );
 		$this->assertSame( 'allow', $out['connectivity']['dashboard_feeds'] );
 		$this->assertTrue( $out['connectivity']['admin_locale_follow'] );
+		$this->assertSame(
+			array(
+				'enabled'         => 'off',
+				'mirrored_base'   => '',
+				'native_api_base' => '',
+			),
+			$out['connectivity']['icon_photos']
+		);
 		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
@@ -242,6 +250,48 @@ class ValidatorTest extends TestCase {
 			Schema::SETTINGS
 		);
 		$this->assertTrue( $bad['connectivity']['admin_locale_follow'] );
+	}
+
+	/**
+	 * Icon_photos is off|on|admin with empty bases; bad enum falls back to off.
+	 */
+	public function test_icon_photos_tri_state() {
+		$on = $this->validator->sanitize(
+			array(
+				'connectivity' => array(
+					'icon_photos' => array(
+						'enabled'         => 'on',
+						'mirrored_base'   => 'https://motu.example/m',
+						'native_api_base' => 'https://motu.example/api',
+					),
+				),
+			),
+			Schema::SETTINGS
+		);
+		$this->assertSame( 'on', $on['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( 'https://motu.example/m', $on['connectivity']['icon_photos']['mirrored_base'] );
+		$this->assertSame( 'https://motu.example/api', $on['connectivity']['icon_photos']['native_api_base'] );
+
+		$admin = $this->validator->sanitize(
+			array(
+				'connectivity' => array(
+					'icon_photos' => array( 'enabled' => 'admin' ),
+				),
+			),
+			Schema::SETTINGS
+		);
+		$this->assertSame( 'admin', $admin['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( '', $admin['connectivity']['icon_photos']['mirrored_base'] );
+
+		$bad = $this->validator->sanitize(
+			array(
+				'connectivity' => array(
+					'icon_photos' => array( 'enabled' => 'both' ),
+				),
+			),
+			Schema::SETTINGS
+		);
+		$this->assertSame( 'off', $bad['connectivity']['icon_photos']['enabled'] );
 	}
 
 	/**

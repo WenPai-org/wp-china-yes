@@ -130,6 +130,7 @@ class ProfileTest extends TestCase {
 		$this->assertSame( 9, $out['data_residency']['ruleset_version'] );
 		$this->assertSame( array( 'x' ), $out['apps']['disabled'] );
 		$this->assertTrue( $out['connectivity']['admin_locale_follow'] );
+		$this->assertSame( 'admin', $out['connectivity']['icon_photos']['enabled'] );
 	}
 
 	/**
@@ -145,6 +146,28 @@ class ProfileTest extends TestCase {
 	}
 
 	/**
+	 * Scene switch resets icon_photos.enabled, keeps stored bases.
+	 */
+	public function test_switch_resets_icon_photos_enabled_keeps_bases() {
+		$settings                                = Defaults::settings();
+		$settings['connectivity']['icon_photos'] = array(
+			'enabled'         => 'off',
+			'mirrored_base'   => 'https://motu.example/m',
+			'native_api_base' => 'https://motu.example/api',
+		);
+
+		$out = Profile::apply_to( $settings, 'domestic' );
+
+		$this->assertSame( 'on', $out['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( 'https://motu.example/m', $out['connectivity']['icon_photos']['mirrored_base'] );
+		$this->assertSame( 'https://motu.example/api', $out['connectivity']['icon_photos']['native_api_base'] );
+
+		$cross = Profile::apply_to( $out, 'crossborder' );
+		$this->assertSame( 'admin', $cross['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( 'https://motu.example/m', $cross['connectivity']['icon_photos']['mirrored_base'] );
+	}
+
+	/**
 	 * Inbound: frontend-only public assets; avatar still cravatar_cn site-wide.
 	 */
 	public function test_inbound_defaults() {
@@ -155,6 +178,37 @@ class ProfileTest extends TestCase {
 		$this->assertSame( 'cravatar_cn', $row['connectivity']['avatar'] );
 		$this->assertSame( 'off', $row['connectivity']['heartbeat'] );
 		$this->assertSame( 'allow', $row['connectivity']['dashboard_feeds'] );
+		$this->assertSame( 'on', $row['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( '', $row['connectivity']['icon_photos']['mirrored_base'] );
 		$this->assertArrayNotHasKey( 'admin_assets', $row );
+	}
+
+	/**
+	 * Scene matrix icon_photos.enabled: domestic/inbound on, crossborder/mixed admin.
+	 *
+	 * @dataProvider icon_photos_matrix_provider
+	 *
+	 * @param string $profile Profile.
+	 * @param string $enabled Expected enabled enum.
+	 */
+	public function test_icon_photos_matrix( string $profile, string $enabled ): void {
+		$row = Profile::apply_defaults( $profile );
+		$this->assertSame( $enabled, $row['connectivity']['icon_photos']['enabled'] );
+		$this->assertSame( '', $row['connectivity']['icon_photos']['mirrored_base'] );
+		$this->assertSame( '', $row['connectivity']['icon_photos']['native_api_base'] );
+	}
+
+	/**
+	 * Four scenes.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function icon_photos_matrix_provider(): array {
+		return array(
+			'domestic'    => array( 'domestic', 'on' ),
+			'inbound'     => array( 'inbound', 'on' ),
+			'crossborder' => array( 'crossborder', 'admin' ),
+			'mixed'       => array( 'mixed', 'admin' ),
+		);
 	}
 }
