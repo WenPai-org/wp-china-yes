@@ -1,11 +1,31 @@
 # 文派叶子 4.0 后台界面设计规格
 
-状态：**v2.1 · 2026-09-06 夜（v2.0 当晚按 feibisi 反馈修订：见 §0）** · 设计 linuxjoy · 产品 feibisi（认可记录 [`prototypes/e/APPROVAL.md`](prototypes/e/APPROVAL.md)）
+状态：**v2.2 · 2026-09-11（v2.1→v2.2 变化见 §0b；v2.0→v2.1 变化见 §0；原型 [`e/v7`](https://github.com/WenPai-org/wp-china-yes) 定稿候选，派发前需 feibisi 确认）** · 设计 linuxjoy · 产品 feibisi（认可记录 [`prototypes/e/APPROVAL.md`](prototypes/e/APPROVAL.md)）
 用途：原型 E（[`docs/design/prototypes/e/`](prototypes/e/)）与 M-UI-1 / M-UI-2 / M-UI-3 的实现依据，也是视觉验收（[`docs/dev/acceptance-sop.md`](../dev/acceptance-sop.md) 第 2 层）的对照本。**行为以本文为准，视觉以原型与 [`DESIGN-E.md`](prototypes/e/DESIGN-E.md) 为准**；二者冲突先改文档再改代码。
 
 v1.0（2026-09-04）被本版整体取代。取代的原因是三项产品决定：① 站点场景 + 每项作用域成为 4.0 首发必需（ADR-004）；② 商业模型改为"连通性全部免费无配额，叶子是接入客户端 + 分发渠道"，界面不再有权益与配额表；③ 原型 E 定稿：横向标签、居中版面、概览三层、主色沿用 3.8 的 `#3858e9`。v1.0 的编号在 §6 逐条登记"沿用 / 改义 / 作废"，不重新编号。
 
 依据：ADR-002（React 应用 + 恢复页）、ADR-003（小工具容器）、[ADR-004](../architecture/adr-004-site-profile-and-scope.md)、[ADR-005](../architecture/adr-005-feature-absorption.md)、[`decisions/2026-09-06-site-profile-and-scope.md`](../dev-plan/decisions/2026-09-06-site-profile-and-scope.md)、[`decisions/2026-09-06-http-block-merge-and-feature-absorption.md`](../dev-plan/decisions/2026-09-06-http-block-merge-and-feature-absorption.md)、[`docs/specs/rest-api.md`](../specs/rest-api.md)（含 2026-09-06 夜新增的 `/stats`、`/events`、诊断分组表）、[`copy-guidelines.md`](../dev/copy-guidelines.md)。
+
+## 0b. v2.2 相对 v2.1 的变化（2026-09-11，原型 e/v7 逐项拍板记录）
+
+> 背景：v2.1 的 OV-18 连通栈与折叠 hero 被 feibisi 否决（"新改的还不如之前"），v2.2 以原型 `e/v7`（分支 `e/v7`，DESIGN-E §9 归档）为验收基准。编号沿用 §6 登记：OV-10 改义、OV-18 作废、其余新增。
+
+| # | 变化 | 涉及 |
+|---|------|------|
+| 1 | **OV-10 hero 改义**：右栏为「n/4 核心服务已接通」锚点（大字数字 + 状态点条悬停服务名 + 最近检查 + 查看详情）；无折叠、无服务表格、无品牌名 | OV-10（改义） |
+| 2 | **OV-18 连通栈作废**，改「核心服务」卡：单行制（8px 点 · 服务名 · 服务商标签 · 有色状态词 · 延迟·检查时间），说明行仅异常行，未启用行内联启用；公共库多上游合一行 | OV-18（新增后改义） |
+| 3 | 最近动态单行制：时间左列淡字，异常琥珀，≤6 条 | OV-动态 |
+| 4 | 「来自文派」署名栏：叶子标 + 定位句 / 品牌 logo 条（占位图形，正式 logo 由 feibisi 提供）/ 单行链接；场景化出词（跨境=跨境店工具，inbound=中国买家工具） | OV-15（改义） |
+| 5 | **场景矩阵 3→4**：+`inbound` 内贸·进中国站（前台接通）；设置场景卡与 onboarding 第 1 步 4 张（2×2）白话文案；侦测行白话；自定义重置警告给具体项名 | SET-场景（改义） |
+| 6 | 设置页：简单模式行带服务商标签（D1）；后台体验 +「后台语言跟随管理员」；高级模式「已自定义 · 恢复场景默认」标记（与场景卡警告联动） | SET 行 |
+| 7 | 服务页：未绑定「绑定后解锁」清单；可用服务顶部**检测行**（检测到 WooCommerce → 电商 → 薇晓朵置顶 + 推荐标；未检测到 → 文派服务）；清单由服务端下发自动更新，其他供应商可自装 | SV（改义） |
+| 8 | 诊断页：「接通后」行带转换图标（swap，悬停显示原始源）；**服务商状态入口** status.wpcy.com / status.wpcy.net | DG（新增） |
+| 9 | onboarding：4 步 → 5 步，第 3 步「可能还需要」场景包（跨境：微信支付/订单通知/中文字体，了解 → 服务页） | OB（改义） |
+| 10 | **文案口径（硬规则）**：插件不"改写/修改"任何页面，只做资源接通与换源；inbound 前台 = 全站统一换源（缓存安全），**不做按访客动态分流**；数字口径见 `docs/specs/stats-definitions.md` | 词表 §5 |
+| 11 | 反馈按钮 → wpcy.com/feedback；帮助 → 支持论坛；数据说明不上插件，由 wpcy.com 官网标注 | SH（改义） |
+
+**对 M-UI-1b 的影响**：以上 11 项全部需要变更实现；在 1b 分支上按本表逐项核对，验收以原型 `e/v7` 页面为准。
 
 ## 0. v2.1 相对 v2.0 的变化（决定 [`2026-09-06-core-services-value-and-providers.md`](../dev-plan/decisions/2026-09-06-core-services-value-and-providers.md) D1–D6）
 
