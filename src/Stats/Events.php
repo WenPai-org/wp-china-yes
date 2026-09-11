@@ -502,7 +502,7 @@ final class Events {
 					),
 					'detail' => $domestic
 						? __( '更新走国内镜像，前端资源与头像走国内节点', 'wp-china-yes' )
-						: __( '后台资源只在后台加速，更新直连 WordPress.org', 'wp-china-yes' ),
+						: __( '后台资源走国内可达源，更新直连 WordPress.org', 'wp-china-yes' ),
 				);
 
 			case 'recovery_entered':

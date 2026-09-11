@@ -160,9 +160,7 @@ export function avatarEnabled( settings ) {
 	if ( typeof avatar === 'string' ) {
 		return avatar !== 'off';
 	}
-	const admin = avatar.admin;
-	const frontend = avatar.frontend;
-	return admin !== 'off' || frontend !== 'off';
+	return avatar.admin !== 'off' || avatar.frontend !== 'off';
 }
 
 /**
@@ -203,7 +201,7 @@ export function profileLabel( profile ) {
 }
 
 /**
- * Build four OV-18 rows.
+ * Build five core-service rows.
  *
  * @param {Object}  args
  * @param {Array}   args.targets
@@ -261,12 +259,11 @@ export function buildSvcRows( {
 			recovery,
 			enabled: avatarOn,
 			domestic,
-			adminOnly: isAdminOnly( settings ),
-			frontendOnly: isFrontendOnly( settings ),
 			agg: ava,
 			provider: cravatar,
 		} )
 	);
+	rows.push( motuRow( { recovery } ) );
 	rows.push( fontRow( { recovery, bound, settings } ) );
 
 	return rows;
@@ -388,29 +385,14 @@ function assetsRow( {
 	} );
 }
 
-function avatarRow( {
-	recovery,
-	enabled,
-	domestic,
-	adminOnly,
-	frontendOnly,
-	agg,
-	provider,
-} ) {
+function avatarRow( { recovery, enabled, domestic, agg, provider } ) {
 	const name = __( '头像', 'wp-china-yes' );
-	let extra = '';
-	if ( adminOnly ) {
-		extra = __( '只在后台', 'wp-china-yes' );
-	} else if ( frontendOnly ) {
-		extra = __( '只在前台', 'wp-china-yes' );
-	}
 	if ( recovery ) {
 		return matrixRow( {
 			key: 'paused',
 			dot: 'paused',
 			icon: 'user',
 			name,
-			extra,
 			provider,
 			word: __( '未接管', 'wp-china-yes' ),
 			status: 'paused',
@@ -424,7 +406,6 @@ function avatarRow( {
 			dot: 'off',
 			icon: 'user',
 			name,
-			extra,
 			provider,
 			word: __( '未启用', 'wp-china-yes' ),
 			status: 'off',
@@ -434,15 +415,43 @@ function avatarRow( {
 	}
 	const okLine = domestic
 		? __( '经 Cravatar 接通 · Gravatar 在国内空白', 'wp-china-yes' )
-		: __( '后台里经 Cravatar 接通 · Gravatar 在国内空白', 'wp-china-yes' );
+		: __( '经 Cravatar 接通 · Gravatar 在国内空白', 'wp-china-yes' );
 	return fromAgg( {
 		icon: 'user',
 		name,
-		extra,
 		agg,
 		provider,
 		okLine,
-		tooltip: extra ? name + ' · ' + extra : name,
+		tooltip: name,
+	} );
+}
+
+function motuRow( { recovery } ) {
+	const name = __( '图标与图片', 'wp-china-yes' );
+	const provider = 'MotuCloud';
+	if ( recovery ) {
+		return matrixRow( {
+			key: 'paused',
+			dot: 'paused',
+			icon: 'image',
+			name,
+			provider,
+			word: __( '未接管', 'wp-china-yes' ),
+			status: 'paused',
+			tooltip: name,
+		} );
+	}
+	return matrixRow( {
+		key: 'on',
+		dot: 'ok',
+		icon: 'image',
+		name,
+		provider,
+		word: __( '已接通', 'wp-china-yes' ),
+		status: 'on',
+		tone: 'ok',
+		line: __( '经 MotuCloud 接通', 'wp-china-yes' ),
+		tooltip: name,
 	} );
 }
 

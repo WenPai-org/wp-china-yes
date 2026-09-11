@@ -370,15 +370,17 @@ final class Checker {
 	 * @return array{target: string, url: string, upstream_url: string}|null
 	 */
 	private function avatar_target() {
-		$modes = array( 'cravatar_cn', 'cravatar_cn' );
+		$modes = array( 'cravatar_cn' );
 		if ( is_object( $this->config ) && method_exists( $this->config, 'get' ) ) {
-			$admin    = $this->config->get( 'connectivity.avatar.admin', null );
-			$frontend = $this->config->get( 'connectivity.avatar.frontend', null );
-			$legacy   = $this->config->get( 'connectivity.avatar', 'cravatar_cn' );
-			$modes    = array(
-				is_string( $admin ) ? $admin : ( is_string( $legacy ) ? $legacy : 'cravatar_cn' ),
-				is_string( $frontend ) ? $frontend : ( is_string( $legacy ) ? $legacy : 'cravatar_cn' ),
-			);
+			$legacy = $this->config->get( 'connectivity.avatar', 'cravatar_cn' );
+			if ( is_string( $legacy ) ) {
+				$modes = array( $legacy );
+			} elseif ( is_array( $legacy ) ) {
+				$modes = array(
+					isset( $legacy['admin'] ) && is_string( $legacy['admin'] ) ? $legacy['admin'] : 'cravatar_cn',
+					isset( $legacy['frontend'] ) && is_string( $legacy['frontend'] ) ? $legacy['frontend'] : 'cravatar_cn',
+				);
+			}
 		}
 
 		$host = '';

@@ -46,11 +46,10 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( 'auto', $out['connectivity']['wordpress_org'] );
 		$this->assertSame( Schema::PUBLIC_ASSETS, $out['connectivity']['public_assets']['items'] );
 		$this->assertSame( 'both', $out['connectivity']['public_assets']['scope'] );
-		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
 		$this->assertSame( 'off', $out['connectivity']['heartbeat'] );
 		$this->assertSame( 'allow', $out['connectivity']['dashboard_feeds'] );
-		$this->assertSame( 'off', $out['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
 		$this->assertFalse( $out['modules']['windfonts'] );
@@ -120,30 +119,22 @@ class ValidatorTest extends TestCase {
 			$out = $this->validator->sanitize(
 				array(
 					'connectivity' => array(
-						'avatar' => array(
-							'admin'    => $mode,
-							'frontend' => $mode,
-						),
+						'avatar' => $mode,
 					),
 				),
 				Schema::SETTINGS
 			);
-			$this->assertSame( $mode, $out['connectivity']['avatar']['admin'] );
-			$this->assertSame( $mode, $out['connectivity']['avatar']['frontend'] );
+			$this->assertSame( $mode, $out['connectivity']['avatar'] );
 		}
 		$bad = $this->validator->sanitize(
 			array(
 				'connectivity' => array(
-					'avatar' => array(
-						'admin'    => 'gravatar',
-						'frontend' => 'gravatar',
-					),
+					'avatar' => 'gravatar',
 				),
 			),
 			Schema::SETTINGS
 		);
-		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $bad['connectivity']['avatar'] );
 	}
 
 	/**
@@ -283,10 +274,7 @@ class ValidatorTest extends TestCase {
 		$out = $this->validator->sanitize(
 			array(
 				'connectivity'  => array(
-					'avatar' => array(
-						'admin'    => 'off',
-						'frontend' => 'off',
-					),
+					'avatar' => 'off',
 				),
 				'recovery_mode' => true,
 				'diagnostics'   => array( 'scheduled_checks' => false ),
@@ -294,7 +282,7 @@ class ValidatorTest extends TestCase {
 			Schema::SITE_OVERRIDES
 		);
 		$this->assertArrayHasKey( 'connectivity', $out );
-		$this->assertSame( 'off', $out['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'off', $out['connectivity']['avatar'] );
 		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertArrayNotHasKey( 'diagnostics', $out );
 		$this->assertArrayNotHasKey( 'wordpress_org', $out['connectivity'] );

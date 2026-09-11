@@ -165,20 +165,13 @@ class PermissionsTest extends TestCase {
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 		$data = $response->get_data();
 		$this->assertSame( 'off', $data['connectivity']['avatar'] );
-		$this->assertSame( 'off', $data['connectivity']['avatar_admin'] );
-		$this->assertSame( 'off', $data['connectivity']['avatar_frontend'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $data['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $data['connectivity'] );
 
 		$repo = new Repository();
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 		$stored = $repo->all();
-		$this->assertSame(
-			array(
-				'admin'    => 'off',
-				'frontend' => 'off',
-			),
-			$stored['connectivity']['avatar']
-		);
+		$this->assertSame( 'off', $stored['connectivity']['avatar'] );
 	}
 
 	/**
@@ -217,11 +210,9 @@ class PermissionsTest extends TestCase {
 		$this->assertSame( 'auto', $data['connectivity']['wordpress_org'] );
 		$this->assertSame( 'admin', $data['connectivity']['public_assets']['scope'] );
 		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
-		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_admin'] );
-		$this->assertSame( 'off', $data['connectivity']['avatar_frontend'] );
 		$this->assertSame( 'on', $data['connectivity']['heartbeat'] );
 		$this->assertSame( 'block', $data['connectivity']['dashboard_feeds'] );
-		$this->assertSame( 'on', $data['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $data );
 		$this->assertFalse( $data['modules']['notice_control'] );
 	}
 
@@ -251,8 +242,7 @@ class PermissionsTest extends TestCase {
 		$this->assertTrue( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 	}
 
 	/**
@@ -282,8 +272,7 @@ class PermissionsTest extends TestCase {
 		$this->assertFalse( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 	}
 
 	/**
@@ -298,8 +287,8 @@ class PermissionsTest extends TestCase {
 		$this->assertFalse( $data['recovery_mode'] );
 		$this->assertArrayHasKey( 'connectivity', $data );
 		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
-		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_admin'] );
-		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar_frontend'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $data['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $data['connectivity'] );
 		$this->assertArrayNotHasKey( 'credential', $data );
 	}
 
@@ -598,7 +587,7 @@ class PermissionsTest extends TestCase {
 		$this->assertSame( 'crossborder', $overrides['profile'] );
 		$this->assertSame( 'admin', $overrides['connectivity']['public_assets']['scope'] );
 		$this->assertSame( 'crossborder', $response->get_data()['profile'] );
-		$this->assertSame( 'off', $response->get_data()['connectivity']['avatar_frontend'] );
+		$this->assertSame( 'cravatar_cn', $response->get_data()['connectivity']['avatar'] );
 	}
 
 	/**

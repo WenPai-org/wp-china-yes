@@ -385,13 +385,11 @@ function SimpleAccel( { settings, disabled, patch, savedFlash } ) {
 	const c = conn( settings );
 	const orgOn = ( c.wordpress_org || 'auto' ) !== 'off';
 	const assetsOn = ( c.public_assets?.scope || 'both' ) !== 'off';
-	const avatar = c.avatar || {};
-	const avatarOn =
-		typeof avatar === 'string'
-			? avatar !== 'off'
-			: avatar.admin !== 'off' || avatar.frontend !== 'off';
+	const avatar = c.avatar || 'cravatar_cn';
+	const avatarValue =
+		typeof avatar === 'string' ? avatar : avatar.admin || 'cravatar_cn';
+	const avatarOn = avatarValue !== 'off';
 	const assetScope = c.public_assets?.scope || 'both';
-	const avatarScope = avatarScopeWord( avatar );
 	const def = sceneDefaults( settings.profile || 'domestic' );
 
 	return (
@@ -493,9 +491,6 @@ function SimpleAccel( { settings, disabled, patch, savedFlash } ) {
 					</div>
 				</div>
 				<div className="r">
-					{ avatarOn && avatarScope ? (
-						<Scope>{ avatarScope }</Scope>
-					) : null }
 					<Toggle
 						checked={ avatarOn }
 						disabled={ disabled }
@@ -508,9 +503,7 @@ function SimpleAccel( { settings, disabled, patch, savedFlash } ) {
 							patch(
 								{
 									connectivity: {
-										avatar: on
-											? def.avatar
-											: { admin: 'off', frontend: 'off' },
+										avatar: on ? def.avatar : 'off',
 									},
 								},
 								'avatar'
@@ -550,24 +543,6 @@ function SimpleAccel( { settings, disabled, patch, savedFlash } ) {
 			) : null }
 		</section>
 	);
-}
-
-function avatarScopeWord( avatar ) {
-	if ( ! avatar || typeof avatar === 'string' ) {
-		return '';
-	}
-	const adminOn = avatar.admin && avatar.admin !== 'off';
-	const frontOn = avatar.frontend && avatar.frontend !== 'off';
-	if ( adminOn && frontOn ) {
-		return __( '后台与前台', 'wp-china-yes' );
-	}
-	if ( adminOn ) {
-		return __( '只在后台', 'wp-china-yes' );
-	}
-	if ( frontOn ) {
-		return __( '只在前台', 'wp-china-yes' );
-	}
-	return '';
 }
 
 function SimpleAdmin( { settings, disabled, patch, advanced } ) {
@@ -711,19 +686,15 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 	const items = Array.isArray( c.public_assets?.items )
 		? c.public_assets.items
 		: FIVE;
-	const avatar = c.avatar || {};
-	const admin = typeof avatar === 'string' ? avatar : avatar.admin;
-	const frontend = typeof avatar === 'string' ? avatar : avatar.frontend;
+	const avatar = c.avatar || 'cravatar_cn';
+	const avatarValue =
+		typeof avatar === 'string' ? avatar : avatar.admin || 'cravatar_cn';
 	const def = sceneDefaults( settings.profile || 'domestic' );
-	const profile = settings.profile || 'domestic';
 
-	const restoreAvatarFront = () =>
+	const restoreAvatar = () =>
 		patch( {
 			connectivity: {
-				avatar: {
-					admin: admin || 'cravatar_cn',
-					frontend: def.avatar.frontend,
-				},
+				avatar: def.avatar,
 			},
 		} );
 
@@ -868,46 +839,15 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 				</div>
 			</FieldRow>
 			<AvatarField
-				side="admin"
-				value={ admin }
+				value={ avatarValue }
 				disabled={ disabled }
+				custom={ customs.includes( 'avatar' ) }
+				onRestore={ restoreAvatar }
+				defaultWord={ __( 'Cravatar 中国线路', 'wp-china-yes' ) }
 				onChange={ ( value ) =>
 					patch( {
 						connectivity: {
-							avatar: {
-								admin: value,
-								frontend: frontend || 'off',
-							},
-						},
-					} )
-				}
-			/>
-			<AvatarField
-				side="frontend"
-				value={ frontend }
-				disabled={ disabled }
-				hint={
-					profile === 'crossborder'
-						? __(
-								'跨境站默认关闭：海外访客直连 Gravatar 更快',
-								'wp-china-yes'
-						  )
-						: ''
-				}
-				custom={ customs.includes( 'avatar_frontend' ) }
-				onRestore={ restoreAvatarFront }
-				defaultWord={
-					def.avatar.frontend === 'off'
-						? __( '关闭', 'wp-china-yes' )
-						: __( 'Cravatar 中国线路', 'wp-china-yes' )
-				}
-				onChange={ ( value ) =>
-					patch( {
-						connectivity: {
-							avatar: {
-								admin: admin || 'off',
-								frontend: value,
-							},
+							avatar: value,
 						},
 					} )
 				}
@@ -929,50 +869,21 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 					{ __( '绑定本站后可用', 'wp-china-yes' ) }
 				</div>
 			</FieldRow>
-			<FieldRow
-				icon="layers"
-				title={ __( '后台加速', 'wp-china-yes' ) }
-				help={ __( '压缩与合并后台静态资源', 'wp-china-yes' ) }
-			>
-				<Toggle
-					checked={ ( settings.admin_assets || 'off' ) === 'on' }
-					disabled
-					label={ __( '启用后台加速', 'wp-china-yes' ) }
-				/>{ ' ' }
-				<Pill>{ __( '即将提供', 'wp-china-yes' ) }</Pill>
-				<div className="hint">
-					{ __( '3.x 的设置已保留，4.1 起生效', 'wp-china-yes' ) }
-				</div>
-			</FieldRow>
 		</section>
 	);
 }
 
 function AvatarField( {
-	side,
 	value,
 	disabled,
 	onChange,
-	hint,
 	custom,
 	onRestore,
 	defaultWord,
 } ) {
-	const title =
-		side === 'admin'
-			? __( '后台头像', 'wp-china-yes' )
-			: __( '前台头像', 'wp-china-yes' );
-	const help =
-		side === 'admin'
-			? __(
-					'管理员在后台看到的头像源 · 由 Cravatar 提供',
-					'wp-china-yes'
-			  )
-			: __(
-					'访客在评论等处看到的头像源 · 由 Cravatar 提供',
-					'wp-china-yes'
-			  );
-	const name = 'avatar-' + side;
+	const title = __( '头像', 'wp-china-yes' );
+	const help = __( '评论与后台的头像源 · 由 Cravatar 提供', 'wp-china-yes' );
+	const name = 'avatar';
 	return (
 		<FieldRow icon="user" title={ title } help={ help }>
 			<div className="opts">
@@ -1044,7 +955,6 @@ function AvatarField( {
 					</button>
 				</div>
 			) : null }
-			{ hint ? <div className="hint">{ hint }</div> : null }
 		</FieldRow>
 	);
 }

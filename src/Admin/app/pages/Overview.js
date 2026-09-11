@@ -555,7 +555,7 @@ function heroCopy( {
 				</>
 			),
 			lede: __(
-				'前台资源与头像走国内可达源，后台资源只在后台加速；更新直连 WordPress.org。',
+				'前台资源与头像走国内可达源，后台资源走国内可达源；更新直连 WordPress.org。',
 				'wp-china-yes'
 			),
 		};
@@ -679,7 +679,7 @@ function heroAnchor( {
 		);
 	}
 	const on = svcRows.filter( ( r ) => r.status === 'on' ).length;
-	const total = 4;
+	const total = 5;
 	let sub = '';
 	const off = svcRows.find( ( r ) => r.status === 'off' );
 	const fallback = svcRows.find(
@@ -747,7 +747,7 @@ function StatsGrid( { stats, domestic, inbound, freshInstall } ) {
 			},
 			{
 				icon: 'user',
-				label: __( '前台头像请求', 'wp-china-yes' ),
+				label: __( '头像请求', 'wp-china-yes' ),
 				key: 'avatar_rewrites_frontend',
 				when: __( '有评论或用户头像加载后开始计数', 'wp-china-yes' ),
 				desc: () =>

@@ -27,7 +27,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -264,7 +264,7 @@
 								],
 								"scope": "admin"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "off" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -410,7 +410,7 @@
 									"at": "2026-09-05T10:40:00Z",
 									"tone": "warn",
 									"title": "浏览器测速：gravatar.com 超时",
-									"detail": "后台头像已经 Cravatar 接通，不受影响"
+									"detail": "头像已经 Cravatar 接通，不受影响"
 								},
 								{
 									"id": "4",
@@ -490,7 +490,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -701,7 +701,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -838,7 +838,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -1042,7 +1042,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -1243,7 +1243,7 @@
 								],
 								"scope": "both"
 							},
-							"avatar": { "admin": "cravatar_cn", "frontend": "cravatar_cn" }
+							"avatar": "cravatar_cn"
 						}
 					}
 				},
@@ -1368,6 +1368,51 @@
 						"method": "GET",
 						"delayMs": 5000,
 						"body": { "status": "none" }
+					}
+				]
+			}
+		},
+		{
+			"id": "connect-avatar",
+			"page": "wpcy-connect",
+			"url": "/wp-admin/admin.php?page=wpcy-connect",
+			"filename": "connect-头像字段.png",
+			"state": "高级头像",
+			"clickText": "高级",
+			"waitForText": "评论与后台的头像源",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wp/v2/users/me",
+						"method": "GET",
+						"body": { "meta": { "wpcy_settings_view": "advanced" } }
+					},
+					{
+						"path": "/wpcy/v1/profile/suggest",
+						"method": "GET",
+						"body": { "suggestion": "domestic" }
 					}
 				]
 			}

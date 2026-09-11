@@ -44,12 +44,12 @@ class RepositoryTest extends TestCase {
 	 */
 	public function test_get_returns_defaults() {
 		$repo = $this->repo();
-		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar' ) );
 		$this->assertSame( 'auto', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertSame( Schema::PUBLIC_ASSETS, $repo->get( 'connectivity.public_assets.items' ) );
 		$this->assertSame( 'both', $repo->get( 'connectivity.public_assets.scope' ) );
 		$this->assertSame( 'domestic', $repo->get( 'profile' ) );
-		$this->assertSame( 'off', $repo->get( 'admin_assets' ) );
+		$this->assertNull( $repo->get( 'admin_assets' ) );
 		$this->assertTrue( $repo->get( 'modules.notice_control' ) );
 		$this->assertFalse( $repo->get( 'modules.windfonts' ) );
 		$this->assertTrue( $repo->get( 'modules.site_blocklist.enabled' ) );
@@ -74,16 +74,13 @@ class RepositoryTest extends TestCase {
 				'schema_version' => 2,
 				'connectivity'   => array(
 					'wordpress_org' => 'off',
-					'avatar'        => array(
-						'admin'    => 'off',
-						'frontend' => 'off',
-					),
+					'avatar'        => 'off',
 				),
 				'modules'        => array( 'windfonts' => true ),
 			)
 		);
 		$repo = $this->repo();
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertTrue( $repo->get( 'modules.windfonts' ) );
 		$this->assertTrue( $repo->get( 'modules.notice_control' ) );
@@ -144,9 +141,9 @@ class RepositoryTest extends TestCase {
 		$this->assertSame( 2, Defaults::get( 'schema_version' ) );
 		$this->assertSame( 'auto', Defaults::get( 'connectivity.wordpress_org' ) );
 		$this->assertSame( Schema::PUBLIC_ASSETS, Defaults::get( 'connectivity.public_assets.items' ) );
-		$this->assertSame( 'cravatar_cn', Defaults::get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'cravatar_cn', Defaults::get( 'connectivity.avatar' ) );
 		$this->assertSame( 'domestic', Defaults::get( 'profile' ) );
-		$this->assertSame( 'off', Defaults::get( 'admin_assets' ) );
+		$this->assertNull( Defaults::get( 'admin_assets' ) );
 		$this->assertTrue( Defaults::get( 'modules.notice_control' ) );
 		$this->assertFalse( Defaults::get( 'modules.windfonts' ) );
 		$this->assertTrue( Defaults::get( 'diagnostics.scheduled_checks' ) );
@@ -212,8 +209,8 @@ class RepositoryTest extends TestCase {
 	 */
 	public function test_set_invalid_enum_falls_back() {
 		$repo = $this->repo();
-		$this->assertTrue( $repo->set( 'connectivity.avatar.admin', 'gravatar' ) );
-		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertTrue( $repo->set( 'connectivity.avatar', 'gravatar' ) );
+		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar' ) );
 	}
 
 	/**

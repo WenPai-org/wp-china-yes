@@ -144,9 +144,8 @@ class AvatarModeTest extends TestCase {
 	public function test_enabled_false_in_recovery_mode() {
 		$config = new MapConfig(
 			array(
-				'connectivity.avatar.admin'    => 'cravatar_cn',
-				'connectivity.avatar.frontend' => 'cravatar_cn',
-				'recovery_mode'                => true,
+				'connectivity.avatar' => 'cravatar_cn',
+				'recovery_mode'       => true,
 			)
 		);
 		$module = new AvatarModule( $config );
@@ -177,14 +176,13 @@ class AvatarModeTest extends TestCase {
 	}
 
 	/**
-	 * Frontend off keeps Gravatar when Scope::current() is frontend.
+	 * Off keeps Gravatar on both admin and frontend.
 	 */
-	public function test_frontend_off_keeps_gravatar() {
+	public function test_off_keeps_gravatar() {
 		$config = new MapConfig(
 			array(
-				'connectivity.avatar.admin'    => 'cravatar_cn',
-				'connectivity.avatar.frontend' => 'off',
-				'recovery_mode'                => false,
+				'connectivity.avatar' => 'off',
+				'recovery_mode'       => false,
 			)
 		);
 		$module = new AvatarModule( $config );
@@ -236,9 +234,8 @@ class AvatarModeTest extends TestCase {
 	private function config( string $mode ): MapConfig {
 		return new MapConfig(
 			array(
-				'connectivity.avatar.admin'    => $mode,
-				'connectivity.avatar.frontend' => $mode,
-				'recovery_mode'                => false,
+				'connectivity.avatar' => $mode,
+				'recovery_mode'       => false,
 			)
 		);
 	}

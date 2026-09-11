@@ -215,7 +215,7 @@ test.describe( 'overview', () => {
 		await expect( page.getByText( '更新与安装包' ).first() ).toBeVisible();
 		await expect( page.getByText( '已接通' ).first() ).toBeVisible();
 		await expect( page.getByText( '运行诊断' ) ).toBeVisible();
-		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/4' );
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '4/5' );
 		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
 	} );
 
@@ -227,7 +227,7 @@ test.describe( 'overview', () => {
 				connectivity: {
 					wordpress_org: 'off',
 					public_assets: { items: [ 'google_fonts' ], scope: 'admin' },
-					avatar: { admin: 'cravatar_cn', frontend: 'off' },
+					avatar: 'cravatar_cn',
 				},
 			},
 		} );
@@ -354,7 +354,7 @@ test.describe( 'overview', () => {
 				connectivity: {
 					wordpress_org: 'off',
 					public_assets: { items: [ 'google_fonts' ], scope: 'admin' },
-					avatar: { admin: 'cravatar_cn', frontend: 'off' },
+					avatar: 'cravatar_cn',
 				},
 			},
 		} );

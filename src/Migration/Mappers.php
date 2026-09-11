@@ -234,16 +234,16 @@ final class Mappers {
 				$kept[] = 'admincdn_dev';
 			}
 			if ( $mapped['admin_assets'] ) {
-				$settings['admin_assets'] = 'on';
+				$this->ignored_entries[] = array(
+					'key'    => 'admin',
+					'value'  => 'on',
+					'reason' => '后台静态加速已取消（易致后台界面问题）',
+				);
 			}
 		}
 
-		if ( isset( $settings['connectivity']['avatar'] ) && is_string( $settings['connectivity']['avatar'] ) ) {
-			$mode                               = $settings['connectivity']['avatar'];
-			$settings['connectivity']['avatar'] = array(
-				'admin'    => $mode,
-				'frontend' => $mode,
-			);
+		if ( isset( $settings['connectivity']['avatar'] ) && is_array( $settings['connectivity']['avatar'] ) ) {
+			$settings['connectivity']['avatar'] = $this->collapse_stored_avatar( $settings['connectivity']['avatar'] );
 		}
 
 		$settings['profile']        = 'domestic';
@@ -297,6 +297,29 @@ final class Mappers {
 			return 'off';
 		}
 		return null;
+	}
+
+	/**
+	 * Collapse a leftover {admin,frontend} object onto one enum.
+	 *
+	 * @param array<string, mixed> $avatar Split avatar.
+	 */
+	private function collapse_stored_avatar( array $avatar ): string {
+		$admin    = isset( $avatar['admin'] ) && is_string( $avatar['admin'] ) ? $avatar['admin'] : '';
+		$frontend = isset( $avatar['frontend'] ) && is_string( $avatar['frontend'] ) ? $avatar['frontend'] : '';
+		foreach ( array( $admin, $frontend ) as $mode ) {
+			if ( in_array( $mode, Schema::AVATAR, true ) && 'off' !== $mode ) {
+				return $mode;
+			}
+		}
+		if ( in_array( $admin, Schema::AVATAR, true ) ) {
+			return $admin;
+		}
+		if ( in_array( $frontend, Schema::AVATAR, true ) ) {
+			return $frontend;
+		}
+
+		return 'cravatar_cn';
 	}
 
 	/**

@@ -137,10 +137,10 @@ final class Report {
 			'settings'        => $this->settings,
 		);
 
-		if ( $this->admin_assets_reserved() ) {
-			$document['notes']    = array( 'admin_assets_reserved' );
+		if ( $this->admin_assets_dropped() ) {
+			$document['notes']    = array( 'admin_assets_dropped' );
 			$document['messages'] = array(
-				__( '后台加速：已保留设置，4.1 起生效', 'wp-china-yes' ),
+				__( '后台静态加速已取消（易致后台界面问题）', 'wp-china-yes' ),
 			);
 		}
 
@@ -148,9 +148,15 @@ final class Report {
 	}
 
 	/**
-	 * Whether 3.x admin-cdn intent was stored for 4.1.
+	 * Whether 3.x admin-cdn intent was recorded as no longer needed.
 	 */
-	public function admin_assets_reserved(): bool {
-		return isset( $this->settings['admin_assets'] ) && 'on' === $this->settings['admin_assets'];
+	public function admin_assets_dropped(): bool {
+		foreach ( $this->ignored_entries as $entry ) {
+			if ( 'admin' === $entry['key'] ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

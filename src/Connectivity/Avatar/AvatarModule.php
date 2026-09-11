@@ -279,22 +279,23 @@ final class AvatarModule implements ConditionalModule {
 	}
 
 	/**
-	 * Avatar mode for Scope::current() (admin or frontend).
+	 * Site-wide avatar mode. Split admin/frontend keys are treated as the same value.
 	 *
 	 * @param Config $config Config read model.
 	 */
 	private function mode_for_current( Config $config ): string {
-		$side = Scope::current();
-		$mode = $config->get( 'connectivity.avatar.' . $side, null );
-		if ( is_string( $mode ) && '' !== $mode ) {
-			return $mode;
-		}
-
 		$avatar = $config->get( 'connectivity.avatar', 'off' );
-		if ( is_array( $avatar ) && isset( $avatar[ $side ] ) && is_string( $avatar[ $side ] ) ) {
-			return $avatar[ $side ];
+		if ( is_string( $avatar ) && '' !== $avatar ) {
+			return $avatar;
+		}
+		if ( is_array( $avatar ) ) {
+			foreach ( array( 'admin', 'frontend' ) as $side ) {
+				if ( isset( $avatar[ $side ] ) && is_string( $avatar[ $side ] ) && '' !== $avatar[ $side ] ) {
+					return $avatar[ $side ];
+				}
+			}
 		}
 
-		return is_string( $avatar ) ? $avatar : 'off';
+		return 'off';
 	}
 }

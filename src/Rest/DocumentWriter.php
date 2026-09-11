@@ -76,7 +76,7 @@ final class DocumentWriter {
 			);
 		}
 
-		$incoming  = $this->expand_legacy_avatar( $incoming );
+		$incoming  = $this->normalize_incoming_avatar( $incoming );
 		$current   = $this->apply_profile_switch( $current, $incoming );
 		$merged    = $this->deep_merge( $current, $incoming );
 		$validator = new Validator();
@@ -122,7 +122,7 @@ final class DocumentWriter {
 			);
 		}
 
-		$incoming  = $this->expand_legacy_avatar( $incoming );
+		$incoming  = $this->normalize_incoming_avatar( $incoming );
 		$before    = $this->stored_site_document();
 		$current   = $this->apply_profile_switch( $before, $incoming );
 		$merged    = $this->deep_merge( $current, $incoming );
@@ -136,7 +136,7 @@ final class DocumentWriter {
 		$profile_switch  = isset( $incoming['profile'] ) && is_string( $incoming['profile'] )
 			&& in_array( $incoming['profile'], Schema::PROFILES, true )
 			&& $incoming['profile'] !== $from;
-		$override_roots  = array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' );
+		$override_roots  = array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'recovery_mode' );
 		$overrides_touch = $profile_switch;
 		$overrides       = array( 'schema_version' => Schema::VERSION );
 		$stored_raw      = function_exists( 'get_option' ) ? get_option( Schema::SITE_OVERRIDES, array() ) : array();
@@ -147,7 +147,7 @@ final class DocumentWriter {
 			}
 		}
 		foreach ( $override_roots as $key ) {
-			$from_switch = $profile_switch && in_array( $key, array( 'profile', 'connectivity', 'modules', 'admin_assets' ), true );
+			$from_switch = $profile_switch && in_array( $key, array( 'profile', 'connectivity', 'modules' ), true );
 			if ( array_key_exists( $key, $incoming ) || $from_switch ) {
 				$overrides[ $key ] = $clean[ $key ];
 				$overrides_touch   = true;
@@ -176,15 +176,12 @@ final class DocumentWriter {
 	/**
 	 * Site settings document (effective, no identity/credential).
 	 *
-	 * Frozen connect UI still reads connectivity.avatar as a string, so the
-	 * REST presentation includes that scalar alongside admin/frontend.
-	 *
 	 * @since 4.0.0
 	 *
 	 * @return array<string, mixed>
 	 */
 	public function site_document(): array {
-		return self::present_legacy_avatar( $this->stored_site_document() );
+		return $this->stored_site_document();
 	}
 
 	/**
@@ -282,17 +279,16 @@ final class DocumentWriter {
 	}
 
 	/**
-	 * Expand a v1 string connectivity.avatar into {admin, frontend} of the same value.
+	 * Accept a leftover {admin,frontend} PUT body and collapse it to one enum.
 	 *
-	 * Frozen React connect page still PUTs a single enum. Invalid strings are
-	 * left for Validator so they stay wpcy_invalid_schema.
+	 * Invalid strings stay for Validator so they remain wpcy_invalid_schema.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param array<string, mixed> $incoming PUT body.
 	 * @return array<string, mixed>
 	 */
-	private function expand_legacy_avatar( array $incoming ): array {
+	private function normalize_incoming_avatar( array $incoming ): array {
 		if ( ! isset( $incoming['connectivity'] ) || ! is_array( $incoming['connectivity'] ) ) {
 			return $incoming;
 		}
@@ -301,57 +297,41 @@ final class DocumentWriter {
 		}
 
 		$avatar = $incoming['connectivity']['avatar'];
-		if ( ! is_string( $avatar ) ) {
+		if ( is_string( $avatar ) ) {
 			return $incoming;
 		}
-		if ( ! in_array( $avatar, Schema::AVATAR, true ) ) {
+		if ( ! is_array( $avatar ) ) {
 			return $incoming;
 		}
 
-		$incoming['connectivity']['avatar'] = array(
-			'admin'    => $avatar,
-			'frontend' => $avatar,
-		);
+		$incoming['connectivity']['avatar'] = self::collapse_avatar_value( $avatar );
 
 		return $incoming;
 	}
 
 	/**
-	 * Present connectivity.avatar as both the v2 object and a legacy string.
-	 *
-	 * Frozen connect UI reads `connectivity.avatar` as a scalar. JSON cannot
-	 * be a string and an object at the same key, so the HTTP field is the
-	 * string (admin when the two sides differ). Split values stay on the
-	 * stored option and on sibling keys the frozen page ignores.
+	 * Collapse a leftover split avatar object into one enum.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param array<string, mixed> $document Settings document.
-	 * @return array<string, mixed>
+	 * @param array<string, mixed> $avatar Split avatar.
 	 */
-	public static function present_legacy_avatar( array $document ): array {
-		if ( ! isset( $document['connectivity'] ) || ! is_array( $document['connectivity'] ) ) {
-			return $document;
+	public static function collapse_avatar_value( array $avatar ): string {
+		$admin    = isset( $avatar['admin'] ) && is_string( $avatar['admin'] ) ? $avatar['admin'] : '';
+		$frontend = isset( $avatar['frontend'] ) && is_string( $avatar['frontend'] ) ? $avatar['frontend'] : '';
+		foreach ( array( $admin, $frontend ) as $mode ) {
+			if ( in_array( $mode, Schema::AVATAR, true ) && 'off' !== $mode ) {
+				return $mode;
+			}
+		}
+		if ( in_array( $admin, Schema::AVATAR, true ) ) {
+			return $admin;
+		}
+		if ( in_array( $frontend, Schema::AVATAR, true ) ) {
+			return $frontend;
 		}
 
-		$avatar = $document['connectivity']['avatar'] ?? null;
-		if ( ! is_array( $avatar ) ) {
-			return $document;
-		}
-
-		$admin    = isset( $avatar['admin'] ) && is_string( $avatar['admin'] ) ? $avatar['admin'] : null;
-		$frontend = isset( $avatar['frontend'] ) && is_string( $avatar['frontend'] ) ? $avatar['frontend'] : null;
-		if ( null === $admin ) {
-			return $document;
-		}
-
-		$frontend = is_string( $frontend ) ? $frontend : $admin;
-
-		$document['connectivity']['avatar']          = $admin;
-		$document['connectivity']['avatar_admin']    = $admin;
-		$document['connectivity']['avatar_frontend'] = $frontend;
-
-		return $document;
+		return 'cravatar_cn';
 	}
 
 	/**

@@ -130,7 +130,6 @@ final class Schema {
 				'announcements',
 				'apps',
 				'recovery_mode',
-				'admin_assets',
 			),
 			'properties'           => self::settings_properties(),
 		);
@@ -179,7 +178,6 @@ final class Schema {
 				'profile_confirmed_at' => $props['profile_confirmed_at'],
 				'connectivity'         => $props['connectivity'],
 				'modules'              => self::modules( false ),
-				'admin_assets'         => $props['admin_assets'],
 				'recovery_mode'        => $props['recovery_mode'],
 			),
 		);
@@ -375,11 +373,6 @@ final class Schema {
 				'type'    => 'boolean',
 				'default' => false,
 			),
-			'admin_assets'         => array(
-				'type'    => 'string',
-				'enum'    => array( 'on', 'off' ),
-				'default' => 'off',
-			),
 		);
 	}
 
@@ -423,21 +416,9 @@ final class Schema {
 					),
 				),
 				'avatar'              => array(
-					'type'                 => 'object',
-					'additionalProperties' => false,
-					'required'             => array( 'admin', 'frontend' ),
-					'properties'           => array(
-						'admin'    => array(
-							'type'    => 'string',
-							'enum'    => self::AVATAR,
-							'default' => 'cravatar_cn',
-						),
-						'frontend' => array(
-							'type'    => 'string',
-							'enum'    => self::AVATAR,
-							'default' => 'cravatar_cn',
-						),
-					),
+					'type'    => 'string',
+					'enum'    => self::AVATAR,
+					'default' => 'cravatar_cn',
 				),
 				'heartbeat'           => array(
 					'type'    => 'string',

@@ -22,10 +22,13 @@ test.describe( 'connect', () => {
 		);
 	} );
 
-	test( '高级模式前台头像自定义标记', async ( { page } ) => {
+	test( '高级模式单一头像字段', async ( { page } ) => {
 		await openAdminPage( page, 'wpcy-connect' );
 		await page.getByRole( 'button', { name: '高级' } ).click();
-		await expect( page.getByText( '前台头像' ) ).toBeVisible();
+		await expect( page.getByText( '头像', { exact: true } ).first() ).toBeVisible();
+		await expect( page.getByText( '前台头像' ) ).toHaveCount( 0 );
+		await expect( page.getByText( '后台头像' ) ).toHaveCount( 0 );
+		await expect( page.getByText( '后台加速' ) ).toHaveCount( 0 );
 		await expect( page.getByText( '连通性' ) ).toBeVisible();
 	} );
 } );

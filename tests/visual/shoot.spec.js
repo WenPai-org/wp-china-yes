@@ -75,7 +75,10 @@ async function mockRoutes( page, routes ) {
 	await page.route(
 		( url ) => {
 			try {
-				return restPath( url.href ).indexOf( '/wpcy/v1/' ) === 0;
+				const current = restPath( url.href );
+				return ( routes || [] ).some( ( item ) =>
+					pathEquals( current, item.path )
+				);
 			} catch ( error ) {
 				void error;
 				return false;
@@ -173,6 +176,11 @@ test.describe( 'visual screenshots', () => {
 				} );
 			} else {
 				await openAdminPage( page, screen.page );
+				if ( screen.clickText ) {
+					await page
+						.getByRole( 'button', { name: screen.clickText } )
+						.click();
+				}
 				if ( screen.waitForText ) {
 					await expect(
 						page

@@ -14,7 +14,6 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 use WenPai\ChinaYes\Diagnostics\RouteGroups;
-use WenPai\ChinaYes\Rest\DocumentWriter;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -310,7 +309,7 @@ final class AdminModule implements Module {
 				'manage_options'         => current_user_can( 'manage_options' ),
 				'manage_network_options' => current_user_can( 'manage_network_options' ),
 			),
-			'settings'      => DocumentWriter::present_legacy_avatar( $this->repository->all() ),
+			'settings'      => $this->repository->all(),
 			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
 			'siteContext'   => $this->site_context(),
 			'links'         => self::links(),

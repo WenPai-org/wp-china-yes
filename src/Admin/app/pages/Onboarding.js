@@ -86,8 +86,8 @@ function doneRows( profile ) {
 				),
 			},
 			{
-				t: __( '前台头像走 Cravatar', 'wp-china-yes' ),
-				d: __( '后台保留 Gravatar', 'wp-china-yes' ),
+				t: __( '头像走 Cravatar 中国线路', 'wp-china-yes' ),
+				d: __( '全站不再空头像', 'wp-china-yes' ),
 			},
 			{
 				t: __( '后台保持 WordPress 默认', 'wp-china-yes' ),
@@ -111,8 +111,8 @@ function doneRows( profile ) {
 			),
 		},
 		{
-			t: __( '后台头像走 Cravatar', 'wp-china-yes' ),
-			d: __( '前台保留 Gravatar', 'wp-china-yes' ),
+			t: __( '头像走 Cravatar 中国线路', 'wp-china-yes' ),
+			d: __( '全站不再空头像', 'wp-china-yes' ),
 		},
 		{
 			t: __( '后台心跳已节流，仪表盘外部内容已屏蔽', 'wp-china-yes' ),

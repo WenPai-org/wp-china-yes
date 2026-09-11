@@ -86,8 +86,8 @@ class AdminModuleTest extends TestCase {
 		$this->assertArrayHasKey( 'recovery_mode', $payload['settings'] );
 		$this->assertArrayHasKey( 'connectivity', $payload['settings'] );
 		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar'] );
-		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar_admin'] );
-		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar_frontend'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $payload['settings']['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $payload['settings']['connectivity'] );
 	}
 
 	/**

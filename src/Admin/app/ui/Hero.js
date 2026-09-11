@@ -1,5 +1,5 @@
 /**
- * Overview hero. v2.2: left copy + right n/4 anchor. No collapse.
+ * Overview hero. v2.2: left copy + right n/5 anchor. No collapse.
  */
 
 import { __ } from '@wordpress/i18n';
@@ -29,7 +29,7 @@ export default function Hero( { eyebrow, title, lede, actions, anchor } ) {
 }
 
 /**
- * Hero right-hand n/4 anchor (OV-10 v2.2).
+ * Hero right-hand n/5 anchor (OV-10 v2.2).
  *
  * @param {Object}                             props
  * @param {string}                             props.count

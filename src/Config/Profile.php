@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * D2 matrix plus inbound (ADR-004 2026-09-11).
+ * D2 matrix plus inbound (ADR-004 2026-09-11). Avatar is a single site-wide enum.
  */
 final class Profile {
 
@@ -67,8 +67,7 @@ final class Profile {
 	public static function apply_to( array $settings, string $profile ): array {
 		$defaults = self::apply_defaults( $profile );
 
-		$settings['profile']      = $profile;
-		$settings['admin_assets'] = $defaults['admin_assets'];
+		$settings['profile'] = $profile;
 
 		if ( ! isset( $settings['connectivity'] ) || ! is_array( $settings['connectivity'] ) ) {
 			$settings['connectivity'] = array();
@@ -90,6 +89,8 @@ final class Profile {
 	/**
 	 * D2 default matrix. Copied from config-schema.md; do not change cells.
 	 *
+	 * Avatar is site-wide cravatar_cn for every scene (2026-09-11 merge).
+	 *
 	 * @return array<string, array<string, mixed>>
 	 */
 	public static function matrix(): array {
@@ -97,17 +98,13 @@ final class Profile {
 
 		return array(
 			'domestic'    => array(
-				'admin_assets' => 'off',
 				'connectivity' => array(
 					'wordpress_org'   => 'auto',
 					'public_assets'   => array(
 						'items' => $five,
 						'scope' => 'both',
 					),
-					'avatar'          => array(
-						'admin'    => 'cravatar_cn',
-						'frontend' => 'cravatar_cn',
-					),
+					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'off',
 					'dashboard_feeds' => 'allow',
 				),
@@ -116,17 +113,13 @@ final class Profile {
 				),
 			),
 			'crossborder' => array(
-				'admin_assets' => 'on',
 				'connectivity' => array(
 					'wordpress_org'   => 'off',
 					'public_assets'   => array(
 						'items' => $five,
 						'scope' => 'admin',
 					),
-					'avatar'          => array(
-						'admin'    => 'cravatar_cn',
-						'frontend' => 'off',
-					),
+					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'on',
 					'dashboard_feeds' => 'block',
 				),
@@ -135,17 +128,13 @@ final class Profile {
 				),
 			),
 			'inbound'     => array(
-				'admin_assets' => 'off',
 				'connectivity' => array(
 					'wordpress_org'   => 'off',
 					'public_assets'   => array(
 						'items' => $five,
 						'scope' => 'frontend',
 					),
-					'avatar'          => array(
-						'admin'    => 'off',
-						'frontend' => 'cravatar_cn',
-					),
+					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'off',
 					'dashboard_feeds' => 'allow',
 				),
@@ -154,17 +143,13 @@ final class Profile {
 				),
 			),
 			'mixed'       => array(
-				'admin_assets' => 'on',
 				'connectivity' => array(
 					'wordpress_org'   => 'auto',
 					'public_assets'   => array(
 						'items' => $five,
 						'scope' => 'admin',
 					),
-					'avatar'          => array(
-						'admin'    => 'cravatar_cn',
-						'frontend' => 'cravatar_global',
-					),
+					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'on',
 					'dashboard_feeds' => 'block',
 				),
