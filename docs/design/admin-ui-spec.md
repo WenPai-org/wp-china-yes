@@ -25,6 +25,12 @@ v1.0（2026-09-04）被本版整体取代。取代的原因是三项产品决定
 | 10 | **文案口径（硬规则）**：插件不"改写/修改"任何页面，只做资源接通与换源；inbound 前台 = 全站统一换源（缓存安全），**不做按访客动态分流**；数字口径见 `docs/specs/stats-definitions.md` | 词表 §5 |
 | 11 | 反馈按钮 → wpcy.com/feedback；帮助 → 支持论坛；数据说明不上插件，由 wpcy.com 官网标注 | SH（改义） |
 
+**补充（同日，决定 `2026-09-11-noise-reduction-and-absorption.md`）**：
+
+| # | 变化 | 涉及 |
+|---|------|------|
+| 12 | 后台净化-元素层（去广告）：设置后台体验 +「隐藏后台的推广与广告」开关（默认开，说明含规则集版本/命中数/≤72h 容错）；诊断出站主机记录卡 + 命中计数行。规则集由文派服务签名下发，红线：核心通知永不隐藏、只作用 wp-admin、3.x 手写选择器不迁移。决定文档：`decisions/2026-09-11-noise-reduction-and-absorption.md` | SET-后台体验 / DG-出站记录（新增） |
+
 **对 M-UI-1b 的影响**：以上 11 项全部需要变更实现；在 1b 分支上按本表逐项核对，验收以原型 `e/v7` 页面为准。
 
 ## 0. v2.1 相对 v2.0 的变化（决定 [`2026-09-06-core-services-value-and-providers.md`](../dev-plan/decisions/2026-09-06-core-services-value-and-providers.md) D1–D6）
