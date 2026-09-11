@@ -41,7 +41,8 @@
   - outbound + woocommerce → 微信支付 for WooCommerce、订单微信通知（薇晓朵）
   - inbound → 前台加速包、中国可达性检测（文派服务小工具）、中文字体；（未来）境内 CDN 与合规指引
   - locale zh-HK / zh-TW → 繁体字体服务
-  - local / content → 几乎不露出（D5 既定）
+  - MotuCloud（免版权图片与开源图标）：面向全部场景的基础资源服务，content/local 人群的主要推荐项；后续考虑转接 WordPress Photos（feibisi 2026-09-11 口径）
+  - local / content → 商业内容几乎不露出（D5 既定）
 - 不提供遥测开关（feibisi 既定决定）；画像仅用于露出与默认组合，不用于差异化限速。
 
 ## 决定 D：对在途物的影响
