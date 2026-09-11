@@ -52,6 +52,7 @@ final class AdminModule implements Module {
 		'wpcy-connect',
 		'wpcy-services',
 		'wpcy-diagnose',
+		'wpcy-onboarding',
 	);
 
 	/**
@@ -167,6 +168,18 @@ final class AdminModule implements Module {
 			'wpcy-diagnose',
 			array( $this, 'render' )
 		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( '首次设置', 'wp-china-yes' ),
+			__( '首次设置', 'wp-china-yes' ),
+			$cap,
+			'wpcy-onboarding',
+			array( $this, 'render' )
+		);
+		if ( function_exists( 'remove_submenu_page' ) ) {
+			remove_submenu_page( self::SLUG, 'wpcy-onboarding' );
+		}
 	}
 
 	/**
@@ -314,8 +327,8 @@ final class AdminModule implements Module {
 	 */
 	public static function links(): array {
 		return array(
-			'help'      => 'https://wpcy.com/docs/',
-			'feedback'  => 'https://wpcy.com/feedback/',
+			'help'      => 'https://wpcy.com/go/support',
+			'feedback'  => 'https://wpcy.com/feedback',
 			'changelog' => 'https://wpcy.com/changelog/',
 			'site'      => 'https://wpcy.com/',
 			'brands'    => array(
@@ -370,6 +383,25 @@ final class AdminModule implements Module {
 				},
 				'sanitize_callback' => static function ( $value ) {
 					return (bool) $value;
+				},
+			)
+		);
+
+		register_meta(
+			'user',
+			'wpcy_settings_view',
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'default'           => 'simple',
+				'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+					unset( $allowed, $meta_key );
+
+					return current_user_can( 'edit_user', (int) $object_id );
+				},
+				'sanitize_callback' => static function ( $value ) {
+					return 'advanced' === $value ? 'advanced' : 'simple';
 				},
 			)
 		);

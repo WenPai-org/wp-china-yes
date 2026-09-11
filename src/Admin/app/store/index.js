@@ -35,6 +35,7 @@ const DEFAULT_STATE = {
 	clientProbeLoaded: false,
 	links: {},
 	providers: {},
+	siteContext: {},
 	pluginVersion: '',
 	draft: null,
 	saving: false,
@@ -137,7 +138,7 @@ const actions = {
 		try {
 			const payload = yield {
 				type: 'API_FETCH',
-				request: { path: '/wpcy/v1/events?per_page=4' },
+				request: { path: '/wpcy/v1/events?per_page=6' },
 			};
 			return { type: 'SET_EVENTS', events: payload };
 		} catch ( error ) {
@@ -179,6 +180,40 @@ const actions = {
 		} catch ( error ) {
 			void error;
 			return failFlag( 'SET_CLIENT_PROBE_ERROR' );
+		}
+	},
+	*patchSettings( data ) {
+		yield { type: 'SET_SAVING', saving: true };
+		try {
+			const settings = yield {
+				type: 'API_FETCH',
+				request: {
+					path: '/wpcy/v1/settings',
+					method: 'PUT',
+					data,
+				},
+			};
+			yield { type: 'SET_SETTINGS', settings };
+			yield { type: 'SET_SAVING', saving: false };
+			return { type: 'SET_NOTICE', notice: null };
+		} catch ( error ) {
+			yield { type: 'SET_SAVING', saving: false };
+			return {
+				type: 'SET_NOTICE',
+				notice: {
+					status: 'error',
+					message:
+						error?.code === 'wpcy_invalid_schema'
+							? __(
+									'暂时无法保存设置，请检查填写内容后重试。',
+									'wp-china-yes'
+							  )
+							: __(
+									'暂时无法保存设置，请稍后重试。',
+									'wp-china-yes'
+							  ),
+				},
+			};
 		}
 	},
 	*saveSettings( draft ) {
@@ -300,6 +335,7 @@ function reducer( state = DEFAULT_STATE, action ) {
 				capabilities: action.bootstrap.capabilities || {},
 				links: action.bootstrap.links || {},
 				providers: action.bootstrap.providers || {},
+				siteContext: action.bootstrap.siteContext || {},
 				pluginVersion: action.bootstrap.pluginVersion || '',
 				draft: connectDraftFromSettings( settings ),
 			};
@@ -463,6 +499,9 @@ const selectors = {
 	},
 	getProviders( state ) {
 		return state.providers || {};
+	},
+	getSiteContext( state ) {
+		return state.siteContext || {};
 	},
 	getPluginVersion( state ) {
 		return state.pluginVersion || '';

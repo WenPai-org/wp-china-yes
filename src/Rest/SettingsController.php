@@ -106,7 +106,8 @@ final class SettingsController {
 
 		$labels = array(
 			'domestic'    => __( '国内站', 'wp-china-yes' ),
-			'crossborder' => __( '跨境 / 外贸站', 'wp-china-yes' ),
+			'crossborder' => __( '跨境 · 外贸站', 'wp-china-yes' ),
+			'inbound'     => __( '内贸 · 进中国站', 'wp-china-yes' ),
 			'mixed'       => __( '混合站', 'wp-china-yes' ),
 		);
 

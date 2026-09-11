@@ -202,19 +202,21 @@ test.describe( 'overview', () => {
 		await expect( tabs.nth( 2 ) ).toContainText( '服务' );
 		await expect( tabs.nth( 3 ) ).toContainText( '诊断' );
 		await expect( page.locator( '.hero-l h1' ) ).toContainText(
-			'原本在国内打不开的'
+			'国内访问 WordPress 的事'
 		);
 		expect( await page.locator( '.btn-primary' ).count() ).toBeLessThanOrEqual(
 			1
 		);
 	} );
 
-	test( '国内正常：连通栈已接通', async ( { page } ) => {
+	test( '国内正常：核心服务已接通', async ( { page } ) => {
 		await mockOverview( page );
 		await openAdminPage( page, 'wpcy' );
-		await expect( page.getByText( 'WordPress 更新与安装包' ) ).toBeVisible();
+		await expect( page.getByText( '更新与安装包' ).first() ).toBeVisible();
 		await expect( page.getByText( '已接通' ).first() ).toBeVisible();
 		await expect( page.getByText( '运行诊断' ) ).toBeVisible();
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/4' );
+		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
 	} );
 
 	test( '跨境：下一步绑定本站，主按钮唯一', async ( { page } ) => {
@@ -302,50 +304,13 @@ test.describe( 'overview', () => {
 		expect( await page.locator( '.btn-primary' ).count() ).toBe( 1 );
 	} );
 
-	test( '折叠写入 localStorage 并 POST user meta', async ( { page } ) => {
-		const posts = [];
-		await page.route( ( url ) => {
-			try {
-				return restPath( url.href ).indexOf( '/wp/v2/users/me' ) === 0;
-			} catch ( error ) {
-				void error;
-				return false;
-			}
-		}, async ( route ) => {
-			if ( route.request().method().toUpperCase() === 'POST' ) {
-				posts.push( route.request().postDataJSON() );
-				await route.fulfill( {
-					status: 200,
-					contentType: 'application/json',
-					body: JSON.stringify( { id: 1 } ),
-				} );
-				return;
-			}
-			await route.fulfill( {
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify( { id: 1, meta: {} } ),
-			} );
-		} );
+	test( 'Hero 无折叠，锚点查看详情', async ( { page } ) => {
 		await mockOverview( page );
 		await openAdminPage( page, 'wpcy' );
-		await page.locator( '.hero-collapse' ).click();
-		const stored = await page.evaluate( () =>
-			window.localStorage.getItem( 'wpcy_overview_hero_collapsed' )
-		);
-		expect( stored ).toBe( '1' );
-		await expect( page.locator( '.hero-w' ) ).not.toHaveClass( /is-open/ );
-		await expect
-			.poll( () => posts.length )
-			.toBeGreaterThan( 0 );
-		expect(
-			posts.some(
-				( body ) =>
-					body &&
-					body.meta &&
-					body.meta.wpcy_overview_hero_collapsed === true
-			)
-		).toBe( true );
+		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
+		await expect( page.locator( '.hero-a-more' ) ).toContainText( '查看详情' );
+		await expect( page.locator( '.svc-mx' ) ).toBeVisible();
+		await expect( page.locator( '.evx' ) ).toBeVisible();
 	} );
 
 	test( '/stats 挂起 10 秒后出现 LoadError', async ( { page } ) => {

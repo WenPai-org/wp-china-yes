@@ -330,12 +330,10 @@ test.describe( 'apps A1–A10', () => {
 		await expect(
 			page.getByRole( 'button', { name: '绑定本站' } )
 		).toBeVisible();
-		await expect( page.getByTestId( 'wpcy-quota-empty' ) ).toHaveText(
+		await expect( page.getByTestId( 'wpcy-quota-empty' ) ).toContainText(
 			'绑定后显示'
 		);
-		await expect( page.getByTestId( 'wpcy-apps-empty' ) ).toHaveText(
-			'绑定后显示'
-		);
+		await expect( page.getByTestId( 'wpcy-apps-empty' ) ).toBeVisible();
 	} );
 
 	test( 'A2: mock 绑定成功', async ( { page } ) => {
@@ -347,29 +345,13 @@ test.describe( 'apps A1–A10', () => {
 		);
 	} );
 
-	test( 'A3: 权益表三态夹具', async ( { page } ) => {
+	test( 'A3: 绑定后解锁与可用服务检测行', async ( { page } ) => {
 		await mockBound( page );
-		await mockQuotas( page );
 		await mockApps( page );
 		await openAdminPage( page, 'wpcy-services' );
-
-		await expect( page.getByText( '可用', { exact: true } ) ).toBeVisible();
-		await expect( page.getByText( '本期已用尽' ) ).toBeVisible();
-		await expect(
-			page
-				.getByRole( 'row' )
-				.filter( { hasText: 'admincdn' } )
-				.getByText( '已到期' )
-		).toBeVisible();
-
-		const getLinks = page.getByRole( 'link', { name: '获取' } );
-		await expect( getLinks ).toHaveCount( 2 );
-		const hrefs = await getLinks.evaluateAll( ( nodes ) =>
-			nodes.map( ( node ) => node.getAttribute( 'href' ) || '' )
-		);
-		for ( const href of hrefs ) {
-			expect( href.startsWith( GO_PREFIX ) ).toBe( true );
-		}
+		await expect( page.getByText( '可用服务' ) ).toBeVisible();
+		await expect( page.locator( '.detect-line' ) ).toBeVisible();
+		await expect( page.getByText( '权益与配额' ) ).toHaveCount( 0 );
 	} );
 
 	test( 'A4: 加载 mock 工具', async ( { page } ) => {
@@ -419,7 +401,7 @@ test.describe( 'apps A1–A10', () => {
 		await expect( dialog ).toBeVisible();
 		await expect( dialog.getByText( '需要权益才能使用' ) ).toBeVisible();
 		await expect(
-			dialog.getByRole( 'link', { name: '获取' } )
+			dialog.getByRole( 'link', { name: '了解 →' } )
 		).toHaveAttribute( 'href', new RegExp( '^' + GO_PREFIX ) );
 		await expect( page.getByTestId( 'wpcy-app-iframe' ) ).toHaveCount( 0 );
 	} );
@@ -461,12 +443,9 @@ test.describe( 'apps A1–A10', () => {
 		await openAdminPage( page, 'wpcy-services' );
 
 		await expect(
-			page.getByLabel( '小工具' ).getByText( '小工具目录暂时不可用' )
+			page.getByText( '小工具目录暂时不可用' )
 		).toBeVisible();
-		await expect(
-			page.getByRole( 'heading', { name: '站点绑定' } )
-		).toBeVisible();
-		await expect( page.getByText( '已绑定' ) ).toBeVisible();
+		await expect( page.getByText( '已绑定' ).first() ).toBeVisible();
 	} );
 
 	test( 'A9: 双层 iframe', async ( { page, context } ) => {

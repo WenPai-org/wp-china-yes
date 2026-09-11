@@ -6,15 +6,17 @@
 /**
  * @param {Object}                    props
  * @param {string}                    [props.href]
+ * @param {string}                    [props.className]
  * @param {import('react').ReactNode} props.children
  */
-export default function Scope( { href, children } ) {
+export default function Scope( { href, children, className = '' } ) {
+	const cls = [ 'scope', className ].filter( Boolean ).join( ' ' );
 	if ( href ) {
 		return (
-			<a className="scope" href={ href }>
+			<a className={ cls } href={ href }>
 				{ children }
 			</a>
 		);
 	}
-	return <span className="scope">{ children }</span>;
+	return <span className={ cls }>{ children }</span>;
 }

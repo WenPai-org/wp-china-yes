@@ -6,6 +6,7 @@
 import {
 	RiAppsLine,
 	RiArrowDownSLine,
+	RiArrowLeftRightLine,
 	RiArrowRightLine,
 	RiArrowRightUpLine,
 	RiBankCardLine,
@@ -90,6 +91,7 @@ export const RI = {
 	sliders: 'eye-line',
 	image: 'image-line',
 	chevron: 'arrow-down-s-line',
+	swap: 'arrow-left-right-line',
 	up: 'arrow-right-up-line',
 	spinner: 'loader-4-line',
 	stethoscope: 'stethoscope-line',
@@ -140,6 +142,7 @@ const COMPONENTS = {
 	sliders: RiEyeLine,
 	image: RiImageLine,
 	chevron: RiArrowDownSLine,
+	swap: RiArrowLeftRightLine,
 	up: RiArrowRightUpLine,
 	spinner: RiLoader4Line,
 	stethoscope: RiStethoscopeLine,

@@ -14,6 +14,7 @@ import './style.css';
 const Connect = lazy( () => import( './pages/Connect' ) );
 const Services = lazy( () => import( './pages/Services' ) );
 const Diagnose = lazy( () => import( './pages/Diagnose' ) );
+const Onboarding = lazy( () => import( './pages/Onboarding' ) );
 
 /**
  * Configure api-fetch with the PHP bootstrap nonce and REST root.
@@ -44,6 +45,9 @@ function PageForSlug( { slug } ) {
 	}
 	if ( slug === PAGES.diagnose ) {
 		return <Diagnose />;
+	}
+	if ( slug === PAGES.onboarding ) {
+		return <Onboarding />;
 	}
 	return <Overview />;
 }

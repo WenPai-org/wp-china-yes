@@ -1,5 +1,5 @@
 {
-	"run": "m-ui-1",
+	"run": "m-ui-1c",
 	"screens": [
 		{
 			"id": "overview-domestic",
@@ -7,7 +7,7 @@
 			"url": "/wp-admin/admin.php?page=wpcy",
 			"filename": "overview-国内正常.png",
 			"state": "国内正常",
-			"waitForText": "原本在国内打不开的",
+			"waitForText": "国内访问 WordPress 的事",
 			"prep": {
 				"kind": "rest-mock",
 				"bootstrap": {
@@ -1380,8 +1380,7 @@
 			"state": "默认",
 			"waitForText": "文派叶子 · 恢复模式",
 			"prep": {
-				"kind": "none",
-				"wpEval": "$r=new \\WenPai\\ChinaYes\\Config\\Repository(); $r->set(\"recovery_mode\", false);"
+				"kind": "none"
 			}
 		},
 		{
@@ -1392,8 +1391,8 @@
 			"state": "已开启",
 			"waitForText": "恢复模式已开启",
 			"prep": {
-				"kind": "none",
-				"wpEval": "$r=new \\WenPai\\ChinaYes\\Config\\Repository(); $r->set(\"recovery_mode\", true);"
+				"kind": "need-fixture",
+				"reason": "Studio 本机无 wp-env；恢复模式已开启需 WP-CLI 写 recovery_mode"
 			}
 		}
 	]

@@ -134,4 +134,19 @@ class ProfileTest extends TestCase {
 		$this->assertSame( 9, $out['data_residency']['ruleset_version'] );
 		$this->assertSame( array( 'x' ), $out['apps']['disabled'] );
 	}
+
+	/**
+	 * Inbound: frontend-only public assets / avatar; wordpress.org off.
+	 */
+	public function test_inbound_defaults() {
+		$row = Profile::apply_defaults( 'inbound' );
+
+		$this->assertSame( 'off', $row['connectivity']['wordpress_org'] );
+		$this->assertSame( 'frontend', $row['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'off', $row['connectivity']['avatar']['admin'] );
+		$this->assertSame( 'cravatar_cn', $row['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'off', $row['connectivity']['heartbeat'] );
+		$this->assertSame( 'allow', $row['connectivity']['dashboard_feeds'] );
+		$this->assertSame( 'off', $row['admin_assets'] );
+	}
 }

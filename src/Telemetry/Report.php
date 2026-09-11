@@ -138,7 +138,7 @@ final class Report {
 	private function profile(): string {
 		if ( $this->config instanceof Repository ) {
 			$profile = $this->config->get( 'profile', 'domestic' );
-			if ( in_array( $profile, array( 'domestic', 'crossborder', 'mixed' ), true ) ) {
+			if ( in_array( $profile, array( 'domestic', 'crossborder', 'inbound', 'mixed' ), true ) ) {
 				return $profile;
 			}
 		}

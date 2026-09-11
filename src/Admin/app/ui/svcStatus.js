@@ -7,6 +7,7 @@
 
 import { __, sprintf } from '@wordpress/i18n';
 import { relTime } from './relTime';
+import { profileLabel as sceneLabel } from './profiles';
 
 const RANK = { down: 3, fallback: 2, ok: 1 };
 
@@ -179,19 +180,26 @@ export function isAdminOnly( settings ) {
 }
 
 /**
+ * Frontend-only public assets / avatar (inbound).
+ *
+ * @param {Object} settings
+ * @return {boolean} Value.
+ */
+export function isFrontendOnly( settings ) {
+	if ( settings?.profile === 'inbound' ) {
+		return true;
+	}
+	return settings?.connectivity?.public_assets?.scope === 'frontend';
+}
+
+/**
  * Profile display name.
  *
  * @param {string} profile
  * @return {string} Value.
  */
 export function profileLabel( profile ) {
-	if ( profile === 'crossborder' ) {
-		return __( '跨境 · 外贸站', 'wp-china-yes' );
-	}
-	if ( profile === 'mixed' ) {
-		return __( '混合站', 'wp-china-yes' );
-	}
-	return __( '国内站', 'wp-china-yes' );
+	return sceneLabel( profile );
 }
 
 /**
@@ -243,6 +251,7 @@ export function buildSvcRows( {
 			enabled: assetsOn,
 			domestic,
 			adminOnly: isAdminOnly( settings ),
+			frontendOnly: isFrontendOnly( settings ),
 			agg: pub,
 			provider: admincdn,
 		} )
@@ -253,6 +262,7 @@ export function buildSvcRows( {
 			enabled: avatarOn,
 			domestic,
 			adminOnly: isAdminOnly( settings ),
+			frontendOnly: isFrontendOnly( settings ),
 			agg: ava,
 			provider: cravatar,
 		} )
@@ -263,43 +273,48 @@ export function buildSvcRows( {
 }
 
 function orgRow( { recovery, enabled, domestic, agg, provider } ) {
-	const name = __( 'WordPress 更新与安装包', 'wp-china-yes' );
+	const name = __( '更新与安装包', 'wp-china-yes' );
 	if ( recovery ) {
-		return {
+		return matrixRow( {
 			key: 'paused',
+			dot: 'paused',
 			icon: 'download',
 			name,
-			line: __( '未接管 · 直连 WordPress.org', 'wp-china-yes' ),
+			provider,
+			word: __( '未接管', 'wp-china-yes' ),
 			status: 'paused',
-			word: __( '已停用', 'wp-china-yes' ),
-			tone: '',
-		};
+			agg,
+			tooltip: name,
+		} );
 	}
 	if ( ! enabled ) {
 		if ( ! domestic ) {
-			return {
+			return matrixRow( {
 				key: 'direct',
+				dot: 'direct',
 				icon: 'download',
 				name,
-				line: __(
-					'直连 WordPress.org · 服务器在海外不需镜像',
-					'wp-china-yes'
-				),
-				status: 'direct',
+				provider: '',
 				word: __( '直连', 'wp-china-yes' ),
-				tone: '',
-			};
+				status: 'direct',
+				agg,
+				tooltip:
+					__( '更新', 'wp-china-yes' ) +
+					' · ' +
+					__( '直连 WordPress.org', 'wp-china-yes' ),
+			} );
 		}
-		return {
+		return matrixRow( {
 			key: 'off',
+			dot: 'off',
 			icon: 'download',
 			name,
-			line: __( '未启用', 'wp-china-yes' ),
-			status: 'off',
+			provider,
 			word: __( '未启用', 'wp-china-yes' ),
-			tone: '',
+			status: 'off',
 			action: 'enable-connect',
-		};
+			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+		} );
 	}
 	return fromAgg( {
 		icon: 'download',
@@ -320,37 +335,44 @@ function assetsRow( {
 	enabled,
 	domestic,
 	adminOnly,
+	frontendOnly,
 	agg,
 	provider,
 } ) {
-	const name = adminOnly
-		? __( '后台公共库', 'wp-china-yes' )
-		: __( '公共库', 'wp-china-yes' );
-	const extra = adminOnly ? __( '只在后台', 'wp-china-yes' ) : '';
+	const name = __( '公共库加速', 'wp-china-yes' );
+	let extra = '';
+	if ( adminOnly ) {
+		extra = __( '只在后台', 'wp-china-yes' );
+	} else if ( frontendOnly ) {
+		extra = __( '只在前台', 'wp-china-yes' );
+	}
 	if ( recovery ) {
-		return {
+		return matrixRow( {
 			key: 'paused',
+			dot: 'paused',
 			icon: 'bolt',
 			name,
 			extra,
-			line: __( '未接管 · 直连原始源', 'wp-china-yes' ),
+			provider,
+			word: __( '未接管', 'wp-china-yes' ),
 			status: 'paused',
-			word: __( '已停用', 'wp-china-yes' ),
-			tone: '',
-		};
+			agg,
+			tooltip: name,
+		} );
 	}
 	if ( ! enabled ) {
-		return {
+		return matrixRow( {
 			key: 'off',
+			dot: 'off',
 			icon: 'bolt',
 			name,
 			extra,
-			line: __( '未启用', 'wp-china-yes' ),
-			status: 'off',
+			provider,
 			word: __( '未启用', 'wp-china-yes' ),
-			tone: '',
+			status: 'off',
 			action: 'enable-connect',
-		};
+			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+		} );
 	}
 	const okLine = domestic
 		? __( '经 adminCDN 接通 · 原始源在国内不可达', 'wp-china-yes' )
@@ -362,6 +384,7 @@ function assetsRow( {
 		agg,
 		provider,
 		okLine,
+		tooltip: extra ? name + ' · ' + extra : name,
 	} );
 }
 
@@ -370,37 +393,44 @@ function avatarRow( {
 	enabled,
 	domestic,
 	adminOnly,
+	frontendOnly,
 	agg,
 	provider,
 } ) {
-	const name = adminOnly
-		? __( '后台头像', 'wp-china-yes' )
-		: __( '头像', 'wp-china-yes' );
-	const extra = adminOnly ? __( '只在后台', 'wp-china-yes' ) : '';
+	const name = __( '头像', 'wp-china-yes' );
+	let extra = '';
+	if ( adminOnly ) {
+		extra = __( '只在后台', 'wp-china-yes' );
+	} else if ( frontendOnly ) {
+		extra = __( '只在前台', 'wp-china-yes' );
+	}
 	if ( recovery ) {
-		return {
+		return matrixRow( {
 			key: 'paused',
+			dot: 'paused',
 			icon: 'user',
 			name,
 			extra,
-			line: __( '未接管 · 直连 Gravatar', 'wp-china-yes' ),
+			provider,
+			word: __( '未接管', 'wp-china-yes' ),
 			status: 'paused',
-			word: __( '已停用', 'wp-china-yes' ),
-			tone: '',
-		};
+			agg,
+			tooltip: name,
+		} );
 	}
 	if ( ! enabled ) {
-		return {
+		return matrixRow( {
 			key: 'off',
+			dot: 'off',
 			icon: 'user',
 			name,
 			extra,
-			line: __( '未启用', 'wp-china-yes' ),
-			status: 'off',
+			provider,
 			word: __( '未启用', 'wp-china-yes' ),
-			tone: '',
+			status: 'off',
 			action: 'enable-connect',
-		};
+			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+		} );
 	}
 	const okLine = domestic
 		? __( '经 Cravatar 接通 · Gravatar 在国内空白', 'wp-china-yes' )
@@ -412,55 +442,65 @@ function avatarRow( {
 		agg,
 		provider,
 		okLine,
+		tooltip: extra ? name + ' · ' + extra : name,
 	} );
 }
 
 function fontRow( { recovery, bound, settings } ) {
 	const name = __( '中文字体', 'wp-china-yes' );
+	const provider = 'Windfonts';
 	if ( recovery ) {
-		return {
+		return matrixRow( {
 			key: 'paused',
+			dot: 'paused',
 			icon: 'font',
 			name,
-			line: __( '未启用', 'wp-china-yes' ),
+			provider,
+			word: __( '未启用', 'wp-china-yes' ),
 			status: 'paused',
-			word: __( '已停用', 'wp-china-yes' ),
-			tone: '',
-		};
+			tooltip: name,
+		} );
 	}
 	if ( ! bound ) {
-		return {
+		return matrixRow( {
 			key: 'off',
+			dot: 'off',
 			icon: 'font',
 			name,
-			line: __( 'Windfonts 提供 · 绑定本站后可用', 'wp-china-yes' ),
-			status: 'off',
+			provider,
 			word: __( '未启用', 'wp-china-yes' ),
-			tone: '',
+			status: 'off',
 			action: 'enable-services',
-		};
+			line: __( 'Windfonts 提供 · 绑定本站后可用', 'wp-china-yes' ),
+			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+		} );
 	}
 	if ( settings?.modules?.windfonts ) {
-		return {
+		return matrixRow( {
 			key: 'on',
+			dot: 'ok',
 			icon: 'font',
 			name,
-			line: __( '经 Windfonts 接通', 'wp-china-yes' ),
-			status: 'on',
+			provider,
 			word: __( '已接通', 'wp-china-yes' ),
+			status: 'on',
 			tone: 'ok',
-		};
+			line: __( '经 Windfonts 接通', 'wp-china-yes' ),
+			tooltip: name,
+		} );
 	}
-	return {
+	return matrixRow( {
 		key: 'off',
+		dot: 'off',
 		icon: 'font',
 		name,
-		line: __( '未启用', 'wp-china-yes' ),
-		status: 'off',
+		provider,
 		word: __( '未启用', 'wp-china-yes' ),
-		tone: '',
+		status: 'off',
 		action: 'enable-connect',
-	};
+		line: __( '未启用', 'wp-china-yes' ),
+		tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+	} );
 }
 
 /**
@@ -486,68 +526,138 @@ export function unreachableMinutes( iso, now = Date.now() ) {
 	);
 }
 
-function uncheckedRow( { icon, name, extra } ) {
+/**
+ * Shared matrix row shape for the core-services card and hero dots.
+ *
+ * @param {Object} args
+ * @return {Object} Row.
+ */
+function matrixRow( args ) {
+	const agg = args.agg || {};
+	const meta = metaFromAgg( agg );
 	return {
-		key: 'unchecked',
-		icon,
-		name,
-		extra,
-		line: __( '未检查', 'wp-china-yes' ),
-		status: 'unchecked',
-		word: __( '未检查', 'wp-china-yes' ),
-		tone: '',
-		groupResult: null,
+		key: args.key,
+		icon: args.icon,
+		name: args.name,
+		extra: args.extra || '',
+		provider: args.provider || '',
+		dot: args.dot || '',
+		word: args.word,
+		status: args.status,
+		tone: args.tone || '',
+		line: args.line || '',
+		desc: args.desc || '',
+		action: args.action || '',
+		meta: args.action ? '' : args.meta || meta,
+		tooltip: args.tooltip || args.name,
+		groupResult: args.groupResult,
+		latency_ms: agg.latency_ms,
+		checked_at: agg.checked_at,
 	};
 }
 
-export function fromAgg( { icon, name, extra, agg, provider, okLine } ) {
-	if ( ! agg || ! agg.result ) {
-		return uncheckedRow( { icon, name, extra } );
+function metaFromAgg( agg ) {
+	if ( ! agg || ( agg.latency_ms === null && ! agg.checked_at ) ) {
+		return '';
 	}
-	if ( agg.result === 'fallback' ) {
-		const when = unreachableMinutes( agg.checked_at );
-		return {
-			key: 'fallback',
-			icon,
-			name,
-			extra,
-			line:
-				provider +
-				' ' +
-				__( '不可达', 'wp-china-yes' ) +
-				( when ? ' ' + when : '' ) +
-				' · ' +
-				__( '已回原始上游', 'wp-china-yes' ),
-			status: 'fallback',
-			word: __( '已回退', 'wp-china-yes' ),
-			tone: 'warn',
-			groupResult: 'fallback',
-		};
+	const parts = [];
+	if ( agg.latency_ms !== null && agg.latency_ms !== undefined ) {
+		parts.push( formatMs( agg.latency_ms ) );
 	}
-	if ( agg.result === 'down' ) {
-		return {
-			key: 'down',
-			icon,
-			name,
-			extra,
-			line: provider + ' ' + __( '不可达', 'wp-china-yes' ),
-			status: 'down',
-			word: __( '不可达', 'wp-china-yes' ),
-			tone: 'bad',
-			groupResult: 'down',
-		};
+	if ( agg.checked_at ) {
+		parts.push( relTime( agg.checked_at ) );
 	}
-	return {
-		key: 'on',
+	return parts.join( ' · ' );
+}
+
+function uncheckedRow( { icon, name, extra, provider, tooltip } ) {
+	return matrixRow( {
+		key: 'unchecked',
+		dot: 'off',
 		icon,
 		name,
 		extra,
-		line: okLine,
-		status: 'on',
+		provider,
+		word: __( '未检查', 'wp-china-yes' ),
+		status: 'unchecked',
+		line: __( '未检查', 'wp-china-yes' ),
+		tooltip: tooltip || name,
+		groupResult: null,
+	} );
+}
+
+export function fromAgg( {
+	icon,
+	name,
+	extra,
+	agg,
+	provider,
+	okLine,
+	tooltip,
+} ) {
+	if ( ! agg || ! agg.result ) {
+		return uncheckedRow( { icon, name, extra, provider, tooltip } );
+	}
+	if ( agg.result === 'fallback' ) {
+		const when = unreachableMinutes( agg.checked_at );
+		const line =
+			provider +
+			' ' +
+			__( '不可达', 'wp-china-yes' ) +
+			( when ? ' ' + when : '' ) +
+			' · ' +
+			__( '已回原始上游', 'wp-china-yes' );
+		return matrixRow( {
+			key: 'fallback',
+			dot: 'warn',
+			icon,
+			name,
+			extra,
+			provider,
+			word: __( '已回退', 'wp-china-yes' ),
+			status: 'fallback',
+			tone: 'warn',
+			line,
+			desc: line,
+			agg,
+			tooltip: name + ' · ' + __( '已回退', 'wp-china-yes' ),
+			groupResult: 'fallback',
+		} );
+	}
+	if ( agg.result === 'down' ) {
+		const line = provider + ' ' + __( '不可达', 'wp-china-yes' );
+		return matrixRow( {
+			key: 'down',
+			dot: 'bad',
+			icon,
+			name,
+			extra,
+			provider,
+			word: __( '不可达', 'wp-china-yes' ),
+			status: 'down',
+			tone: 'bad',
+			line,
+			desc: line,
+			agg,
+			tooltip: name,
+			groupResult: 'down',
+		} );
+	}
+	return matrixRow( {
+		key: 'on',
+		dot: 'ok',
+		icon,
+		name,
+		extra,
+		provider,
 		word: __( '已接通', 'wp-china-yes' ),
+		status: 'on',
 		tone: 'ok',
+		line: okLine,
+		agg,
+		tooltip: tooltip || name,
 		groupResult: agg.result,
-	};
+	} );
 }
 
 /**
@@ -620,5 +730,8 @@ export function buildRouteRows( { targets, settings, providers } ) {
  * @return {string} Value.
  */
 export function formatMs( ms ) {
+	if ( ms === null || ms === undefined || Number.isNaN( Number( ms ) ) ) {
+		return '—';
+	}
 	return Number( ms ).toLocaleString( 'en-US' ) + ' ms';
 }

@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * D2 matrix. Values are frozen; do not invent a fourth profile.
+ * D2 matrix plus inbound (ADR-004 2026-09-11).
  */
 final class Profile {
 
@@ -40,7 +40,7 @@ final class Profile {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param string $profile domestic|crossborder|mixed.
+	 * @param string $profile domestic|crossborder|inbound|mixed.
 	 * @return array<string, mixed>
 	 */
 	public static function apply_defaults( string $profile ): array {
@@ -129,6 +129,25 @@ final class Profile {
 					),
 					'heartbeat'       => 'on',
 					'dashboard_feeds' => 'block',
+				),
+				'modules'      => array(
+					'windfonts' => false,
+				),
+			),
+			'inbound'     => array(
+				'admin_assets' => 'off',
+				'connectivity' => array(
+					'wordpress_org'   => 'off',
+					'public_assets'   => array(
+						'items' => $five,
+						'scope' => 'frontend',
+					),
+					'avatar'          => array(
+						'admin'    => 'off',
+						'frontend' => 'cravatar_cn',
+					),
+					'heartbeat'       => 'off',
+					'dashboard_feeds' => 'allow',
 				),
 				'modules'      => array(
 					'windfonts' => false,

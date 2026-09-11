@@ -23,18 +23,16 @@ export function Skel( { className = 'skel-line' } ) {
 export default function Skeleton() {
 	return (
 		<div aria-busy="true" aria-live="polite">
-			<article className="card hero-w is-open">
-				<div className="hero-body hero-body-v6">
+			<article className="card hero-w is-open hero-v7">
+				<div className="hero-body hero-body-v7">
 					<div className="hero-l">
 						<Skel className="skel-title" />
 						<Skel />
 						<Skel />
 						<Skel />
 					</div>
-					<div className="hero-svc">
+					<div className="hero-a">
 						<Skel className="skel-title" />
-						<Skel />
-						<Skel />
 						<Skel />
 						<Skel />
 					</div>

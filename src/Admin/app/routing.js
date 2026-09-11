@@ -8,6 +8,7 @@ export const PAGES = {
 	services: 'wpcy-services',
 	diagnose: 'wpcy-diagnose',
 	recovery: 'wpcy-recovery',
+	onboarding: 'wpcy-onboarding',
 };
 
 /**

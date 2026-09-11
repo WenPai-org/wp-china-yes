@@ -1,21 +1,23 @@
 /**
- * 文派服务: binding card, quota table, app grid, sandbox iframe.
+ * Services: binding, unlock list, providers, catalog, apps sandbox.
  */
 
-import { __ } from '@wordpress/i18n';
-import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
-import {
-	Button,
-	Card,
-	CardBody,
-	Modal,
-	Notice,
-	Spinner,
-} from '@wordpress/components';
-import { DataViews } from '@wordpress/dataviews/wp';
+import { __, sprintf } from '@wordpress/i18n';
+import { useEffect, useRef, useState } from '@wordpress/element';
+import { Modal } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
+import { useSelect } from '@wordpress/data';
 import PageShell from '../components/PageShell';
-import StatusDot from '../components/StatusDot';
+import { STORE_NAME } from '../store';
+import Icon from '../ui/icons';
+import Btn from '../ui/Btn';
+import Pill from '../ui/Pill';
+import Prov from '../ui/Prov';
+import Scope from '../ui/Scope';
+import Notice from '../ui/Notice';
+import Empty from '../ui/Empty';
+import { CardHead, CardFoot, Tile } from '../ui/Card';
+import Sec from '../ui/Sec';
 import {
 	IFRAME_REFERRERPOLICY,
 	IFRAME_SANDBOX,
@@ -24,39 +26,16 @@ import {
 } from '../apps/Bridge';
 
 const HOST_ORIGIN = snapshotHostOrigin();
-
-const QUOTA = 'entitl' + 'ement';
 const BINDING_PATH = '/wpcy/v1/binding';
 const APPS_PATH = '/wpcy/v1/apps';
-const QUOTA_LIST_PATH = '/wpcy/v1/' + QUOTA + 's';
 const GO_PREFIX = 'https://wpcy.com/go/';
-
-const TABLE_VIEW = {
-	type: 'table',
-	search: '',
-	filters: [],
-	page: 1,
-	perPage: 20,
-	fields: [],
-};
-
-const GRID_VIEW = {
-	type: 'grid',
-	search: '',
-	filters: [],
-	page: 1,
-	perPage: 20,
-	fields: [],
-	layout: {
-		previewSize: 220,
-	},
-};
+const QUOTA = 'entitl' + 'ement';
 
 /**
  * Last 8 characters of a site hash.
  *
- * @param {string} hash Site hash.
- * @return {string} Last eight characters.
+ * @param {string} hash
+ * @return {string} Tail.
  */
 function hashTail( hash ) {
 	if ( ! hash || typeof hash !== 'string' ) {
@@ -65,60 +44,21 @@ function hashTail( hash ) {
 	return hash.slice( -8 );
 }
 
-/**
- * UTC ISO → `YYYY-MM-DD HH:mm` local-looking UTC clock.
- *
- * @param {string} iso UTC ISO 8601 timestamp.
- * @return {string} Display stamp, or em dash.
- */
-function formatStamp( iso ) {
+function hashMask( hash ) {
+	if ( ! hash || hash.length < 8 ) {
+		return hash || '';
+	}
+	return hash.slice( 0, 4 ) + '…' + hash.slice( -4 );
+}
+
+function formatDate( iso ) {
 	if ( ! iso || typeof iso !== 'string' ) {
 		return '—';
 	}
-	const m = iso.match( /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/ );
-	if ( ! m ) {
-		return iso;
-	}
-	return m[ 1 ] + ' ' + m[ 2 ];
+	const m = iso.match( /^(\d{4}-\d{2}-\d{2})/ );
+	return m ? m[ 1 ] : iso;
 }
 
-/**
- * Status copy from the word table. Does not inspect plans.
- *
- * @param {string} status Internal status.
- * @return {{tone: string, label: string}} Word-table copy.
- */
-function quotaStatus( status ) {
-	if ( status === 'active' ) {
-		return {
-			tone: 'success',
-			label: __( '可用', 'wp-china-yes' ),
-		};
-	}
-	if ( status === 'exhausted' ) {
-		return {
-			tone: 'warning',
-			label: __( '本期已用尽', 'wp-china-yes' ),
-		};
-	}
-	if ( status === 'expired' ) {
-		return {
-			tone: 'neutral',
-			label: __( '已到期', 'wp-china-yes' ),
-		};
-	}
-	return {
-		tone: 'neutral',
-		label: status || '—',
-	};
-}
-
-/**
- * Localized name from a manifest name map.
- *
- * @param {Object|string} name Localized map or string.
- * @return {string} Display name.
- */
 function localized( name ) {
 	if ( ! name ) {
 		return '';
@@ -129,402 +69,63 @@ function localized( name ) {
 	return name.zh_CN || name.en_US || '';
 }
 
-/**
- * Quota row from GET /apps item.
- *
- * @param {Object} app Manifest row.
- * @return {Object} Status plus quota.
- */
-function appQuota( app ) {
-	const summary = app && app[ QUOTA + '_status' ];
-	if ( summary && typeof summary === 'object' ) {
-		return summary;
-	}
-	return { status: 'active', quota: {} };
-}
-
-/**
- * Whether this tool may mount the sandbox iframe.
- *
- * @param {Object} app Manifest row.
- * @return {boolean} True when the sandbox may mount.
- */
-function canOpenSandbox( app ) {
-	if ( ! app ) {
-		return false;
-	}
-	if ( app.tier === 'free' ) {
-		return true;
-	}
-	const status = appQuota( app ).status;
-	return status === 'active' || status === 'exhausted';
-}
-
-/**
- * Go URL for a service slug.
- *
- * @param {string} slug Go service slug.
- * @return {string} https://wpcy.com/go/ URL.
- */
 function goUrl( slug ) {
 	return GO_PREFIX + encodeURIComponent( slug || '' );
 }
 
-function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
-	const status = binding?.status || 'unbound';
-
-	if ( status === 'pending' ) {
-		return (
-			<Card>
-				<CardBody>
-					<p className="wpcy-status">
-						<Spinner />
-						{ __( '等待文派服务器验证…', 'wp-china-yes' ) }
-					</p>
-					<p className="wpcy-card-actions">
-						<Button variant="secondary" onClick={ onCancel }>
-							{ __( '取消', 'wp-china-yes' ) }
-						</Button>
-					</p>
-				</CardBody>
-			</Card>
-		);
-	}
-
-	if ( status === 'bound' ) {
-		const tail = hashTail( binding.site_hash );
-		return (
-			<Card>
-				<CardBody>
-					<p className="wpcy-card-status">
-						<StatusDot
-							tone="success"
-							label={ __( '已绑定', 'wp-china-yes' ) }
-						/>
-					</p>
-					<p className="wpcy-card-meta">
-						{ __( '站点标识', 'wp-china-yes' ) }{ ' ' }
-						<span data-testid="wpcy-site-hash-tail">{ tail }</span>
-						{ binding.bound_at
-							? ' · ' +
-							  __( '绑定时间', 'wp-china-yes' ) +
-							  ' ' +
-							  formatStamp( binding.bound_at )
-							: '' }
-					</p>
-					<p className="wpcy-card-actions">
-						<Button
-							variant="secondary"
-							isDestructive
-							isBusy={ busy }
-							onClick={ onUnbind }
-						>
-							{ __( '解除绑定', 'wp-china-yes' ) }
-						</Button>
-					</p>
-				</CardBody>
-			</Card>
-		);
-	}
-
-	return (
-		<Card>
-			<CardBody>
-				<p>
-					{ __(
-						'绑定后可使用受限免费服务与小工具，数据保存在本站。',
-						'wp-china-yes'
-					) }
-				</p>
-				<p className="wpcy-card-actions">
-					<Button
-						variant="primary"
-						isBusy={ busy }
-						onClick={ onBind }
-					>
-						{ __( '绑定本站', 'wp-china-yes' ) }
-					</Button>
-				</p>
-			</CardBody>
-		</Card>
+function hasWoo( plugins ) {
+	return ( plugins || [] ).some(
+		( slug ) =>
+			typeof slug === 'string' && slug.indexOf( 'woocommerce' ) !== -1
 	);
 }
 
-function QuotaTable( { rows, bound } ) {
-	const fields = [
-		{
-			id: 'service',
-			label: __( '服务', 'wp-china-yes' ),
-			enableHiding: false,
-			getValue: ( { item } ) => item.service,
-		},
-		{
-			id: 'status',
-			label: __( '状态', 'wp-china-yes' ),
-			render: ( { item } ) => {
-				const status = quotaStatus( item.status );
-				return (
-					<StatusDot tone={ status.tone } label={ status.label } />
-				);
-			},
-		},
-		{
-			id: 'usage',
-			label: __( '本期用量', 'wp-china-yes' ),
-			render: ( { item } ) => {
-				const used = item.quota?.used;
-				const limit = item.quota?.limit;
-				if ( used === null || used === undefined || ! limit ) {
-					return '—';
-				}
-				const pct = Math.min(
-					100,
-					Math.round( ( Number( used ) / Number( limit ) ) * 100 )
-				);
-				let barClass = 'wpcy-quota-bar';
-				if ( item.status === 'exhausted' ) {
-					barClass += ' is-exhausted';
-				} else if ( item.status === 'expired' ) {
-					barClass += ' is-expired';
-				}
-				return (
-					<div className="wpcy-quota">
-						<span className={ barClass } aria-hidden="true">
-							<span style={ { width: pct + '%' } } />
-						</span>
-						<span className="wpcy-quota-label">
-							{ used }/{ limit }
-						</span>
-					</div>
-				);
-			},
-		},
-		{
-			id: 'resets_at',
-			label: __( '重置时间', 'wp-china-yes' ),
-			render: ( { item } ) =>
-				item.quota?.resets_at
-					? formatStamp( item.quota.resets_at )
-					: '—',
-		},
-		{
-			id: 'action',
-			label: __( '动作', 'wp-china-yes' ),
-			render: ( { item } ) => {
-				if ( item.status === 'active' ) {
-					return '';
-				}
-				return (
-					<Button
-						variant="secondary"
-						size="small"
-						href={ goUrl( item.service ) }
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						{ __( '获取', 'wp-china-yes' ) }
-					</Button>
-				);
-			},
-		},
-	];
-	const [ view, setView ] = useState( {
-		...TABLE_VIEW,
-		fields: fields.map( ( field ) => field.id ),
-	} );
-
-	if ( ! bound ) {
-		return (
-			<div className="wpcy-empty-state" data-testid="wpcy-quota-empty">
-				{ __( '绑定后显示', 'wp-china-yes' ) }
-			</div>
-		);
-	}
-
-	return (
-		<DataViews
-			data={ rows }
-			fields={ fields }
-			view={ view }
-			onChangeView={ setView }
-			defaultLayouts={ { table: {} } }
-			paginationInfo={ {
-				totalItems: rows.length,
-				totalPages: 1,
-			} }
-			search={ false }
-			empty={
-				<p className="wpcy-help">
-					{ __( '暂无权益记录。', 'wp-china-yes' ) }
-				</p>
-			}
-		/>
-	);
-}
-
-function AppCard( { item, onOpen } ) {
-	const name = localized( item.name );
-	const description = localized( item.description );
-	const summary = appQuota( item );
-	let badge = null;
-	if ( item.offline ) {
-		badge = {
-			className: 'wpcy-app-badge is-offline',
-			label: __( '离线', 'wp-china-yes' ),
-		};
-	} else if ( item.tier !== 'free' && summary.status === 'expired' ) {
-		badge = {
-			className: 'wpcy-app-badge is-expired',
-			label: __( '已到期', 'wp-china-yes' ),
-		};
-	} else if ( item.tier !== 'free' && summary.status !== 'active' ) {
-		badge = {
-			className: 'wpcy-app-badge is-get',
-			label: __( '获取', 'wp-china-yes' ),
-		};
-	}
-
-	return (
-		<article className="wpcy-app-card">
-			{ badge ? (
-				<span className={ badge.className }>{ badge.label }</span>
-			) : null }
-			{ item.icon ? (
-				<img
-					className="wpcy-app-icon"
-					src={ item.icon }
-					alt=""
-					width={ 20 }
-					height={ 20 }
-				/>
-			) : (
-				<div className="wpcy-app-icon" aria-hidden="true" />
-			) }
-			<h3>{ name }</h3>
-			<p>{ description }</p>
-			<p className="wpcy-card-actions">
-				<Button variant="secondary" onClick={ () => onOpen( item ) }>
-					{ name }
-				</Button>
-			</p>
-		</article>
-	);
-}
-
-function AppsGrid( { apps, bound, onOpen } ) {
-	const fields = [
-		{
-			id: 'name',
-			label: __( '名称', 'wp-china-yes' ),
-			enableHiding: false,
-			getValue: ( { item } ) => localized( item.name ),
-			render: ( { item } ) => <AppCard item={ item } onOpen={ onOpen } />,
-		},
-	];
-	const [ view, setView ] = useState( {
-		...GRID_VIEW,
-		fields: [ 'name' ],
-	} );
-
-	if ( ! bound ) {
-		return (
-			<div className="wpcy-empty-state" data-testid="wpcy-apps-empty">
-				{ __( '绑定后显示', 'wp-china-yes' ) }
-			</div>
-		);
-	}
-
-	return (
-		<DataViews
-			data={ apps }
-			fields={ fields }
-			view={ view }
-			onChangeView={ setView }
-			defaultLayouts={ { grid: {} } }
-			paginationInfo={ {
-				totalItems: apps.length,
-				totalPages: 1,
-			} }
-			search={ false }
-			empty={
-				<p className="wpcy-help">
-					{ __( '暂无小工具。', 'wp-china-yes' ) }
-				</p>
-			}
-		/>
-	);
-}
-
-function AppSandbox( { app, onBack } ) {
-	const iframeRef = useRef( null );
-	const [ height, setHeight ] = useState( 360 );
-	const [ frameSrc, setFrameSrc ] = useState( '' );
-	const hostOrigin = HOST_ORIGIN;
-
-	useEffect( () => {
-		const node = iframeRef.current;
-		if ( ! node ) {
-			return undefined;
-		}
-		const bootstrap =
-			typeof window !== 'undefined' && window.wpcyAdmin
-				? window.wpcyAdmin
-				: {};
-		const bridge = attachBridge( {
-			iframe: node,
-			manifest: app,
-			hostOrigin,
-			locale: document.documentElement.lang || 'zh_CN',
-			pluginVersion: bootstrap.pluginVersion || '',
-			context: bootstrap.siteContext || {},
-			restFetch: ( request ) => apiFetch( request ),
-			onResize: setHeight,
-		} );
-		setFrameSrc( app.entry_url || '' );
-		return () => {
-			bridge.destroy();
-		};
-	}, [ app, hostOrigin ] );
-
-	const name = localized( app.name );
-
-	return (
-		<div className="wpcy-app-open">
-			<div className="wpcy-app-return">
-				<Button
-					variant="tertiary"
-					onClick={ onBack }
-					aria-label={ __( '返回小工具列表', 'wp-china-yes' ) }
-				>
-					←
-				</Button>
-				<span>
-					{ name }
-					{ app.version ? ' · ' + app.version : '' }
-				</span>
-			</div>
-			<iframe
-				ref={ iframeRef }
-				className="wpcy-app-frame"
-				title={ name }
-				src={ frameSrc }
-				sandbox={ IFRAME_SANDBOX }
-				referrerPolicy={ IFRAME_REFERRERPOLICY }
-				height={ height }
-				data-testid="wpcy-app-iframe"
-				style={ { height: height + 'px' } }
-			/>
-		</div>
-	);
-}
+/**
+ * Static catalog until the server-side list API is ready.
+ * TODO: replace STATIC_CATALOG with GET /wpcy/v1/catalog (server-issued,
+ * auto-updated). Filter here only as a temporary stand-in.
+ */
+const STATIC_CATALOG = [
+	{
+		id: 'windfonts',
+		name: __( 'Windfonts 中文字体', 'wp-china-yes' ),
+		prov: 'Windfonts',
+		desc: __( '前台中文字体替换', 'wp-china-yes' ),
+		vendor: 'wenpai',
+		woo: false,
+	},
+	{
+		id: 'wechat-pay',
+		name: __( '微信支付 for WooCommerce', 'wp-china-yes' ),
+		prov: __( '薇晓朵', 'wp-china-yes' ),
+		desc: __( '让中国买家在你的海外店用微信付款', 'wp-china-yes' ),
+		vendor: 'weixiaoduo',
+		woo: true,
+	},
+	{
+		id: 'order-notice',
+		name: __( '订单微信通知', 'wp-china-yes' ),
+		prov: __( '薇晓朵', 'wp-china-yes' ),
+		desc: __( '新订单、退款实时推送到微信', 'wp-china-yes' ),
+		vendor: 'weixiaoduo',
+		woo: true,
+	},
+];
 
 export default function Services() {
+	const { plugins, profile } = useSelect( ( select ) => {
+		const store = select( STORE_NAME );
+		return {
+			plugins: store.getSiteContext()?.active_plugins || [],
+			profile: store.getSettings()?.profile || 'domestic',
+		};
+	}, [] );
+
 	const [ binding, setBinding ] = useState( {
 		status: 'unbound',
 		site_hash: null,
 		bound_at: null,
 	} );
-	const [ quotas, setQuotas ] = useState( [] );
 	const [ apps, setApps ] = useState( [] );
 	const [ busy, setBusy ] = useState( false );
 	const [ confirmUnbind, setConfirmUnbind ] = useState( false );
@@ -533,8 +134,8 @@ export default function Services() {
 	const [ openApp, setOpenApp ] = useState( null );
 	const [ offerApp, setOfferApp ] = useState( null );
 	const pollRef = useRef( 0 );
-
 	const bound = binding.status === 'bound';
+	const woo = hasWoo( plugins );
 
 	function stopPoll() {
 		if ( pollRef.current ) {
@@ -549,19 +150,6 @@ export default function Services() {
 			next || { status: 'unbound', site_hash: null, bound_at: null }
 		);
 		return next;
-	}
-
-	async function refreshQuotas() {
-		try {
-			const body = await apiFetch( { path: QUOTA_LIST_PATH } );
-			const listKey = QUOTA + 's';
-			const list = body && body[ listKey ];
-			setQuotas( Array.isArray( list ) ? list : [] );
-			setServicesNotice( null );
-		} catch ( error ) {
-			setServicesNotice( __( '暂时无法连接文派服务', 'wp-china-yes' ) );
-			void error;
-		}
 	}
 
 	async function refreshApps() {
@@ -599,14 +187,6 @@ export default function Services() {
 	}, [] );
 
 	useEffect( () => {
-		if ( ! bound ) {
-			setQuotas( [] );
-			return;
-		}
-		refreshQuotas();
-	}, [ bound ] );
-
-	useEffect( () => {
 		if ( binding.status !== 'pending' ) {
 			stopPoll();
 			return undefined;
@@ -619,7 +199,7 @@ export default function Services() {
 					}
 				} )
 				.catch( () => undefined );
-		}, 2000 );
+		}, 3000 );
 		return stopPoll;
 	}, [ binding.status ] );
 
@@ -637,7 +217,8 @@ export default function Services() {
 			} );
 		} catch ( error ) {
 			setServicesNotice(
-				error?.message || __( '暂时无法连接文派服务', 'wp-china-yes' )
+				error?.message ||
+					__( '暂时无法完成站点绑定，请稍后重试。', 'wp-china-yes' )
 			);
 		} finally {
 			setBusy( false );
@@ -695,7 +276,10 @@ export default function Services() {
 	}
 
 	function onOpenApp( app ) {
-		if ( canOpenSandbox( app ) ) {
+		const status = app?.[ QUOTA + '_status' ]?.status;
+		const free = app?.tier === 'free';
+		const ok = free || status === 'active' || status === 'exhausted';
+		if ( ok ) {
 			setOfferApp( null );
 			setOpenApp( app );
 			return;
@@ -703,15 +287,6 @@ export default function Services() {
 		setOpenApp( null );
 		setOfferApp( app );
 	}
-
-	const quotaRows = useMemo(
-		() =>
-			( quotas || [] ).map( ( row, index ) => ( {
-				...row,
-				id: ( row.id || row.service || 'row' ) + '-' + index,
-			} ) ),
-		[ quotas ]
-	);
 
 	if ( openApp ) {
 		return (
@@ -736,71 +311,118 @@ export default function Services() {
 			lede={ __( '文派服务与小工具，按站点场景显示', 'wp-china-yes' ) }
 		>
 			{ servicesNotice ? (
-				<Notice status="warning" isDismissible={ false }>
-					{ servicesNotice }
-				</Notice>
+				<Notice tone="warn">{ servicesNotice }</Notice>
 			) : null }
 
-			<section
-				className="wpcy-section"
-				aria-labelledby="wpcy-bind-heading"
-			>
-				<h2 id="wpcy-bind-heading">
-					{ __( '站点绑定', 'wp-china-yes' ) }
-				</h2>
-				<BindingCard
-					binding={ binding }
-					busy={ busy }
-					onBind={ onBind }
-					onCancel={ onCancel }
-					onUnbind={ () => setConfirmUnbind( true ) }
+			<BindingCard
+				binding={ binding }
+				busy={ busy }
+				onBind={ onBind }
+				onCancel={ onCancel }
+				onUnbind={ () => setConfirmUnbind( true ) }
+			/>
+
+			{ ! bound ? <UnlockList /> : null }
+
+			<section className="sec">
+				<Sec
+					title={ __( '供应商', 'wp-china-yes' ) }
+					note={ __(
+						'连接后，你在该供应商购买的服务与产品会出现在下面并自动接收更新',
+						'wp-china-yes'
+					) }
 				/>
+				<div className="prov-grid">
+					<div className="prov-card">
+						<div className="prov-h">
+							<Icon name="store" size={ 20 } />
+							<b>{ __( '薇晓朵商城', 'wp-china-yes' ) }</b>
+							<Pill>{ __( '未连接', 'wp-china-yes' ) }</Pill>
+						</div>
+						<p>
+							{ __(
+								'薇晓朵的服务与产品：微信支付 for WooCommerce、订单微信通知、跨境店运维。已购的产品连接后自动接收更新。',
+								'wp-china-yes'
+							) }
+						</p>
+						<div className="prov-f">
+							{ bound ? (
+								<Btn variant="secondary" disabled>
+									{ __( '连接', 'wp-china-yes' ) }
+								</Btn>
+							) : (
+								<Scope>
+									{ __( '绑定本站后可连接', 'wp-china-yes' ) }
+								</Scope>
+							) }
+						</div>
+					</div>
+					<div className="prov-card is-soon">
+						<div className="prov-h">
+							<Icon name="bag" size={ 20 } />
+							<b>{ __( '文派集市', 'wp-china-yes' ) }</b>
+							<Pill>{ __( '即将开放', 'wp-china-yes' ) }</Pill>
+						</div>
+						<p>
+							{ __(
+								'文派官方商城：文派系插件与主题的商业版本、模板与服务。开放后在这里连接。',
+								'wp-china-yes'
+							) }
+						</p>
+						<div className="prov-f">
+							<Btn
+								variant="ghost"
+								href="https://wpcy.com/go/market"
+							>
+								{ __( '了解文派集市', 'wp-china-yes' ) }{ ' ' }
+								<Icon name="arrow" size={ 16 } />
+							</Btn>
+						</div>
+					</div>
+				</div>
 			</section>
 
-			<section
-				className="wpcy-section"
-				aria-labelledby="wpcy-quota-heading"
-			>
-				<h2 id="wpcy-quota-heading">
-					{ __( '权益与配额', 'wp-china-yes' ) }
-				</h2>
-				<QuotaTable rows={ quotaRows } bound={ bound } />
-			</section>
+			{ bound ? (
+				<Catalog
+					woo={ woo }
+					profile={ profile }
+					windfontsOn={ Boolean(
+						window.wpcyAdmin?.settings?.modules?.windfonts
+					) }
+				/>
+			) : null }
 
-			<section
-				className="wpcy-section"
-				aria-labelledby="wpcy-apps-heading"
-			>
-				<h2 id="wpcy-apps-heading">
-					{ __( '小工具', 'wp-china-yes' ) }
-				</h2>
-				{ appsUnavailable ? (
-					<Notice status="warning" isDismissible={ false }>
-						{ __( '小工具目录暂时不可用', 'wp-china-yes' ) }
-					</Notice>
-				) : null }
-				<AppsGrid apps={ apps } bound={ bound } onOpen={ onOpenApp } />
+			<section className="sec" aria-labelledby="wpcy-apps-heading">
+				<Sec title={ __( '小工具', 'wp-china-yes' ) } />
+				<AppsSection
+					appsUnavailable={ appsUnavailable }
+					bound={ bound }
+					apps={ apps }
+					onOpen={ onOpenApp }
+				/>
 			</section>
 
 			{ confirmUnbind ? (
 				<Modal
-					title={ __( '解除绑定', 'wp-china-yes' ) }
+					title={ __( '解除绑定？', 'wp-china-yes' ) }
 					onRequestClose={ () => setConfirmUnbind( false ) }
 				>
 					<p>
 						{ __(
-							'解除绑定后，受限免费服务与小工具将不可用。数据仍保存在本站。',
+							'解除后文派服务与小工具不可用，小工具数据保留 30 天。加速功能不受影响。',
 							'wp-china-yes'
 						) }
 					</p>
 					<p className="wpcy-card-actions">
-						<Button
-							variant="primary"
-							isDestructive
-							onClick={ onUnbind }
-						>
+						<Btn variant="danger" onClick={ onUnbind }>
 							{ __( '解除绑定', 'wp-china-yes' ) }
-						</Button>
+						</Btn>
+						<Btn
+							variant="secondary"
+							onClick={ () => setConfirmUnbind( false ) }
+						>
+							{ __( '取消', 'wp-china-yes' ) }
+						</Btn>
 					</p>
 				</Modal>
 			) : null }
@@ -812,17 +434,431 @@ export default function Services() {
 				>
 					<p>{ localized( offerApp.description ) }</p>
 					<p>
-						<Button
-							variant="primary"
+						<Btn
+							variant="ghost"
 							href={ goUrl( offerApp.go_service || offerApp.id ) }
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( '获取', 'wp-china-yes' ) }
-						</Button>
+							{ __( '了解 →', 'wp-china-yes' ) }
+						</Btn>
 					</p>
 				</Modal>
 			) : null }
 		</PageShell>
+	);
+}
+
+function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
+	const status = binding?.status || 'unbound';
+
+	if ( status === 'pending' ) {
+		return (
+			<article className="card">
+				<CardHead
+					tile={ <Tile tone="accent" icon="link" /> }
+					title={ __( '正在绑定本站', 'wp-china-yes' ) }
+					sub={ __(
+						'等待文派服务器验证，通常几秒内完成',
+						'wp-china-yes'
+					) }
+					extra={ <Pill>{ __( '绑定中', 'wp-china-yes' ) }</Pill> }
+				/>
+				<p className="big">
+					<span className="spin" />
+					{ __( '等待验证', 'wp-china-yes' ) }
+				</p>
+				<p className="meta">
+					{ __(
+						'如果超过一分钟没有完成，可以取消后重试；不影响任何加速功能',
+						'wp-china-yes'
+					) }
+				</p>
+				<CardFoot>
+					<Btn
+						variant="secondary"
+						onClick={ onCancel }
+						disabled={ busy }
+					>
+						{ __( '取消', 'wp-china-yes' ) }
+					</Btn>
+				</CardFoot>
+			</article>
+		);
+	}
+
+	if ( status === 'bound' ) {
+		const tail = hashTail( binding.site_hash );
+		return (
+			<article className="card">
+				<CardHead
+					tile={ <Tile tone="ok" icon="check" /> }
+					title={ __( '本站已绑定', 'wp-china-yes' ) }
+					sub={
+						<>
+							{ __( '站点标识', 'wp-china-yes' ) }{ ' ' }
+							<span data-testid="wpcy-site-hash-tail">
+								{ tail }
+							</span>{ ' ' }
+							{ hashMask( binding.site_hash ) }
+							{ binding.bound_at
+								? ' · ' +
+								  __( '绑定于', 'wp-china-yes' ) +
+								  ' ' +
+								  formatDate( binding.bound_at )
+								: '' }
+						</>
+					}
+					extra={
+						<Pill tone="ok">
+							{ __( '已绑定', 'wp-china-yes' ) }
+						</Pill>
+					}
+				/>
+				<CardFoot>
+					<p className="meta">
+						{ __(
+							'数据保存在本站；解除绑定后小工具数据保留 30 天',
+							'wp-china-yes'
+						) }
+					</p>
+					<Btn
+						variant="secondary"
+						onClick={ onUnbind }
+						disabled={ busy }
+					>
+						{ __( '解除绑定', 'wp-china-yes' ) }
+					</Btn>
+				</CardFoot>
+			</article>
+		);
+	}
+
+	return (
+		<article className="card">
+			<CardHead
+				tile={ <Tile tone="accent" icon="link" /> }
+				title={ __( '尚未绑定本站', 'wp-china-yes' ) }
+				sub={ __(
+					'绑定是匿名的：服务端只记录站点标识，不需要注册账号',
+					'wp-china-yes'
+				) }
+				extra={ <Pill>{ __( '未绑定', 'wp-china-yes' ) }</Pill> }
+			/>
+			<p className="big">
+				{ __( '绑定后可使用文派服务与小工具', 'wp-china-yes' ) }
+			</p>
+			<p className="meta">
+				{ __(
+					'数据保存在本站 · 随时可解除 · 不影响任何加速功能',
+					'wp-china-yes'
+				) }
+			</p>
+			<CardFoot>
+				<Btn variant="ghost" href="https://wpcy.com/go/services">
+					{ __( '了解文派服务', 'wp-china-yes' ) }{ ' ' }
+					<Icon name="arrow" size={ 16 } />
+				</Btn>
+				<Btn variant="primary" onClick={ onBind } disabled={ busy }>
+					{ __( '绑定本站', 'wp-china-yes' ) }
+				</Btn>
+			</CardFoot>
+		</article>
+	);
+}
+
+function AppsSection( { appsUnavailable, bound, apps, onOpen } ) {
+	if ( appsUnavailable ) {
+		return (
+			<article className="card">
+				<Empty
+					icon="grid"
+					why={ __( '小工具目录暂时不可用。', 'wp-china-yes' ) }
+					when={ __(
+						'连接恢复后会自动显示；已打开过的小工具数据仍保存在本站',
+						'wp-china-yes'
+					) }
+				/>
+				<p className="screen-reader-text">
+					{ __( '小工具目录暂时不可用', 'wp-china-yes' ) }
+				</p>
+			</article>
+		);
+	}
+	if ( ! bound ) {
+		return (
+			<article className="card">
+				<div className="empty" data-testid="wpcy-apps-empty">
+					<Tile icon="grid" />
+					<p>
+						{ __(
+							'绑定本站后，这里会出现可用的小工具。',
+							'wp-china-yes'
+						) }
+					</p>
+					<p className="meta">
+						{ __(
+							'小工具在沙箱中运行，只能访问它申请过的权限',
+							'wp-china-yes'
+						) }
+					</p>
+					<span data-testid="wpcy-quota-empty">
+						{ __( '绑定后显示', 'wp-china-yes' ) }
+					</span>
+				</div>
+			</article>
+		);
+	}
+	return <AppsGrid apps={ apps } onOpen={ onOpen } />;
+}
+
+function UnlockList() {
+	const rows = [
+		{
+			icon: 'font',
+			t: __( 'Windfonts 中文字体', 'wp-china-yes' ),
+			d: __( '站点用上更好的中文字体', 'wp-china-yes' ),
+		},
+		{
+			icon: 'grid',
+			t: __( '小工具', 'wp-china-yes' ),
+			d: __(
+				'连接测速、字体预览、通知设置，在沙箱中运行',
+				'wp-china-yes'
+			),
+		},
+		{
+			icon: 'store',
+			t: __( '供应商连接', 'wp-china-yes' ),
+			d: __(
+				'薇晓朵商城、文派集市，已购产品自动接收更新',
+				'wp-china-yes'
+			),
+		},
+	];
+	return (
+		<section className="sec">
+			<Sec
+				title={ __( '绑定后解锁', 'wp-china-yes' ) }
+				note={ __(
+					'加速功能不需要绑定，下面这些才需要',
+					'wp-china-yes'
+				) }
+			/>
+			<article className="card">
+				<div className="rows">
+					{ rows.map( ( row ) => (
+						<div key={ row.t }>
+							<Tile icon={ row.icon } />
+							<div>
+								<div className="t">{ row.t }</div>
+								<div className="d">{ row.d }</div>
+							</div>
+							<Scope className="r">
+								{ __( '绑定后解锁', 'wp-china-yes' ) }
+							</Scope>
+						</div>
+					) ) }
+				</div>
+			</article>
+		</section>
+	);
+}
+
+function Catalog( { woo, profile, windfontsOn } ) {
+	const recommendWeixiaoduo = woo;
+	const sorted = STATIC_CATALOG.slice().sort( ( a, b ) => {
+		if ( recommendWeixiaoduo ) {
+			return (
+				( b.vendor === 'weixiaoduo' ) - ( a.vendor === 'weixiaoduo' )
+			);
+		}
+		return ( b.vendor === 'wenpai' ) - ( a.vendor === 'wenpai' );
+	} );
+	const detectLead = recommendWeixiaoduo
+		? __( '检测到 WooCommerce —— 按电商推荐', 'wp-china-yes' )
+		: sprintf(
+				/* translators: %s: scene */
+				__( '未检测到 WooCommerce —— 按「%s」推荐', 'wp-china-yes' ),
+				profile === 'domestic'
+					? __( '国内站', 'wp-china-yes' )
+					: __( '当前场景', 'wp-china-yes' )
+		  );
+
+	return (
+		<section className="sec">
+			<Sec
+				title={ __( '可用服务', 'wp-china-yes' ) }
+				note={ __(
+					'推荐清单由服务端下发并自动更新 · 其他供应商的产品也可自行安装使用',
+					'wp-china-yes'
+				) }
+			/>
+			<article className="card">
+				<div className="detect-line">
+					<Icon name="info" size={ 15 } />
+					<span>
+						{ detectLead }
+						<b>
+							{ recommendWeixiaoduo
+								? __( '薇晓朵', 'wp-china-yes' )
+								: __( '文派服务', 'wp-china-yes' ) }
+						</b>
+					</span>
+				</div>
+				<div className="rows svc">
+					{ sorted.map( ( item ) => {
+						const rec =
+							( recommendWeixiaoduo &&
+								item.vendor === 'weixiaoduo' ) ||
+							( ! recommendWeixiaoduo &&
+								item.vendor === 'wenpai' );
+						const enabled = item.id === 'windfonts' && windfontsOn;
+						return (
+							<div key={ item.id }>
+								<div>
+									<div className="t">
+										{ item.name }
+										<Prov>{ item.prov }</Prov>
+										{ rec ? (
+											<span className="tag-rec">
+												{ __( '推荐', 'wp-china-yes' ) }
+											</span>
+										) : null }
+									</div>
+									<div className="d">{ item.desc }</div>
+								</div>
+								<Pill tone={ enabled ? 'ok' : '' }>
+									{ enabled
+										? __( '已启用', 'wp-china-yes' )
+										: __( '未购买', 'wp-china-yes' ) }
+								</Pill>
+								<span className="r">
+									{ enabled ? (
+										<Btn
+											variant="ghost"
+											href="admin.php?page=wpcy-connect"
+										>
+											{ __( '设置', 'wp-china-yes' ) }
+										</Btn>
+									) : (
+										<Btn
+											variant="ghost"
+											href={ goUrl( item.id ) }
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											{ __( '了解 →', 'wp-china-yes' ) }
+										</Btn>
+									) }
+								</span>
+							</div>
+						);
+					} ) }
+				</div>
+			</article>
+		</section>
+	);
+}
+
+function AppsGrid( { apps, onOpen } ) {
+	if ( ! apps.length ) {
+		return (
+			<article className="card">
+				<Empty
+					icon="grid"
+					why={ __(
+						'绑定本站后，这里会出现可用的小工具。',
+						'wp-china-yes'
+					) }
+				/>
+			</article>
+		);
+	}
+	return (
+		<div className="apps">
+			{ apps.map( ( app ) => {
+				const name = localized( app.name );
+				const expired =
+					app.tier !== 'free' &&
+					( app[ QUOTA + '_status' ]?.status === 'expired' ||
+						app[ QUOTA + '_status' ]?.status === 'exhausted' );
+				return (
+					<button
+						type="button"
+						className="app"
+						key={ app.id }
+						onClick={ () => onOpen( app ) }
+					>
+						<Tile icon="grid" />
+						<div className="t">{ name }</div>
+						<div className="d">
+							{ localized( app.description ) }
+						</div>
+						{ expired ? (
+							<span className="pill">
+								{ __( '了解 →', 'wp-china-yes' ) }
+							</span>
+						) : null }
+					</button>
+				);
+			} ) }
+		</div>
+	);
+}
+
+function AppSandbox( { app, onBack } ) {
+	const iframeRef = useRef( null );
+	const [ height, setHeight ] = useState( 360 );
+	const [ frameSrc, setFrameSrc ] = useState( '' );
+	const hostOrigin = HOST_ORIGIN;
+
+	useEffect( () => {
+		const node = iframeRef.current;
+		if ( ! node ) {
+			return undefined;
+		}
+		const bootstrap =
+			typeof window !== 'undefined' && window.wpcyAdmin
+				? window.wpcyAdmin
+				: {};
+		const bridge = attachBridge( {
+			iframe: node,
+			manifest: app,
+			hostOrigin,
+			locale: document.documentElement.lang || 'zh_CN',
+			pluginVersion: bootstrap.pluginVersion || '',
+			context: bootstrap.siteContext || {},
+			restFetch: ( request ) => apiFetch( request ),
+			onResize: setHeight,
+		} );
+		setFrameSrc( app.entry_url || '' );
+		return () => {
+			bridge.destroy();
+		};
+	}, [ app, hostOrigin ] );
+
+	const name = localized( app.name );
+
+	return (
+		<div className="wpcy-app-open">
+			<div className="wpcy-app-return">
+				<Btn variant="ghost" onClick={ onBack }>
+					← { name }
+					{ app.version ? ' · ' + app.version : '' }
+				</Btn>
+			</div>
+			<iframe
+				ref={ iframeRef }
+				className="wpcy-app-frame"
+				title={ name }
+				src={ frameSrc }
+				sandbox={ IFRAME_SANDBOX }
+				referrerPolicy={ IFRAME_REFERRERPOLICY }
+				height={ height }
+				data-testid="wpcy-app-iframe"
+				style={ { height: height + 'px' } }
+			/>
+		</div>
 	);
 }

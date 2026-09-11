@@ -55,7 +55,7 @@ class AdminModuleTest extends TestCase {
 			$this->assertSame( 'manage_options', $page['capability'] );
 		}
 		$this->assertSame(
-			array( 'wpcy', 'wpcy-connect', 'wpcy-services', 'wpcy-diagnose' ),
+			array( 'wpcy', 'wpcy-connect', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' ),
 			$sub
 		);
 	}
