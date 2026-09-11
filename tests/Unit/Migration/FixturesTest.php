@@ -479,6 +479,41 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
+	 * 3.x waimao_* language keys are discarded; they do not seed admin_locale_follow.
+	 */
+	public function test_waimao_language_keys_are_not_migrated() {
+		OptionStore::$options[ LegacyReader::OPTION ] = array(
+			'store'                    => 'off',
+			'waimao_enable'            => true,
+			'waimao_language_split'    => true,
+			'waimao_admin_language'    => 'zh_CN',
+			'waimao_frontend_language' => 'en_US',
+			'waimao_auto_detect'       => true,
+		);
+
+		$report = ( new Runner() )->dry_run();
+		$keys   = array(
+			'waimao_enable',
+			'waimao_language_split',
+			'waimao_admin_language',
+			'waimao_frontend_language',
+			'waimao_auto_detect',
+		);
+		foreach ( $keys as $key ) {
+			$this->assertContains( $key, $report->ignored(), $key );
+			$this->assertNotContains( $key, $report->kept(), $key );
+			$this->assertSame( 'feature_removed', $report->ignored_reasons()[ $key ], $key );
+		}
+
+		$settings = $report->settings();
+		$this->assertTrue( $settings['connectivity']['admin_locale_follow'] );
+		$json = wp_json_encode( $settings );
+		$this->assertIsString( $json );
+		$this->assertStringNotContainsString( 'waimao', $json );
+		$this->assertStringNotContainsString( 'zh_CN', $json );
+	}
+
+	/**
 	 * CLI dry-run / execute / rollback JSON contracts.
 	 */
 	public function test_cli_dry_run_execute_rollback() {

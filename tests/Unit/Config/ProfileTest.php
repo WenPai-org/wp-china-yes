@@ -129,6 +129,19 @@ class ProfileTest extends TestCase {
 		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertSame( 9, $out['data_residency']['ruleset_version'] );
 		$this->assertSame( array( 'x' ), $out['apps']['disabled'] );
+		$this->assertTrue( $out['connectivity']['admin_locale_follow'] );
+	}
+
+	/**
+	 * Profile switch does not reset admin_locale_follow (all scenes).
+	 */
+	public function test_switch_leaves_admin_locale_follow() {
+		$settings                                        = Defaults::settings();
+		$settings['connectivity']['admin_locale_follow'] = false;
+
+		$out = Profile::apply_to( $settings, 'crossborder' );
+
+		$this->assertFalse( $out['connectivity']['admin_locale_follow'] );
 	}
 
 	/**

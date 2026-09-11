@@ -201,6 +201,17 @@ final class Mappers {
 					$ignored_reasons[ $key ] = 'unsupported_whitelist';
 					break;
 
+				case 'waimao':
+				case 'waimao_enable':
+				case 'waimao_language_split':
+				case 'waimao_admin_language':
+				case 'waimao_frontend_language':
+				case 'waimao_auto_detect':
+					// 3.x cross-border language keys. 4.0 does not migrate them.
+					$ignored[]               = $key;
+					$ignored_reasons[ $key ] = 'feature_removed';
+					break;
+
 				default:
 					$ignored[]               = $key;
 					$ignored_reasons[ $key ] = 'feature_removed';

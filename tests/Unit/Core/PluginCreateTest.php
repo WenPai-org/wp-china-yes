@@ -47,6 +47,7 @@ class PluginCreateTest extends TestCase {
 				'connectivity.avatar',
 				'connectivity.heartbeat',
 				'connectivity.dashboard_feeds',
+				'connectivity.admin_locale_follow',
 				'modules.windfonts',
 				'telemetry',
 				'privacy.data_residency',

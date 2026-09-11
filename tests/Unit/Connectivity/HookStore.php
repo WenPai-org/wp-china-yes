@@ -57,6 +57,13 @@ final class HookStore {
 	public static $user_id = 0;
 
 	/**
+	 * Fake get_user_locale().
+	 *
+	 * @var string
+	 */
+	public static $user_locale = '';
+
+	/**
 	 * Reset bags.
 	 */
 	public static function reset(): void {
@@ -66,5 +73,6 @@ final class HookStore {
 		self::$removed_boxes = array();
 		self::$screen_base   = null;
 		self::$user_id       = 0;
+		self::$user_locale   = '';
 	}
 }

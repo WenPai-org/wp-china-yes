@@ -49,6 +49,7 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
 		$this->assertSame( 'off', $out['connectivity']['heartbeat'] );
 		$this->assertSame( 'allow', $out['connectivity']['dashboard_feeds'] );
+		$this->assertTrue( $out['connectivity']['admin_locale_follow'] );
 		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
@@ -211,6 +212,29 @@ class ValidatorTest extends TestCase {
 			Schema::SETTINGS
 		);
 		$this->assertSame( array( 'motusnap' ), $out['apps']['disabled'] );
+	}
+
+	/**
+	 * Admin locale follow is bool, default true; non-bool is discarded.
+	 */
+	public function test_admin_locale_follow_bool() {
+		$on = $this->validator->sanitize(
+			array( 'connectivity' => array( 'admin_locale_follow' => true ) ),
+			Schema::SETTINGS
+		);
+		$this->assertTrue( $on['connectivity']['admin_locale_follow'] );
+
+		$off = $this->validator->sanitize(
+			array( 'connectivity' => array( 'admin_locale_follow' => false ) ),
+			Schema::SETTINGS
+		);
+		$this->assertFalse( $off['connectivity']['admin_locale_follow'] );
+
+		$bad = $this->validator->sanitize(
+			array( 'connectivity' => array( 'admin_locale_follow' => 'yes' ) ),
+			Schema::SETTINGS
+		);
+		$this->assertTrue( $bad['connectivity']['admin_locale_follow'] );
 	}
 
 	/**

@@ -169,6 +169,18 @@ if ( ! function_exists( 'get_current_user_id' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_user_locale' ) ) {
+	/**
+	 * Current user's locale for admin locale follow.
+	 *
+	 * @param mixed $user Unused.
+	 */
+	function get_user_locale( $user = 0 ) {
+		unset( $user );
+		return HookStore::$user_locale;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * Run recorded callbacks when present; otherwise return $value.

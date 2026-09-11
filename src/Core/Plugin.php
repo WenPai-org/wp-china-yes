@@ -16,6 +16,7 @@ use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
+use WenPai\ChinaYes\Connectivity\AdminLocale\AdminLocaleModule;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\DashboardFeeds\DashboardFeedsModule;
 use WenPai\ChinaYes\Connectivity\Heartbeat\HeartbeatModule;
@@ -211,6 +212,7 @@ final class Plugin {
 		$registry->add( new AvatarModule( $config ) );
 		$registry->add( new HeartbeatModule( $config ) );
 		$registry->add( new DashboardFeedsModule( $config ) );
+		$registry->add( new AdminLocaleModule( $config ) );
 		$catalog = new Catalog();
 		$container->set( 'windfonts.catalog', $catalog );
 		$registry->add( new WindfontsModule( $config ) );

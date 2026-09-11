@@ -35,14 +35,15 @@ final class Defaults {
 			'profile'              => 'domestic',
 			'profile_confirmed_at' => null,
 			'connectivity'         => array(
-				'wordpress_org'   => 'auto',
-				'public_assets'   => array(
+				'wordpress_org'       => 'auto',
+				'public_assets'       => array(
 					'items' => Schema::PUBLIC_ASSETS,
 					'scope' => 'both',
 				),
-				'avatar'          => 'cravatar_cn',
-				'heartbeat'       => 'off',
-				'dashboard_feeds' => 'allow',
+				'avatar'              => 'cravatar_cn',
+				'heartbeat'           => 'off',
+				'dashboard_feeds'     => 'allow',
+				'admin_locale_follow' => true,
 			),
 			'modules'              => array(
 				'notice_control' => true,
