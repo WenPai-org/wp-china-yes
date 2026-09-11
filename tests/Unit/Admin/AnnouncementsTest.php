@@ -203,7 +203,7 @@ class AnnouncementsTest extends TestCase {
 	 * HTTP source that is not https is dropped.
 	 */
 	public function test_http_item_url_is_dropped() {
-		$payload = wp_json_encode(
+		$payload = SignedPayload::encode(
 			array(
 				'generated_at' => '2026-09-03T12:00:00Z',
 				'items'        => array(
@@ -238,6 +238,92 @@ class AnnouncementsTest extends TestCase {
 		$items = $module->payload()['items'];
 		$this->assertCount( 1, $items );
 		$this->assertSame( 'ok-https', $items[0]['id'] );
+	}
+
+	/**
+	 * Valid signature replaces the cache.
+	 */
+	public function test_valid_signature_replaces_cache() {
+		$signed = SignedPayload::encode( $this->unsigned_document() );
+		$module = new AnnouncementsModule(
+			new Repository(),
+			'mock://ann',
+			static function () use ( $signed ) {
+				return $signed;
+			}
+		);
+
+		$cached = $module->refresh();
+		$this->assertIsArray( $cached );
+		$this->assertSame( '2026-09-11T12:00:00Z', $cached['generated_at'] );
+		$this->assertSame( 'ok-https', $cached['items'][0]['id'] );
+	}
+
+	/**
+	 * Invalid signature keeps the previous valid document.
+	 */
+	public function test_invalid_signature_keeps_previous() {
+		$valid   = SignedPayload::encode( $this->unsigned_document() );
+		$bad_doc = SignedPayload::corrupt( json_decode( $valid, true ) );
+		$bad     = wp_json_encode( $bad_doc );
+		$calls   = 0;
+		$module  = new AnnouncementsModule(
+			new Repository(),
+			'mock://ann',
+			static function () use ( &$calls, $valid, $bad ) {
+				++$calls;
+				return 1 === $calls ? $valid : $bad;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( $first['generated_at'], $second['generated_at'] );
+		$this->assertSame( 'ok-https', $second['items'][0]['id'] );
+	}
+
+	/**
+	 * Missing signature keeps the previous valid document.
+	 */
+	public function test_missing_signature_keeps_previous() {
+		$valid  = SignedPayload::encode( $this->unsigned_document() );
+		$plain  = wp_json_encode( $this->unsigned_document( '2026-09-12T00:00:00Z' ) );
+		$calls  = 0;
+		$module = new AnnouncementsModule(
+			new Repository(),
+			'mock://ann',
+			static function () use ( &$calls, $valid, $plain ) {
+				++$calls;
+				return 1 === $calls ? $valid : $plain;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( '2026-09-11T12:00:00Z', $second['generated_at'] );
+		$this->assertSame( $first['generated_at'], $second['generated_at'] );
+	}
+
+	/**
+	 * Unsigned sample used by existing tests.
+	 *
+	 * @param string $generated Generated-at stamp.
+	 * @return array<string, mixed>
+	 */
+	private function unsigned_document( string $generated = '2026-09-11T12:00:00Z' ): array {
+		return array(
+			'generated_at' => $generated,
+			'items'        => array(
+				array(
+					'id'           => 'ok-https',
+					'source'       => 'wptea',
+					'title'        => 'HTTPS',
+					'url'          => 'https://wptea.com/ok',
+					'summary'      => 'yes',
+					'published_at' => '2026-09-03T08:00:00Z',
+				),
+			),
+		);
 	}
 
 	/**

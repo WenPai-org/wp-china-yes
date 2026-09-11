@@ -553,6 +553,10 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 		c.admin_locale_follow === undefined
 			? true
 			: Boolean( c.admin_locale_follow );
+	const hidePromo =
+		settings?.admin?.hide_promo === undefined
+			? true
+			: Boolean( settings.admin.hide_promo );
 	const Row = advanced ? FieldRow : SimpleRowWrap;
 	return (
 		<section className="card">
@@ -566,6 +570,29 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 					'wp-china-yes'
 				) }
 			</p>
+			<Row
+				icon="bell"
+				title={ __( '隐藏后台的推广与广告', 'wp-china-yes' ) }
+				help={ __(
+					'由文派服务下发规则，核心更新与安全通知不会隐藏。规则集最多沿用 72 小时。',
+					'wp-china-yes'
+				) }
+			>
+				<Toggle
+					checked={ hidePromo }
+					disabled={ disabled }
+					label={
+						hidePromo
+							? __( '已开启', 'wp-china-yes' )
+							: __( '未开启', 'wp-china-yes' )
+					}
+					onChange={ ( on ) =>
+						patch( {
+							admin: { hide_promo: on },
+						} )
+					}
+				/>
+			</Row>
 			<Row
 				icon="clock"
 				title={ __( '减少后台心跳', 'wp-china-yes' ) }

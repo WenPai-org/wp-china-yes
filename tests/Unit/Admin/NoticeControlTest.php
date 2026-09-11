@@ -71,7 +71,7 @@ class NoticeControlTest extends TestCase {
 	 * A rule that names a protected class is dropped at load.
 	 */
 	public function test_protected_rule_in_payload_is_dropped() {
-		$payload = wp_json_encode(
+		$payload = SignedPayload::encode(
 			array(
 				'rules_version' => 1,
 				'issued_at'     => '2026-09-03T00:00:00Z',
@@ -143,7 +143,7 @@ class NoticeControlTest extends TestCase {
 	 * Arbitrary CSS selector field is rejected (3.x adblock_rule is not used).
 	 */
 	public function test_selector_field_is_rejected() {
-		$payload = wp_json_encode(
+		$payload = SignedPayload::encode(
 			array(
 				'rules_version' => 1,
 				'issued_at'     => '2026-09-03T00:00:00Z',
@@ -189,7 +189,7 @@ class NoticeControlTest extends TestCase {
 	 * Generic WP class notice-warning is dropped and prints no CSS.
 	 */
 	public function test_generic_notice_warning_rule_prints_no_css() {
-		$payload = wp_json_encode(
+		$payload = SignedPayload::encode(
 			array(
 				'rules_version' => 1,
 				'issued_at'     => '2026-09-03T00:00:00Z',
@@ -229,7 +229,7 @@ class NoticeControlTest extends TestCase {
 	 * Update-nag is never emitted as a hide selector.
 	 */
 	public function test_update_nag_never_appears_in_hide_css() {
-		$payload = wp_json_encode(
+		$payload = SignedPayload::encode(
 			array(
 				'rules_version' => 1,
 				'issued_at'     => '2026-09-03T00:00:00Z',
@@ -274,6 +274,93 @@ class NoticeControlTest extends TestCase {
 		$module = new NoticeControlModule( new Repository() );
 		$this->assertSame( '', $module->source() );
 		$this->assertSame( array(), $module->active_rules() );
+	}
+
+	/**
+	 * Valid signature caches notice rules.
+	 */
+	public function test_valid_signature_caches_rules() {
+		$payload = SignedPayload::encode( $this->unsigned_document() );
+		$module  = new NoticeControlModule(
+			new Repository(),
+			'mock://rules',
+			static function () use ( $payload ) {
+				return $payload;
+			}
+		);
+		$cached  = $module->refresh();
+		$this->assertIsArray( $cached );
+		$ids = array();
+		foreach ( $module->active_rules() as $rule ) {
+			$ids[] = $rule['id'];
+		}
+		$this->assertContains( 'acme-dashboard-banner', $ids );
+	}
+
+	/**
+	 * Invalid signature keeps the previous valid document.
+	 */
+	public function test_invalid_signature_keeps_previous() {
+		$valid   = SignedPayload::encode( $this->unsigned_document() );
+		$bad_doc = SignedPayload::corrupt( json_decode( $valid, true ) );
+		$bad     = wp_json_encode( $bad_doc );
+		$calls   = 0;
+		$module  = new NoticeControlModule(
+			new Repository(),
+			'mock://rules',
+			static function () use ( &$calls, $valid, $bad ) {
+				++$calls;
+				return 1 === $calls ? $valid : $bad;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( $first['issued_at'], $second['issued_at'] );
+		$this->assertSame( $first['rules'], $second['rules'] );
+	}
+
+	/**
+	 * Missing signature keeps the previous valid document.
+	 */
+	public function test_missing_signature_keeps_previous() {
+		$valid  = SignedPayload::encode( $this->unsigned_document() );
+		$plain  = wp_json_encode( $this->unsigned_document( '2026-09-12T00:00:00Z' ) );
+		$calls  = 0;
+		$module = new NoticeControlModule(
+			new Repository(),
+			'mock://rules',
+			static function () use ( &$calls, $valid, $plain ) {
+				++$calls;
+				return 1 === $calls ? $valid : $plain;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( '2026-09-03T00:00:00Z', $second['issued_at'] );
+		$this->assertSame( $first['issued_at'], $second['issued_at'] );
+	}
+
+	/**
+	 * Unsigned notice-rules document.
+	 *
+	 * @param string $issued Issued-at stamp.
+	 * @return array<string, mixed>
+	 */
+	private function unsigned_document( string $issued = '2026-09-03T00:00:00Z' ): array {
+		return array(
+			'rules_version' => 1,
+			'issued_at'     => $issued,
+			'rules'         => array(
+				array(
+					'id'     => 'acme-dashboard-banner',
+					'plugin' => 'acme-seo',
+					'hook'   => 'admin_notices',
+					'class'  => 'acme-promo-banner',
+				),
+			),
+		);
 	}
 
 	/**

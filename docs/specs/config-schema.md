@@ -47,6 +47,7 @@
     "schema_version",
     "profile",
     "connectivity",
+    "admin",
     "modules",
     "diagnostics",
     "data_residency",
@@ -125,6 +126,14 @@
           "enum": ["block", "allow"],
           "default": "allow"
         }
+      }
+    },
+    "admin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hide_promo"],
+      "properties": {
+        "hide_promo": { "type": "boolean", "default": true }
       }
     },
     "modules": {

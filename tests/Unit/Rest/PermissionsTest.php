@@ -439,6 +439,7 @@ class PermissionsTest extends TestCase {
 		$this->assertContains( '/profile/suggest', $routes );
 		$this->assertContains( '/residency/ruleset', $routes );
 		$this->assertContains( '/residency/log', $routes );
+		$this->assertNotContains( '/element-hide', $routes );
 		$this->assertContains( '/migration/report', $routes );
 		$this->assertContains( '/recovery', $routes );
 		$this->assertContains( '/binding', $routes );

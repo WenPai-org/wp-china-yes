@@ -84,6 +84,7 @@ export default function Diagnose() {
 		fetchClientProbe,
 	} = useDispatch( STORE_NAME );
 	const [ logs, setLogs ] = useState( [] );
+	const [ elementHide, setElementHide ] = useState( null );
 	const [ probing, setProbing ] = useState( false );
 	const [ probeError, setProbeError ] = useState( false );
 	useEffect( () => {
@@ -96,6 +97,13 @@ export default function Diagnose() {
 				setLogs( Array.isArray( body?.items ) ? body.items : [] );
 			} )
 			.catch( () => setLogs( [] ) );
+		apiFetch( { path: '/wpcy/v1/element-hide' } )
+			.then( ( body ) => {
+				setElementHide(
+					body && typeof body === 'object' ? body : null
+				);
+			} )
+			.catch( () => setElementHide( null ) );
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] );
 
@@ -359,7 +367,7 @@ export default function Diagnose() {
 				<Sec title={ __( '记录', 'wp-china-yes' ) } />
 				<div className="wpcy-grid-2">
 					<MigrationCard migration={ slice.migration } />
-					<LogCard logs={ logs } />
+					<LogCard logs={ logs } elementHide={ elementHide } />
 				</div>
 			</section>
 
@@ -640,7 +648,9 @@ function MigrationCard( { migration } ) {
 	);
 }
 
-function LogCard( { logs } ) {
+function LogCard( { logs, elementHide } ) {
+	const hits = Number( elementHide?.hits ) || 0;
+	const version = Number( elementHide?.version ) || 0;
 	return (
 		<Card tight>
 			<CardHead
@@ -650,6 +660,17 @@ function LogCard( { logs } ) {
 					'wp-china-yes'
 				) }
 			/>
+			<p className="meta">
+				{ sprintf(
+					/* translators: 1: monthly hide count 2: ruleset version */
+					__(
+						'本月隐藏推广 %1$d 次 · 规则集版本 %2$d',
+						'wp-china-yes'
+					),
+					hits,
+					version
+				) }
+			</p>
 			{ logs.length ? (
 				<table className="tbl">
 					<thead>

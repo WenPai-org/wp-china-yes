@@ -51,6 +51,13 @@ final class AdminStore {
 	public static $nonces = array();
 
 	/**
+	 * Whether is_admin() should return true.
+	 *
+	 * @var bool
+	 */
+	public static $is_admin = true;
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -61,5 +68,6 @@ final class AdminStore {
 		self::$hooks      = array();
 		self::$caps       = array();
 		self::$nonces     = array();
+		self::$is_admin   = true;
 	}
 }

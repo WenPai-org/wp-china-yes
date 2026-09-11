@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "issued_at": "2026-09-11T00:00:00Z",
+    "kid": "wpcy-apps-2026",
+    "rules": [
+        {
+            "id": "woo-promo-notice",
+            "target_plugin": "woocommerce",
+            "selector": ".woocommerce-message",
+            "label": "WooCommerce 推广横幅"
+        },
+        {
+            "id": "acme-dashboard-banner",
+            "target_plugin": "acme-seo",
+            "selector": ".acme-promo-banner",
+            "label": "第三方仪表盘广告"
+        }
+    ],
+    "signature": "hHsbhorYaxV5K3KMj9ccWE/CQ/lT6Ksw+6InY5ASizwIyoGEK4UYGb1VW05s8JIQM7wjqhobek6o9iuu8zaxBA=="
+}

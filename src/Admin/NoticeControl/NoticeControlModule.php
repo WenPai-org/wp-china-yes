@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\NoticeControl;
 
+use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
@@ -134,6 +135,13 @@ final class NoticeControlModule implements ConditionalModule {
 	private $logger;
 
 	/**
+	 * Ed25519 verifier.
+	 *
+	 * @var ManifestVerifier
+	 */
+	private ManifestVerifier $verifier;
+
+	/**
 	 * Rules dropped by the class/id whitelist in the last sanitize.
 	 *
 	 * @var list<array{id: string, class: string, reason: string}>
@@ -152,17 +160,19 @@ final class NoticeControlModule implements ConditionalModule {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Repository    $config  Settings access.
-	 * @param string        $source  Fixture path or HTTPS URL. Empty disables fetch.
-	 * @param callable|null $fetcher Optional `fn(string $source): string`.
-	 * @param Logger|null   $logger  Diagnostic sink for discarded rules.
+	 * @param Repository            $config   Settings access.
+	 * @param string                $source   Fixture path or HTTPS URL. Empty disables fetch.
+	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
+	 * @param Logger|null           $logger   Diagnostic sink for discarded rules.
+	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
 	 */
-	public function __construct( Repository $config, string $source = '', $fetcher = null, $logger = null ) {
-		$this->config  = $config;
-		$this->source  = $source;
-		$this->fetcher = is_callable( $fetcher ) ? $fetcher : null;
-		$this->logger  = $logger instanceof Logger ? $logger : null;
-		$this->log     = $this->load_log();
+	public function __construct( Repository $config, string $source = '', $fetcher = null, $logger = null, $verifier = null ) {
+		$this->config   = $config;
+		$this->source   = $source;
+		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
+		$this->logger   = $logger instanceof Logger ? $logger : null;
+		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
+		$this->log      = $this->load_log();
 	}
 
 	/**
@@ -431,7 +441,21 @@ final class NoticeControlModule implements ConditionalModule {
 		}
 
 		$decoded = json_decode( $raw, true );
-		$clean   = $this->sanitize_document( $decoded );
+		if ( ! is_array( $decoded ) || ! $this->verifier->verify( $decoded ) ) {
+			if ( $this->logger instanceof Logger ) {
+				$this->logger->log(
+					'warning',
+					'Notice control rules signature invalid; keeping previous cache.',
+					array(
+						'code' => 'wpcy_notice_rules_signature_invalid',
+					)
+				);
+			}
+			return $previous;
+		}
+
+		unset( $decoded['signature'] );
+		$clean = $this->sanitize_document( $decoded );
 		if ( ! is_array( $clean ) ) {
 			return $previous;
 		}

@@ -11,6 +11,7 @@ namespace WenPai\ChinaYes\Core;
 
 use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
+use WenPai\ChinaYes\Admin\ElementHide\ElementHideModule;
 use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Apps\CachedEntitlements;
@@ -227,8 +228,9 @@ final class Plugin {
 		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
-		$registry->add( new NoticeControlModule( $config, '', null, $logger ) );
-		$registry->add( new AnnouncementsModule( $config ) );
+		$registry->add( new NoticeControlModule( $config, self::filtered_source( 'wpcy_notice_rules_source' ), null, $logger ) );
+		$registry->add( new AnnouncementsModule( $config, self::filtered_source( 'wpcy_announcements_source' ) ) );
+		$registry->add( new ElementHideModule( $config, self::filtered_source( 'wpcy_element_hide_source' ), null, $logger ) );
 		$registry->add( new UpdateBridge( $config, null, null, $logger ) );
 
 		return new self( $container, $registry, $environment );
@@ -285,6 +287,21 @@ final class Plugin {
 			return;
 		}
 		update_option( 'wpcy_installed_at', gmdate( 'Y-m-d\TH:i:s\Z' ), false );
+	}
+
+	/**
+	 * Optional document source from a filter. Empty disables production fetch.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $tag Filter name.
+	 */
+	private static function filtered_source( string $tag ): string {
+		if ( ! function_exists( 'apply_filters' ) ) {
+			return '';
+		}
+		$filtered = apply_filters( $tag, '' );
+		return is_string( $filtered ) ? $filtered : '';
 	}
 
 	/**

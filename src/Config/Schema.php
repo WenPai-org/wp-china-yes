@@ -124,6 +124,7 @@ final class Schema {
 				'schema_version',
 				'profile',
 				'connectivity',
+				'admin',
 				'modules',
 				'diagnostics',
 				'data_residency',
@@ -177,6 +178,7 @@ final class Schema {
 				'profile'              => $props['profile'],
 				'profile_confirmed_at' => $props['profile_confirmed_at'],
 				'connectivity'         => $props['connectivity'],
+				'admin'                => $props['admin'],
 				'modules'              => self::modules( false ),
 				'recovery_mode'        => $props['recovery_mode'],
 			),
@@ -306,6 +308,7 @@ final class Schema {
 				'default' => null,
 			),
 			'connectivity'         => self::connectivity(),
+			'admin'                => self::admin(),
 			'modules'              => self::modules(),
 			'integrations'         => self::integrations(),
 			'diagnostics'          => array(
@@ -431,6 +434,30 @@ final class Schema {
 					'default' => 'allow',
 				),
 				'admin_locale_follow' => array(
+					'type'    => 'boolean',
+					'default' => true,
+				),
+			),
+		);
+	}
+
+	/**
+	 * Admin experience object schema.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function admin(): array {
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'required'             => array( 'hide_promo' ),
+			'default'              => array(
+				'hide_promo' => true,
+			),
+			'properties'           => array(
+				'hide_promo' => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
