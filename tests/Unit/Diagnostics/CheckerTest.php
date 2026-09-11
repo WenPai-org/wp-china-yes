@@ -172,6 +172,63 @@ class CheckerTest extends TestCase {
 		$this->assertContains( 'cdnjs.admincdn.com', $names );
 		$this->assertNotContains( 'cn.cravatar.com', $names );
 		$this->assertNotContains( 'weavatar.com', $names );
+		$this->assertNotContains( 'motucloud', $names );
+	}
+
+	/**
+	 * Icon photos off or empty base omits the MotuCloud target.
+	 */
+	public function test_icon_photos_off_or_empty_omits_target() {
+		$config  = new MapConfig(
+			array(
+				'connectivity.avatar'      => 'off',
+				'connectivity.icon_photos' => array(
+					'enabled'       => 'on',
+					'mirrored_base' => '',
+				),
+			)
+		);
+		$checker = new Checker(
+			array( $this, 'http_get' ),
+			'get_transient',
+			'set_transient',
+			$config
+		);
+		$names   = array();
+		foreach ( $checker->targets() as $spec ) {
+			$names[] = $spec['target'];
+		}
+		$this->assertNotContains( 'motucloud', $names );
+	}
+
+	/**
+	 * Icon photos on with HTTPS base is probed as motucloud.
+	 */
+	public function test_icon_photos_on_adds_motucloud_target() {
+		$config  = new MapConfig(
+			array(
+				'connectivity.avatar'      => 'off',
+				'connectivity.icon_photos' => array(
+					'enabled'       => 'on',
+					'mirrored_base' => 'https://motu.example/m',
+				),
+			)
+		);
+		$checker = new Checker(
+			array( $this, 'http_get' ),
+			'get_transient',
+			'set_transient',
+			$config
+		);
+
+		$names = array();
+		$urls  = array();
+		foreach ( $checker->targets() as $spec ) {
+			$names[]                 = $spec['target'];
+			$urls[ $spec['target'] ] = $spec['url'];
+		}
+		$this->assertContains( 'motucloud', $names );
+		$this->assertSame( 'https://motu.example/m/', $urls['motucloud'] );
 	}
 
 	/**

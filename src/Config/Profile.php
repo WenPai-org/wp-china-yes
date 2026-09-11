@@ -78,6 +78,19 @@ final class Profile {
 		$settings['connectivity']['heartbeat']       = $defaults['connectivity']['heartbeat'];
 		$settings['connectivity']['dashboard_feeds'] = $defaults['connectivity']['dashboard_feeds'];
 
+		$photos = ( isset( $settings['connectivity']['icon_photos'] ) && is_array( $settings['connectivity']['icon_photos'] ) )
+			? $settings['connectivity']['icon_photos']
+			: array();
+
+		$photos['enabled']                       = $defaults['connectivity']['icon_photos']['enabled'];
+		$photos['mirrored_base']                 = isset( $photos['mirrored_base'] ) && is_string( $photos['mirrored_base'] )
+			? $photos['mirrored_base']
+			: '';
+		$photos['native_api_base']               = isset( $photos['native_api_base'] ) && is_string( $photos['native_api_base'] )
+			? $photos['native_api_base']
+			: '';
+		$settings['connectivity']['icon_photos'] = $photos;
+
 		if ( ! isset( $settings['modules'] ) || ! is_array( $settings['modules'] ) ) {
 			$settings['modules'] = array();
 		}
@@ -107,6 +120,11 @@ final class Profile {
 					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'off',
 					'dashboard_feeds' => 'allow',
+					'icon_photos'     => array(
+						'enabled'         => 'on',
+						'mirrored_base'   => '',
+						'native_api_base' => '',
+					),
 				),
 				'modules'      => array(
 					'windfonts' => false,
@@ -122,6 +140,11 @@ final class Profile {
 					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'on',
 					'dashboard_feeds' => 'block',
+					'icon_photos'     => array(
+						'enabled'         => 'admin',
+						'mirrored_base'   => '',
+						'native_api_base' => '',
+					),
 				),
 				'modules'      => array(
 					'windfonts' => false,
@@ -137,6 +160,11 @@ final class Profile {
 					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'off',
 					'dashboard_feeds' => 'allow',
+					'icon_photos'     => array(
+						'enabled'         => 'on',
+						'mirrored_base'   => '',
+						'native_api_base' => '',
+					),
 				),
 				'modules'      => array(
 					'windfonts' => false,
@@ -152,6 +180,11 @@ final class Profile {
 					'avatar'          => 'cravatar_cn',
 					'heartbeat'       => 'on',
 					'dashboard_feeds' => 'block',
+					'icon_photos'     => array(
+						'enabled'         => 'admin',
+						'mirrored_base'   => '',
+						'native_api_base' => '',
+					),
 				),
 				'modules'      => array(
 					'windfonts' => false,

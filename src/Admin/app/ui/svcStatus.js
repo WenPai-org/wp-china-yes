@@ -52,6 +52,14 @@ export const ROUTE_GROUPS = [
 		providerKey: 'cravatar',
 		fallbackProvider: 'Cravatar',
 	},
+	{
+		id: 'icon_photos',
+		name: __( '图标与图片', 'wp-china-yes' ),
+		desc: __( '核心图标与媒体库图片搜索', 'wp-china-yes' ),
+		hosts: [ 'motucloud' ],
+		providerKey: 'icon_photos',
+		fallbackProvider: 'MotuCloud',
+	},
 ];
 
 /**
@@ -164,6 +172,24 @@ export function avatarEnabled( settings ) {
 }
 
 /**
+ * MotuCloud is on only when enabled is not off and mirrored_base is set.
+ * Empty bases keep the row closed until the server is ready.
+ *
+ * @param {Object} settings
+ * @return {boolean} Value.
+ */
+export function iconPhotosEnabled( settings ) {
+	const row = settings?.connectivity?.icon_photos;
+	if ( ! row || typeof row !== 'object' ) {
+		return false;
+	}
+	if ( ( row.enabled || 'off' ) === 'off' ) {
+		return false;
+	}
+	return String( row.mirrored_base || '' ).trim() !== '';
+}
+
+/**
  * Admin-only public assets / avatar (crossborder / mixed).
  *
  * @param {Object} settings
@@ -224,12 +250,15 @@ export function buildSvcRows( {
 	const orgOn = wordpressOrgEnabled( settings );
 	const assetsOn = publicAssetsEnabled( settings );
 	const avatarOn = avatarEnabled( settings );
+	const motuOn = iconPhotosEnabled( settings );
 	const org = groupAggregate( targets, ROUTE_GROUPS[ 0 ].hosts );
 	const pub = groupAggregate( targets, ROUTE_GROUPS[ 1 ].hosts );
 	const ava = groupAggregate( targets, ROUTE_GROUPS[ 3 ].hosts );
+	const motu = groupAggregate( targets, ROUTE_GROUPS[ 4 ].hosts );
 	const wenpai = providerName( providers, 'wordpress_org', 'WenPai.org' );
 	const admincdn = providerName( providers, 'public_assets', 'adminCDN' );
 	const cravatar = providerName( providers, 'cravatar', 'Cravatar' );
+	const motucloud = providerName( providers, 'icon_photos', 'MotuCloud' );
 
 	const rows = [];
 
@@ -263,7 +292,15 @@ export function buildSvcRows( {
 			provider: cravatar,
 		} )
 	);
-	rows.push( motuRow( { recovery } ) );
+	rows.push(
+		motuRow( {
+			recovery,
+			enabled: motuOn,
+			adminOnly: settings?.connectivity?.icon_photos?.enabled === 'admin',
+			agg: motu,
+			provider: motucloud,
+		} )
+	);
 	rows.push( fontRow( { recovery, bound, settings } ) );
 
 	return rows;
@@ -426,32 +463,45 @@ function avatarRow( { recovery, enabled, domestic, agg, provider } ) {
 	} );
 }
 
-function motuRow( { recovery } ) {
+function motuRow( { recovery, enabled, adminOnly, agg, provider } ) {
 	const name = __( '图标与图片', 'wp-china-yes' );
-	const provider = 'MotuCloud';
+	const extra = adminOnly ? __( '只在后台', 'wp-china-yes' ) : '';
 	if ( recovery ) {
 		return matrixRow( {
 			key: 'paused',
 			dot: 'paused',
 			icon: 'image',
 			name,
+			extra,
 			provider,
 			word: __( '未接管', 'wp-china-yes' ),
 			status: 'paused',
+			agg,
 			tooltip: name,
 		} );
 	}
-	return matrixRow( {
-		key: 'on',
-		dot: 'ok',
+	if ( ! enabled ) {
+		return matrixRow( {
+			key: 'off',
+			dot: 'off',
+			icon: 'image',
+			name,
+			extra,
+			provider,
+			word: __( '未启用', 'wp-china-yes' ),
+			status: 'off',
+			line: __( '经 MotuCloud 接通', 'wp-china-yes' ),
+			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
+		} );
+	}
+	return fromAgg( {
 		icon: 'image',
 		name,
+		extra,
+		agg,
 		provider,
-		word: __( '已接通', 'wp-china-yes' ),
-		status: 'on',
-		tone: 'ok',
-		line: __( '经 MotuCloud 接通', 'wp-china-yes' ),
-		tooltip: name,
+		okLine: __( '经 MotuCloud 接通', 'wp-china-yes' ),
+		tooltip: extra ? name + ' · ' + extra : name,
 	} );
 }
 
@@ -682,6 +732,7 @@ export function buildRouteRows( { targets, settings, providers } ) {
 	const orgOn = wordpressOrgEnabled( settings );
 	const assetsOn = publicAssetsEnabled( settings );
 	const avatarOn = avatarEnabled( settings );
+	const motuOn = iconPhotosEnabled( settings );
 	const out = [];
 	ROUTE_GROUPS.forEach( ( group ) => {
 		if ( group.id === 'wordpress_org' && ! orgOn ) {
@@ -694,6 +745,9 @@ export function buildRouteRows( { targets, settings, providers } ) {
 			return;
 		}
 		if ( group.id === 'cravatar' && ! avatarOn ) {
+			return;
+		}
+		if ( group.id === 'icon_photos' && ! motuOn ) {
 			return;
 		}
 		const agg = groupAggregate( targets, group.hosts );

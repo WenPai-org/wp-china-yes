@@ -73,6 +73,13 @@ final class RouteGroups {
 				'description' => '评论头像',
 				'members'     => array( 'cn.cravatar.com', 'en.cravatar.com' ),
 			),
+			array(
+				'id'          => 'icon_photos',
+				'label'       => '图标与图片',
+				'provider'    => 'MotuCloud',
+				'description' => '核心图标与媒体库图片搜索',
+				'members'     => array( 'motucloud' ),
+			),
 		);
 	}
 

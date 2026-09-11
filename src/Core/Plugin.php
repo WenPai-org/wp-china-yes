@@ -20,6 +20,7 @@ use WenPai\ChinaYes\Connectivity\AdminLocale\AdminLocaleModule;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
 use WenPai\ChinaYes\Connectivity\DashboardFeeds\DashboardFeedsModule;
 use WenPai\ChinaYes\Connectivity\Heartbeat\HeartbeatModule;
+use WenPai\ChinaYes\Connectivity\IconPhotos\IconPhotosModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\PublicAssets\AssetMap;
 use WenPai\ChinaYes\Connectivity\PublicAssets\PublicAssetsModule;
@@ -213,6 +214,7 @@ final class Plugin {
 		$registry->add( new HeartbeatModule( $config ) );
 		$registry->add( new DashboardFeedsModule( $config ) );
 		$registry->add( new AdminLocaleModule( $config ) );
+		$registry->add( new IconPhotosModule( $config, null, $health ) );
 		$catalog = new Catalog();
 		$container->set( 'windfonts.catalog', $catalog );
 		$registry->add( new WindfontsModule( $config ) );

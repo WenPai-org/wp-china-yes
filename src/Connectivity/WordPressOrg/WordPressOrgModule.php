@@ -429,6 +429,11 @@ final class WordPressOrgModule implements ConditionalModule {
 			return null;
 		}
 
+		$path = $this->url_part( $url, PHP_URL_PATH );
+		if ( 0 === strpos( $path, '/core/icons/' ) ) {
+			return null;
+		}
+
 		if ( ! $this->probe->is_usable() ) {
 			return null;
 		}
@@ -437,7 +442,6 @@ final class WordPressOrgModule implements ConditionalModule {
 			return null;
 		}
 
-		$path  = $this->url_part( $url, PHP_URL_PATH );
 		$query = $this->url_part( $url, PHP_URL_QUERY );
 
 		$origin = ( Origins::UPSTREAM_PACKAGE_HOST === $host )

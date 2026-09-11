@@ -71,6 +71,7 @@
   - `admin_assets`：`on` \| `off`（4.0 预留，无运行时行为）
   - `connectivity.heartbeat`：`on` \| `off`
   - `connectivity.dashboard_feeds`：`block` \| `allow`
+  - `connectivity.icon_photos`：`{ "enabled": "off"|"on"|"admin", "mirrored_base": "", "native_api_base": "" }`（缺省 `enabled=off`、基址空；服务端就绪前关闭。设置页不放用户字段）
   - `diagnostics.client_probe_url`：string，默认 `""`
   - 其余字段同 `docs/specs/config-schema.md`
 - PUT body 为完整对象或与 schema 兼容的部分对象；服务端按 `docs/specs/config-schema.md` 校验后写入，响应完整对象。PUT `profile` 且请求标明切换场景时，服务端走 `Profile::apply_defaults()` 重置连通性各项为该场景默认（改前由界面确认；本端点不代做确认对话框）。
@@ -176,7 +177,7 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 }
 ```
 
-探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com`；`connectivity.avatar=off` 时省略）。远程失败不得记为 `ok`。
+探测目标：WordPress.org 镜像（`api.wenpai.net`、`downloads.wenpai.net`）、公共库节点（`cdnjs.admincdn.com`、`jsd.admincdn.com`、`googleajax.admincdn.com`、`googlefonts.admincdn.com`）、当前头像线路（`cn.cravatar.com` / `en.cravatar.com`；`connectivity.avatar=off` 时省略）、MotuCloud（`target` 固定为 `motucloud`；`connectivity.icon_photos.enabled=off` 或 `mirrored_base` 为空时省略）。远程失败不得记为 `ok`。
 
 **界面分组（2026-09-06，供概览"线路状态"与 `/events` 的 `{route}` 使用）**。概览不逐个列目标，按下表分组；组状态取成员里**最差**的（`down` > `fallback` > `ok`），组延迟取成员里**最大**的 `latency_ms`，组"最近检查"取最早的 `checked_at`。诊断页仍逐个列目标。
 
@@ -186,10 +187,11 @@ GET `/diagnostics` 返回最近一次检查；POST `/diagnostics/run` 触发一�
 | 公共库源 | adminCDN | Google Fonts、Ajax、jsDelivr、Emoji | `googlefonts.admincdn.com`、`googleajax.admincdn.com`、`jsd.admincdn.com` |
 | CDNJS 源 | adminCDN | 备用公共库 | `cdnjs.admincdn.com` |
 | Cravatar | Cravatar | 评论头像 · `{host}` | 当前头像线路主机（一个） |
+| 图标与图片 | MotuCloud | 核心图标与媒体库图片搜索 | `motucloud`（配置驱动，非固定主机） |
 
 服务商列是界面与事件文案用的常量（`{provider}`），不进 `/diagnostics` 响应；分组与服务商的映射放在一处（`Diagnostics\RouteGroups`），前后端共用同一张表。
 
-`connectivity.wordpress_org=off`（直连）时"WordPress.org 镜像"组不出现在概览线路列表（跨境站默认如此）；`public_assets.scope=off` 时两个公共库组不出现；`avatar` 两侧都 `off` 时 Cravatar 组不出现。
+`connectivity.wordpress_org=off`（直连）时"WordPress.org 镜像"组不出现在概览线路列表（跨境站默认如此）；`public_assets.scope=off` 时两个公共库组不出现；`avatar` 两侧都 `off` 时 Cravatar 组不出现；`icon_photos.enabled=off` 或基址为空时「图标与图片」组不出现。
 
 ### `/diagnostics/client-probe`
 

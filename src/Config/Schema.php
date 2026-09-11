@@ -434,6 +434,49 @@ final class Schema {
 					'type'    => 'boolean',
 					'default' => true,
 				),
+				'icon_photos'         => self::icon_photos(),
+			),
+		);
+	}
+
+	/**
+	 * MotuCloud icon / photo connectivity. Missing key is filled on read.
+	 *
+	 * Schema default stays off with empty bases (server not ready). Scene
+	 * matrix sets enabled on / admin; empty bases still skip rewrite.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function icon_photos(): array {
+		$empty = array(
+			'enabled'         => 'off',
+			'mirrored_base'   => '',
+			'native_api_base' => '',
+		);
+
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'required'             => array( 'enabled', 'mirrored_base', 'native_api_base' ),
+			'default'              => $empty,
+			'properties'           => array(
+				'enabled'         => array(
+					'type'    => 'string',
+					'enum'    => array( 'off', 'on', 'admin' ),
+					'default' => 'off',
+				),
+				'mirrored_base'   => array(
+					'type'      => 'string',
+					'maxLength' => 2048,
+					'default'   => '',
+				),
+				'native_api_base' => array(
+					'type'      => 'string',
+					'maxLength' => 2048,
+					'default'   => '',
+				),
 			),
 		);
 	}
