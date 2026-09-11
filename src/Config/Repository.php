@@ -447,8 +447,8 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		}
 
 		$version       = isset( $raw['schema_version'] ) ? (int) $raw['schema_version'] : 0;
-		$needs_upgrade = $version < 2
-			&& in_array( $option, array( Schema::SETTINGS, Schema::NETWORK_SETTINGS, Schema::SITE_OVERRIDES ), true );
+		$needs_upgrade = in_array( $option, array( Schema::SETTINGS, Schema::NETWORK_SETTINGS, Schema::SITE_OVERRIDES ), true )
+			&& ( $version < 2 || self::needs_avatar_collapse( $raw ) );
 
 		if ( $needs_upgrade ) {
 			$raw = SchemaMigrator::upgrade_1_to_2( $raw, Schema::SITE_OVERRIDES !== $option );
@@ -466,6 +466,20 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		}
 
 		return $this->deep_merge( $defaults, $clean );
+	}
+
+	/**
+	 * Whether a stored v2 document still has a split avatar object.
+	 *
+	 * @param array<string, mixed> $raw Stored document.
+	 */
+	private static function needs_avatar_collapse( array $raw ): bool {
+		if ( array_key_exists( 'admin_assets', $raw ) ) {
+			return true;
+		}
+		$avatar = $raw['connectivity']['avatar'] ?? null;
+
+		return is_array( $avatar );
 	}
 
 	/**
@@ -584,11 +598,11 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		$stored_raw = get_option( Schema::SITE_OVERRIDES, array() );
 		$stored     = is_array( $stored_raw ) ? $stored_raw : array();
 
-		if ( array_key_exists( 'connectivity', $value ) || array_key_exists( 'modules', $value ) || array_key_exists( 'profile', $value ) || array_key_exists( 'admin_assets', $value ) ) {
+		if ( array_key_exists( 'connectivity', $value ) || array_key_exists( 'modules', $value ) || array_key_exists( 'profile', $value ) ) {
 			$this->warn( 'Site overrides ignored because allow_site_override is false.', array() );
 		}
 
-		foreach ( array( 'connectivity', 'modules', 'profile', 'admin_assets' ) as $key ) {
+		foreach ( array( 'connectivity', 'modules', 'profile' ) as $key ) {
 			if ( array_key_exists( $key, $stored ) ) {
 				$value[ $key ] = $stored[ $key ];
 			} else {
@@ -610,7 +624,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 			return false;
 		}
 		$root = explode( '.', $path )[0];
-		return in_array( $root, array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'admin_assets', 'recovery_mode' ), true );
+		return in_array( $root, array( 'profile', 'profile_confirmed_at', 'connectivity', 'modules', 'recovery_mode' ), true );
 	}
 
 	/**

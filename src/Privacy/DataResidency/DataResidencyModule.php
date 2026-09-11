@@ -405,7 +405,7 @@ final class DataResidencyModule implements Module {
 		}
 		$profile = $this->config->get( 'profile', 'domestic' );
 
-		return in_array( $profile, array( 'domestic', 'crossborder', 'mixed' ), true )
+		return in_array( $profile, array( 'domestic', 'crossborder', 'inbound', 'mixed' ), true )
 			? $profile
 			: 'domestic';
 	}

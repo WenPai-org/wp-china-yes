@@ -15,7 +15,7 @@ use WenPai\ChinaYes\Config\Defaults;
 use WenPai\ChinaYes\Config\Profile;
 
 /**
- * 9 paths × 3 profiles; switch leaves notice_control alone.
+ * 8 paths × 3 profiles; switch leaves notice_control alone.
  */
 class ProfileTest extends TestCase {
 
@@ -39,7 +39,8 @@ class ProfileTest extends TestCase {
 		$this->assertSame( $defaults['connectivity']['heartbeat'], $row['connectivity']['heartbeat'] );
 		$this->assertSame( $defaults['connectivity']['dashboard_feeds'], $row['connectivity']['dashboard_feeds'] );
 		$this->assertSame( $defaults['modules']['windfonts'], $row['modules']['windfonts'] );
-		$this->assertSame( $defaults['admin_assets'], $row['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $row );
+		$this->assertArrayNotHasKey( 'admin_assets', $defaults );
 	}
 
 	/**
@@ -63,7 +64,7 @@ class ProfileTest extends TestCase {
 	}
 
 	/**
-	 * 9 rows × 3 columns.
+	 * 8 rows × 3 columns.
 	 *
 	 * @return array<string, array{0: string, 1: string, 2: mixed}>
 	 */
@@ -75,24 +76,20 @@ class ProfileTest extends TestCase {
 				'wordpress_org'       => array( 'auto', 'off', 'auto' ),
 				'public_assets.items' => array( $five, $five, $five ),
 				'public_assets.scope' => array( 'both', 'admin', 'admin' ),
-				'avatar.admin'        => array( 'cravatar_cn', 'cravatar_cn', 'cravatar_cn' ),
-				'avatar.frontend'     => array( 'cravatar_cn', 'off', 'cravatar_global' ),
+				'avatar'              => array( 'cravatar_cn', 'cravatar_cn', 'cravatar_cn' ),
 				'modules.windfonts'   => array( false, false, false ),
 				'heartbeat'           => array( 'off', 'on', 'on' ),
 				'dashboard_feeds'     => array( 'allow', 'block', 'block' ),
-				'admin_assets'        => array( 'off', 'on', 'on' ),
 			) as $key => $values
 		) {
 			$paths                        = array(
 				'wordpress_org'       => 'connectivity.wordpress_org',
 				'public_assets.items' => 'connectivity.public_assets.items',
 				'public_assets.scope' => 'connectivity.public_assets.scope',
-				'avatar.admin'        => 'connectivity.avatar.admin',
-				'avatar.frontend'     => 'connectivity.avatar.frontend',
+				'avatar'              => 'connectivity.avatar',
 				'modules.windfonts'   => 'modules.windfonts',
 				'heartbeat'           => 'connectivity.heartbeat',
 				'dashboard_feeds'     => 'connectivity.dashboard_feeds',
-				'admin_assets'        => 'admin_assets',
 			);
 			$path                         = $paths[ $key ];
 			$out[ $key . ' domestic' ]    = array( 'domestic', $path, $values[0] );
@@ -115,17 +112,16 @@ class ProfileTest extends TestCase {
 		$settings['data_residency']['ruleset_version'] = 9;
 		$settings['apps']['disabled']                  = array( 'x' );
 		$settings['connectivity']['wordpress_org']     = 'auto';
-		$settings['admin_assets']                      = 'off';
 
 		$out = Profile::apply_to( $settings, 'crossborder' );
 
 		$this->assertSame( 'crossborder', $out['profile'] );
 		$this->assertSame( 'off', $out['connectivity']['wordpress_org'] );
 		$this->assertSame( 'admin', $out['connectivity']['public_assets']['scope'] );
-		$this->assertSame( 'off', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
 		$this->assertSame( 'on', $out['connectivity']['heartbeat'] );
 		$this->assertSame( 'block', $out['connectivity']['dashboard_feeds'] );
-		$this->assertSame( 'on', $out['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertFalse( $out['modules']['windfonts'] );
 		$this->assertFalse( $out['modules']['notice_control'] );
 		$this->assertSame( array( 'a1' ), $out['announcements']['dismissed'] );
@@ -133,5 +129,19 @@ class ProfileTest extends TestCase {
 		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertSame( 9, $out['data_residency']['ruleset_version'] );
 		$this->assertSame( array( 'x' ), $out['apps']['disabled'] );
+	}
+
+	/**
+	 * Inbound: frontend-only public assets; avatar still cravatar_cn site-wide.
+	 */
+	public function test_inbound_defaults() {
+		$row = Profile::apply_defaults( 'inbound' );
+
+		$this->assertSame( 'off', $row['connectivity']['wordpress_org'] );
+		$this->assertSame( 'frontend', $row['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'cravatar_cn', $row['connectivity']['avatar'] );
+		$this->assertSame( 'off', $row['connectivity']['heartbeat'] );
+		$this->assertSame( 'allow', $row['connectivity']['dashboard_feeds'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $row );
 	}
 }

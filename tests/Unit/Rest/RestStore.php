@@ -114,6 +114,13 @@ final class RestStore {
 	public static $redirect = null;
 
 	/**
+	 * User meta registered via register_meta().
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public static $user_meta = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -133,5 +140,6 @@ final class RestStore {
 		self::$die_throws   = false;
 		self::$transients   = array();
 		self::$redirect     = null;
+		self::$user_meta    = array();
 	}
 }

@@ -18,6 +18,7 @@ module.exports = defineConfig( {
 	use: {
 		baseURL: process.env.BASE_URL || 'http://localhost:8890',
 		locale: 'zh-CN',
+		viewport: { width: 1440, height: 900 },
 		screenshot: 'off',
 		trace: 'off',
 		video: 'off',

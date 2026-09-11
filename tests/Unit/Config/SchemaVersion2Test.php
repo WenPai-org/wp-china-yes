@@ -63,9 +63,9 @@ class SchemaVersion2Test extends TestCase {
 	}
 
 	/**
-	 * String avatar becomes two identical values.
+	 * String avatar stays a single enum.
 	 */
-	public function test_avatar_string_becomes_two_sides() {
+	public function test_avatar_string_stays_single() {
 		$out = SchemaMigrator::upgrade_1_to_2(
 			array(
 				'schema_version' => 1,
@@ -75,12 +75,11 @@ class SchemaVersion2Test extends TestCase {
 			)
 		);
 
-		$this->assertSame( 'cravatar_global', $out['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'cravatar_global', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_global', $out['connectivity']['avatar'] );
 	}
 
 	/**
-	 * Stored v1 weavatar string becomes cravatar_cn on both sides.
+	 * Stored v1 weavatar string becomes cravatar_cn.
 	 */
 	public function test_weavatar_string_becomes_cravatar_cn() {
 		$out = SchemaMigrator::upgrade_1_to_2(
@@ -92,12 +91,31 @@ class SchemaVersion2Test extends TestCase {
 			)
 		);
 
-		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
 	}
 
 	/**
-	 * Missing profile / admin_assets / heartbeat / dashboard_feeds / client_probe_url fill domestic defaults.
+	 * Split v2 avatar object collapses to one live line.
+	 */
+	public function test_split_avatar_object_collapses() {
+		$out = SchemaMigrator::upgrade_1_to_2(
+			array(
+				'schema_version' => 2,
+				'connectivity'   => array(
+					'avatar' => array(
+						'admin'    => 'cravatar_cn',
+						'frontend' => 'off',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 'cravatar_cn', $out['connectivity']['avatar'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $out );
+	}
+
+	/**
+	 * Missing profile / heartbeat / dashboard_feeds / client_probe_url fill domestic defaults.
 	 */
 	public function test_missing_keys_fill_domestic_defaults() {
 		$out = SchemaMigrator::upgrade_1_to_2(
@@ -112,29 +130,25 @@ class SchemaVersion2Test extends TestCase {
 		);
 
 		$this->assertSame( 'domestic', $out['profile'] );
-		$this->assertSame( 'off', $out['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertSame( 'off', $out['connectivity']['heartbeat'] );
 		$this->assertSame( 'allow', $out['connectivity']['dashboard_feeds'] );
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 	}
 
 	/**
-	 * Already-v2 documents are returned unchanged.
+	 * Already-v2 documents with a string avatar stay put aside from dropped admin_assets.
 	 */
 	public function test_upgrade_is_idempotent() {
 		$v2 = array(
 			'schema_version' => 2,
 			'profile'        => 'crossborder',
-			'admin_assets'   => 'on',
 			'connectivity'   => array(
 				'public_assets' => array(
 					'items' => array( 'cdnjs' ),
 					'scope' => 'admin',
 				),
-				'avatar'        => array(
-					'admin'    => 'cravatar_cn',
-					'frontend' => 'off',
-				),
+				'avatar'        => 'cravatar_cn',
 				'heartbeat'     => 'on',
 			),
 		);
@@ -163,8 +177,7 @@ class SchemaVersion2Test extends TestCase {
 		$this->assertSame( $once, $twice );
 		$this->assertSame( array( 'jsdelivr' ), $once['connectivity']['public_assets']['items'] );
 		$this->assertSame( 'both', $once['connectivity']['public_assets']['scope'] );
-		$this->assertSame( 'off', $once['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'off', $once['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'off', $once['connectivity']['avatar'] );
 	}
 
 	/**
@@ -188,9 +201,8 @@ class SchemaVersion2Test extends TestCase {
 		$this->assertSame( 'domestic', $repo->get( 'profile' ) );
 		$this->assertSame( array( 'jsdelivr' ), $repo->get( 'connectivity.public_assets.items' ) );
 		$this->assertSame( 'both', $repo->get( 'connectivity.public_assets.scope' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.frontend' ) );
-		$this->assertSame( 'off', $repo->get( 'admin_assets' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+		$this->assertNull( $repo->get( 'admin_assets' ) );
 
 		$stored = get_option( Schema::SETTINGS );
 		$this->assertIsArray( $stored );

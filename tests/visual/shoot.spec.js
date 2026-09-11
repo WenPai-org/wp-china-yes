@@ -16,7 +16,7 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 const { test, expect } = require( '@playwright/test' );
-const { loginAsAdmin, openAdminPage } = require( '../e2e/helpers' );
+const { loginAsAdmin, openAdminPage, wpEval } = require( '../e2e/helpers' );
 const catalog = require( './screens.json' );
 
 if ( ! process.env.WP_USERNAME ) {
@@ -75,7 +75,10 @@ async function mockRoutes( page, routes ) {
 	await page.route(
 		( url ) => {
 			try {
-				return restPath( url.href ).indexOf( '/wpcy/v1/' ) === 0;
+				const current = restPath( url.href );
+				return ( routes || [] ).some( ( item ) =>
+					pathEquals( current, item.path )
+				);
 			} catch ( error ) {
 				void error;
 				return false;
@@ -91,10 +94,15 @@ async function mockRoutes( page, routes ) {
 					pathEquals( current, item.path )
 			);
 			if ( match ) {
+				if ( match.delayMs ) {
+					await new Promise( ( resolve ) =>
+						setTimeout( resolve, match.delayMs )
+					);
+				}
 				await route.fulfill( {
 					status: match.status || 200,
 					contentType: 'application/json',
-					body: JSON.stringify( match.body ),
+					body: JSON.stringify( match.body === undefined ? {} : match.body ),
 				} );
 				return;
 			}
@@ -125,12 +133,61 @@ test.describe( 'visual screenshots', () => {
 				await mockRoutes( page, prep.routes || [] );
 			}
 
-			await openAdminPage( page, screen.page );
+			if ( prep.bootstrap ) {
+				await page.addInitScript( ( patch ) => {
+					let stored;
+					Object.defineProperty( window, 'wpcyAdmin', {
+						configurable: true,
+						enumerable: true,
+						set( value ) {
+							stored = value || {};
+							if ( patch.settings ) {
+								stored.settings = Object.assign(
+									{},
+									stored.settings || {},
+									patch.settings
+								);
+							}
+							if ( patch.links ) {
+								stored.links = patch.links;
+							}
+							if ( patch.providers ) {
+								stored.providers = patch.providers;
+							}
+						},
+						get() {
+							return stored;
+						},
+					} );
+				}, prep.bootstrap );
+			}
 
-			if ( screen.waitForText ) {
-				await expect(
-					page.getByText( screen.waitForText, { exact: false } ).first()
-				).toBeVisible();
+			if ( prep.wpEval ) {
+				wpEval( prep.wpEval );
+			}
+
+			if ( screen.waitForSelector ) {
+				await page.goto( `/wp-admin/admin.php?page=${ screen.page }`, {
+					waitUntil: 'domcontentloaded',
+				} );
+				await page.locator( screen.waitForSelector ).first().waitFor( {
+					state: 'visible',
+					timeout: screen.waitTimeout || 8000,
+				} );
+			} else {
+				await openAdminPage( page, screen.page );
+				if ( screen.clickText ) {
+					await page
+						.getByRole( 'button', { name: screen.clickText } )
+						.click();
+				}
+				if ( screen.waitForText ) {
+					await expect(
+						page
+							.getByText( screen.waitForText, { exact: false } )
+							.first()
+					).toBeVisible();
+				}
 			}
 
 			const dest = path.join( outDir, screen.filename );

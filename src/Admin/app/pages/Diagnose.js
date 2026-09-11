@@ -1,339 +1,715 @@
 /**
- * Diagnostics: TabPanel plus DataViews.
+ * Diagnose: server checks, browser probe, records, recovery.
  */
 
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { Button, Spinner, TabPanel } from '@wordpress/components';
-import { DataViews } from '@wordpress/dataviews/wp';
 import PageShell from '../components/PageShell';
-import StatusDot from '../components/StatusDot';
 import { STORE_NAME } from '../store';
-import { adminPageUrl, parseHash, PAGES, writeHash } from '../routing';
+import { adminPageUrl, PAGES } from '../routing';
+import Icon from '../ui/icons';
+import Btn from '../ui/Btn';
+import Pill from '../ui/Pill';
+import Notice from '../ui/Notice';
+import Sec from '../ui/Sec';
+import Card, { CardHead } from '../ui/Card';
+import Empty from '../ui/Empty';
+import EventsSimple from '../ui/EventsSimple';
+import { eventTime, formatInt, relTime } from '../ui/relTime';
+import { formatMs, groupAggregate, ROUTE_GROUPS } from '../ui/svcStatus';
 
-const TABS = [
-	{ name: 'connect', title: __( '连接检查', 'wp-china-yes' ) },
-	{ name: 'notices', title: __( '被隐藏的通知', 'wp-china-yes' ) },
-	{ name: 'hosts', title: __( '出站主机记录', 'wp-china-yes' ) },
-	{ name: 'data', title: __( '数据与恢复', 'wp-china-yes' ) },
+const PAIRS = [
+	{
+		origin: 'fonts.googleapis.com',
+		originHost: 'fonts.googleapis.com',
+		target: 'googlefonts.admincdn.com',
+		targetHost: 'googlefonts.admincdn.com',
+		provider: 'adminCDN',
+	},
+	{
+		origin: 'gravatar.com',
+		originHost: 'secure.gravatar.com',
+		target: 'cn.cravatar.com',
+		targetHost: 'cn.cravatar.com',
+		provider: 'Cravatar',
+	},
 ];
 
-/**
- * @param {string} result
- */
-function resultStatus( result ) {
+function probeActionLabel( probing, probe ) {
+	if ( probing ) {
+		return __( '测速中', 'wp-china-yes' );
+	}
+	if ( probe?.checked_at ) {
+		return __( '重新测速', 'wp-china-yes' );
+	}
+	return __( '开始测速', 'wp-china-yes' );
+}
+
+function pillFor( result, latency ) {
 	if ( result === 'ok' ) {
-		return {
-			tone: 'success',
-			label: __( '国内镜像正常', 'wp-china-yes' ),
-		};
+		if ( latency > 1000 ) {
+			return { tone: 'warn', word: __( '偏慢', 'wp-china-yes' ) };
+		}
+		return { tone: 'ok', word: __( '正常', 'wp-china-yes' ) };
 	}
 	if ( result === 'fallback' ) {
-		return {
-			tone: 'warning',
-			label: __( '已回原始上游', 'wp-china-yes' ),
-		};
+		return { tone: 'warn', word: __( '已回原始上游', 'wp-china-yes' ) };
 	}
-	return { tone: 'danger', label: __( '不可用', 'wp-china-yes' ) };
-}
-
-const TABLE_VIEW = {
-	type: 'table',
-	search: '',
-	filters: [],
-	page: 1,
-	perPage: 20,
-	fields: [],
-};
-
-function EmptyTable( { fields, empty } ) {
-	const [ view, setView ] = useState( {
-		...TABLE_VIEW,
-		fields: fields.map( ( field ) => field.id ),
-	} );
-	return (
-		<DataViews
-			data={ [] }
-			fields={ fields }
-			view={ view }
-			onChangeView={ setView }
-			defaultLayouts={ { table: {} } }
-			paginationInfo={ { totalItems: 0, totalPages: 1 } }
-			search={ false }
-			empty={ empty }
-		/>
-	);
-}
-
-function ConnectTable( { targets } ) {
-	const fields = [
-		{
-			id: 'target',
-			label: __( '目标', 'wp-china-yes' ),
-			enableHiding: false,
-			getValue: ( { item } ) => item.target,
-		},
-		{
-			id: 'result',
-			label: __( '结果', 'wp-china-yes' ),
-			render: ( { item } ) => {
-				const status = resultStatus( item.result );
-				return (
-					<StatusDot tone={ status.tone } label={ status.label } />
-				);
-			},
-		},
-		{
-			id: 'latency_ms',
-			label: __( '延迟', 'wp-china-yes' ),
-			render: ( { item } ) =>
-				item.latency_ms === null || item.latency_ms === undefined
-					? '—'
-					: item.latency_ms + ' ms',
-		},
-		{
-			id: 'checked_at',
-			label: __( '最近检查', 'wp-china-yes' ),
-			getValue: ( { item } ) => item.checked_at,
-		},
-		{
-			id: 'suggestion',
-			label: __( '建议', 'wp-china-yes' ),
-			render: ( { item } ) =>
-				item.result === 'ok' ? '' : item.suggestion || '',
-		},
-	];
-	const [ view, setView ] = useState( {
-		...TABLE_VIEW,
-		fields: fields.map( ( field ) => field.id ),
-	} );
-	const rows = ( targets || [] ).map( ( row, index ) => ( {
-		...row,
-		id: row.target + '-' + index,
-	} ) );
-
-	return (
-		<DataViews
-			data={ rows }
-			fields={ fields }
-			view={ view }
-			onChangeView={ setView }
-			defaultLayouts={ { table: {} } }
-			paginationInfo={ {
-				totalItems: rows.length,
-				totalPages: 1,
-			} }
-			search={ false }
-			empty={
-				<p className="wpcy-help">
-					{ __( '尚未检查', 'wp-china-yes' ) }
-				</p>
-			}
-		/>
-	);
-}
-
-function HiddenNoticesTable() {
-	const [ rows, setRows ] = useState( [] );
-	const fields = [
-		{
-			id: 'plugin',
-			label: __( '来源插件', 'wp-china-yes' ),
-			enableHiding: false,
-			getValue: ( { item } ) => item.plugin,
-		},
-		{
-			id: 'rule',
-			label: __( '匹配规则', 'wp-china-yes' ),
-			getValue: ( { item } ) => item.rule,
-		},
-		{
-			id: 'first',
-			label: __( '首次隐藏', 'wp-china-yes' ),
-			getValue: ( { item } ) => item.first_hidden,
-		},
-		{
-			id: 'count',
-			label: __( '次数', 'wp-china-yes' ),
-			getValue: ( { item } ) => item.count,
-		},
-	];
-	const [ view, setView ] = useState( {
-		...TABLE_VIEW,
-		fields: fields.map( ( field ) => field.id ),
-	} );
-
-	useEffect( () => {
-		let cancelled = false;
-		apiFetch( { path: '/wpcy/v1/notice-control/hidden' } )
-			.then( ( payload ) => {
-				if ( cancelled ) {
-					return;
-				}
-				const items = Array.isArray( payload?.items )
-					? payload.items
-					: [];
-				setRows(
-					items.map( ( row, index ) => ( {
-						...row,
-						id: ( row.rule || 'row' ) + '-' + index,
-					} ) )
-				);
-			} )
-			.catch( () => {
-				if ( ! cancelled ) {
-					setRows( [] );
-				}
-			} );
-		return () => {
-			cancelled = true;
-		};
-	}, [] );
-
-	return (
-		<div>
-			<p className="wpcy-help">
-				{ __( '核心更新、安全与站点健康通知永不隐藏', 'wp-china-yes' ) }
-			</p>
-			<DataViews
-				data={ rows }
-				fields={ fields }
-				view={ view }
-				onChangeView={ setView }
-				defaultLayouts={ { table: {} } }
-				paginationInfo={ {
-					totalItems: rows.length,
-					totalPages: 1,
-				} }
-				search={ false }
-				empty={
-					<p className="wpcy-help">
-						{ __( '暂无被隐藏的通知。', 'wp-china-yes' ) }
-					</p>
-				}
-			/>
-		</div>
-	);
+	if ( result === 'down' ) {
+		return { tone: 'bad', word: __( '不可达', 'wp-china-yes' ) };
+	}
+	return { tone: '', word: __( '未检查', 'wp-china-yes' ) };
 }
 
 export default function Diagnose() {
-	const { targets, running } = useSelect(
-		( select ) => ( {
-			targets: select( STORE_NAME ).getDiagnostics()?.targets || [],
-			running: select( STORE_NAME ).isRunning(),
-		} ),
-		[]
-	);
-	const { runDiagnostics } = useDispatch( STORE_NAME );
-	const hash = parseHash();
-	const initial = TABS.some( ( tab ) => tab.name === hash.tab )
-		? hash.tab
-		: 'connect';
+	const slice = useSelect( ( select ) => {
+		const store = select( STORE_NAME );
+		return {
+			targets: store.getDiagnostics()?.targets || [],
+			running: store.isRunning(),
+			events: store.getEvents(),
+			migration: store.getMigration(),
+			clientProbe: store.getClientProbe(),
+			diagnosticsMs: store.getDiagnosticsMs(),
+			pluginVersion: store.getPluginVersion(),
+		};
+	}, [] );
+	const {
+		runDiagnostics,
+		fetchDiagnostics,
+		fetchEvents,
+		fetchMigration,
+		fetchClientProbe,
+	} = useDispatch( STORE_NAME );
+	const [ logs, setLogs ] = useState( [] );
+	const [ probing, setProbing ] = useState( false );
+	const [ probeError, setProbeError ] = useState( false );
+	useEffect( () => {
+		fetchDiagnostics();
+		fetchEvents();
+		fetchMigration();
+		fetchClientProbe();
+		apiFetch( { path: '/wpcy/v1/residency/log?per_page=5' } )
+			.then( ( body ) => {
+				setLogs( Array.isArray( body?.items ) ? body.items : [] );
+			} )
+			.catch( () => setLogs( [] ) );
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [] );
+
+	async function runProbe() {
+		setProbing( true );
+		setProbeError( false );
+		try {
+			const probes = [];
+			const started = performance.now();
+			await apiFetch( { path: '/wpcy/v1/diagnostics' } );
+			const ttfb = Math.round( performance.now() - started );
+			const hosts = PAIRS.flatMap( ( p ) => [
+				p.originHost,
+				p.targetHost,
+			] );
+			for ( const host of hosts ) {
+				const t0 = performance.now();
+				try {
+					await fetch( 'https://' + host + '/', {
+						mode: 'no-cors',
+						cache: 'no-store',
+					} );
+					probes.push( {
+						target: host,
+						result: 'ok',
+						latency_ms: Math.round( performance.now() - t0 ),
+					} );
+				} catch ( err ) {
+					void err;
+					probes.push( {
+						target: host,
+						result: 'down',
+						latency_ms: null,
+					} );
+				}
+			}
+			await apiFetch( {
+				path: '/wpcy/v1/diagnostics/client-probe',
+				method: 'POST',
+				data: { ttfb_ms: ttfb, probes },
+			} );
+			fetchClientProbe();
+		} catch ( err ) {
+			void err;
+			setProbeError( true );
+		} finally {
+			setProbing( false );
+		}
+	}
 
 	useEffect( () => {
-		if ( ! hash.tab ) {
-			return;
+		if ( window.location.hash.indexOf( 'probe' ) !== -1 ) {
+			runProbe();
 		}
-		if ( ! TABS.some( ( tab ) => tab.name === hash.tab ) ) {
-			writeHash( {} );
-		}
-	}, [ hash.tab ] );
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [] );
 
-	const actions = (
-		<Button
-			variant="primary"
-			isBusy={ running }
-			disabled={ running }
-			onClick={ () => runDiagnostics() }
-		>
-			{ running ? <Spinner /> : null }
-			{ __( '立即检查', 'wp-china-yes' ) }
-		</Button>
-	);
+	const exportReport = () => {
+		const blob = new Blob(
+			[
+				JSON.stringify(
+					{
+						diagnostics: { targets: slice.targets },
+						clientProbe: slice.clientProbe,
+						migration: slice.migration,
+						version: slice.pluginVersion,
+					},
+					null,
+					2
+				),
+			],
+			{ type: 'application/json' }
+		);
+		const url = URL.createObjectURL( blob );
+		const a = document.createElement( 'a' );
+		a.href = url;
+		a.download = 'wpcy-diagnose.json';
+		a.click();
+		URL.revokeObjectURL( url );
+	};
+
+	const lastCheck = slice.targets[ 0 ]?.checked_at;
+	const groups = ROUTE_GROUPS.map( ( group ) => {
+		const agg = groupAggregate( slice.targets, group.hosts );
+		return { group, agg };
+	} ).filter( ( row ) => row.agg.result );
 
 	return (
-		<PageShell title={ __( '诊断', 'wp-china-yes' ) } actions={ actions }>
-			<TabPanel
-				tabs={ TABS }
-				initialTabName={ initial }
-				onSelect={ ( name ) => {
-					writeHash( name === 'connect' ? {} : { tab: name } );
-				} }
-			>
-				{ ( tab ) => {
-					if ( tab.name === 'connect' ) {
-						return <ConnectTable targets={ targets } />;
+		<PageShell
+			title={ __( '诊断', 'wp-china-yes' ) }
+			lede={ __(
+				'线路检查、浏览器测速、迁移记录与恢复',
+				'wp-china-yes'
+			) }
+			actions={
+				<Btn variant="secondary" onClick={ exportReport }>
+					<Icon name="download" size={ 16 } />
+					{ __( '导出诊断报告', 'wp-china-yes' ) }
+				</Btn>
+			}
+		>
+			<section className="sec">
+				<Sec
+					title={ __( '从你的服务器到各源', 'wp-china-yes' ) }
+					note={
+						lastCheck
+							? sprintf(
+									/* translators: %s: relative time */
+									__(
+										'每 10 分钟自动检查 · 上次 %s',
+										'wp-china-yes'
+									),
+									relTime( lastCheck )
+							  )
+							: __( '每 10 分钟自动检查', 'wp-china-yes' )
 					}
-					if ( tab.name === 'notices' ) {
-						return <HiddenNoticesTable />;
+					action={
+						<Btn
+							variant="ghost"
+							disabled={ slice.running }
+							onClick={ () => runDiagnostics() }
+						>
+							{ slice.running
+								? __( '检查中', 'wp-china-yes' )
+								: __( '立即检查', 'wp-china-yes' ) }
+						</Btn>
 					}
-					if ( tab.name === 'hosts' ) {
-						return (
+				/>
+				<article className="card tight">
+					<table className="tbl">
+						<thead>
+							<tr>
+								<th>{ __( '源', 'wp-china-yes' ) }</th>
+								<th>{ __( '状态', 'wp-china-yes' ) }</th>
+								<th>{ __( '延迟', 'wp-china-yes' ) }</th>
+								<th>{ __( '最近检查', 'wp-china-yes' ) }</th>
+							</tr>
+						</thead>
+						<tbody>
+							{ groups.length
+								? groups.map( ( { group, agg } ) => {
+										const pill = pillFor(
+											agg.result,
+											agg.latency_ms
+										);
+										return (
+											<tr key={ group.id }>
+												<td>
+													<div className="t">
+														{ group.name }
+													</div>
+													<div className="d">
+														{
+															group.fallbackProvider
+														}{ ' ' }
+														· { group.desc }
+													</div>
+													<span className="screen-reader-text">
+														{ agg.target }
+													</span>
+												</td>
+												<td>
+													<Pill tone={ pill.tone }>
+														{ pill.word }
+													</Pill>
+												</td>
+												<td className="num">
+													{ formatMs(
+														agg.latency_ms
+													) }
+												</td>
+												<td className="num">
+													{ relTime(
+														agg.checked_at
+													) }
+												</td>
+											</tr>
+										);
+								  } )
+								: ( slice.targets || [] ).map( ( row ) => {
+										const pill = pillFor(
+											row.result,
+											row.latency_ms
+										);
+										return (
+											<tr key={ row.target }>
+												<td>
+													<div className="t">
+														{ row.target }
+													</div>
+												</td>
+												<td>
+													<Pill tone={ pill.tone }>
+														{ pill.word }
+													</Pill>
+												</td>
+												<td className="num">
+													{ formatMs(
+														row.latency_ms
+													) }
+												</td>
+												<td className="num">
+													{ relTime(
+														row.checked_at
+													) }
+												</td>
+											</tr>
+										);
+								  } ) }
+						</tbody>
+					</table>
+				</article>
+				<div className="prov-status">
+					{ __(
+						'线路异常时，先看服务商状态再排查自己：',
+						'wp-china-yes'
+					) }
+					<a
+						href="https://status.wpcy.com"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						status.wpcy.com
+					</a>
+					{ ' · ' }
+					<a
+						href="https://status.wpcy.net"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						status.wpcy.net
+					</a>
+				</div>
+			</section>
+
+			<section className="sec" id="probe">
+				<Sec
+					title={ __( '从你的浏览器到各源', 'wp-china-yes' ) }
+					note={ __(
+						'用你现在的网络测，区分是插件层还是网络层的问题',
+						'wp-china-yes'
+					) }
+					action={
+						<Btn
+							variant="ghost"
+							disabled={ probing }
+							onClick={ runProbe }
+						>
+							{ probeActionLabel( probing, slice.clientProbe ) }
+						</Btn>
+					}
+				/>
+				<ProbeTable
+					probe={ slice.clientProbe }
+					serverMs={ slice.diagnosticsMs }
+					error={ probeError }
+				/>
+			</section>
+
+			<section className="sec">
+				<Sec title={ __( '记录', 'wp-china-yes' ) } />
+				<div className="wpcy-grid-2">
+					<MigrationCard migration={ slice.migration } />
+					<LogCard logs={ logs } />
+				</div>
+			</section>
+
+			<section className="sec">
+				<Sec title={ __( '最近动态', 'wp-china-yes' ) } />
+				<Card tight>
+					<EventsBlock events={ slice.events } />
+				</Card>
+			</section>
+
+			<section className="sec">
+				<Sec title={ __( '数据与恢复', 'wp-china-yes' ) } />
+				<article className="card">
+					<div className="rows recover">
+						<div>
 							<div>
-								<p className="wpcy-help">
+								<div className="t">
+									{ __( '进入恢复模式', 'wp-china-yes' ) }
+								</div>
+								<div className="d">
 									{ __(
-										'主机表由文派发布，用户不可编辑',
+										'一键停用所有资源接通与模块；恢复页不依赖 JavaScript，后台样式错乱时也能打开',
 										'wp-china-yes'
 									) }
-								</p>
-								<EmptyTable
-									fields={ [
-										{
-											id: 'host',
-											label: __( '主机', 'wp-china-yes' ),
-										},
-										{
-											id: 'data_class',
-											label: __(
-												'数据类别',
-												'wp-china-yes'
-											),
-										},
-										{
-											id: 'count',
-											label: __( '次数', 'wp-china-yes' ),
-										},
-										{
-											id: 'last_seen',
-											label: __(
-												'最近时间',
-												'wp-china-yes'
-											),
-										},
-										{
-											id: 'disposition',
-											label: __( '处置', 'wp-china-yes' ),
-										},
-									] }
-									empty={
-										<p className="wpcy-help">
-											{ __(
-												'暂无出站主机记录。',
-												'wp-china-yes'
-											) }
-										</p>
-									}
-								/>
+								</div>
 							</div>
-						);
-					}
-					return (
-						<div>
-							<p>
-								<Button
-									variant="secondary"
-									href={ adminPageUrl( PAGES.recovery ) }
-									className="wpcy-destructive"
-								>
-									{ __( '进入恢复模式', 'wp-china-yes' ) }
-								</Button>
-							</p>
+							<Btn
+								variant="secondary"
+								className="r"
+								href={ adminPageUrl( PAGES.recovery ) }
+							>
+								{ __( '进入恢复模式', 'wp-china-yes' ) }
+							</Btn>
 						</div>
-					);
-				} }
-			</TabPanel>
+						<div>
+							<div>
+								<div className="t">
+									{ __( '小工具数据', 'wp-china-yes' ) }
+								</div>
+								<div className="d">
+									{ __(
+										'按小工具导出或删除它保存在本站的数据',
+										'wp-china-yes'
+									) }
+								</div>
+							</div>
+							<Btn variant="ghost" className="r" disabled>
+								{ __( '管理', 'wp-china-yes' ) }
+							</Btn>
+						</div>
+					</div>
+				</article>
+			</section>
 		</PageShell>
 	);
+}
+
+function ProbeTable( { probe, serverMs, error } ) {
+	if ( error ) {
+		return (
+			<article className="card tight">
+				<Notice tone="warn">
+					{ __(
+						'暂时无法从浏览器测速，请稍后重试。',
+						'wp-china-yes'
+					) }
+				</Notice>
+			</article>
+		);
+	}
+	const never = ! probe || ! probe.checked_at;
+	if ( never ) {
+		return (
+			<article className="card tight">
+				<Empty
+					icon="gauge"
+					why={ __( '尚未从浏览器测速', 'wp-china-yes' ) }
+				/>
+			</article>
+		);
+	}
+	const probes = probe.probes || [];
+	const ago = relTime( probe.checked_at );
+	const ttfb = probe.ttfb_ms || serverMs;
+	const find = ( host ) => probes.find( ( p ) => p.target === host );
+
+	const originDown = PAIRS.some(
+		( p ) => find( p.originHost )?.result === 'down'
+	);
+	const targetOk = PAIRS.some(
+		( p ) => find( p.targetHost )?.result === 'ok'
+	);
+	let insight = '';
+	if ( ttfb > 1000 ) {
+		insight = sprintf(
+			/* translators: %s: ms */
+			__(
+				'后台慢主要来自你到服务器的往返（%s），插件层能接通的资源已接通；换线路或就近节点才能进一步改善。',
+				'wp-china-yes'
+			),
+			formatMs( ttfb )
+		);
+	} else if ( originDown && targetOk ) {
+		insight = __(
+			'原始源在你的网络不可达，后台已接通国内可达源，这就是叶子在做的事。',
+			'wp-china-yes'
+		);
+	}
+
+	return (
+		<article className="card tight">
+			<table className="tbl">
+				<thead>
+					<tr>
+						<th>{ __( '源', 'wp-china-yes' ) }</th>
+						<th>{ __( '状态', 'wp-china-yes' ) }</th>
+						<th>{ __( '延迟', 'wp-china-yes' ) }</th>
+						<th>{ __( '最近检查', 'wp-china-yes' ) }</th>
+					</tr>
+				</thead>
+				<tbody>
+					{ ttfb ? (
+						<tr>
+							<td>
+								<div className="t">
+									{ __( '你的服务器', 'wp-china-yes' ) }
+								</div>
+								<div className="d">
+									{ __( '站点后台 TTFB', 'wp-china-yes' ) }
+								</div>
+							</td>
+							<td>
+								<Pill tone={ ttfb > 1000 ? 'warn' : 'ok' }>
+									{ ttfb > 1000
+										? __( '偏慢', 'wp-china-yes' )
+										: __( '正常', 'wp-china-yes' ) }
+								</Pill>
+							</td>
+							<td className="num">{ formatMs( ttfb ) }</td>
+							<td className="num">{ ago }</td>
+						</tr>
+					) : null }
+					{ PAIRS.map( ( pair ) => {
+						const origin = find( pair.originHost );
+						const target = find( pair.targetHost );
+						return [
+							<tr key={ pair.origin }>
+								<td>
+									<div className="t">{ pair.origin }</div>
+									<div className="d">
+										{ __( '原始源', 'wp-china-yes' ) }
+									</div>
+								</td>
+								<td>
+									<Pill
+										tone={
+											origin?.result === 'ok'
+												? 'ok'
+												: 'bad'
+										}
+									>
+										{ origin?.result === 'ok'
+											? __( '正常', 'wp-china-yes' )
+											: __( '超时', 'wp-china-yes' ) }
+									</Pill>
+								</td>
+								<td className="num">
+									{ formatMs( origin?.latency_ms ) }
+								</td>
+								<td className="num">{ ago }</td>
+							</tr>,
+							<tr key={ pair.target }>
+								<td>
+									<div className="t">
+										<span
+											className="swaped"
+											title={
+												__( '原始源', 'wp-china-yes' ) +
+												' ' +
+												pair.origin
+											}
+										>
+											<Icon name="swap" size={ 14 } />
+										</span>
+										{ pair.target }
+									</div>
+									<div className="d">
+										{ pair.provider } ·{ ' ' }
+										{ __( '接通后', 'wp-china-yes' ) }
+									</div>
+								</td>
+								<td>
+									<Pill
+										tone={
+											target?.result === 'ok'
+												? 'ok'
+												: 'bad'
+										}
+									>
+										{ target?.result === 'ok'
+											? __( '正常', 'wp-china-yes' )
+											: __( '超时', 'wp-china-yes' ) }
+									</Pill>
+								</td>
+								<td className="num">
+									{ formatMs( target?.latency_ms ) }
+								</td>
+								<td className="num">{ ago }</td>
+							</tr>,
+						];
+					} ) }
+				</tbody>
+			</table>
+			{ insight ? <Notice tone="info">{ insight }</Notice> : null }
+		</article>
+	);
+}
+
+function MigrationCard( { migration } ) {
+	if ( ! migration || migration.status === 'none' ) {
+		return (
+			<Card tight>
+				<CardHead
+					title={ __( '迁移记录', 'wp-china-yes' ) }
+					sub={ __( '从 3.x 升级时的设置迁移', 'wp-china-yes' ) }
+				/>
+				<p className="meta">
+					{ __(
+						'这个站点是直接安装 4.0 的，没有迁移记录。',
+						'wp-china-yes'
+					) }
+				</p>
+			</Card>
+		);
+	}
+	const kept = Array.isArray( migration.kept )
+		? migration.kept.length
+		: migration.kept || 0;
+	const ignored = Array.isArray( migration.ignored )
+		? migration.ignored.length
+		: migration.ignored || 0;
+	return (
+		<Card tight>
+			<CardHead
+				title={ __( '迁移记录', 'wp-china-yes' ) }
+				sub={ __( '从 3.x 升级时的设置迁移', 'wp-china-yes' ) }
+			/>
+			<div className="rows">
+				<div>
+					<div>
+						<div className="t">
+							{ ( migration.migrated_at || '' ).slice( 0, 10 ) }{ ' ' }
+							{ sprintf(
+								/* translators: 1: from 2: to */
+								__( '从 %1$s 升级到 %2$s', 'wp-china-yes' ),
+								migration.source_version || '3.x',
+								migration.version || '4.0.0'
+							) }
+						</div>
+						<div className="d">
+							{ sprintf(
+								/* translators: 1: kept 2: ignored */
+								__(
+									'%1$d 项已迁移 · %2$d 项已不再需要',
+									'wp-china-yes'
+								),
+								kept,
+								ignored
+							) }
+						</div>
+					</div>
+					<Pill tone="ok" className="r">
+						{ __( '成功', 'wp-china-yes' ) }
+					</Pill>
+				</div>
+			</div>
+		</Card>
+	);
+}
+
+function LogCard( { logs } ) {
+	return (
+		<Card tight>
+			<CardHead
+				title={ __( '出站主机记录', 'wp-china-yes' ) }
+				sub={ __(
+					'插件按主机表处理过的出站请求（不含内容）',
+					'wp-china-yes'
+				) }
+			/>
+			{ logs.length ? (
+				<table className="tbl">
+					<thead>
+						<tr>
+							<th>{ __( '主机', 'wp-china-yes' ) }</th>
+							<th>{ __( '类别', 'wp-china-yes' ) }</th>
+							<th>{ __( '次数', 'wp-china-yes' ) }</th>
+							<th>{ __( '最近', 'wp-china-yes' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ logs.map( ( row ) => (
+							<tr key={ row.host }>
+								<td className="t">{ row.host }</td>
+								<td className="d">{ row.data_class }</td>
+								<td className="num">
+									{ formatInt( row.count ) }
+								</td>
+								<td className="num">
+									{ relTime( row.last_seen ) }
+								</td>
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+			) : (
+				<p className="meta">
+					{ __(
+						'还没有记录。有出站请求被主机表处理后会出现在这里。',
+						'wp-china-yes'
+					) }
+				</p>
+			) }
+		</Card>
+	);
+}
+
+function EventsBlock( { events } ) {
+	let list = [];
+	if ( Array.isArray( events?.events ) ) {
+		list = events.events;
+	} else if ( Array.isArray( events ) ) {
+		list = events;
+	}
+	const items = list.slice( 0, 20 ).map( ( ev ) => ( {
+		id: ev.id,
+		tone: ev.tone,
+		time: eventTime( ev.at ),
+		text: ev.title,
+	} ) );
+	if ( ! items.length ) {
+		return (
+			<Empty
+				icon="clock"
+				why={ __(
+					'还没有动态。线路切换、更新检查等会记录在这里。',
+					'wp-china-yes'
+				) }
+			/>
+		);
+	}
+	return <EventsSimple items={ items } />;
 }

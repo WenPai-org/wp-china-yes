@@ -26,11 +26,9 @@ test.describe( 'recovery', () => {
 				page.getByRole( 'heading', { name: '文派叶子 · 恢复模式' } )
 			).toBeVisible();
 			await page
-				.getByRole( 'button', { name: '关闭全部 URL 改写' } )
+				.getByRole( 'button', { name: '关闭 URL 改写' } )
 				.click();
-			await expect(
-				page.locator( '.notice-success' ).getByText( '恢复模式已开启' )
-			).toBeVisible();
+			await expect( page.getByText( '恢复模式已开启' ) ).toBeVisible();
 		} finally {
 			await context.close();
 			wpEval(

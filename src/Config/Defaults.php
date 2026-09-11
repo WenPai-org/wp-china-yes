@@ -40,10 +40,7 @@ final class Defaults {
 					'items' => Schema::PUBLIC_ASSETS,
 					'scope' => 'both',
 				),
-				'avatar'          => array(
-					'admin'    => 'cravatar_cn',
-					'frontend' => 'cravatar_cn',
-				),
+				'avatar'          => 'cravatar_cn',
 				'heartbeat'       => 'off',
 				'dashboard_feeds' => 'allow',
 			),
@@ -77,7 +74,6 @@ final class Defaults {
 				'disabled' => array(),
 			),
 			'recovery_mode'        => false,
-			'admin_assets'         => 'off',
 		);
 	}
 

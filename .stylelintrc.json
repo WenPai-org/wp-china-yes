@@ -1,0 +1,7 @@
+{
+	"extends": "@wordpress/stylelint-config",
+	"ignoreFiles": [ "**/*.js", "build/**", "node_modules/**" ],
+	"rules": {
+		"no-descending-specificity": null
+	}
+}

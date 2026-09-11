@@ -282,10 +282,42 @@ if ( ! function_exists( 'current_user_can' ) ) {
 	 * Capability check from RestStore.
 	 *
 	 * @param string $cap Capability.
+	 * @param mixed  ...$args Extra args.
 	 * @return bool
 	 */
-	function current_user_can( $cap ) {
+	function current_user_can( $cap, ...$args ) {
+		unset( $args );
 		return ! empty( RestStore::$caps[ (string) $cap ] );
+	}
+}
+
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	/**
+	 * Stub current user id.
+	 *
+	 * @return int
+	 */
+	function get_current_user_id() {
+		return 1;
+	}
+}
+
+if ( ! function_exists( 'register_meta' ) ) {
+	/**
+	 * Record register_meta calls.
+	 *
+	 * @param string               $object_type Object type.
+	 * @param string               $meta_key    Key.
+	 * @param array<string, mixed> $args        Args.
+	 * @return bool
+	 */
+	function register_meta( $object_type, $meta_key, $args ) {
+		RestStore::$user_meta[] = array(
+			'object_type' => $object_type,
+			'meta_key'    => $meta_key,
+			'args'        => $args,
+		);
+		return true;
 	}
 }
 

@@ -108,13 +108,7 @@ final class RecoveryActions {
 				'scope' => 'off',
 			)
 		);
-		$this->repository->set(
-			'connectivity.avatar',
-			array(
-				'admin'    => 'off',
-				'frontend' => 'off',
-			)
-		);
+		$this->repository->set( 'connectivity.avatar', 'off' );
 	}
 
 	/**

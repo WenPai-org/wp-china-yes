@@ -54,6 +54,7 @@ final class Schema {
 	public const PROFILES = array(
 		'domestic',
 		'crossborder',
+		'inbound',
 		'mixed',
 	);
 
@@ -129,7 +130,6 @@ final class Schema {
 				'announcements',
 				'apps',
 				'recovery_mode',
-				'admin_assets',
 			),
 			'properties'           => self::settings_properties(),
 		);
@@ -178,7 +178,6 @@ final class Schema {
 				'profile_confirmed_at' => $props['profile_confirmed_at'],
 				'connectivity'         => $props['connectivity'],
 				'modules'              => self::modules( false ),
-				'admin_assets'         => $props['admin_assets'],
 				'recovery_mode'        => $props['recovery_mode'],
 			),
 		);
@@ -374,11 +373,6 @@ final class Schema {
 				'type'    => 'boolean',
 				'default' => false,
 			),
-			'admin_assets'         => array(
-				'type'    => 'string',
-				'enum'    => array( 'on', 'off' ),
-				'default' => 'off',
-			),
 		);
 	}
 
@@ -395,12 +389,12 @@ final class Schema {
 			'additionalProperties' => false,
 			'required'             => array( 'wordpress_org', 'public_assets', 'avatar', 'heartbeat', 'dashboard_feeds' ),
 			'properties'           => array(
-				'wordpress_org'   => array(
+				'wordpress_org'       => array(
 					'type'    => 'string',
 					'enum'    => array( 'auto', 'off' ),
 					'default' => 'auto',
 				),
-				'public_assets'   => array(
+				'public_assets'       => array(
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'required'             => array( 'items', 'scope' ),
@@ -421,32 +415,24 @@ final class Schema {
 						),
 					),
 				),
-				'avatar'          => array(
-					'type'                 => 'object',
-					'additionalProperties' => false,
-					'required'             => array( 'admin', 'frontend' ),
-					'properties'           => array(
-						'admin'    => array(
-							'type'    => 'string',
-							'enum'    => self::AVATAR,
-							'default' => 'cravatar_cn',
-						),
-						'frontend' => array(
-							'type'    => 'string',
-							'enum'    => self::AVATAR,
-							'default' => 'cravatar_cn',
-						),
-					),
+				'avatar'              => array(
+					'type'    => 'string',
+					'enum'    => self::AVATAR,
+					'default' => 'cravatar_cn',
 				),
-				'heartbeat'       => array(
+				'heartbeat'           => array(
 					'type'    => 'string',
 					'enum'    => array( 'on', 'off' ),
 					'default' => 'off',
 				),
-				'dashboard_feeds' => array(
+				'dashboard_feeds'     => array(
 					'type'    => 'string',
 					'enum'    => array( 'block', 'allow' ),
 					'default' => 'allow',
+				),
+				'admin_locale_follow' => array(
+					'type'    => 'boolean',
+					'default' => true,
 				),
 			),
 		);

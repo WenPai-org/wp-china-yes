@@ -103,8 +103,7 @@ class PluginCreateTest extends TestCase {
 		$this->assertArrayHasKey( Schema::MIGRATION_BACKUP, OptionStore::$options );
 		$this->assertSame( 'off', OptionStore::$options[ LegacyReader::OPTION ]['store'] );
 		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['wordpress_org'] );
-		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'off', OptionStore::$options[ Schema::SETTINGS ]['connectivity']['avatar'] );
 	}
 
 	/**

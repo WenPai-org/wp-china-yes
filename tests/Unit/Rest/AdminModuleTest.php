@@ -55,7 +55,7 @@ class AdminModuleTest extends TestCase {
 			$this->assertSame( 'manage_options', $page['capability'] );
 		}
 		$this->assertSame(
-			array( 'wpcy', 'wpcy-connect', 'wpcy-services', 'wpcy-diagnose' ),
+			array( 'wpcy', 'wpcy-connect', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' ),
 			$sub
 		);
 	}
@@ -69,9 +69,15 @@ class AdminModuleTest extends TestCase {
 		$payload                           = $module->bootstrap_payload();
 
 		$this->assertSame(
-			array( 'nonce', 'restRoot', 'capabilities', 'settings', 'pluginVersion', 'siteContext' ),
+			array( 'nonce', 'restRoot', 'capabilities', 'settings', 'pluginVersion', 'siteContext', 'links', 'providers' ),
 			array_keys( $payload )
 		);
+		$this->assertArrayHasKey( 'help', $payload['links'] );
+		$this->assertArrayHasKey( 'brands', $payload['links'] );
+		$this->assertSame( 'WenPai.org', $payload['providers']['wordpress_org'] );
+		$this->assertSame( 'adminCDN', $payload['providers']['public_assets'] );
+		$this->assertSame( 'Cravatar', $payload['providers']['cravatar'] );
+		$this->assertArrayNotHasKey( 'windfonts', $payload['providers'] );
 		$this->assertIsString( $payload['pluginVersion'] );
 		$this->assertIsArray( $payload['siteContext'] );
 		$this->assertSame( 'nonce-wp_rest', $payload['nonce'] );
@@ -80,8 +86,8 @@ class AdminModuleTest extends TestCase {
 		$this->assertArrayHasKey( 'recovery_mode', $payload['settings'] );
 		$this->assertArrayHasKey( 'connectivity', $payload['settings'] );
 		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar'] );
-		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar_admin'] );
-		$this->assertSame( 'cravatar_cn', $payload['settings']['connectivity']['avatar_frontend'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $payload['settings']['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $payload['settings']['connectivity'] );
 	}
 
 	/**
@@ -148,9 +154,30 @@ class AdminModuleTest extends TestCase {
 	public function test_layout_css_does_not_assume_admin_bar_height() {
 		$css = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/style.css' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local stylesheet.
 		$this->assertNotFalse( $css );
-		$this->assertSame( 0, preg_match( '/position:\s*fixed/', $css ) );
+		$this->assertSame( 0, preg_match( '/#wpadminbar/', $css ) );
 		$this->assertSame( 0, preg_match( '/wpadminbar/', $css ) );
 		$this->assertSame( 0, preg_match( '/admin-bar--height/', $css ) );
-		$this->assertNotFalse( strpos( $css, 'max-width: 1080px' ) );
+		$this->assertNotFalse( strpos( $css, 'max-width: 1120px' ) );
+		$this->assertSame( 0, preg_match( '/#wpcontent\s*\{[^}]*margin-left:\s*160px/', $css ) );
+	}
+
+	/**
+	 * Providers map is RouteGroups id to brand, not a parallel table.
+	 */
+	public function test_providers_reads_route_groups() {
+		$expected = array();
+		foreach ( \WenPai\ChinaYes\Diagnostics\RouteGroups::all() as $group ) {
+			$expected[ $group['id'] ] = $group['provider'];
+		}
+		$this->assertSame( $expected, AdminModule::providers() );
+	}
+
+	/**
+	 * Hero collapse meta auth_callback uses the object id being written.
+	 */
+	public function test_hero_meta_auth_callback_uses_object_id() {
+		$src = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/AdminModule.php' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
+		$this->assertNotFalse( $src );
+		$this->assertNotFalse( strpos( $src, 'current_user_can( \'edit_user\', (int) $object_id )' ) );
 	}
 }

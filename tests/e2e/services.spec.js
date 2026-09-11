@@ -7,7 +7,7 @@ test.describe( 'services', () => {
 		const response = await openAdminPage( page, 'wpcy-services' );
 		expect( response && response.status() ).toBe( 200 );
 		await expect(
-			page.getByRole( 'heading', { name: '文派服务', level: 1 } )
+			page.getByRole( 'heading', { name: '服务', level: 1 } )
 		).toBeVisible();
 		// M2-05 起为真实页：未绑定态显示「绑定本站」主动作（原型 03-services-unbound）。
 		await expect(

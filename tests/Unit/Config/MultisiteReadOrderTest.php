@@ -44,7 +44,7 @@ class MultisiteReadOrderTest extends TestCase {
 	 */
 	public function test_defaults_when_network_option_empty() {
 		$repo = $this->repo();
-		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar' ) );
 		$this->assertTrue( $repo->get( 'allow_site_override' ) );
 		$this->assertFalse( $repo->get( 'modules.windfonts' ) );
 	}
@@ -58,16 +58,13 @@ class MultisiteReadOrderTest extends TestCase {
 			array(
 				'schema_version'      => 2,
 				'connectivity'        => array(
-					'avatar' => array(
-						'admin'    => 'cravatar_global',
-						'frontend' => 'cravatar_global',
-					),
+					'avatar' => 'cravatar_global',
 				),
 				'allow_site_override' => true,
 			)
 		);
 		$repo = $this->repo();
-		$this->assertSame( 'cravatar_global', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'cravatar_global', $repo->get( 'connectivity.avatar' ) );
 		$this->assertSame( 'auto', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertTrue( $repo->get( 'modules.notice_control' ) );
 	}
@@ -81,10 +78,7 @@ class MultisiteReadOrderTest extends TestCase {
 			array(
 				'schema_version'      => 2,
 				'connectivity'        => array(
-					'avatar'        => array(
-						'admin'    => 'cravatar_global',
-						'frontend' => 'cravatar_global',
-					),
+					'avatar'        => 'cravatar_global',
 					'wordpress_org' => 'off',
 				),
 				'modules'             => array( 'windfonts' => false ),
@@ -96,16 +90,13 @@ class MultisiteReadOrderTest extends TestCase {
 			array(
 				'schema_version' => 2,
 				'connectivity'   => array(
-					'avatar' => array(
-						'admin'    => 'off',
-						'frontend' => 'off',
-					),
+					'avatar' => 'off',
 				),
 				'modules'        => array( 'windfonts' => true ),
 			)
 		);
 		$repo = $this->repo();
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertTrue( $repo->get( 'modules.windfonts' ) );
 	}
@@ -119,10 +110,7 @@ class MultisiteReadOrderTest extends TestCase {
 			array(
 				'schema_version'      => 2,
 				'connectivity'        => array(
-					'avatar' => array(
-						'admin'    => 'cravatar_global',
-						'frontend' => 'cravatar_global',
-					),
+					'avatar' => 'cravatar_global',
 				),
 				'allow_site_override' => false,
 			)
@@ -132,15 +120,12 @@ class MultisiteReadOrderTest extends TestCase {
 			array(
 				'schema_version' => 2,
 				'connectivity'   => array(
-					'avatar' => array(
-						'admin'    => 'off',
-						'frontend' => 'off',
-					),
+					'avatar' => 'off',
 				),
 			)
 		);
 		$repo = $this->repo();
-		$this->assertSame( 'cravatar_global', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'cravatar_global', $repo->get( 'connectivity.avatar' ) );
 	}
 
 	/**
@@ -250,10 +235,7 @@ class MultisiteReadOrderTest extends TestCase {
 				'schema_version'      => 2,
 				'connectivity'        => array(
 					'wordpress_org' => 'off',
-					'avatar'        => array(
-						'admin'    => 'cravatar_global',
-						'frontend' => 'cravatar_global',
-					),
+					'avatar'        => 'cravatar_global',
 				),
 				'allow_site_override' => true,
 			)
@@ -262,15 +244,12 @@ class MultisiteReadOrderTest extends TestCase {
 			Schema::SITE_OVERRIDES,
 			array(
 				'connectivity' => array(
-					'avatar' => array(
-						'admin'    => 'off',
-						'frontend' => 'off',
-					),
+					'avatar' => 'off',
 				),
 			)
 		);
 		$repo = $this->repo();
-		$this->assertSame( 'off', $repo->get( 'connectivity.avatar.admin' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
 		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
 		$this->assertSame( Schema::PUBLIC_ASSETS, $repo->get( 'connectivity.public_assets.items' ) );
 	}

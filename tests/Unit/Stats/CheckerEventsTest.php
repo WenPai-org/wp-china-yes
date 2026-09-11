@@ -109,9 +109,7 @@ class CheckerEventsTest extends TestCase {
 			'set_transient',
 			new MapConfig(
 				array(
-					'connectivity.avatar.admin'    => 'off',
-					'connectivity.avatar.frontend' => 'off',
-					'connectivity.avatar'          => 'off',
+					'connectivity.avatar' => 'off',
 				)
 			),
 			function () {

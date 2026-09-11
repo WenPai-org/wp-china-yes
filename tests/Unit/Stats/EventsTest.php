@@ -214,7 +214,7 @@ class EventsTest extends TestCase {
 				),
 				'neutral',
 				'已按「跨境 / 外贸站」配置',
-				'后台资源只在后台加速，更新直连 WordPress.org',
+				'后台资源走国内可达源，更新直连 WordPress.org',
 			),
 			'recovery_entered'        => array(
 				'recovery_entered',

@@ -1,35 +1,499 @@
 {
-	"run": "sop-baseline",
+	"run": "m-ui-1c",
 	"screens": [
 		{
-			"id": "overview-normal",
+			"id": "overview-domestic",
 			"page": "wpcy",
 			"url": "/wp-admin/admin.php?page=wpcy",
-			"filename": "overview-正常.png",
-			"state": "正常",
-			"waitForText": "WordPress.org 源",
-			"prep": { "kind": "none" },
-			"notes": "Studio 预览站诊断七目标曾全 ok。概览文派服务卡写死未绑定（preview-site-review 第 1 条），故本图同时带未绑定文案。"
-		},
-		{
-			"id": "overview-unbound",
-			"page": "wpcy",
-			"url": "/wp-admin/admin.php?page=wpcy",
-			"filename": "overview-未绑定.png",
-			"state": "未绑定",
-			"waitForText": "未绑定",
-			"prep": { "kind": "none" },
-			"notes": "当前站 GET /binding 为 unbound；即便写成 bound，概览卡也不会变。"
-		},
-		{
-			"id": "overview-line-error",
-			"page": "wpcy",
-			"url": "/wp-admin/admin.php?page=wpcy",
-			"filename": "overview-线路异常.png",
-			"state": "线路异常",
-			"waitForText": "已回原始上游",
+			"filename": "overview-国内正常.png",
+			"state": "国内正常",
+			"waitForText": "国内访问 WordPress 的事",
 			"prep": {
 				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "ok",
+									"latency_ms": 229,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 61,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 55,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 58,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 74,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 48,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"body": {
+							"installed_at": "2026-07-31T06:12:00Z",
+							"days": 14,
+							"series": {
+								"mirror_downloads": [
+									{ "date": "2026-08-24", "value": 16 },
+									{ "date": "2026-08-25", "value": 18 },
+									{ "date": "2026-08-26", "value": 17 },
+									{ "date": "2026-08-27", "value": 19 },
+									{ "date": "2026-08-28", "value": 20 },
+									{ "date": "2026-08-29", "value": 18 },
+									{ "date": "2026-08-30", "value": 20 },
+									{ "date": "2026-08-31", "value": 18 },
+									{ "date": "2026-09-01", "value": 26 },
+									{ "date": "2026-09-02", "value": 22 },
+									{ "date": "2026-09-03", "value": 31 },
+									{ "date": "2026-09-04", "value": 28 },
+									{ "date": "2026-09-05", "value": 24 },
+									{ "date": "2026-09-06", "value": 42 }
+								],
+								"mirror_bytes_saved": [
+									{ "date": "2026-08-24", "value": 80000000 },
+									{ "date": "2026-08-25", "value": 80000000 },
+									{ "date": "2026-08-26", "value": 80000000 },
+									{ "date": "2026-08-27", "value": 80000000 },
+									{ "date": "2026-08-28", "value": 80000000 },
+									{ "date": "2026-08-29", "value": 80000000 },
+									{ "date": "2026-08-30", "value": 80000000 },
+									{ "date": "2026-08-31", "value": 180000000 },
+									{ "date": "2026-09-01", "value": 180000000 },
+									{ "date": "2026-09-02", "value": 180000000 },
+									{ "date": "2026-09-03", "value": 180000000 },
+									{ "date": "2026-09-04", "value": 180000000 },
+									{ "date": "2026-09-05", "value": 180000000 },
+									{ "date": "2026-09-06", "value": 208490188 }
+								],
+								"assets_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 2400 },
+									{ "date": "2026-08-25", "value": 2400 },
+									{ "date": "2026-08-26", "value": 2400 },
+									{ "date": "2026-08-27", "value": 2500 },
+									{ "date": "2026-08-28", "value": 2500 },
+									{ "date": "2026-08-29", "value": 2500 },
+									{ "date": "2026-08-30", "value": 2400 },
+									{ "date": "2026-08-31", "value": 2100 },
+									{ "date": "2026-09-01", "value": 2400 },
+									{ "date": "2026-09-02", "value": 2300 },
+									{ "date": "2026-09-03", "value": 2700 },
+									{ "date": "2026-09-04", "value": 2900 },
+									{ "date": "2026-09-05", "value": 2600 },
+									{ "date": "2026-09-06", "value": 3430 }
+								],
+								"avatar_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 430 },
+									{ "date": "2026-08-25", "value": 430 },
+									{ "date": "2026-08-26", "value": 430 },
+									{ "date": "2026-08-27", "value": 440 },
+									{ "date": "2026-08-28", "value": 440 },
+									{ "date": "2026-08-29", "value": 430 },
+									{ "date": "2026-08-30", "value": 430 },
+									{ "date": "2026-08-31", "value": 380 },
+									{ "date": "2026-09-01", "value": 410 },
+									{ "date": "2026-09-02", "value": 470 },
+									{ "date": "2026-09-03", "value": 440 },
+									{ "date": "2026-09-04", "value": 520 },
+									{ "date": "2026-09-05", "value": 480 },
+									{ "date": "2026-09-06", "value": 510 }
+								],
+								"avatar_rewrites_admin": [
+									{ "date": "2026-08-24", "value": 0 },
+									{ "date": "2026-08-25", "value": 0 },
+									{ "date": "2026-08-26", "value": 0 },
+									{ "date": "2026-08-27", "value": 0 },
+									{ "date": "2026-08-28", "value": 0 },
+									{ "date": "2026-08-29", "value": 0 },
+									{ "date": "2026-08-30", "value": 0 },
+									{ "date": "2026-08-31", "value": 0 },
+									{ "date": "2026-09-01", "value": 0 },
+									{ "date": "2026-09-02", "value": 0 },
+									{ "date": "2026-09-03", "value": 0 },
+									{ "date": "2026-09-04", "value": 0 },
+									{ "date": "2026-09-05", "value": 0 },
+									{ "date": "2026-09-06", "value": 0 }
+								]
+							},
+							"totals": {
+								"mirror_downloads": 42,
+								"mirror_bytes_saved": 1288490188,
+								"assets_rewrites_frontend": 18430,
+								"avatar_rewrites_frontend": 3210
+							}
+						}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T06:02:00Z",
+									"type": "update_check",
+									"tone": "ok",
+									"title": "完成 WordPress 7.1 更新检查",
+									"detail": "经 WenPai.org 镜像，耗时 0.4 秒"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-05T14:33:00Z",
+									"type": "route_recovered",
+									"tone": "ok",
+									"title": "CDNJS 源恢复，已切回",
+									"detail": "adminCDN 中断 18 分钟，期间走原始上游，访客不受影响"
+								},
+								{
+									"id": "3",
+									"at": "2026-09-05T14:15:00Z",
+									"type": "route_fallback",
+									"tone": "warn",
+									"title": "CDNJS 源不可达，已回原始上游",
+									"detail": "adminCDN 暂时不可达，恢复后自动切回"
+								},
+								{
+									"id": "4",
+									"at": "2026-09-04T08:00:00Z",
+									"type": "migrated",
+									"tone": "neutral",
+									"title": "插件更新到 4.0.0",
+									"detail": "从 3.8 迁移 12 项设置"
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-crossborder",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-跨境正常.png",
+			"state": "跨境正常",
+			"waitForText": "人在国内、站在海外",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "crossborder",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "off",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "admin"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 210,
+									"checked_at": "2026-09-06T02:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 180,
+									"checked_at": "2026-09-06T02:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 190,
+									"checked_at": "2026-09-06T02:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T02:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 96,
+									"checked_at": "2026-09-06T02:00:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"body": {
+							"installed_at": "2026-07-31T06:12:00Z",
+							"days": 14,
+							"series": {
+								"assets_rewrites_admin": [
+									{ "date": "2026-08-24", "value": 800 },
+									{ "date": "2026-08-25", "value": 800 },
+									{ "date": "2026-08-26", "value": 800 },
+									{ "date": "2026-08-27", "value": 800 },
+									{ "date": "2026-08-28", "value": 800 },
+									{ "date": "2026-08-29", "value": 800 },
+									{ "date": "2026-08-30", "value": 800 },
+									{ "date": "2026-08-31", "value": 640 },
+									{ "date": "2026-09-01", "value": 700 },
+									{ "date": "2026-09-02", "value": 760 },
+									{ "date": "2026-09-03", "value": 720 },
+									{ "date": "2026-09-04", "value": 820 },
+									{ "date": "2026-09-05", "value": 880 },
+									{ "date": "2026-09-06", "value": 1600 }
+								],
+								"heartbeat_saved": [
+									{ "date": "2026-08-24", "value": 300 },
+									{ "date": "2026-08-25", "value": 300 },
+									{ "date": "2026-08-26", "value": 300 },
+									{ "date": "2026-08-27", "value": 300 },
+									{ "date": "2026-08-28", "value": 300 },
+									{ "date": "2026-08-29", "value": 300 },
+									{ "date": "2026-08-30", "value": 300 },
+									{ "date": "2026-08-31", "value": 300 },
+									{ "date": "2026-09-01", "value": 310 },
+									{ "date": "2026-09-02", "value": 290 },
+									{ "date": "2026-09-03", "value": 330 },
+									{ "date": "2026-09-04", "value": 350 },
+									{ "date": "2026-09-05", "value": 340 },
+									{ "date": "2026-09-06", "value": 420 }
+								],
+								"dashboard_feeds_blocked": [
+									{ "date": "2026-08-24", "value": 50 },
+									{ "date": "2026-08-25", "value": 50 },
+									{ "date": "2026-08-26", "value": 50 },
+									{ "date": "2026-08-27", "value": 50 },
+									{ "date": "2026-08-28", "value": 50 },
+									{ "date": "2026-08-29", "value": 50 },
+									{ "date": "2026-08-30", "value": 50 },
+									{ "date": "2026-08-31", "value": 50 },
+									{ "date": "2026-09-01", "value": 58 },
+									{ "date": "2026-09-02", "value": 52 },
+									{ "date": "2026-09-03", "value": 61 },
+									{ "date": "2026-09-04", "value": 66 },
+									{ "date": "2026-09-05", "value": 60 },
+									{ "date": "2026-09-06", "value": 71 }
+								],
+								"outbound_blocked": [
+									{ "date": "2026-08-24", "value": 0 },
+									{ "date": "2026-08-25", "value": 0 },
+									{ "date": "2026-08-26", "value": 0 },
+									{ "date": "2026-08-27", "value": 0 },
+									{ "date": "2026-08-28", "value": 0 },
+									{ "date": "2026-08-29", "value": 0 },
+									{ "date": "2026-08-30", "value": 0 },
+									{ "date": "2026-08-31", "value": 0 },
+									{ "date": "2026-09-01", "value": 0 },
+									{ "date": "2026-09-02", "value": 0 },
+									{ "date": "2026-09-03", "value": 0 },
+									{ "date": "2026-09-04", "value": 0 },
+									{ "date": "2026-09-05", "value": 0 },
+									{ "date": "2026-09-06", "value": 0 }
+								]
+							}
+						}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T06:02:00Z",
+									"tone": "ok",
+									"title": "后台 Google Fonts 已经 adminCDN 接通",
+									"detail": "本次会话 38 个请求"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-06T01:30:00Z",
+									"tone": "neutral",
+									"title": "完成 WordPress 7.1 更新检查",
+									"detail": "直连 WordPress.org，耗时 1.1 秒"
+								},
+								{
+									"id": "3",
+									"at": "2026-09-05T10:40:00Z",
+									"tone": "warn",
+									"title": "浏览器测速：gravatar.com 超时",
+									"detail": "头像已经 Cravatar 接通，不受影响"
+								},
+								{
+									"id": "4",
+									"at": "2026-09-04T08:00:00Z",
+									"tone": "neutral",
+									"title": "插件更新到 4.0.0",
+									"detail": "从 3.8 迁移 12 项设置"
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
+					},
+					{
+						"path": "/wpcy/v1/diagnostics/client-probe",
+						"method": "GET",
+						"body": {
+							"checked_at": "2026-09-06T02:00:00Z",
+							"probes": [
+								{
+									"target": "fonts.googleapis.com",
+									"result": "down",
+									"latency_ms": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 210
+								},
+								{
+									"target": "secure.gravatar.com",
+									"result": "down",
+									"latency_ms": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 96
+								}
+							]
+						}
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-degraded",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-降级.png",
+			"state": "降级",
+			"waitForText": "暂时不可达",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
 				"routes": [
 					{
 						"path": "/wpcy/v1/diagnostics",
@@ -39,140 +503,919 @@
 								{
 									"target": "api.wenpai.net",
 									"result": "fallback",
-									"latency_ms": 1200,
-									"checked_at": "2026-09-06T04:00:00Z",
+									"latency_ms": 2410,
+									"checked_at": "2026-09-06T04:02:00Z",
 									"suggestion": "国内镜像不可用，已回原始上游。"
 								},
 								{
 									"target": "downloads.wenpai.net",
 									"result": "fallback",
-									"latency_ms": 1400,
-									"checked_at": "2026-09-06T04:00:00Z",
+									"latency_ms": 2200,
+									"checked_at": "2026-09-06T04:02:00Z",
 									"suggestion": "国内镜像不可用，已回原始上游。"
 								},
 								{
-									"target": "cdnjs.admincdn.com",
-									"result": "fallback",
-									"latency_ms": 800,
-									"checked_at": "2026-09-06T04:00:00Z",
-									"suggestion": "国内镜像不可用，已回原始上游。"
-								},
-								{
-									"target": "jsd.admincdn.com",
+									"target": "googlefonts.admincdn.com",
 									"result": "ok",
-									"latency_ms": 200,
+									"latency_ms": 61,
 									"checked_at": "2026-09-06T04:00:00Z",
 									"suggestion": null
 								},
 								{
 									"target": "googleajax.admincdn.com",
 									"result": "ok",
-									"latency_ms": 180,
+									"latency_ms": 55,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 58,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 74,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 48,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"body": {
+							"installed_at": "2026-07-31T06:12:00Z",
+							"days": 14,
+							"series": {
+								"mirror_downloads": [
+									{ "date": "2026-08-24", "value": 16 },
+									{ "date": "2026-08-25", "value": 18 },
+									{ "date": "2026-08-26", "value": 17 },
+									{ "date": "2026-08-27", "value": 19 },
+									{ "date": "2026-08-28", "value": 20 },
+									{ "date": "2026-08-29", "value": 18 },
+									{ "date": "2026-08-30", "value": 20 },
+									{ "date": "2026-08-31", "value": 18 },
+									{ "date": "2026-09-01", "value": 26 },
+									{ "date": "2026-09-02", "value": 22 },
+									{ "date": "2026-09-03", "value": 31 },
+									{ "date": "2026-09-04", "value": 28 },
+									{ "date": "2026-09-05", "value": 24 },
+									{ "date": "2026-09-06", "value": 42 }
+								],
+								"mirror_bytes_saved": [
+									{ "date": "2026-08-24", "value": 80000000 },
+									{ "date": "2026-08-25", "value": 80000000 },
+									{ "date": "2026-08-26", "value": 80000000 },
+									{ "date": "2026-08-27", "value": 80000000 },
+									{ "date": "2026-08-28", "value": 80000000 },
+									{ "date": "2026-08-29", "value": 80000000 },
+									{ "date": "2026-08-30", "value": 80000000 },
+									{ "date": "2026-08-31", "value": 180000000 },
+									{ "date": "2026-09-01", "value": 180000000 },
+									{ "date": "2026-09-02", "value": 180000000 },
+									{ "date": "2026-09-03", "value": 180000000 },
+									{ "date": "2026-09-04", "value": 180000000 },
+									{ "date": "2026-09-05", "value": 180000000 },
+									{ "date": "2026-09-06", "value": 208490188 }
+								],
+								"assets_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 2400 },
+									{ "date": "2026-08-25", "value": 2400 },
+									{ "date": "2026-08-26", "value": 2400 },
+									{ "date": "2026-08-27", "value": 2500 },
+									{ "date": "2026-08-28", "value": 2500 },
+									{ "date": "2026-08-29", "value": 2500 },
+									{ "date": "2026-08-30", "value": 2400 },
+									{ "date": "2026-08-31", "value": 2100 },
+									{ "date": "2026-09-01", "value": 2400 },
+									{ "date": "2026-09-02", "value": 2300 },
+									{ "date": "2026-09-03", "value": 2700 },
+									{ "date": "2026-09-04", "value": 2900 },
+									{ "date": "2026-09-05", "value": 2600 },
+									{ "date": "2026-09-06", "value": 3430 }
+								],
+								"avatar_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 430 },
+									{ "date": "2026-08-25", "value": 430 },
+									{ "date": "2026-08-26", "value": 430 },
+									{ "date": "2026-08-27", "value": 440 },
+									{ "date": "2026-08-28", "value": 440 },
+									{ "date": "2026-08-29", "value": 430 },
+									{ "date": "2026-08-30", "value": 430 },
+									{ "date": "2026-08-31", "value": 380 },
+									{ "date": "2026-09-01", "value": 410 },
+									{ "date": "2026-09-02", "value": 470 },
+									{ "date": "2026-09-03", "value": 440 },
+									{ "date": "2026-09-04", "value": 520 },
+									{ "date": "2026-09-05", "value": 480 },
+									{ "date": "2026-09-06", "value": 510 }
+								]
+							}
+						}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T06:20:00Z",
+									"tone": "warn",
+									"title": "WordPress.org 镜像不可达，已回原始上游",
+									"detail": "WenPai.org 镜像暂时不可达，每 1 分钟重试，恢复后自动切回"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-06T06:02:00Z",
+									"tone": "ok",
+									"title": "完成 WordPress 7.1 更新检查",
+									"detail": "经 WenPai.org 镜像，耗时 0.4 秒"
+								},
+								{
+									"id": "3",
+									"at": "2026-09-05T14:33:00Z",
+									"tone": "ok",
+									"title": "CDNJS 源恢复，已切回",
+									"detail": "adminCDN 中断 18 分钟，访客不受影响"
+								},
+								{
+									"id": "4",
+									"at": "2026-09-04T08:00:00Z",
+									"tone": "neutral",
+									"title": "插件更新到 4.0.0",
+									"detail": "从 3.8 迁移 12 项设置"
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-empty",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-刚安装.png",
+			"state": "刚安装",
+			"waitForText": "还没有数据",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-09-06T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "ok",
+									"latency_ms": 231,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 63,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 60,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 62,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 70,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 51,
+									"checked_at": "2026-09-06T04:05:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"body": {
+							"installed_at": "2026-09-06T03:00:00Z",
+							"days": 14,
+							"series": {
+								"mirror_downloads": [],
+								"assets_rewrites_frontend": [],
+								"avatar_rewrites_frontend": [],
+								"avatar_rewrites_admin": []
+							}
+						}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T04:05:00Z",
+									"tone": "ok",
+									"title": "首次线路检查完成",
+									"detail": "4 条线路全部正常"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-06T04:04:00Z",
+									"tone": "neutral",
+									"title": "已按「国内站」配置",
+									"detail": "更新走 WenPai.org 镜像，公共库与头像经 adminCDN、Cravatar 接通"
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-recovery",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-恢复模式.png",
+			"state": "恢复模式",
+			"waitForText": "叶子现在什么都不做",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": true,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "ok",
+									"latency_ms": 229,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "ok",
+									"latency_ms": 200,
 									"checked_at": "2026-09-06T04:00:00Z",
 									"suggestion": null
 								},
 								{
 									"target": "googlefonts.admincdn.com",
-									"result": "down",
-									"latency_ms": null,
+									"result": "ok",
+									"latency_ms": 61,
 									"checked_at": "2026-09-06T04:00:00Z",
-									"suggestion": "目标不可达，请稍后重试或检查网络。"
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 55,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 58,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 74,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
 								},
 								{
 									"target": "cn.cravatar.com",
-									"result": "fallback",
-									"latency_ms": 900,
+									"result": "ok",
+									"latency_ms": 48,
 									"checked_at": "2026-09-06T04:00:00Z",
-									"suggestion": "国内镜像不可用，已回原始上游。"
+									"suggestion": null
 								}
 							]
 						}
-					}
-				]
-			},
-			"notes": "需 fixture：把 transient wpcy_diagnostics_results 写成 fallback/down。本机 Studio CLI 缺 main.mjs、无 Docker，截图用会话内 REST 拦截，不写入站点。"
-		},
-		{
-			"id": "connect-default",
-			"page": "wpcy-connect",
-			"url": "/wp-admin/admin.php?page=wpcy-connect",
-			"filename": "connect-默认.png",
-			"state": "默认",
-			"waitForText": "WordPress.org 源",
-			"prep": { "kind": "none" },
-			"notes": "连接优化默认 DataForm 四组。"
-		},
-		{
-			"id": "services-unbound",
-			"page": "wpcy-services",
-			"url": "/wp-admin/admin.php?page=wpcy-services",
-			"filename": "services-未绑定.png",
-			"state": "未绑定",
-			"waitForText": "绑定本站",
-			"prep": { "kind": "none" },
-			"notes": "当前站 unbound。点绑定会 503（preview-site-review 第 2 条），本状态不点按钮。"
-		},
-		{
-			"id": "services-bound",
-			"page": "wpcy-services",
-			"url": "/wp-admin/admin.php?page=wpcy-services",
-			"filename": "services-已绑定.png",
-			"state": "已绑定",
-			"waitForText": "已绑定",
-			"prep": {
-				"kind": "rest-mock",
-				"routes": [
+					},
 					{
-						"path": "/wpcy/v1/binding",
+						"path": "/wpcy/v1/stats",
 						"method": "GET",
 						"body": {
-							"status": "bound",
-							"site_hash": "sitehashABCDEFGH",
-							"bound_at": "2026-09-05T12:00:00Z"
+							"installed_at": "2026-07-31T06:12:00Z",
+							"days": 14,
+							"series": {
+								"mirror_downloads": [
+									{ "date": "2026-08-24", "value": 16 },
+									{ "date": "2026-08-25", "value": 18 },
+									{ "date": "2026-08-26", "value": 17 },
+									{ "date": "2026-08-27", "value": 19 },
+									{ "date": "2026-08-28", "value": 20 },
+									{ "date": "2026-08-29", "value": 18 },
+									{ "date": "2026-08-30", "value": 20 },
+									{ "date": "2026-08-31", "value": 18 },
+									{ "date": "2026-09-01", "value": 26 },
+									{ "date": "2026-09-02", "value": 22 },
+									{ "date": "2026-09-03", "value": 31 },
+									{ "date": "2026-09-04", "value": 28 },
+									{ "date": "2026-09-05", "value": 24 },
+									{ "date": "2026-09-06", "value": 42 }
+								],
+								"mirror_bytes_saved": [
+									{ "date": "2026-08-24", "value": 80000000 },
+									{ "date": "2026-08-25", "value": 80000000 },
+									{ "date": "2026-08-26", "value": 80000000 },
+									{ "date": "2026-08-27", "value": 80000000 },
+									{ "date": "2026-08-28", "value": 80000000 },
+									{ "date": "2026-08-29", "value": 80000000 },
+									{ "date": "2026-08-30", "value": 80000000 },
+									{ "date": "2026-08-31", "value": 180000000 },
+									{ "date": "2026-09-01", "value": 180000000 },
+									{ "date": "2026-09-02", "value": 180000000 },
+									{ "date": "2026-09-03", "value": 180000000 },
+									{ "date": "2026-09-04", "value": 180000000 },
+									{ "date": "2026-09-05", "value": 180000000 },
+									{ "date": "2026-09-06", "value": 208490188 }
+								],
+								"assets_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 2400 },
+									{ "date": "2026-08-25", "value": 2400 },
+									{ "date": "2026-08-26", "value": 2400 },
+									{ "date": "2026-08-27", "value": 2500 },
+									{ "date": "2026-08-28", "value": 2500 },
+									{ "date": "2026-08-29", "value": 2500 },
+									{ "date": "2026-08-30", "value": 2400 },
+									{ "date": "2026-08-31", "value": 2100 },
+									{ "date": "2026-09-01", "value": 2400 },
+									{ "date": "2026-09-02", "value": 2300 },
+									{ "date": "2026-09-03", "value": 2700 },
+									{ "date": "2026-09-04", "value": 2900 },
+									{ "date": "2026-09-05", "value": 2600 },
+									{ "date": "2026-09-06", "value": 3430 }
+								],
+								"avatar_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 430 },
+									{ "date": "2026-08-25", "value": 430 },
+									{ "date": "2026-08-26", "value": 430 },
+									{ "date": "2026-08-27", "value": 440 },
+									{ "date": "2026-08-28", "value": 440 },
+									{ "date": "2026-08-29", "value": 430 },
+									{ "date": "2026-08-30", "value": 430 },
+									{ "date": "2026-08-31", "value": 380 },
+									{ "date": "2026-09-01", "value": 410 },
+									{ "date": "2026-09-02", "value": 470 },
+									{ "date": "2026-09-03", "value": 440 },
+									{ "date": "2026-09-04", "value": 520 },
+									{ "date": "2026-09-05", "value": 480 },
+									{ "date": "2026-09-06", "value": 510 }
+								]
+							}
 						}
 					},
 					{
-						"path": "/wpcy/v1/entitlements",
+						"path": "/wpcy/v1/events",
 						"method": "GET",
-						"body": { "entitlements": [] }
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T07:10:00Z",
+									"tone": "warn",
+									"title": "已进入恢复模式",
+									"detail": "全部 URL 改写与模块已停用"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-06T06:02:00Z",
+									"tone": "ok",
+									"title": "完成 WordPress 7.1 更新检查",
+									"detail": "经 WenPai.org 镜像，耗时 0.4 秒"
+								},
+								{
+									"id": "3",
+									"at": "2026-09-04T08:00:00Z",
+									"tone": "neutral",
+									"title": "插件更新到 4.0.0",
+									"detail": "从 3.8 迁移 12 项设置"
+								}
+							]
+						}
 					},
 					{
-						"path": "/wpcy/v1/apps",
+						"path": "/wpcy/v1/binding",
 						"method": "GET",
-						"body": { "apps": [], "index_status": "ok" }
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
 					}
 				]
-			},
-			"notes": "需 fixture：identity.binding.status=bound。本机无可用 Studio WP-CLI，截图用会话内 REST 拦截。"
+			}
 		},
 		{
-			"id": "services-index-unreachable",
-			"page": "wpcy-services",
-			"url": "/wp-admin/admin.php?page=wpcy-services",
-			"filename": "services-索引不可达.png",
-			"state": "索引不可达",
-			"waitForText": "小工具目录暂时不可用",
+			"id": "overview-upgraded",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-升级站.png",
+			"state": "升级站",
+			"waitForText": "确认你的站点场景",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": null,
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "ok",
+									"latency_ms": 229,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 61,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 55,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 58,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 74,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 48,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"body": {
+							"installed_at": "2026-07-31T06:12:00Z",
+							"days": 14,
+							"series": {
+								"mirror_downloads": [
+									{ "date": "2026-08-24", "value": 16 },
+									{ "date": "2026-08-25", "value": 18 },
+									{ "date": "2026-08-26", "value": 17 },
+									{ "date": "2026-08-27", "value": 19 },
+									{ "date": "2026-08-28", "value": 20 },
+									{ "date": "2026-08-29", "value": 18 },
+									{ "date": "2026-08-30", "value": 20 },
+									{ "date": "2026-08-31", "value": 18 },
+									{ "date": "2026-09-01", "value": 26 },
+									{ "date": "2026-09-02", "value": 22 },
+									{ "date": "2026-09-03", "value": 31 },
+									{ "date": "2026-09-04", "value": 28 },
+									{ "date": "2026-09-05", "value": 24 },
+									{ "date": "2026-09-06", "value": 42 }
+								],
+								"mirror_bytes_saved": [
+									{ "date": "2026-08-24", "value": 80000000 },
+									{ "date": "2026-08-25", "value": 80000000 },
+									{ "date": "2026-08-26", "value": 80000000 },
+									{ "date": "2026-08-27", "value": 80000000 },
+									{ "date": "2026-08-28", "value": 80000000 },
+									{ "date": "2026-08-29", "value": 80000000 },
+									{ "date": "2026-08-30", "value": 80000000 },
+									{ "date": "2026-08-31", "value": 180000000 },
+									{ "date": "2026-09-01", "value": 180000000 },
+									{ "date": "2026-09-02", "value": 180000000 },
+									{ "date": "2026-09-03", "value": 180000000 },
+									{ "date": "2026-09-04", "value": 180000000 },
+									{ "date": "2026-09-05", "value": 180000000 },
+									{ "date": "2026-09-06", "value": 208490188 }
+								],
+								"assets_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 2400 },
+									{ "date": "2026-08-25", "value": 2400 },
+									{ "date": "2026-08-26", "value": 2400 },
+									{ "date": "2026-08-27", "value": 2500 },
+									{ "date": "2026-08-28", "value": 2500 },
+									{ "date": "2026-08-29", "value": 2500 },
+									{ "date": "2026-08-30", "value": 2400 },
+									{ "date": "2026-08-31", "value": 2100 },
+									{ "date": "2026-09-01", "value": 2400 },
+									{ "date": "2026-09-02", "value": 2300 },
+									{ "date": "2026-09-03", "value": 2700 },
+									{ "date": "2026-09-04", "value": 2900 },
+									{ "date": "2026-09-05", "value": 2600 },
+									{ "date": "2026-09-06", "value": 3430 }
+								],
+								"avatar_rewrites_frontend": [
+									{ "date": "2026-08-24", "value": 430 },
+									{ "date": "2026-08-25", "value": 430 },
+									{ "date": "2026-08-26", "value": 430 },
+									{ "date": "2026-08-27", "value": 440 },
+									{ "date": "2026-08-28", "value": 440 },
+									{ "date": "2026-08-29", "value": 430 },
+									{ "date": "2026-08-30", "value": 430 },
+									{ "date": "2026-08-31", "value": 380 },
+									{ "date": "2026-09-01", "value": 410 },
+									{ "date": "2026-09-02", "value": 470 },
+									{ "date": "2026-09-03", "value": 440 },
+									{ "date": "2026-09-04", "value": 520 },
+									{ "date": "2026-09-05", "value": 480 },
+									{ "date": "2026-09-06", "value": 510 }
+								]
+							}
+						}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": {
+							"events": [
+								{
+									"id": "1",
+									"at": "2026-09-06T06:02:00Z",
+									"tone": "ok",
+									"title": "完成 WordPress 7.1 更新检查",
+									"detail": "经 WenPai.org 镜像，耗时 0.4 秒"
+								},
+								{
+									"id": "2",
+									"at": "2026-09-04T08:00:00Z",
+									"tone": "neutral",
+									"title": "插件更新到 4.0.0",
+									"detail": "从 3.8 迁移 12 项设置"
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": {
+							"status": "ok",
+							"migrated_at": "2026-09-04T08:00:00Z",
+							"source_version": "3.8"
+						}
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-stats-fail",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-读取失败.png",
+			"state": "读取失败",
+			"waitForText": "暂时无法读取统计",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wpcy/v1/diagnostics",
+						"method": "GET",
+						"body": {
+							"targets": [
+								{
+									"target": "api.wenpai.net",
+									"result": "ok",
+									"latency_ms": 229,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "downloads.wenpai.net",
+									"result": "ok",
+									"latency_ms": 200,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googlefonts.admincdn.com",
+									"result": "ok",
+									"latency_ms": 61,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "googleajax.admincdn.com",
+									"result": "ok",
+									"latency_ms": 55,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "jsd.admincdn.com",
+									"result": "ok",
+									"latency_ms": 58,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cdnjs.admincdn.com",
+									"result": "ok",
+									"latency_ms": 74,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								},
+								{
+									"target": "cn.cravatar.com",
+									"result": "ok",
+									"latency_ms": 48,
+									"checked_at": "2026-09-06T04:00:00Z",
+									"suggestion": null
+								}
+							]
+						}
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"status": 500,
+						"body": { "code": "internal" }
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"body": { "events": [] }
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"body": { "status": "none" }
+					}
+				]
+			}
+		},
+		{
+			"id": "overview-skeleton",
+			"page": "wpcy",
+			"url": "/wp-admin/admin.php?page=wpcy",
+			"filename": "overview-骨架.png",
+			"state": "骨架",
+			"waitForSelector": "[aria-busy=\"true\"]",
 			"prep": {
 				"kind": "rest-mock",
 				"routes": [
 					{
-						"path": "/wpcy/v1/apps",
+						"path": "/wpcy/v1/diagnostics",
 						"method": "GET",
-						"body": { "apps": [], "index_status": "unreachable" }
+						"delayMs": 5000,
+						"body": { "targets": [] }
+					},
+					{
+						"path": "/wpcy/v1/stats",
+						"method": "GET",
+						"delayMs": 5000,
+						"body": {}
+					},
+					{
+						"path": "/wpcy/v1/events",
+						"method": "GET",
+						"delayMs": 5000,
+						"body": { "events": [] }
+					},
+					{
+						"path": "/wpcy/v1/binding",
+						"method": "GET",
+						"delayMs": 5000,
+						"body": { "status": "unbound" }
+					},
+					{
+						"path": "/wpcy/v1/migration/report",
+						"method": "GET",
+						"delayMs": 5000,
+						"body": { "status": "none" }
 					}
 				]
-			},
-			"notes": "需 fixture：wpcy_apps_index_source 指向不可达 URL 后 Index::refresh。空 source 被当成 index_status=ok（preview-site-review 第 3 条）。"
+			}
 		},
 		{
-			"id": "diagnose-default",
-			"page": "wpcy-diagnose",
-			"url": "/wp-admin/admin.php?page=wpcy-diagnose",
-			"filename": "diagnose-默认.png",
-			"state": "默认",
-			"waitForText": "立即检查",
-			"prep": { "kind": "none" },
-			"notes": "诊断默认「连接检查」Tab。出站主机仍是空表占位（preview-site-review 第 4 条），本状态不点该 Tab。"
+			"id": "connect-avatar",
+			"page": "wpcy-connect",
+			"url": "/wp-admin/admin.php?page=wpcy-connect",
+			"filename": "connect-头像字段.png",
+			"state": "高级头像",
+			"clickText": "高级",
+			"waitForText": "评论与后台的头像源",
+			"prep": {
+				"kind": "rest-mock",
+				"bootstrap": {
+					"settings": {
+						"profile": "domestic",
+						"profile_confirmed_at": "2026-08-01T00:00:00Z",
+						"recovery_mode": false,
+						"connectivity": {
+							"wordpress_org": "auto",
+							"public_assets": {
+								"items": [
+									"google_fonts",
+									"google_ajax",
+									"cdnjs",
+									"jsdelivr",
+									"emoji"
+								],
+								"scope": "both"
+							},
+							"avatar": "cravatar_cn"
+						}
+					}
+				},
+				"routes": [
+					{
+						"path": "/wp/v2/users/me",
+						"method": "GET",
+						"body": { "meta": { "wpcy_settings_view": "advanced" } }
+					},
+					{
+						"path": "/wpcy/v1/profile/suggest",
+						"method": "GET",
+						"body": { "suggestion": "domestic" }
+					}
+				]
+			}
 		},
 		{
 			"id": "recovery-default",
@@ -181,8 +1424,21 @@
 			"filename": "recovery-默认.png",
 			"state": "默认",
 			"waitForText": "文派叶子 · 恢复模式",
-			"prep": { "kind": "none" },
-			"notes": "PHP 直出恢复页，不加载 React。"
+			"prep": {
+				"kind": "none"
+			}
+		},
+		{
+			"id": "recovery-on",
+			"page": "wpcy-recovery",
+			"url": "/wp-admin/admin.php?page=wpcy-recovery",
+			"filename": "recovery-已开启.png",
+			"state": "已开启",
+			"waitForText": "恢复模式已开启",
+			"prep": {
+				"kind": "need-fixture",
+				"reason": "Studio 本机无 wp-env；恢复模式已开启需 WP-CLI 写 recovery_mode"
+			}
 		}
 	]
 }

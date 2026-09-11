@@ -313,13 +313,13 @@ class FixturesTest extends TestCase {
 		);
 		$this->assertNotContains( 'admin', $from_v38->settings()['connectivity']['public_assets']['items'] );
 		$this->assertNotContains( 'admin', $from_files->settings()['connectivity']['public_assets']['items'] );
-		$this->assertSame( 'on', $from_v38->settings()['admin_assets'] );
-		$this->assertSame( 'on', $from_files->settings()['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $from_v38->settings() );
+		$this->assertArrayNotHasKey( 'admin_assets', $from_files->settings() );
 		$this->assertContains( 'admincdn', $from_v38->ignored() );
 		$this->assertNotContains( 'admin', $from_v38->ignored() );
 		$this->assertContains( 'admincdn_files', $from_files->kept() );
 		$this->assertNotContains( 'admin', $from_files->ignored() );
-		$this->assertStringContainsString( '后台加速：已保留设置，4.1 起生效', implode( ' ', $from_v38->to_array()['messages'] ) );
+		$this->assertStringContainsString( '后台静态加速已取消（易致后台界面问题）', implode( ' ', $from_v38->to_array()['messages'] ) );
 	}
 
 	/**
@@ -337,7 +337,7 @@ class FixturesTest extends TestCase {
 			array( 'google_fonts', 'jsdelivr' ),
 			$report->settings()['connectivity']['public_assets']['items']
 		);
-		$this->assertSame( 'on', $report->settings()['admin_assets'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $report->settings() );
 		$this->assertContains( 'admincdn', $report->ignored() );
 		$this->assertNotContains( 'admin', $report->ignored() );
 		$this->assertContains( 'bootstrapcdn', $report->ignored() );
@@ -381,8 +381,7 @@ class FixturesTest extends TestCase {
 			}
 		}
 
-		$this->assertSame( 'cravatar_cn', $report->settings()['connectivity']['avatar']['admin'] );
-		$this->assertSame( 'cravatar_cn', $report->settings()['connectivity']['avatar']['frontend'] );
+		$this->assertSame( 'cravatar_cn', $report->settings()['connectivity']['avatar'] );
 		$this->assertContains( 'cravatar', $report->kept() );
 		$this->assertIsArray( $entry );
 		$this->assertSame( 'weavatar', $entry['value'] );
@@ -690,10 +689,9 @@ class FixturesTest extends TestCase {
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
 				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
 				$this->assertSame( 'domestic', $settings['profile'] );
-				$this->assertSame( 'off', $settings['admin_assets'] );
+				$this->assertArrayNotHasKey( 'admin_assets', $settings );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				$this->assertArrayNotHasKey( 'allow_site_override', $settings );
@@ -703,10 +701,9 @@ class FixturesTest extends TestCase {
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
 				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
 				$this->assertSame( 'domestic', $settings['profile'] );
-				$this->assertSame( 'on', $settings['admin_assets'] );
+				$this->assertArrayNotHasKey( 'admin_assets', $settings );
 				$this->assertTrue( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				break;
@@ -716,10 +713,9 @@ class FixturesTest extends TestCase {
 				$this->assertSame( 'auto', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
 				$this->assertSame( 'both', $connectivity['public_assets']['scope'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
 				$this->assertSame( 'domestic', $settings['profile'] );
-				$this->assertSame( 'off', $settings['admin_assets'] );
+				$this->assertArrayNotHasKey( 'admin_assets', $settings );
 				$this->assertTrue( $modules['windfonts'] );
 				$this->assertTrue( $modules['notice_control'] );
 				$fonts = $settings['integrations']['windfonts']['fonts'];
@@ -736,7 +732,7 @@ class FixturesTest extends TestCase {
 			case 'single-3.9-08-admincdn-files-admin.json':
 				$this->assertSame( 'auto', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
-				$this->assertSame( 'on', $settings['admin_assets'] );
+				$this->assertArrayNotHasKey( 'admin_assets', $settings );
 				$this->assertSame( 'domestic', $settings['profile'] );
 				break;
 
@@ -745,8 +741,7 @@ class FixturesTest extends TestCase {
 			case 'multisite-3.8-06.json':
 				$this->assertSame( 'off', $connectivity['wordpress_org'] );
 				$this->assertSame( array(), $connectivity['public_assets']['items'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['admin'] );
-				$this->assertSame( 'cravatar_cn', $connectivity['avatar']['frontend'] );
+				$this->assertSame( 'cravatar_cn', $connectivity['avatar'] );
 				$this->assertFalse( $modules['windfonts'] );
 				$this->assertFalse( $modules['notice_control'] );
 				$this->assertTrue( $settings['allow_site_override'] );
