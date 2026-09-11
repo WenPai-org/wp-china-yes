@@ -42,7 +42,7 @@
 
 ## 规则内容来源拍板（feibisi 2026-09-11 晚，逐条）
 
-1. **去广告规则源**：FeiCode 无独立服务器仓（已搜）；3.x 客户端仅手动选择器（45 行无远程拉取）；`wpcy.com/adblocker`（页面 id 62）为产品页，描述"手动添加 + 自动获取规则"。**拍板：不新建服务、不引开源过滤框架**（AdGuard/uBlock 语法对 wp-admin 元素隐藏过重）——规则创作平台用 **wpcy.com 本身**（WordPress 站点承载规则内容），经 `sign-ruleset.php` 签名发布到 element_hide 通道（M-NOTICE-1 已建接收端）。发布端点与后台创作界面为后续任务。
+1. **去广告规则源**：FeiCode 无独立服务器仓（已搜）；3.x 客户端仅手动选择器（45 行无远程拉取）；`wpcy.com/adblocker`（页面 id 62）为产品页，描述"手动添加 + 自动获取规则"。**拍板：不新建服务、不引开源过滤框架**（AdGuard/uBlock 语法对 wp-admin 元素隐藏过重）——**规则源 = Git 仓 `WenPai-org/element-hide-rules`**（PR 评审自带版本控制；CI 签名发布）。wpcy.com/adblocker 页面**降级为纯功能介绍页**（WordPress 承载规则内容被否：维护麻烦、无版本控制——feibisi 2026-09-11 晚拍板，取代本节此前"规则创作平台用 wpcy.com"的口径）。发布路径 `https://wpcy.com/rulesets/element-hide.json`（静态产物，nginx 接线由 devops 一次性配置）；签名私钥 = Forgejo Secret `SIGN_KEY`（devops 维护）。开源过滤框架（AdGuard/uBlock 语法）评估后不引入：规则量小、场景单一，Git+签名 JSON 即框架。
 2. **MotuCloud 协议细化**：图标 = **Iconify 自建版**（自托管 Iconify API），对接 WordPress 图标区块 API；`dashicons` 仓（文派后台图标存储库）可作为图标源之一。免版权图片轨按原决定。双轨口径不变，端点细化随 MotuCloud 服务端。
 3. **混合站前台开关**：定位为**用户自行定制选项**（非场景自动行为），文案需说明"开启后海外访客也走国内节点"。
 4. **浏览器成对测速探针**：可行性研究（R-PROBE-1，Grok）——浏览器 Performance API/fetch 计时 vs 服务端 ping 的取舍、隐私、频次与存储（用户 meta），产出可行性结论与建议方案。
