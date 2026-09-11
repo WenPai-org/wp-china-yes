@@ -45,6 +45,9 @@ final class Defaults {
 				'dashboard_feeds'     => 'allow',
 				'admin_locale_follow' => true,
 			),
+			'admin'                => array(
+				'hide_promo' => true,
+			),
 			'modules'              => array(
 				'notice_control' => true,
 				'windfonts'      => false,

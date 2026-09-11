@@ -55,8 +55,8 @@ final class Profile {
 	/**
 	 * Overlay D2 connectivity keys onto an existing settings document.
 	 *
-	 * Leaves notice_control, announcements, diagnostics, recovery_mode,
-	 * data_residency, and apps untouched.
+	 * Leaves notice_control, admin.hide_promo, announcements, diagnostics,
+	 * recovery_mode, data_residency, and apps untouched.
 	 *
 	 * @since 4.0.0
 	 *

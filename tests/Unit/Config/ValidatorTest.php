@@ -54,6 +54,13 @@ class ValidatorTest extends TestCase {
 		$this->assertSame( '', $out['diagnostics']['client_probe_url'] );
 		$this->assertTrue( $out['modules']['notice_control'] );
 		$this->assertFalse( $out['modules']['windfonts'] );
+		$this->assertTrue( $out['admin']['hide_promo'] );
+
+		$off = $this->validator->sanitize(
+			array( 'admin' => array( 'hide_promo' => false ) ),
+			Schema::SETTINGS
+		);
+		$this->assertFalse( $off['admin']['hide_promo'] );
 		$this->assertTrue( $out['modules']['site_blocklist']['enabled'] );
 		$this->assertSame( array(), $out['modules']['site_blocklist']['hosts'] );
 		$this->assertTrue( $out['modules']['noise_block']['enabled'] );

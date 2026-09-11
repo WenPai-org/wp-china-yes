@@ -24,6 +24,9 @@ if ( ! class_exists( 'WenPai\\ChinaYes\\Tests\\Unit\\Admin\\AdminStore', false )
 
 require_once dirname( __DIR__ ) . '/Config/wp-option-stubs.php';
 
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
 }
@@ -425,5 +428,41 @@ if ( ! function_exists( 'sanitize_html_class' ) ) {
 	 */
 	function sanitize_html_class( $css_class ) {
 		return preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $css_class );
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * Drop a test transient.
+	 *
+	 * @param string $key Name.
+	 * @return true
+	 */
+	function delete_transient( $key ) {
+		unset( AdminStore::$transients[ $key ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'is_admin' ) ) {
+	/**
+	 * Admin request flag from AdminStore.
+	 *
+	 * @return bool
+	 */
+	function is_admin() {
+		return ! empty( AdminStore::$is_admin );
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	/**
+	 * Escape an attribute.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 	}
 }

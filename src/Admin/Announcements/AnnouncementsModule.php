@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\Announcements;
 
+use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
@@ -96,18 +97,27 @@ final class AnnouncementsModule implements Module {
 	private $fetcher;
 
 	/**
+	 * Ed25519 verifier.
+	 *
+	 * @var ManifestVerifier
+	 */
+	private ManifestVerifier $verifier;
+
+	/**
 	 * Constructor. Does not register hooks or fetch.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Repository    $config  Settings access.
-	 * @param string        $source  Fixture path or wpcy.com HTTPS URL. Empty disables fetch.
-	 * @param callable|null $fetcher Optional `fn(string $source): string`.
+	 * @param Repository            $config   Settings access.
+	 * @param string                $source   Fixture path or wpcy.com HTTPS URL. Empty disables fetch.
+	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
+	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
 	 */
-	public function __construct( Repository $config, string $source = '', $fetcher = null ) {
-		$this->config  = $config;
-		$this->source  = $source;
-		$this->fetcher = is_callable( $fetcher ) ? $fetcher : null;
+	public function __construct( Repository $config, string $source = '', $fetcher = null, $verifier = null ) {
+		$this->config   = $config;
+		$this->source   = $source;
+		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
+		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
 	}
 
 	/**
@@ -266,7 +276,13 @@ final class AnnouncementsModule implements Module {
 		}
 
 		$decoded = json_decode( $raw, true );
-		$clean   = $this->sanitize_document( $decoded );
+		if ( ! is_array( $decoded ) || ! $this->verifier->verify( $decoded ) ) {
+			return $previous;
+		}
+
+		unset( $decoded['signature'] );
+
+		$clean = $this->sanitize_document( $decoded );
 		if ( ! is_array( $clean ) ) {
 			return $previous;
 		}

@@ -46,7 +46,8 @@ final class ManifestVerifier {
 	 * @var array<string, string>
 	 */
 	private const KEYS_BY_KID = array(
-		'wpcy-apps-2026' => self::TEST_PUBLIC_KEY,
+		'wpcy-apps-2026'    => self::TEST_PUBLIC_KEY,
+		'wpcy-ruleset-2026' => self::TEST_PUBLIC_KEY,
 	);
 
 	/**

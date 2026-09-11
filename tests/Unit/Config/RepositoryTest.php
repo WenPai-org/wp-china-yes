@@ -51,6 +51,7 @@ class RepositoryTest extends TestCase {
 		$this->assertTrue( $repo->get( 'connectivity.admin_locale_follow' ) );
 		$this->assertSame( 'domestic', $repo->get( 'profile' ) );
 		$this->assertNull( $repo->get( 'admin_assets' ) );
+		$this->assertTrue( $repo->get( 'admin.hide_promo' ) );
 		$this->assertTrue( $repo->get( 'modules.notice_control' ) );
 		$this->assertFalse( $repo->get( 'modules.windfonts' ) );
 		$this->assertTrue( $repo->get( 'modules.site_blocklist.enabled' ) );
