@@ -34,7 +34,7 @@
 | POST | `/residency/test` | 同上 | 输入 URL，返回会被哪一层如何处理 |
 | GET / PUT | `/site-blocklist` | `manage_network_options` | L2 本站拦截清单；PUT 命中受保护主机返回 400 `wpcy_blocklist_protected_host` |
 | GET | `/announcements` | 同上 | 缓存的公告 |
-| GET | `/element-hide` | 同上 | 元素隐藏：总开关、规则集版本、issued_at、本月命中次数 |
+| GET | `/element-hide` | 同上 | 元素隐藏：总开关、规则集版本、issued_at、本月命中次数、stale_version |
 | POST | `/announcements/{id}/dismiss` | 同上 | 关闭一条公告 |
 | GET | `/binding` | 同上 | 绑定状态 |
 | POST | `/binding/start` | 同上 | 发起挑战 |

@@ -455,6 +455,36 @@ if ( ! function_exists( 'is_admin' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	/**
+	 * Parse a URL.
+	 *
+	 * @param string $url URL.
+	 * @return array<string, mixed>|false
+	 */
+	function wp_parse_url( $url ) {
+		$parts = parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- stub for wp_parse_url.
+		return is_array( $parts ) ? $parts : false;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	/**
+	 * Record an HTTP GET. Unit tests never leave the machine.
+	 *
+	 * @param string               $url  URL.
+	 * @param array<string, mixed> $args Args.
+	 * @return WP_Error
+	 */
+	function wp_remote_get( $url, $args = array() ) {
+		AdminStore::$http[] = array(
+			'url'  => (string) $url,
+			'args' => is_array( $args ) ? $args : array(),
+		);
+		return new WP_Error( 'http_disabled', 'no network in unit tests' );
+	}
+}
+
 if ( ! function_exists( 'esc_attr' ) ) {
 	/**
 	 * Escape an attribute.
