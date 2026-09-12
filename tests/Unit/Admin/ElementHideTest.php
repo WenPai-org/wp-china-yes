@@ -291,14 +291,236 @@ class ElementHideTest extends TestCase {
 	}
 
 	/**
+	 * Strictly greater version replaces the cached document.
+	 */
+	public function test_greater_version_is_adopted() {
+		$calls  = 0;
+		$first  = SignedPayload::encode( $this->document( '2026-09-11T00:00:00Z', 1 ) );
+		$second = SignedPayload::encode( $this->document( '2026-09-12T00:00:00Z', 2 ) );
+		$module = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $first, $second ) {
+				++$calls;
+				return 1 === $calls ? $first : $second;
+			}
+		);
+
+		$cached = $module->refresh();
+		$this->assertSame( 1, $cached['version'] );
+		$cached = $module->refresh();
+		$this->assertSame( 2, $cached['version'] );
+		$this->assertSame( '2026-09-12T00:00:00Z', $cached['issued_at'] );
+		$this->assertFalse( $module->diagnostics()['stale_version'] );
+	}
+
+	/**
+	 * Equal version is discarded; previous cache stays; stale_version is set.
+	 */
+	public function test_equal_version_is_discarded() {
+		$calls  = 0;
+		$first  = SignedPayload::encode( $this->document( '2026-09-11T00:00:00Z', 1 ) );
+		$second = SignedPayload::encode( $this->document( '2026-09-12T00:00:00Z', 1 ) );
+		$module = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $first, $second ) {
+				++$calls;
+				return 1 === $calls ? $first : $second;
+			}
+		);
+
+		$first_cached  = $module->refresh();
+		$second_cached = $module->refresh();
+		$this->assertSame( $first_cached['issued_at'], $second_cached['issued_at'] );
+		$this->assertSame( 1, $second_cached['version'] );
+		$this->assertTrue( $module->diagnostics()['stale_version'] );
+	}
+
+	/**
+	 * Smaller version is discarded; previous cache stays.
+	 */
+	public function test_smaller_version_is_discarded() {
+		$calls  = 0;
+		$first  = SignedPayload::encode( $this->document( '2026-09-11T00:00:00Z', 3 ) );
+		$second = SignedPayload::encode( $this->document( '2026-09-12T00:00:00Z', 2 ) );
+		$module = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $first, $second ) {
+				++$calls;
+				return 1 === $calls ? $first : $second;
+			}
+		);
+
+		$first_cached  = $module->refresh();
+		$second_cached = $module->refresh();
+		$this->assertSame( 3, $second_cached['version'] );
+		$this->assertSame( $first_cached['issued_at'], $second_cached['issued_at'] );
+		$this->assertTrue( $module->diagnostics()['stale_version'] );
+	}
+
+	/**
+	 * Schema version major >1 is rejected after a valid signature.
+	 */
+	public function test_schema_version_major_greater_than_one_is_rejected() {
+		$ok                    = SignedPayload::encode( $this->document( '2026-09-11T00:00:00Z', 1 ) );
+		$bad                   = $this->document( '2026-09-12T00:00:00Z', 2 );
+		$bad['schema_version'] = '2.0';
+		$bad                   = SignedPayload::encode( $bad );
+		$calls                 = 0;
+		$module                = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $ok, $bad ) {
+				++$calls;
+				return 1 === $calls ? $ok : $bad;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( 1, $second['version'] );
+		$this->assertSame( $first['issued_at'], $second['issued_at'] );
+		$this->assertFalse( $module->diagnostics()['stale_version'] );
+	}
+
+	/**
+	 * Schema version 1.x is adopted.
+	 */
+	public function test_schema_version_one_is_adopted() {
+		$doc                   = $this->document( '2026-09-12T00:00:00Z', 2 );
+		$doc['schema_version'] = '1.0';
+		$module                = $this->module_from_payload( SignedPayload::encode( $doc ) );
+		$cached                = $module->refresh();
+		$this->assertSame( 2, $cached['version'] );
+	}
+
+	/**
+	 * Protocol other than adblock-v1 is rejected after a valid signature.
+	 */
+	public function test_foreign_protocol_is_rejected() {
+		$ok              = SignedPayload::encode( $this->document( '2026-09-11T00:00:00Z', 1 ) );
+		$bad             = $this->document( '2026-09-12T00:00:00Z', 2 );
+		$bad['protocol'] = 'adblock-v2';
+		$bad             = SignedPayload::encode( $bad );
+		$calls           = 0;
+		$module          = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $ok, $bad ) {
+				++$calls;
+				return 1 === $calls ? $ok : $bad;
+			}
+		);
+
+		$first  = $module->refresh();
+		$second = $module->refresh();
+		$this->assertSame( 1, $second['version'] );
+		$this->assertSame( $first['issued_at'], $second['issued_at'] );
+	}
+
+	/**
+	 * Protocol adblock-v1 is adopted.
+	 */
+	public function test_protocol_adblock_v1_is_adopted() {
+		$doc             = $this->document( '2026-09-12T00:00:00Z', 2 );
+		$doc['protocol'] = 'adblock-v1';
+		$module          = $this->module_from_payload( SignedPayload::encode( $doc ) );
+		$cached          = $module->refresh();
+		$this->assertSame( 2, $cached['version'] );
+	}
+
+	/**
+	 * Missing ttl defaults to 86400; an explicit ttl is stored.
+	 */
+	public function test_ttl_defaults_and_override() {
+		$module = $this->module_from_payload( SignedPayload::encode( $this->document() ) );
+		$cached = $module->refresh();
+		$this->assertSame( 86400, $cached['ttl'] );
+
+		$custom        = $this->document( '2026-09-12T00:00:00Z', 2 );
+		$custom['ttl'] = 3600;
+		$module        = $this->module_from_payload( SignedPayload::encode( $custom ) );
+		$cached        = $module->refresh();
+		$this->assertSame( 3600, $cached['ttl'] );
+	}
+
+	/**
+	 * Admin retry within one hour does not pull again.
+	 */
+	public function test_admin_retry_throttled_within_one_hour() {
+		$calls   = 0;
+		$payload = SignedPayload::encode( $this->document() );
+		$module  = new ElementHideModule(
+			new Repository(),
+			'mock://element-hide',
+			static function () use ( &$calls, $payload ) {
+				++$calls;
+				return $payload;
+			}
+		);
+
+		$first = $module->retry();
+		$this->assertIsArray( $first );
+		$this->assertSame( 1, $calls );
+		$second = $module->retry();
+		$this->assertSame( $first['issued_at'], $second['issued_at'] );
+		$this->assertSame( 1, $calls );
+	}
+
+	/**
+	 * Reserved production URL is documented; default source stays empty.
+	 */
+	public function test_production_url_reserved_default_source_empty() {
+		$module = new ElementHideModule( new Repository() );
+		$this->assertSame( '', $module->source() );
+		$this->assertSame( 'https://wpcy.com/rulesets/element-hide.json', ElementHideModule::PRODUCTION_URL );
+		$this->assertFalse( strpos( ElementHideModule::PRODUCTION_URL, '?' ) );
+	}
+
+	/**
+	 * HTTP pull uses 10s timeout, sslverify, no query, no cookies.
+	 */
+	public function test_http_fetch_is_anonymous_and_verifies_tls() {
+		$module = new ElementHideModule(
+			new Repository(),
+			'https://wpcy.com/rulesets/element-hide.json'
+		);
+		$module->refresh();
+
+		$this->assertNotEmpty( AdminStore::$http );
+		$req = AdminStore::$http[0];
+		$this->assertSame( 'https://wpcy.com/rulesets/element-hide.json', $req['url'] );
+		$this->assertFalse( strpos( $req['url'], '?' ) );
+		$this->assertSame( 10, $req['args']['timeout'] );
+		$this->assertTrue( $req['args']['sslverify'] );
+		$this->assertSame( array(), $req['args']['cookies'] );
+		$this->assertSame( array(), $req['args']['headers'] );
+	}
+
+	/**
+	 * A source URL with query string is not requested.
+	 */
+	public function test_source_url_with_query_is_not_fetched() {
+		$module = new ElementHideModule(
+			new Repository(),
+			'https://wpcy.com/rulesets/element-hide.json?site=1'
+		);
+		$module->refresh();
+		$this->assertSame( array(), AdminStore::$http );
+	}
+
+	/**
 	 * Sample fixture document.
 	 *
-	 * @param string $issued Issued-at stamp.
+	 * @param string $issued  Issued-at stamp.
+	 * @param int    $version Document version.
 	 * @return array<string, mixed>
 	 */
-	private function document( string $issued = '2026-09-11T00:00:00Z' ): array {
+	private function document( string $issued = '2026-09-11T00:00:00Z', int $version = 1 ): array {
 		return array(
-			'version'   => 1,
+			'version'   => $version,
 			'issued_at' => $issued,
 			'rules'     => array(
 				array(

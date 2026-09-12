@@ -58,6 +58,13 @@ final class AdminStore {
 	public static $is_admin = true;
 
 	/**
+	 * Captured wp_remote_get calls.
+	 *
+	 * @var array<int, array{url: string, args: array<string, mixed>}>
+	 */
+	public static $http = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -69,5 +76,6 @@ final class AdminStore {
 		self::$caps       = array();
 		self::$nonces     = array();
 		self::$is_admin   = true;
+		self::$http       = array();
 	}
 }

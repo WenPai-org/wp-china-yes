@@ -34,11 +34,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ElementHideModule implements ConditionalModule {
 
 	/**
-	 * Production rules URL is not selected yet. Empty disables fetch.
+	 * Reserved production rules URL. Not the default source (empty = disabled).
 	 *
 	 * @since 4.0.0
 	 */
-	public const PRODUCTION_URL = '';
+	public const PRODUCTION_URL = 'https://wpcy.com/rulesets/element-hide.json';
 
 	/**
 	 * Transient holding the last verified rules document.
@@ -55,7 +55,35 @@ final class ElementHideModule implements ConditionalModule {
 	public const HITS_OPTION = 'wpcy_element_hide_hits';
 
 	/**
-	 * Stale cache TTL in seconds (72h).
+	 * Option holding the unix time of the last pull attempt.
+	 *
+	 * @since 4.0.0
+	 */
+	public const LAST_FETCH_OPTION = 'wpcy_element_hide_last_fetch';
+
+	/**
+	 * Option flag: last signed document was discarded as a non-increasing version.
+	 *
+	 * @since 4.0.0
+	 */
+	public const STALE_VERSION_OPTION = 'wpcy_element_hide_stale_version';
+
+	/**
+	 * Document freshness window in seconds when `ttl` is omitted.
+	 *
+	 * @since 4.0.0
+	 */
+	public const DEFAULT_TTL = 86400;
+
+	/**
+	 * Protocol token this client adopts.
+	 *
+	 * @since 4.0.0
+	 */
+	public const PROTOCOL = 'adblock-v1';
+
+	/**
+	 * Stale cache hard cap in seconds (72h). Always keyed off local fetched_at.
 	 *
 	 * @since 4.0.0
 	 */
@@ -224,10 +252,8 @@ final class ElementHideModule implements ConditionalModule {
 		if ( '' === $this->source ) {
 			return;
 		}
-		if ( function_exists( 'wp_next_scheduled' ) && ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			if ( function_exists( 'wp_schedule_event' ) ) {
-				wp_schedule_event( time(), 'daily', self::CRON_HOOK );
-			}
+		if ( function_exists( 'wp_next_scheduled' ) && ! wp_next_scheduled( self::CRON_HOOK ) && function_exists( 'wp_schedule_event' ) ) {
+			wp_schedule_event( time(), 'daily', self::CRON_HOOK );
 		}
 	}
 
@@ -238,6 +264,21 @@ final class ElementHideModule implements ConditionalModule {
 	 */
 	public function cron_refresh(): void {
 		$this->refresh();
+	}
+
+	/**
+	 * Admin retry. Throttled to one pull per hour.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
+	 */
+	public function retry() {
+		if ( $this->retry_throttled() ) {
+			return $this->cached_document();
+		}
+
+		return $this->refresh();
 	}
 
 	/**
@@ -290,20 +331,21 @@ final class ElementHideModule implements ConditionalModule {
 	}
 
 	/**
-	 * Diagnose payload: version, hits, issued_at, fetched_at, enabled.
+	 * Diagnose payload: version, hits, issued_at, fetched_at, enabled, stale_version.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{enabled: bool, version: int, issued_at: string, fetched_at: string, hits: int}
+	 * @return array{enabled: bool, version: int, issued_at: string, fetched_at: string, hits: int, stale_version: bool}
 	 */
 	public function diagnostics(): array {
 		$cached = $this->cached_document();
 		return array(
-			'enabled'    => $this->hide_promo_enabled(),
-			'version'    => is_array( $cached ) ? $cached['version'] : 0,
-			'issued_at'  => is_array( $cached ) ? $cached['issued_at'] : '',
-			'fetched_at' => is_array( $cached ) ? $cached['fetched_at'] : '',
-			'hits'       => $this->monthly_hits(),
+			'enabled'       => $this->hide_promo_enabled(),
+			'version'       => is_array( $cached ) ? $cached['version'] : 0,
+			'issued_at'     => is_array( $cached ) ? $cached['issued_at'] : '',
+			'fetched_at'    => is_array( $cached ) ? $cached['fetched_at'] : '',
+			'hits'          => $this->monthly_hits(),
+			'stale_version' => $this->stale_version_flag(),
 		);
 	}
 
@@ -343,15 +385,19 @@ final class ElementHideModule implements ConditionalModule {
 	/**
 	 * Fetch, verify, sanitize, replace the cache. Failure keeps a ≤72h document.
 	 *
+	 * Version negotiation runs only after a valid signature.
+	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
+	 * @return array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
 	 */
 	public function refresh() {
 		$previous = $this->cached_document();
 		if ( '' === $this->source ) {
 			return $previous;
 		}
+
+		$this->remember_fetch();
 
 		$raw = $this->read_source();
 		if ( '' === $raw ) {
@@ -372,12 +418,22 @@ final class ElementHideModule implements ConditionalModule {
 			return $this->keep_or_clear( $previous );
 		}
 
+		if ( ! $this->schema_acceptable( $decoded ) || ! $this->protocol_acceptable( $decoded ) ) {
+			return $this->keep_or_clear( $previous );
+		}
+
 		unset( $decoded['signature'] );
 		$clean = $this->sanitize_document( $decoded );
 		if ( ! is_array( $clean ) ) {
 			return $this->keep_or_clear( $previous );
 		}
 
+		if ( is_array( $previous ) && $clean['version'] <= $previous['version'] ) {
+			$this->set_stale_version( true );
+			return $previous;
+		}
+
+		$this->set_stale_version( false );
 		$this->store( $clean );
 		return $this->cached_document();
 	}
@@ -387,7 +443,7 @@ final class ElementHideModule implements ConditionalModule {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
+	 * @return array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
 	 */
 	public function cached_document() {
 		if ( ! function_exists( 'get_transient' ) ) {
@@ -430,7 +486,7 @@ final class ElementHideModule implements ConditionalModule {
 	 * Keep a spec-shaped rules document. Protected selectors are dropped.
 	 *
 	 * @param mixed $decoded Candidate.
-	 * @return array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
+	 * @return array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
 	 */
 	private function sanitize_document( $decoded ) {
 		if ( ! is_array( $decoded ) || ! isset( $decoded['rules'] ) || ! is_array( $decoded['rules'] ) ) {
@@ -450,6 +506,11 @@ final class ElementHideModule implements ConditionalModule {
 			? $decoded['fetched_at']
 			: '';
 
+		$ttl = isset( $decoded['ttl'] ) ? (int) $decoded['ttl'] : self::DEFAULT_TTL;
+		if ( $ttl < 1 ) {
+			$ttl = self::DEFAULT_TTL;
+		}
+
 		$rules = array();
 		foreach ( $decoded['rules'] as $row ) {
 			$rule = $this->sanitize_rule( $row );
@@ -462,6 +523,7 @@ final class ElementHideModule implements ConditionalModule {
 			'version'    => $version,
 			'issued_at'  => $issued,
 			'fetched_at' => $fetched,
+			'ttl'        => $ttl,
 			'rules'      => $rules,
 		);
 	}
@@ -589,7 +651,7 @@ final class ElementHideModule implements ConditionalModule {
 			return is_string( $raw ) ? $raw : '';
 		}
 
-		if ( 0 !== strpos( $this->source, 'https://wpcy.com/' ) ) {
+		if ( ! $this->is_anonymous_https_source( $this->source ) ) {
 			return '';
 		}
 
@@ -602,6 +664,8 @@ final class ElementHideModule implements ConditionalModule {
 			array(
 				'timeout'   => 10,
 				'sslverify' => true,
+				'headers'   => array(),
+				'cookies'   => array(),
 			)
 		);
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) {
@@ -622,9 +686,126 @@ final class ElementHideModule implements ConditionalModule {
 	}
 
 	/**
+	 * Whether $decoded schema_version is missing or major version 1.
+	 *
+	 * @param array<string, mixed> $decoded Verified document.
+	 */
+	private function schema_acceptable( array $decoded ): bool {
+		if ( ! array_key_exists( 'schema_version', $decoded ) ) {
+			return true;
+		}
+		$raw = $decoded['schema_version'];
+		if ( is_int( $raw ) || is_float( $raw ) ) {
+			return (int) $raw <= 1;
+		}
+		if ( ! is_string( $raw ) || '' === $raw ) {
+			return true;
+		}
+		$parts = explode( '.', $raw );
+		$major = (int) $parts[0];
+
+		return $major <= 1;
+	}
+
+	/**
+	 * Whether $decoded protocol is missing or adblock-v1.
+	 *
+	 * @param array<string, mixed> $decoded Verified document.
+	 */
+	private function protocol_acceptable( array $decoded ): bool {
+		if ( ! array_key_exists( 'protocol', $decoded ) ) {
+			return true;
+		}
+		$protocol = $decoded['protocol'];
+		if ( ! is_string( $protocol ) ) {
+			return false;
+		}
+
+		return self::PROTOCOL === $protocol;
+	}
+
+	/**
+	 * HTTPS wpcy.com URL with no query, fragment, user, or password.
+	 *
+	 * @param string $source Source.
+	 */
+	private function is_anonymous_https_source( string $source ): bool {
+		if ( 0 !== strpos( $source, 'https://wpcy.com/' ) ) {
+			return false;
+		}
+		if ( ! function_exists( 'wp_parse_url' ) ) {
+			return false;
+		}
+		$parts = wp_parse_url( $source );
+		if ( ! is_array( $parts ) ) {
+			return false;
+		}
+		if ( isset( $parts['query'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether an admin retry is inside the one-hour window.
+	 */
+	private function retry_throttled(): bool {
+		if ( ! function_exists( 'get_option' ) ) {
+			return false;
+		}
+		$last = (int) get_option( self::LAST_FETCH_OPTION, 0 );
+		if ( $last < 1 ) {
+			return false;
+		}
+
+		return ( time() - $last ) < HOUR_IN_SECONDS;
+	}
+
+	/**
+	 * Record the unix time of this pull attempt.
+	 */
+	private function remember_fetch(): void {
+		if ( function_exists( 'update_option' ) ) {
+			update_option( self::LAST_FETCH_OPTION, time(), false );
+		}
+	}
+
+	/**
+	 * Persist or clear the stale_version diagnostic flag.
+	 *
+	 * @param bool $stale Whether the last signed document was a non-increasing version.
+	 */
+	private function set_stale_version( bool $stale ): void {
+		if ( ! function_exists( 'update_option' ) ) {
+			return;
+		}
+		if ( $stale ) {
+			update_option( self::STALE_VERSION_OPTION, 1, false );
+			return;
+		}
+		if ( function_exists( 'delete_option' ) ) {
+			delete_option( self::STALE_VERSION_OPTION );
+			return;
+		}
+		update_option( self::STALE_VERSION_OPTION, 0, false );
+	}
+
+	/**
+	 * Whether the last signed document was discarded as a non-increasing version.
+	 */
+	private function stale_version_flag(): bool {
+		if ( ! function_exists( 'get_option' ) ) {
+			return false;
+		}
+
+		return (int) get_option( self::STALE_VERSION_OPTION, 0 ) === 1;
+	}
+
+	/**
 	 * Persist a sanitized document with fetched_at and 72h TTL.
 	 *
-	 * @param array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>} $document Document.
+	 * @param array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>} $document Document.
 	 */
 	private function store( array $document ): void {
 		$document['fetched_at'] = gmdate( 'Y-m-d\\TH:i:s\\Z' );
@@ -636,8 +817,8 @@ final class ElementHideModule implements ConditionalModule {
 	/**
 	 * Keep $previous when it is still within 72h; otherwise clear.
 	 *
-	 * @param array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null $previous Last document.
-	 * @return array{version: int, issued_at: string, fetched_at: string, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
+	 * @param array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null $previous Last document.
+	 * @return array{version: int, issued_at: string, fetched_at: string, ttl: int, rules: list<array{id: string, target_plugin: string, selector: string, label: string}>}|null
 	 */
 	private function keep_or_clear( $previous ) {
 		if ( is_array( $previous ) && $this->within_stale_window( $previous ) ) {

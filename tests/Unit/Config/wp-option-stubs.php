@@ -76,6 +76,19 @@ if ( ! function_exists( 'update_site_option' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * Drop a site option from OptionStore.
+	 *
+	 * @param string $key Option name.
+	 * @return bool
+	 */
+	function delete_option( $key ) {
+		unset( OptionStore::$options[ $key ] );
+		return true;
+	}
+}
+
 if ( ! function_exists( 'is_multisite' ) ) {
 	/**
 	 * Multisite flag from OptionStore.

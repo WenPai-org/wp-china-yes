@@ -1,0 +1,54 @@
+{
+	"entries": [
+		{
+			"path": "tests/fixtures/element-hide/sample.json",
+			"token": "promo",
+			"reason": "规则选择器样例：woo-promo-notice / .acme-promo-banner 是拦截目标，不是插件自己的浏览器面标识。"
+		},
+		{
+			"path": "tests/fixtures/element-hide/sample.json",
+			"token": "banner",
+			"reason": "规则选择器样例：acme-dashboard-banner / .acme-promo-banner 是拦截目标。"
+		},
+		{
+			"path": "tests/fixtures/notice-rules/sample.json",
+			"token": "promo",
+			"reason": "通知规则样例：woo-connect-promo / acme-promo-banner 是拦截目标。"
+		},
+		{
+			"path": "tests/fixtures/notice-rules/sample.json",
+			"token": "banner",
+			"reason": "通知规则样例：acme-dashboard-banner / acme-promo-banner 是拦截目标。"
+		},
+		{
+			"path": "tests/Unit/Admin/ElementHideTest.php",
+			"token": "promo",
+			"reason": "单测复用 element-hide fixture 的规则 id woo-promo-notice，属拦截目标。"
+		},
+		{
+			"path": "tests/Unit/Admin/NoticeControlTest.php",
+			"token": "promo",
+			"reason": "单测复用 notice-rules fixture 的 class acme-promo-banner，属拦截目标。"
+		},
+		{
+			"path": "tests/Unit/Admin/NoticeControlTest.php",
+			"token": "banner",
+			"reason": "单测复用 notice-rules fixture 的 id/class（acme-dashboard-banner / acme-promo-banner / acme-banner），属拦截目标。"
+		},
+		{
+			"path": "tests/fixtures/legacy-options/single-3.9-07-store-proxy.json",
+			"token": "promo",
+			"reason": "3.x adblock_rule 遗留选择器（webinar-promo-notification 等）是历史拦截目标，4.0 不迁移该键。"
+		},
+		{
+			"path": "tests/fixtures/legacy-options/single-3.9-08-admincdn-files-admin.json",
+			"token": "promo",
+			"reason": "3.x adblock_rule 遗留选择器是历史拦截目标，4.0 不迁移该键。"
+		},
+		{
+			"path": "tests/fixtures/legacy-options/single-3.9.3-03.json",
+			"token": "promo",
+			"reason": "3.x adblock_rule 遗留选择器是历史拦截目标，4.0 不迁移该键。"
+		}
+	]
+}
