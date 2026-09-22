@@ -27,6 +27,10 @@ SOP（设计门禁、任务书 DoD、验收含视觉、文案、公共规则副�
 
 产品合同不在本目录：先读 [`docs/4.0-rewrite-plan.md`](../4.0-rewrite-plan.md)，再读 `docs/architecture/adr-00*.md` 与相关 `docs/specs/*`。
 
+## 插件显示名
+
+功能名、品牌名、插件名三层，以及 WPCY 以后统一换品牌和帮助/反馈地址：[plugin-display-names.md](plugin-display-names.md)。
+
 ## 4.0 与 3.9.x
 
 两条产品线，不是一个产品的两个版本（定稿 §7.1b）。
