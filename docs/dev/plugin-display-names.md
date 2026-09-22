@@ -74,3 +74,19 @@ WPSlug 已经先有 `wpslug_brand_name` 和 `wpslug_plugin_name`。那是第一�
 不换：目录名、文本域、选项前缀、REST 命名空间、能力名、钩子名、Update URI（仍 `https://updates.wenpai.net`）、遥测地址、驱动名。
 
 用户没填的键保持默认。用户填了的字符串不再翻译。
+
+
+## 2026-09-22 核对
+
+下面这些当时对过代码，还只写在文档里：
+
+- `wenpai_plugin_display` 没有任何插件在调用。改 WPCY 设置，页面不会变。
+- WPSlug 只有 `wpslug_brand_name`、`wpslug_plugin_name`。帮助和反馈地址仍写在模板里。
+- 智储帮助页句子里还有 `wpcy.com`。只换按钮不够。
+- 插件包里的 lint 仍是 kit 0.2.3。档检查只在 linuxjoy 的 `scripts/wenpai/wenpai-admin-lint.py`。
+
+白标不得另带一份更高 `VERSION` 的 kit。同站最高版本会换掉所有文派插件的后台样式。
+
+文件头 Plugin Name 不改。更新提示认文件头。插件列表上的显示名可以另改。
+
+「服务」里若有文派自己的广告，白标客户默认不看见。去掉广告用单独开关，不能靠关掉整个「服务」Tab。这些插件若进 WordPress.org，后台广告容易被拒。
