@@ -4,6 +4,9 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
+### 稳定性
+- 后台框架脚本只在文派叶子设置页加载，并为 `plugins.js` 声明 jQuery 依赖。此前每个后台页面都会加载这些脚本，且未声明依赖，插件列表等页面会报 `jQuery is not defined`。
+
 ## v3.9.3 - 2026-09-05
 
 ### 安全与隐私

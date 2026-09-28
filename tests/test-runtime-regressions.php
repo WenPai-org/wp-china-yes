@@ -77,6 +77,17 @@ check_runtime(
     'settings UI avoids jQuery APIs deprecated by current WordPress'
 );
 
+
+check_runtime(
+    false === strpos($settings, "add_filter( 'wp_china_yes_enqueue_assets', '__return_true' )"),
+    'settings service does not force framework assets onto every admin page'
+);
+$setup = file_get_contents($root . '/framework/classes/setup.class.php');
+check_runtime(
+    false !== strpos($setup, "array( 'jquery' ), self::\$version, true );"),
+    'framework plugins script declares a jQuery dependency'
+);
+
 if ($failures) {
     exit(1);
 }
