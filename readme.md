@@ -3,7 +3,7 @@
 文派叶子 🍃（WPCY.COM）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。专为解决困扰了中国互联网数十年的特色问题而存在。此为文派开源（WenPai.org）的一部分。
 
 
-<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/wpcy-home-img.png"></a>
+<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/wpcy-home-img.webp"></a>
 
 ## 简介
 文派叶子 🍃（WPCY.COM）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。文派（WordPress）中国本土化项目始于 2019 年，由 文派叶子🍃（WPCY） 插件开启，其前身为 WP-China-Yes。
@@ -47,7 +47,7 @@
 
 ## 赞助商
 
-<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
+<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.webp"></a>
 
 ---
 
