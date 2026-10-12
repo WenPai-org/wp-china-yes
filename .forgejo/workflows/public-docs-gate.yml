@@ -1,0 +1,13 @@
+name: Public docs gate
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+jobs:
+  public-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Public docs gate
+        run: python3 scripts/public-docs-gate.py
