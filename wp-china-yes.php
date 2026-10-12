@@ -13,6 +13,8 @@
  * Tested up to: 7.0
  * Requires PHP: 7.4.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
+ * Plugin URI: https://wpcy.com/
+ * Update URI: https://updates.wenpai.net
  */
 
 namespace WenPai\ChinaYes;
