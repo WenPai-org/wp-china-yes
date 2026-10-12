@@ -12,9 +12,13 @@ if ( ! function_exists( 'wp_china_yes_get_icons' ) ) {
 
     $nonce = ( ! empty( $_POST[ 'nonce' ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ 'nonce' ] ) ) : '';
 
-    if ( ! wp_verify_nonce( $nonce, 'wp_china_yes_icon_nonce' ) ) {
-      wp_send_json_error( array( 'error' => esc_html__( 'Error: Invalid nonce verification.', 'wp_china_yes' ) ) );
-    }
+	if ( ! wp_verify_nonce( $nonce, 'wp_china_yes_icon_nonce' ) ) {
+	  wp_send_json_error( array( 'error' => esc_html__( 'Error: Invalid nonce verification.', 'wp_china_yes' ) ) );
+	}
+
+	if ( ! current_user_can( is_multisite() ? 'manage_network_options' : 'manage_options' ) ) {
+	  wp_send_json_error( array( 'error' => esc_html__( 'Error: You do not have permission to do that.', 'wp_china_yes' ) ), 403 );
+	}
 
     ob_start();
 
@@ -59,6 +63,16 @@ if ( ! function_exists( 'wp_china_yes_get_icons' ) ) {
  *
  */
 if ( ! function_exists( 'wp_china_yes_export' ) ) {
+
+	function wp_china_yes_backup_is_authorized( $unique ) {
+		$capability = is_multisite() ? 'manage_network_options' : 'manage_options';
+		return current_user_can( $capability ) && 'wp_china_yes' === $unique;
+	}
+
+	function wp_china_yes_backup_get_option() {
+		return is_multisite() ? get_site_option( 'wp_china_yes', array() ) : get_option( 'wp_china_yes', array() );
+	}
+
   function wp_china_yes_export() {
 
     $nonce  = ( ! empty( $_GET[ 'nonce' ] ) ) ? sanitize_text_field( wp_unslash( $_GET[ 'nonce' ] ) ) : '';
@@ -68,8 +82,12 @@ if ( ! function_exists( 'wp_china_yes_export' ) ) {
       die( esc_html__( 'Error: Invalid nonce verification.', 'wp_china_yes' ) );
     }
 
-    if ( empty( $unique ) ) {
-      die( esc_html__( 'Error: Invalid key.', 'wp_china_yes' ) );
+	if ( ! wp_china_yes_backup_is_authorized( $unique ) ) {
+	  wp_die(
+		esc_html__( 'Error: You do not have permission to do that.', 'wp_china_yes' ),
+		'',
+		array( 'response' => 403 )
+	  );
     }
 
     // Export
@@ -79,7 +97,7 @@ if ( ! function_exists( 'wp_china_yes_export' ) ) {
     header('Pragma: no-cache');
     header('Expires: 0');
 
-    echo json_encode( get_option( $unique ) );
+	echo wp_json_encode( wp_china_yes_backup_get_option() );
 
     die();
 
@@ -106,8 +124,8 @@ if ( ! function_exists( 'wp_china_yes_import_ajax' ) ) {
       wp_send_json_error( array( 'error' => esc_html__( 'Error: Invalid nonce verification.', 'wp_china_yes' ) ) );
     }
 
-    if ( empty( $unique ) ) {
-      wp_send_json_error( array( 'error' => esc_html__( 'Error: Invalid key.', 'wp_china_yes' ) ) );
+	if ( ! wp_china_yes_backup_is_authorized( $unique ) ) {
+	  wp_send_json_error( array( 'error' => esc_html__( 'Error: You do not have permission to do that.', 'wp_china_yes' ) ), 403 );
     }
 
     if ( empty( $data ) || ! is_array( $data ) ) {
@@ -115,7 +133,10 @@ if ( ! function_exists( 'wp_china_yes_import_ajax' ) ) {
     }
 
     // Success
-    update_option( $unique, $data, true );
+	is_multisite() ? update_site_option( 'wp_china_yes', $data ) : update_option( 'wp_china_yes', $data, true );
+	if ( function_exists( '\\WenPai\\ChinaYes\\clear_settings_cache' ) ) {
+	  \WenPai\ChinaYes\clear_settings_cache();
+	}
 
     wp_send_json_success();
 
@@ -137,12 +158,19 @@ if ( ! function_exists( 'wp_china_yes_reset_ajax' ) ) {
     $nonce  = ( ! empty( $_POST[ 'nonce' ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ 'nonce' ] ) ) : '';
     $unique = ( ! empty( $_POST[ 'unique' ] ) ) ? sanitize_text_field( wp_unslash( $_POST[ 'unique' ] ) ) : '';
 
-    if ( ! wp_verify_nonce( $nonce, 'wp_china_yes_backup_nonce' ) ) {
+	if ( ! wp_verify_nonce( $nonce, 'wp_china_yes_backup_nonce' ) ) {
       wp_send_json_error( array( 'error' => esc_html__( 'Error: Invalid nonce verification.', 'wp_china_yes' ) ) );
-    }
+	}
 
-    // Success
-    delete_option( $unique );
+	if ( ! wp_china_yes_backup_is_authorized( $unique ) ) {
+	  wp_send_json_error( array( 'error' => esc_html__( 'Error: You do not have permission to do that.', 'wp_china_yes' ) ), 403 );
+	}
+
+	// Success
+	is_multisite() ? delete_site_option( 'wp_china_yes' ) : delete_option( 'wp_china_yes' );
+	if ( function_exists( '\\WenPai\\ChinaYes\\clear_settings_cache' ) ) {
+	  \WenPai\ChinaYes\clear_settings_cache();
+	}
 
     wp_send_json_success();
 

@@ -148,7 +148,7 @@ class WenPai_Bridge_Fallback {
 	private static function is_bridge_update_request( string $url ): bool {
 		$parsed = wp_parse_url( $url );
 		return isset( $parsed['host'] ) && self::BRIDGE_HOST === $parsed['host']
-			&& isset( $parsed['path'] ) && str_contains( $parsed['path'], '/api/v1/update-check' );
+			&& isset( $parsed['path'] ) && false !== strpos( $parsed['path'], '/api/v1/update-check' );
 	}
 
 	/**

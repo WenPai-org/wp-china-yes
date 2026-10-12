@@ -49,7 +49,8 @@ private function get_settings_page_url() {
 			'menu_title'         => $this->settings['custom_name'],
 			'menu_slug'          => 'wp-china-yes',
 			'menu_type'          => 'submenu',
-			'menu_parent'        => is_multisite() ? 'settings.php' : 'options-general.php',
+				'menu_parent'        => is_multisite() ? 'settings.php' : 'options-general.php',
+				'menu_capability'    => is_multisite() ? 'manage_network_options' : 'manage_options',
 			'show_bar_menu'      => false,
 			'show_sub_menu'      => false,
 			'show_search'        => false,
@@ -103,10 +104,10 @@ private function get_settings_page_url() {
 				[
 					'id'       => 'bridge',
 					'type'     => 'switcher',
-					'default'  => true,
+	            'default'  => false,
 					'title'    => '云桥更新',
 					'subtitle' => '是否启用更新加速',
-					'desc'     => '<a href="https://wpbridge.com" target="_blank">文派云桥（wpbridge）</a>托管更新和应用分发渠道，可解决因 WordPress 社区分裂导致的混乱、旧应用无法更新，频繁 API 请求拖慢网速等问题。',
+					'desc'     => '启用文派云桥更新通道；通道不可用时自动回到 WordPress.org。',
 				],
 				[
 					'id'       => 'arkpress',
@@ -153,14 +154,15 @@ private function get_settings_page_url() {
                 'title'    => '文件加速',
                 'inline'   => true,
                 'options'  => [
+                    // 'frontend'（前台加速）已于 3.9.3 废弃移除：
+                    // public.admincdn.com 是共享端点，不可能持有各站自有的
+                    // wp-content 内容，详见 Service/Acceleration.php 的废弃说明。
                     'admin'       => '后台加速',
-                    'frontend'    => '前台加速',
                     'emoji'       => 'Emoji加速',
                     'sworg'       => '预览加速',
                 ],
                 'default'  => [
                     'admin'       => 'admin',
-                    'frontend'    => '',
                     'emoji'       => 'emoji',
                     'sworg'       => '',
                 ],
@@ -294,7 +296,7 @@ private function get_settings_page_url() {
 							'subtitle' => '字体family参数',
 							'desc'     => tr( '支持多种格式：<br>• <code>FontName</code> - 基础字体名<br>• <code>FontName:wght@400;700</code> - 指定权重<br>• <code>FontName:lang@zh</code> - 指定语言<br>• <code>FontName:wght@400:lang@zh</code> - 同时指定权重和语言<br>详见<a href="https://app.windfonts.com/docs" target="_blank">API文档</a>',
 								'wp-china-yes' ),
-							'default'  => 'cszt',
+							'default'  => 'wenfeng-hcszt',
 						],
 						[
 							'id'       => 'subset',
@@ -302,19 +304,13 @@ private function get_settings_page_url() {
 							'title'    => '字体子集',
 							'subtitle' => '字体变体（优先级高于权重）',
 							'options'  => [
-								''           => '不指定',
-								'regular'    => 'Regular',
-								'bold'       => 'Bold',
-								'light'      => 'Light',
-								'medium'     => 'Medium',
-								'semibold'   => 'Semibold',
-								'thin'       => 'Thin',
-								'extralight' => 'Extra Light',
-								'extrabold'  => 'Extra Bold',
-								'black'      => 'Black',
+								'full'      => '完整字符集',
+								'zh'        => '中文字符',
+								'zh-common' => '常用中文字符',
+								'en'        => '英文字符',
 							],
-							'default'  => 'regular',
-							'desc'     => tr( '直接指定字体变体，优先级大于权重设置',
+							'default'  => 'full',
+							'desc'     => tr( '选择文风字体 API 返回的字符集范围',
 								'wp-china-yes' ),
 						],
 						[
@@ -924,7 +920,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
 							'default'  => '未命名规则',
 						],
 						[
-							'id'          => 'url',
+						'id'          => 'domain',
 							'type'        => 'textarea',
 							'title'       => 'URL',
 							'subtitle'    => 'URL',
@@ -949,22 +945,13 @@ WP_CHINA_YES::createSection( $this->prefix, [
 
 if (in_array('monitor', $enabled_sections)) {
 WP_CHINA_YES::createSection( $this->prefix, [
-    'title'  => '脉云维护',
-    'icon'   => 'icon icon-story',
-    'fields' => [
-        [
-            'id'       => 'monitor',
-            'type'     => 'switcher',
-            'default'  => true,
-            'title'    => '节点监控',
-            'subtitle' => '自动监控加速节点可用性',
-            'desc'     => tr( '<a href="https://maiyun.org" target="_blank">脉云维护（MainCloud）</a>支持自动监控各加速节点可用性，当节点不可用时自动切换至可用节点或关闭加速，以保证您的网站正常访问',
-                'wp-china-yes' ),
-        ],
-        [
+	    'title'  => '系统信息',
+	    'icon'   => 'icon icon-story',
+	    'fields' => [
+	        [
             'id'       => 'memory',
             'type'     => 'switcher',
-            'default'  => true,
+	            'default'  => false,
             'title'    => '系统监控',
             'subtitle' => '自动监控系统运行状态',
             'desc'     => tr( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
@@ -999,7 +986,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
         [
             'id'       => 'disk',
             'type'     => 'switcher',
-            'default'  => true,
+	        'default'  => false,
             'title'    => '站点监控',
             'subtitle' => '自动监控站点运行状态',
             'desc'     => tr( '支持在管理后台页脚中显示系统运行状态，包括内存使用、CPU负载、MySQL版本、调试状态等信息',
@@ -1116,7 +1103,7 @@ WP_CHINA_YES::createSection( $this->prefix, [
             'type'     => 'switcher',
             'title'    => '性能优化',
             'subtitle' => '是否启用性能优化',
-            'default'  => true,
+            'default'  => false,
             'desc'     => '性能优化设置可以帮助提升 WordPress 的运行效率，请根据服务器配置合理调整。',
         ],
 
@@ -1304,28 +1291,6 @@ WP_CHINA_YES::createSection( $this->prefix, [
 			'title'  => '其他设置',
 			'icon'   => 'icon icon-setting',
 			'fields' => [
-				[
-					'id'       => 'enable_db_tools',
-					'type'     => 'switcher',
-					'title'    => '数据库工具',
-					'subtitle' => '启用数据库维护功能',
-					'default'  => false,
-					'desc'     => '启用后可访问WordPress内置的数据库修复工具。使用前请备份数据库。',
-				],
-				[
-					'id'         => 'db_tools_link',
-					'type'       => 'content',
-					'title'      => '数据库修复工具',
-					'subtitle'   => '访问WordPress数据库修复工具',
-					'dependency' => [ 'enable_db_tools', '==', 'true' ],
-					'content'    => '
-						<div class="wp_china_yes-notice wp_china_yes-notice-warning">
-							<p><strong>重要提醒</strong>：使用数据库修复工具前请务必备份数据库！</p>
-							<p><a class="button button-primary" href="' . esc_url( admin_url( 'maint/repair.php' ) ) . '" target="_blank">打开数据库修复工具</a></p>
-							<p><small>此工具将在新窗口中打开，修复完成后建议关闭此功能。</small></p>
-						</div>
-					',
-				],
 				[
 					'id'       => 'enable_sections',
 					'type'     => 'switcher',

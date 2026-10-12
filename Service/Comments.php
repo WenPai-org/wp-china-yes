@@ -11,9 +11,6 @@ class Comments {
 
     public function __construct() {
         $this->settings = get_settings();
-        
-        add_action('wp_enqueue_scripts', [$this, 'force_enqueue_jquery'], 5);
-        
         $this->init();
     }
 
@@ -27,6 +24,8 @@ class Comments {
         if (!isset($this->settings['comments_enable']) || !$this->settings['comments_enable']) {
             return;
         }
+
+        add_action('wp_enqueue_scripts', [$this, 'force_enqueue_jquery'], 5);
 
         $this->init_role_badge();
         $this->init_remove_website();
@@ -80,6 +79,7 @@ class Comments {
 
         add_action('admin_enqueue_scripts', [$this, 'enqueue_sticky_moderate_scripts']);
         add_filter('comment_row_actions', [$this, 'add_sticky_moderate_actions'], 10, 2);
+        add_action('wp_ajax_sticky_moderate_comment', [$this, 'handle_sticky_moderate_ajax']);
     }
 
     private $user_role = '';
@@ -211,7 +211,7 @@ class Comments {
             wp_die('评论内容至少需要20个字符。', '评论验证失败', ['back_link' => true]);
         }
 
-        if (str_contains($commentdata['comment_content'], 'href=')) {
+        if (false !== strpos($commentdata['comment_content'], 'href=')) {
             wp_die('评论中不允许包含活动链接，请返回编辑。', '评论验证失败', ['back_link' => true]);
         }
 
@@ -372,8 +372,6 @@ class Comments {
                 });
             });
         ');
-
-        add_action('wp_ajax_sticky_moderate_comment', [$this, 'handle_sticky_moderate_ajax']);
     }
 
     public function add_sticky_moderate_actions($actions, $comment) {
@@ -393,12 +391,21 @@ class Comments {
     }
 
     public function handle_sticky_moderate_ajax() {
-        if (!wp_verify_nonce($_POST['nonce'], 'sticky_moderate_nonce')) {
+        if ( ! current_user_can( 'moderate_comments' ) ) {
+            wp_send_json_error( [ 'message' => '权限不足' ], 403 );
+        }
+
+        $nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'sticky_moderate_nonce' ) ) {
             wp_die('安全验证失败');
         }
 
-        $comment_id = intval($_POST['comment_id']);
-        $action = sanitize_text_field($_POST['sticky_action']);
+		$comment_id = isset( $_POST['comment_id'] ) ? absint( $_POST['comment_id'] ) : 0;
+		$action = isset( $_POST['sticky_action'] ) ? sanitize_key( wp_unslash( $_POST['sticky_action'] ) ) : '';
+
+		if ( ! $comment_id || ! in_array( $action, [ 'sticky', 'unsticky' ], true ) ) {
+			wp_send_json_error( [ 'message' => '参数无效' ], 400 );
+		}
 
         if ($action === 'sticky') {
             update_comment_meta($comment_id, '_sticky_moderate', 1);

@@ -15,6 +15,15 @@ if ( ! class_exists( 'WP_CHINA_YES_Field_map' ) ) {
 
     public function __construct( $field, $value = '', $unique = '', $where = '', $parent = '' ) {
       parent::__construct( $field, $value, $unique, $where, $parent );
+
+      // 镜像不可用时回退：这里的资源服务于插件自己的设置界面，
+      // 且不受任何加速开关控制，jsd 挂掉会直接让地图字段失效。
+      if ( function_exists( '\WenPai\ChinaYes\field_cdn_base' ) ) {
+        $this->cdn_url = \WenPai\ChinaYes\field_cdn_base(
+          'https://jsd.admincdn.com/npm/leaflet@',
+          'https://cdn.jsdmirror.com/npm/leaflet@'
+        );
+      }
     }
 
     public function render() {

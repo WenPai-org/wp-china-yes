@@ -56,7 +56,7 @@ class Media {
     }
 
     public function generate_webp_versions($metadata) {
-        if (!function_exists('imagewebp')) {
+        if (!function_exists('imagewebp') || !is_array($metadata) || empty($metadata['file'])) {
             return $metadata;
         }
         

@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------------------
-**Copyright © 2025 WenPai.cn (Guangzhou) Technology Co., Ltd.**  
+**Copyright © 2026 WenPai.cn (Guangzhou) Technology Co., Ltd.**  
 -----------------------------------------------------------------------------------------
 
 **Compliance Terms**  
@@ -20,7 +20,7 @@ including (but not limited to) copyrights, trademarks, patents, intellectual pro
 This software is provided "as is" without warranty of any kind, express or implied.  
 
 -----------------------------------------------------------------------------------------
-**版权所有 © 2025 年 文派（广州）科技有限公司**
+**版权所有 © 2026 年 文派（广州）科技有限公司**
 -----------------------------------------------------------------------------------------
 
 **合规条款**

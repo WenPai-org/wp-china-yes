@@ -16,6 +16,10 @@ class Performance {
     }
 
     private function init() {
+		if ( empty( $this->settings['performance'] ) ) {
+			return;
+		}
+
         add_action('init', [$this, 'optimize_wordpress']);
         add_action('wp_enqueue_scripts', [$this, 'optimize_scripts'], 999);
         add_action('wp_head', [$this, 'add_performance_hints'], 1);
@@ -32,10 +36,9 @@ class Performance {
         remove_action('wp_head', 'wp_shortlink_wp_head');
         remove_action('wp_head', 'adjacent_posts_rel_link_wp_head');
         
-        if (!is_admin()) {
-            wp_deregister_script('jquery-migrate');
-        }
-        
+        // Do not remove jquery-migrate globally. Themes and plugins may still
+        // declare it as a dependency, especially during core upgrades.
+
         add_filter('xmlrpc_enabled', '__return_false');
         
         add_filter('wp_headers', function($headers) {

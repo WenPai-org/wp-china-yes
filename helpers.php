@@ -6,11 +6,14 @@ defined( 'ABSPATH' ) || exit;
 
 // 获取插件设置
 function get_settings() {
-	static $cached_settings = null;
-	
-	if ($cached_settings === null) {
-		$settings = is_multisite() ? get_site_option( 'wp_china_yes' ) : get_option( 'wp_china_yes' );
-		$cached_settings = wp_parse_args( $settings, [
+	if ( ! isset( $GLOBALS['wp_china_yes_settings_cache'] ) ) {
+		$raw_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', false )
+			: get_option( 'wp_china_yes', false );
+		$settings_exists = false !== $raw_settings;
+		$settings        = is_array( $raw_settings ) ? $raw_settings : [];
+
+		$GLOBALS['wp_china_yes_settings_cache'] = wp_parse_args( $settings, [
 		'store'                => 'wenpai',
 		'bridge'               => true,
 		'arkpress'             => false,
@@ -24,8 +27,8 @@ function get_settings() {
 		'windfonts'            => 'off',
 		'windfonts_list'       => [
 			[
-				'family'   => 'cszt',
-				'subset'   => 'regular',
+				'family'   => 'wenfeng-hcszt',
+				'subset'   => 'full',
 				'lang'     => '',
 				'weight'   => 400,
 				'style'    => 'normal',
@@ -61,8 +64,9 @@ function get_settings() {
 		'adblock_rule'         => [],
 		'plane'                => 'off',
 		'plane_rule'           => [],
-		'monitor'              => true,
-		'memory'               => true,
+		'monitor'              => false,
+		'memory'               => false,
+		'performance'          => false,
 		'hide'                 => false,
 		'custom_name'          => 'WP-China-Yes',
 		'enabled_sections'     => [ 'welcome', 'store', 'admincdn', 'cravatar', 'other', 'about' ],
@@ -73,13 +77,61 @@ function get_settings() {
 		'custom_rss_url'       => '',
 		'custom_rss_refresh'   => 3600,
 		'rss_display_options'  => [ 'show_date', 'show_summary', 'show_footer' ],
-		] );
+			] );
+
+		$array_keys = [
+			'admincdn', 'admincdn_public', 'admincdn_files', 'admincdn_dev',
+			'admincdn_version', 'windfonts_list', 'windfonts_typography_cn',
+			'windfonts_typography_en', 'adblock_rule', 'plane_rule',
+			'enabled_sections', 'rss_display_options',
+		];
+		foreach ( $array_keys as $key ) {
+			if ( ! is_array( $GLOBALS['wp_china_yes_settings_cache'][ $key ] ) ) {
+				$GLOBALS['wp_china_yes_settings_cache'][ $key ] = [];
+			}
+		}
+
+		// Do not silently re-enable admin rewriting when an existing settings
+		// record intentionally omits this key.
+		if ( $settings_exists && ! array_key_exists( 'admincdn', $settings ) ) {
+			$GLOBALS['wp_china_yes_settings_cache']['admincdn'] = [];
+		}
 	}
-	
-	return $cached_settings;
+
+	return $GLOBALS['wp_china_yes_settings_cache'];
 }
 
 function clear_settings_cache() {
-	static $cached_settings = null;
-	$cached_settings = null;
+	unset( $GLOBALS['wp_china_yes_settings_cache'] );
+}
+
+/**
+ * 取字段资源的 CDN 基址：镜像可用则用镜像，否则回退到备用来源。
+ *
+ * 用于 framework/fields/* 里那些【无开关控制】的硬编码 CDN 依赖
+ * （map 的 leaflet、code_editor 的 codemirror）。这些资源服务于插件
+ * 自己的设置界面，镜像挂掉会直接让我们的后台 UI 失效，且与用户是否
+ * 开启加速无关，所以必须有回退。
+ *
+ * 回退目标选用国内可达的 jsDelivr 镜像（cdn.jsdmirror.com），
+ * 而不是 cdn.jsdelivr.net —— 后者自 2021-12 ICP 被吊销后国内基本不可用。
+ *
+ * @since 3.9.3
+ * @param string $mirror   首选基址，例如 https://jsd.admincdn.com/npm/
+ * @param string $fallback 备用基址，例如 https://cdn.jsdmirror.com/npm/
+ * @return string
+ */
+function field_cdn_base( $mirror, $fallback ) {
+	$host = \WenPai\ChinaYes\Service\MirrorHealth::host_of( $mirror );
+
+	$base = \WenPai\ChinaYes\Service\MirrorHealth::is_healthy( $host ) ? $mirror : $fallback;
+
+	/**
+	 * 允许站点自定义字段资源基址（例如改用自建镜像）。
+	 *
+	 * @param string $base     实际生效的基址
+	 * @param string $mirror   首选基址
+	 * @param string $fallback 备用基址
+	 */
+	return apply_filters( 'wp_china_yes_field_cdn_base', $base, $mirror, $fallback );
 }

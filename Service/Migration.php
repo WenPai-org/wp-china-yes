@@ -13,11 +13,95 @@ class Migration {
 	public function __construct() {
 		$this->settings = get_settings();
 		add_action( 'admin_init', [ $this, 'migrate_windfonts_settings' ] );
+		add_action( 'admin_init', [ $this, 'migrate_deprecate_frontend_acceleration' ] );
+		add_action( 'admin_init', [ $this, 'migrate_plane_rule_schema' ] );
+		add_action( 'admin_init', [ $this, 'remove_legacy_monitor_schedule' ] );
+	}
+
+	/** Convert the broken 3.9 `url` plane rule field to the runtime `domain` key. */
+	public function migrate_plane_rule_schema() {
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
+
+		if ( ! is_array( $current_settings ) || empty( $current_settings['plane_rule'] ) ) {
+			return;
+		}
+
+		$changed = false;
+		foreach ( $current_settings['plane_rule'] as &$rule ) {
+			if ( is_array( $rule ) && empty( $rule['domain'] ) && ! empty( $rule['url'] ) ) {
+				$rule['domain'] = $rule['url'];
+				unset( $rule['url'] );
+				$changed = true;
+			}
+		}
+		unset( $rule );
+
+		if ( $changed ) {
+			is_multisite()
+				? update_site_option( 'wp_china_yes', $current_settings )
+				: update_option( 'wp_china_yes', $current_settings, true );
+			\WenPai\ChinaYes\clear_settings_cache();
+		}
+	}
+
+	/** The old monitor changed user settings after transient network failures. */
+	public function remove_legacy_monitor_schedule() {
+		wp_clear_scheduled_hook( 'wp_china_yes_monitor' );
+	}
+
+	/**
+	 * 摘除已废弃的「前台加速」选项（3.9.3）。
+	 *
+	 * public.admincdn.com 是共享端点，无法持有各站自有的 wp-content 内容；
+	 * 保留该选项只会让站点继续把资源指向一个必然取不到正确文件的地址。
+	 * 详见 Service/Acceleration.php 中的废弃说明。
+	 *
+	 * 该选项此前默认关闭，因此绝大多数站点此迁移是空操作。
+	 */
+	public function migrate_deprecate_frontend_acceleration() {
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
+
+		if ( ! is_array( $current_settings ) || empty( $current_settings['admincdn_files'] ) ) {
+			return;
+		}
+
+		$files = (array) $current_settings['admincdn_files'];
+
+		// checkbox 字段可能是 ['frontend'] 或 ['frontend' => 'frontend'] 两种形态，都要处理
+		$had_frontend = in_array( 'frontend', $files, true ) || array_key_exists( 'frontend', $files );
+
+		if ( ! $had_frontend ) {
+			return;
+		}
+
+		$files = array_filter(
+			$files,
+			static function ( $value, $key ) {
+				return 'frontend' !== $value && 'frontend' !== $key;
+			},
+			ARRAY_FILTER_USE_BOTH
+		);
+
+		$current_settings['admincdn_files'] = $files;
+		is_multisite()
+			? update_site_option( 'wp_china_yes', $current_settings )
+			: update_option( 'wp_china_yes', $current_settings, true );
+
+		if ( function_exists( '\WenPai\ChinaYes\clear_settings_cache' ) ) {
+			\WenPai\ChinaYes\clear_settings_cache();
+		}
 	}
 
 	public function migrate_windfonts_settings() {
-		$current_settings = get_option( 'wp_china_yes', [] );
+		$current_settings = is_multisite()
+			? get_site_option( 'wp_china_yes', [] )
+			: get_option( 'wp_china_yes', [] );
 		$needs_migration = false;
+		$legacy_subsets = [ 'regular', 'bold', 'light', 'medium', 'semibold', 'thin', 'extralight', 'extrabold', 'black' ];
 
 		if ( ! empty( $current_settings['windfonts_list'] ) ) {
 			foreach ( $current_settings['windfonts_list'] as $index => $font ) {
@@ -26,11 +110,24 @@ class Migration {
 					$current_settings['windfonts_list'][$index] = $migrated_font;
 					$needs_migration = true;
 				}
+
+				if ( 'cszt' === ( $current_settings['windfonts_list'][$index]['family'] ?? '' ) ) {
+					$current_settings['windfonts_list'][$index]['family'] = 'wenfeng-hcszt';
+					$needs_migration = true;
+				}
+
+				if ( in_array( $current_settings['windfonts_list'][$index]['subset'] ?? '', $legacy_subsets, true ) ) {
+					$current_settings['windfonts_list'][$index]['subset'] = 'full';
+					$needs_migration = true;
+				}
 			}
 		}
 
 		if ( $needs_migration ) {
-			update_option( 'wp_china_yes', $current_settings );
+			is_multisite()
+				? update_site_option( 'wp_china_yes', $current_settings )
+				: update_option( 'wp_china_yes', $current_settings );
+			\WenPai\ChinaYes\clear_settings_cache();
 		}
 	}
 
@@ -57,7 +154,7 @@ class Migration {
 			$css_url = $old_font['css'];
 			
 			if ( strpos( $css_url, 'syhtcjk' ) !== false ) {
-				return 'cszt';
+					return 'wenfeng-hcszt';
 			}
 			
 			if ( preg_match( '/fonts\/([^\/]+)\//', $css_url, $matches ) ) {
@@ -65,46 +162,12 @@ class Migration {
 			}
 		}
 
-		return 'cszt';
+		return 'wenfeng-hcszt';
 	}
 
 	private function extract_subset_from_old_config( $old_font ) {
-		if ( isset( $old_font['css'] ) ) {
-			$css_url = $old_font['css'];
-			
-			if ( strpos( $css_url, '/regular/' ) !== false ) {
-				return 'regular';
-			}
-			if ( strpos( $css_url, '/bold/' ) !== false ) {
-				return 'bold';
-			}
-			if ( strpos( $css_url, '/light/' ) !== false ) {
-				return 'light';
-			}
-			if ( strpos( $css_url, '/medium/' ) !== false ) {
-				return 'medium';
-			}
-		}
-
-		if ( isset( $old_font['weight'] ) ) {
-			$weight = intval( $old_font['weight'] );
-			if ( $weight <= 200 ) {
-				return 'thin';
-			} elseif ( $weight <= 300 ) {
-				return 'light';
-			} elseif ( $weight <= 500 ) {
-				return 'regular';
-			} elseif ( $weight <= 600 ) {
-				return 'medium';
-			} elseif ( $weight <= 700 ) {
-				return 'semibold';
-			} elseif ( $weight <= 800 ) {
-				return 'bold';
-			} else {
-				return 'black';
-			}
-		}
-
-		return 'regular';
+		// The current API accepts only en/zh/zh-common/full character sets.
+		// Legacy values described a font weight and now yield HTTP 400.
+		return 'full';
 	}
 }
