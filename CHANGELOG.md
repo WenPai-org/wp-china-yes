@@ -4,7 +4,9 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
-## v3.9.3 - 2026-09-XX
+## v3.9.3 - 2026-09-06（已撤回）
+
+> **已撤回**：3.9.3 于 2026-09-06 发布，当日撤回推送，更新通道仍为 3.8。已升级到 3.9.3 的站点无需操作。本段所列修复将随 3.9.4 重新发布。
 
 ### 安全与隐私
 - 设置导入、导出、重置只允许管理员操作固定的 `wp_china_yes` option；评论置顶接口补充 `moderate_comments` 权限与参数校验。
