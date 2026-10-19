@@ -139,7 +139,34 @@ async function openAdminPage( page, slug ) {
 	return response;
 }
 
+/**
+ * Does a request hit the given wpcy/v1 route (pretty or ?rest_route= URLs)?
+ *
+ * @param {import('@playwright/test').Request} request Request.
+ * @param {string}                             route   Route, e.g. "/wpcy/v1/settings".
+ * @return {boolean} Match.
+ */
+function isRestRoute( request, route ) {
+	const url = new URL( request.url() );
+	const rest = url.searchParams.get( 'rest_route' );
+	const pathName = rest || url.pathname.replace( /^.*\/wp-json/, '' );
+	return pathName.replace( /\/+$/, '' ) === route;
+}
+
+/**
+ * HTTP verb as WordPress sees it (apiFetch may tunnel PUT/DELETE via POST).
+ *
+ * @param {import('@playwright/test').Request} request Request.
+ * @return {string} Upper-case method.
+ */
+function restMethod( request ) {
+	const override = request.headers()[ 'x-http-method-override' ];
+	return ( override || request.method() ).toUpperCase();
+}
+
 module.exports = {
+	isRestRoute,
+	restMethod,
 	repoRoot,
 	wpCli,
 	wpEval,
