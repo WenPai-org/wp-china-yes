@@ -456,10 +456,52 @@ if ( ! function_exists( 'get_site_option' ) ) {
 
 if ( ! function_exists( 'is_multisite' ) ) {
 	/**
-	 * Single site in this suite.
+	 * Single site unless a test sets AppsStore::$multisite.
 	 */
 	function is_multisite() {
-		return false;
+		return AppsStore::$multisite;
+	}
+}
+
+if ( ! function_exists( 'get_sites' ) ) {
+	/**
+	 * Blog ids from AppsStore::$sites (fields => ids).
+	 *
+	 * @param array<string, mixed> $args Args.
+	 * @return list<int>
+	 */
+	function get_sites( $args = array() ) {
+		unset( $args );
+		return AppsStore::$sites;
+	}
+}
+
+if ( ! function_exists( 'switch_to_blog' ) ) {
+	/**
+	 * Switch the per-blog transient bag.
+	 *
+	 * @param int $blog_id Blog id.
+	 * @return true
+	 */
+	function switch_to_blog( $blog_id ) {
+		AppsStore::$blog_stack[] = AppsStore::$blog_id;
+		AppsStore::use_blog( (int) $blog_id );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'restore_current_blog' ) ) {
+	/**
+	 * Back to the blog before the last switch_to_blog().
+	 *
+	 * @return bool
+	 */
+	function restore_current_blog() {
+		if ( array() === AppsStore::$blog_stack ) {
+			return false;
+		}
+		AppsStore::use_blog( (int) array_pop( AppsStore::$blog_stack ) );
+		return true;
 	}
 }
 

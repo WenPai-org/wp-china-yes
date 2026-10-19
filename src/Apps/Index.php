@@ -153,6 +153,8 @@ final class Index {
 	 *
 	 * Unreachable source (WP_Error, non-2xx, empty) or invalid JSON also sets a
 	 * NEGATIVE_TTL negative cache; until it expires the source is not contacted.
+	 * An invalid index signature reports `invalid` but is not negative-cached
+	 * (see the comment at the verify() call).
 	 *
 	 * @since 4.0.0
 	 *
@@ -187,6 +189,14 @@ final class Index {
 			return $previous;
 		}
 
+		// A bad index signature is deliberately NOT negative-cached
+		// (NEGATIVE_TRANSIENT_KEY). The negative cache only covers transport
+		// and parse failures (unreachable / invalid JSON) above. A signature
+		// failure is a security signal, so it is logged on every attempt
+		// rather than hidden behind the cache for NEGATIVE_TTL, and a source
+		// that is re-signed (for example after a key rotation) is picked up
+		// on the next request. Cost: a source serving a badly signed index
+		// is fetched on every refresh().
 		if ( ! $this->verifier->verify( $decoded ) ) {
 			$this->logger->log(
 				'warning',
