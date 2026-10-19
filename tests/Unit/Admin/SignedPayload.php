@@ -1,6 +1,6 @@
 <?php
 /**
- * Ed25519 helper for Admin unit tests. TEST ONLY key material.
+ * Ed25519 helper for Admin unit tests. Signs with the throwaway key from TestKeys.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -11,13 +11,14 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
 use WenPai\ChinaYes\Apps\ManifestVerifier;
+use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Sign a decoded JSON object with the TEST ONLY Ed25519 key.
+ * Sign a decoded JSON object with the per-process TEST ONLY Ed25519 key.
  */
 final class SignedPayload {
 
@@ -80,30 +81,18 @@ final class SignedPayload {
 	}
 
 	/**
-	 * TEST ONLY secret key bytes.
+	 * Verifier that trusts the throwaway key for every known kid.
+	 *
+	 * @since 4.0.0
+	 */
+	public static function verifier(): ManifestVerifier {
+		return new ManifestVerifier( TestKeys::public_key(), TestKeys::keys_by_kid() );
+	}
+
+	/**
+	 * Throwaway secret key bytes, generated at test runtime.
 	 */
 	private static function secret(): string {
-		$path  = dirname( __DIR__, 2 ) . '/fixtures/keys/wpcy-test-ed25519.key';
-		$lines = file( $path, FILE_IGNORE_NEW_LINES );
-		if ( ! is_array( $lines ) ) {
-			return '';
-		}
-
-		$b64 = '';
-		foreach ( $lines as $line ) {
-			$line = trim( $line );
-			if ( '' === $line || '#' === $line[0] ) {
-				continue;
-			}
-			$b64 = $line;
-			break;
-		}
-
-		try {
-			return sodium_base642bin( $b64, SODIUM_BASE64_VARIANT_ORIGINAL );
-		} catch ( \SodiumException $e ) {
-			unset( $e );
-			return '';
-		}
+		return TestKeys::secret();
 	}
 }

@@ -38,17 +38,17 @@
 		{
 			"path": "tests/fixtures/legacy-options/single-3.9-07-store-proxy.json",
 			"token": "promo",
-			"reason": "3.x adblock_rule 遗留选择器（webinar-promo-notification 等）是历史拦截目标，4.0 不迁移该键。"
+			"reason": "合成 3.x 样本里的 adblock_rule 遗留选择器（.example-promo-notice）是历史拦截目标，4.0 不迁移该键。"
 		},
 		{
 			"path": "tests/fixtures/legacy-options/single-3.9-08-admincdn-files-admin.json",
 			"token": "promo",
-			"reason": "3.x adblock_rule 遗留选择器是历史拦截目标，4.0 不迁移该键。"
+			"reason": "合成 3.x 样本里的 adblock_rule 遗留选择器（.example-promo-notice）是历史拦截目标，4.0 不迁移该键。"
 		},
 		{
 			"path": "tests/fixtures/legacy-options/single-3.9.3-03.json",
 			"token": "promo",
-			"reason": "3.x adblock_rule 遗留选择器是历史拦截目标，4.0 不迁移该键。"
+			"reason": "合成 3.x 样本里的 adblock_rule 遗留选择器（.example-promo-notice）是历史拦截目标，4.0 不迁移该键。"
 		}
 	]
 }

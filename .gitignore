@@ -7,3 +7,8 @@ build/
 .phpcs-cache
 .wp-env.override.json
 .plugin-check-pkg/
+
+# Test signing keys are generated at test runtime. Never commit private keys.
+tests/fixtures/keys/*.key
+*.key
+*.pem

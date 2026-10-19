@@ -5,7 +5,8 @@
  *
  * Usage: php scripts/sign-ruleset.php <ruleset.json> <private-key-file> [--kid wpcy-ruleset-2026]
  *
- * TEST ONLY keys live in tests/fixtures/keys/. Never use a production key here.
+ * Unit tests generate a throwaway key at runtime (tests/Unit/Support/TestKeys.php).
+ * No private key is kept in this repository. Never use a production key here.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0

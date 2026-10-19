@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Seals plaintext credentials as Base64 for wpcy_site_identity.binding.credential.
  *
- * Algorithm matches docs/dev/security.md: SHA-256 of wp_salt('auth') as the
+ * Algorithm: SHA-256 of wp_salt('auth') as the
  * secretbox key; nonce prepended to ciphertext. Plaintext is never logged.
  */
 final class CredentialStore {

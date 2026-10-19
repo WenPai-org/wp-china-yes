@@ -22,7 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ManifestVerifier {
 
 	/**
-	 * TEST ONLY Ed25519 public key (Base64). Same material as tests/fixtures/keys/.
+	 * TEST ONLY Ed25519 public key (Base64). Public half is tests/fixtures/keys/wpcy-test-ed25519.pub;
+	 * the private half is not in this repository.
 	 *
 	 * @since 4.0.0
 	 */
@@ -58,16 +59,25 @@ final class ManifestVerifier {
 	private string $public_key;
 
 	/**
+	 * Base64 public keys by kid for this instance.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $keys_by_kid;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param string|null $public_key Base64 public key. Null uses the TEST ONLY key.
+	 * @param string|null                $public_key  Base64 public key. Null uses the TEST ONLY key.
+	 * @param array<string, string>|null $keys_by_kid Kid to Base64 public key map. Null uses the built-in map.
 	 */
-	public function __construct( $public_key = null ) {
-		$this->public_key = is_string( $public_key ) && '' !== $public_key
+	public function __construct( $public_key = null, ?array $keys_by_kid = null ) {
+		$this->public_key  = is_string( $public_key ) && '' !== $public_key
 			? $public_key
 			: self::TEST_PUBLIC_KEY;
+		$this->keys_by_kid = is_array( $keys_by_kid ) ? $keys_by_kid : self::KEYS_BY_KID;
 	}
 
 	/**
@@ -220,10 +230,10 @@ final class ManifestVerifier {
 			return $this->public_key;
 		}
 
-		if ( ! isset( self::KEYS_BY_KID[ $payload['kid'] ] ) ) {
+		if ( ! isset( $this->keys_by_kid[ $payload['kid'] ] ) ) {
 			return '';
 		}
 
-		return self::KEYS_BY_KID[ $payload['kid'] ];
+		return $this->keys_by_kid[ $payload['kid'] ];
 	}
 }

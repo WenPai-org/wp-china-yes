@@ -97,7 +97,9 @@ class NoticeControlTest extends TestCase {
 			'mock://rules',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 
@@ -164,7 +166,9 @@ class NoticeControlTest extends TestCase {
 			'mock://rules',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 		$this->assertSame( array(), $module->active_rules() );
@@ -209,7 +213,9 @@ class NoticeControlTest extends TestCase {
 			'mock://rules',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 
@@ -255,7 +261,9 @@ class NoticeControlTest extends TestCase {
 			'mock://rules',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 
@@ -286,7 +294,9 @@ class NoticeControlTest extends TestCase {
 			'mock://rules',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$cached  = $module->refresh();
 		$this->assertIsArray( $cached );
@@ -311,7 +321,9 @@ class NoticeControlTest extends TestCase {
 			static function () use ( &$calls, $valid, $bad ) {
 				++$calls;
 				return 1 === $calls ? $valid : $bad;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -333,7 +345,9 @@ class NoticeControlTest extends TestCase {
 			static function () use ( &$calls, $valid, $plain ) {
 				++$calls;
 				return 1 === $calls ? $valid : $plain;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();

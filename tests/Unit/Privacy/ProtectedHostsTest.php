@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
+use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 
 /**
  * Hardcoded L0 plus signed increment union.
@@ -74,7 +75,7 @@ class ProtectedHostsTest extends TestCase {
 	public function test_verified_increment_is_merged() {
 		$root    = dirname( __DIR__, 3 );
 		$script  = $root . '/scripts/sign-ruleset.php';
-		$key     = $root . '/tests/fixtures/keys/wpcy-test-ed25519.key';
+		$key     = TestKeys::secret_key_file();
 		$payload = array(
 			'issued_at'       => '2026-09-06T00:00:00Z',
 			'ruleset_version' => 2,
@@ -112,7 +113,7 @@ class ProtectedHostsTest extends TestCase {
 			exec( $cmd . ' 2>&1', $output, $code ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- CLI signer subprocess.
 			$this->assertSame( 0, $code, implode( "\n", $output ) );
 
-			$ruleset = new Ruleset( $tmp );
+			$ruleset = new Ruleset( $tmp, null, true, TestKeys::keys_by_kid() );
 			$this->assertTrue( $ruleset->verified() );
 			$this->assertTrue( $ruleset->is_protected( 'api.wenpai.net' ) );
 			$this->assertTrue( $ruleset->is_protected( 'extra.example' ) );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Field-by-field checks against docs/specs/config-schema.md.
+ * Field-by-field checks against the config schema in src/Config/Schema.php.
  *
  * @package WenPai\ChinaYes
  */

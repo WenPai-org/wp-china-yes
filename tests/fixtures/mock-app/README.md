@@ -1,6 +1,6 @@
 # mock-app
 
-TEST ONLY fixture for the apps bridge. Signed with `tests/fixtures/keys/wpcy-test-ed25519.key`.
+TEST ONLY fixture for the apps bridge. Signed with the TEST ONLY key whose public half is `tests/fixtures/keys/wpcy-test-ed25519.pub`; the private half is not in this repository.
 
 | 文件 | 用途 |
 |------|------|
