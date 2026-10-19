@@ -294,7 +294,7 @@ export default function Onboarding() {
 						<div className="actions">
 							<Btn
 								variant="primary"
-								disabled={ ! profile || saving }
+								disabled={ ! profile || saving || locked }
 								isBusy={ saving }
 								onClick={ onContinue }
 							>

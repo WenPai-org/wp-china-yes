@@ -163,6 +163,10 @@ describe( 'WZ-01', () => {
 				'page=wpcy-connect'
 			);
 			expect( container.textContent ).not.toContain( '配置好' );
+			// Primary 继续 is disabled: no second doomed PUT.
+			expect( buttonsByText( container, '继续' )[ 0 ].disabled ).toBe(
+				true
+			);
 			expect( container.querySelector( 'h1' ).textContent ).toBe(
 				'你的站点在哪里？'
 			);
@@ -410,7 +414,6 @@ describe( 'WZ-04', () => {
 					dashboard_feeds: def.dashboard_feeds,
 					icon_photos: def.icon_photos,
 				},
-				modules: { windfonts: def.windfonts },
 			} );
 		};
 		const counts = {};

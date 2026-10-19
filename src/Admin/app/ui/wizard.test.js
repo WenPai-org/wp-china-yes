@@ -134,7 +134,6 @@ describe( 'resourceSummary (WZ-04)', () => {
 				dashboard_feeds: def.dashboard_feeds,
 				icon_photos: def.icon_photos,
 			},
-			modules: { windfonts: def.windfonts },
 		};
 	};
 
@@ -170,7 +169,7 @@ describe( 'resourceSummary (WZ-04)', () => {
 		] );
 	} );
 
-	it( 'follows the saved document, not the scene name', () => {
+	it( 'follows the saved document; Windfonts is not a preset change', () => {
 		expect(
 			resourceSummary( {
 				profile: 'mixed',
@@ -184,7 +183,7 @@ describe( 'resourceSummary (WZ-04)', () => {
 				},
 				modules: { windfonts: true },
 			} )
-		).toEqual( { count: 4, admin: true } );
+		).toEqual( { count: 3, admin: true } );
 	} );
 
 	it( 'stock WordPress counts zero', () => {

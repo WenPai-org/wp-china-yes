@@ -195,8 +195,8 @@ export function packRows( profile, woo ) {
  *
  * One entry each for: WordPress.org mirror (not 'off'), every public-asset
  * item while the scope is not 'off', avatar (not 'off'), heartbeat throttle
- * ('on'), dashboard feeds blocked ('block'), icon / photo source (not 'off')
- * and the Windfonts module.
+ * ('on'), dashboard feeds blocked ('block') and icon / photo source
+ * (not 'off'). Windfonts is bound-gated, not a preset change.
  *
  * @param {Object} settings Settings document returned by PUT /settings.
  * @return {string[]} Changed item keys.
@@ -229,9 +229,6 @@ export function presetChanges( settings ) {
 	const icons = conn.icon_photos?.enabled || 'off';
 	if ( icons !== 'off' ) {
 		changed.push( 'icon_photos' );
-	}
-	if ( settings?.modules?.windfonts ) {
-		changed.push( 'windfonts' );
 	}
 	return changed;
 }
