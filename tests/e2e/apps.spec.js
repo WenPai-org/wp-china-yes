@@ -393,10 +393,80 @@ test.describe( 'apps A1–A10', () => {
 		await mockApps( page, { apps: [], indexStatus: 'unreachable' } );
 		await openAdminPage( page, 'wpcy-services' );
 
-		await expect(
-			page.getByText( '小工具目录暂时不可用' )
-		).toBeVisible();
+		const sv10 = page.getByText( '小工具目录暂时不可用。', { exact: true } );
+		await expect( sv10 ).toBeVisible();
+		// Rendered exactly once (no duplicate notice elsewhere on the page).
+		await expect( sv10 ).toHaveCount( 1 );
 		await expect( page.getByText( '已绑定' ).first() ).toBeVisible();
+		// a11y: the message appears asynchronously after /apps answers, so it
+		// must sit inside a live region for screen readers to announce it.
+		const liveRegion = await sv10.evaluate( ( node ) => {
+			const host = node.closest( '[role="status"], [aria-live]' );
+			return host
+				? {
+						role: host.getAttribute( 'role' ),
+						ariaLive: host.getAttribute( 'aria-live' ),
+				  }
+				: null;
+		} );
+		expect(
+			liveRegion,
+			'SV-10 「小工具目录暂时不可用。」 must be inside role="status" or an aria-live region'
+		).not.toBeNull();
+		if ( liveRegion && liveRegion.ariaLive !== null ) {
+			expect( liveRegion.ariaLive ).not.toBe( 'off' );
+		}
+	} );
+
+	test( 'SV-01 优先：未绑定且索引不可达时显示 SV-01，绑定后才显示 SV-10', async ( {
+		page,
+	} ) => {
+		let bound = false;
+		await restRoute(
+			page,
+			( path ) =>
+				path === '/wpcy/v1/binding' ||
+				path === '/wpcy/v1/binding/' ||
+				path.indexOf( '/wpcy/v1/binding/start' ) === 0,
+			async ( route ) => {
+				const path = restPath( route.request().url() );
+				const method = route.request().method().toUpperCase();
+				if ( path.indexOf( '/wpcy/v1/binding/start' ) === 0 ) {
+					bound = true;
+				} else if ( method !== 'GET' ) {
+					await route.continue();
+					return;
+				}
+				await route.fulfill( {
+					json: bound
+						? {
+								status: 'bound',
+								site_hash: SITE_HASH,
+								bound_at: '2026-09-05T12:00:00Z',
+						  }
+						: { status: 'unbound', site_hash: null, bound_at: null },
+				} );
+			}
+		);
+		await mockApps( page, { apps: [], indexStatus: 'unreachable' } );
+		await openAdminPage( page, 'wpcy-services' );
+
+		// Unbound + index unreachable: SV-01 (binding prompt) wins.
+		await expect( page.getByTestId( 'wpcy-apps-empty' ) ).toBeVisible();
+		await expect(
+			page.getByText( '绑定本站后，这里会出现可用的小工具。' )
+		).toBeVisible();
+		await expect( page.getByText( '小工具目录暂时不可用' ) ).toHaveCount( 0 );
+
+		// After binding, the same unreachable index now shows SV-10.
+		await page.getByRole( 'button', { name: '绑定本站' } ).first().click();
+		await expect(
+			page.getByRole( 'heading', { name: '本站已绑定' } )
+		).toBeVisible();
+		await expect(
+			page.getByText( '小工具目录暂时不可用。', { exact: true } )
+		).toBeVisible();
+		await expect( page.getByTestId( 'wpcy-apps-empty' ) ).toHaveCount( 0 );
 	} );
 
 	test( 'A9: 双层 iframe', async ( { context } ) => {
