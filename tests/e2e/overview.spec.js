@@ -386,10 +386,10 @@ test.describe( 'overview', () => {
 		const failed = page.getByText( '暂时无法读取线路状态，请刷新页面重试。' );
 		await expect( failed ).toHaveCount( 2 );
 		await expect( failed.first() ).toBeVisible();
-		await expect( page.locator( '.hero-svc .pill.ok' ) ).toHaveCount( 0 );
-		await expect( page.locator( '.hero-svc' ).getByText( '已接通' ) ).toHaveCount(
-			0
-		);
+		// .hero-svc (SvcStack) is no longer rendered since M-UI-1c; check the
+		// current Hero anchor instead so this cannot pass vacuously.
+		await expect( page.locator( '.hero-a-n' ) ).toHaveCount( 0 );
+		await expect( page.getByText( '核心服务已接通' ) ).toHaveCount( 0 );
 	} );
 
 	test( '混合站用 OV-10 混合标题', async ( { page } ) => {
