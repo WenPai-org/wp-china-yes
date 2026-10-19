@@ -67,7 +67,7 @@ function pathEquals( actual, expected ) {
 /**
  * Install session REST mocks from screens.json.
  *
- * @param {import('@playwright/test').Page} page Page.
+ * @param {import('@playwright/test').Page} page   Page.
  * @param {Array<Object>}                   routes Catalog routes.
  * @return {Promise<void>}
  */
@@ -111,6 +111,42 @@ async function mockRoutes( page, routes ) {
 	);
 }
 
+/**
+ * Resolve relative timestamps in catalog data, e.g. "{{now}}", "{{now-2h}}",
+ * "{{now+1d}}" (units s/m/h/d), to ISO strings at run time, so states such
+ * as "刚安装" (fresh install within 7 days) do not expire.
+ *
+ * @param {*}    value Catalog value.
+ * @param {Date} now   Reference time.
+ * @return {*} Value with tokens replaced.
+ */
+function resolveRelativeDates( value, now = new Date() ) {
+	if ( typeof value === 'string' ) {
+		const match = value.match( /^\{\{now(?:([+-])(\d+)([smhd]))?\}\}$/ );
+		if ( ! match ) {
+			return value;
+		}
+		const unit = { s: 1e3, m: 6e4, h: 36e5, d: 864e5 };
+		const offset = match[ 1 ]
+			? ( match[ 1 ] === '-' ? -1 : 1 ) *
+			  Number( match[ 2 ] ) *
+			  unit[ match[ 3 ] ]
+			: 0;
+		return new Date( now.getTime() + offset ).toISOString();
+	}
+	if ( Array.isArray( value ) ) {
+		return value.map( ( item ) => resolveRelativeDates( item, now ) );
+	}
+	if ( value && typeof value === 'object' ) {
+		const out = {};
+		for ( const key of Object.keys( value ) ) {
+			out[ key ] = resolveRelativeDates( value[ key ], now );
+		}
+		return out;
+	}
+	return value;
+}
+
 test.describe( 'visual screenshots', () => {
 	test.beforeAll( () => {
 		fs.mkdirSync( outDir, { recursive: true } );
@@ -122,7 +158,7 @@ test.describe( 'visual screenshots', () => {
 
 	for ( const screen of catalog.screens ) {
 		test( `${ screen.id } → ${ screen.filename }`, async ( { page } ) => {
-			const prep = screen.prep || { kind: 'none' };
+			const prep = resolveRelativeDates( screen.prep || { kind: 'none' } );
 
 			if ( prep.kind === 'need-fixture' ) {
 				test.skip( true, prep.reason || screen.notes || '需 fixture' );

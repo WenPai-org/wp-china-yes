@@ -687,7 +687,7 @@
 				"bootstrap": {
 					"settings": {
 						"profile": "domestic",
-						"profile_confirmed_at": "2026-09-06T00:00:00Z",
+						"profile_confirmed_at": "{{now-2h}}",
 						"recovery_mode": false,
 						"connectivity": {
 							"wordpress_org": "auto",
@@ -715,49 +715,49 @@
 									"target": "api.wenpai.net",
 									"result": "ok",
 									"latency_ms": 231,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "downloads.wenpai.net",
 									"result": "ok",
 									"latency_ms": 200,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "googlefonts.admincdn.com",
 									"result": "ok",
 									"latency_ms": 63,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "googleajax.admincdn.com",
 									"result": "ok",
 									"latency_ms": 60,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "jsd.admincdn.com",
 									"result": "ok",
 									"latency_ms": 62,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "cdnjs.admincdn.com",
 									"result": "ok",
 									"latency_ms": 70,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								},
 								{
 									"target": "cn.cravatar.com",
 									"result": "ok",
 									"latency_ms": 51,
-									"checked_at": "2026-09-06T04:05:00Z",
+									"checked_at": "{{now-55m}}",
 									"suggestion": null
 								}
 							]
@@ -767,7 +767,7 @@
 						"path": "/wpcy/v1/stats",
 						"method": "GET",
 						"body": {
-							"installed_at": "2026-09-06T03:00:00Z",
+							"installed_at": "{{now-2h}}",
 							"days": 14,
 							"series": {
 								"mirror_downloads": [],

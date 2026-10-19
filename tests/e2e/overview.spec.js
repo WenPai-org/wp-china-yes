@@ -53,6 +53,46 @@ const OK_TARGETS = [
 	},
 ];
 
+/**
+ * Connectivity defaults, mirrored from src/Config/Defaults.php. The mock
+ * always sends a full connectivity block so the result never depends on the
+ * test site's saved settings (wordpress_org / public_assets drift).
+ */
+const DEFAULT_CONNECTIVITY = {
+	wordpress_org: 'auto',
+	public_assets: {
+		items: [ 'google_fonts', 'google_ajax', 'cdnjs', 'jsdelivr', 'emoji' ],
+		scope: 'both',
+	},
+	avatar: 'cravatar_cn',
+	heartbeat: 'off',
+	dashboard_feeds: 'allow',
+	admin_locale_follow: true,
+	icon_photos: {
+		enabled: 'off',
+		mirrored_base: '',
+		native_api_base: '',
+	},
+};
+
+/**
+ * Settings patch for window.wpcyAdmin: defaults + per-test overrides, with
+ * connectivity merged key by key on top of DEFAULT_CONNECTIVITY.
+ *
+ * @param {Object} [settings] Per-test settings override.
+ * @return {Object} Settings patch.
+ */
+function isolatedSettings( settings ) {
+	const base = settings || { profile: 'domestic', recovery_mode: false };
+	return {
+		...base,
+		connectivity: {
+			...DEFAULT_CONNECTIVITY,
+			...( base.connectivity || {} ),
+		},
+	};
+}
+
 function restPath( href ) {
 	const url = new URL( href );
 	const route = url.searchParams.get( 'rest_route' );
@@ -110,7 +150,7 @@ async function mockOverview( page, overrides = {} ) {
 				return stored;
 			},
 		} );
-	}, overrides.settings || { profile: 'domestic', recovery_mode: false } );
+	}, isolatedSettings( overrides.settings ) );
 
 	await page.route(
 		( url ) => {
@@ -219,6 +259,18 @@ test.describe( 'overview', () => {
 		// and Windfonts needs binding, so a default domestic site is 3/5.
 		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/5' );
 		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
+	} );
+
+	test( 'mock 隔离：connectivity 不读站点真实设置', async ( { page } ) => {
+		await mockOverview( page );
+		await openAdminPage( page, 'wpcy' );
+		const connectivity = await page.evaluate(
+			() => window.wpcyAdmin && window.wpcyAdmin.settings.connectivity
+		);
+		expect( connectivity.wordpress_org ).toBe( 'auto' );
+		expect( connectivity.public_assets ).toEqual(
+			DEFAULT_CONNECTIVITY.public_assets
+		);
 	} );
 
 	test( '国内正常：MotuCloud 已配置时 4/5', async ( { page } ) => {
