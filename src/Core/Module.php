@@ -12,7 +12,7 @@ namespace WenPai\ChinaYes\Core;
 /**
  * A kernel module. Hooks are registered only in register().
  *
- * Optional dependencies() / contexts() follow docs/dev/module-authoring.md.
+ * Modules may also declare optional dependencies() / contexts().
  * Registry defaults: no dependencies; scenes admin and frontend.
  */
 interface Module {

@@ -232,7 +232,8 @@ class AnnouncementsTest extends TestCase {
 			'mock://ann',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 		$items = $module->payload()['items'];
@@ -250,7 +251,8 @@ class AnnouncementsTest extends TestCase {
 			'mock://ann',
 			static function () use ( $signed ) {
 				return $signed;
-			}
+			},
+			SignedPayload::verifier()
 		);
 
 		$cached = $module->refresh();
@@ -273,7 +275,8 @@ class AnnouncementsTest extends TestCase {
 			static function () use ( &$calls, $valid, $bad ) {
 				++$calls;
 				return 1 === $calls ? $valid : $bad;
-			}
+			},
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -295,7 +298,8 @@ class AnnouncementsTest extends TestCase {
 			static function () use ( &$calls, $valid, $plain ) {
 				++$calls;
 				return 1 === $calls ? $valid : $plain;
-			}
+			},
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();

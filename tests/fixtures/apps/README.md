@@ -1,6 +1,6 @@
 # TEST ONLY signed apps fixtures
 
-Contract fixtures for M2-04. Signed with `tests/fixtures/keys/wpcy-test-ed25519.key` (TEST ONLY).
+Contract fixtures for M2-04. Signed with the TEST ONLY key whose public half is `tests/fixtures/keys/wpcy-test-ed25519.pub` (`ManifestVerifier::TEST_PUBLIC_KEY`). The private half is not in this repository; unit tests that need fresh signatures use the throwaway key from `tests/Unit/Support/TestKeys.php`.
 
 | File | Role |
 |------|------|

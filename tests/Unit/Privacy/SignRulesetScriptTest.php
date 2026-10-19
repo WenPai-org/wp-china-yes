@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
+use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 
 /**
  * Acceptance: exec the signer, then Ruleset::verified() is true.
@@ -38,12 +39,12 @@ class SignRulesetScriptTest extends TestCase {
 	}
 
 	/**
-	 * Signing a temp JSON with the TEST ONLY key verifies under Ruleset.
+	 * Signing a temp JSON with the throwaway test key verifies under Ruleset.
 	 */
 	public function test_script_signs_payload_that_ruleset_verifies() {
 		$root   = dirname( __DIR__, 3 );
 		$script = $root . '/scripts/sign-ruleset.php';
-		$key    = $root . '/tests/fixtures/keys/wpcy-test-ed25519.key';
+		$key    = TestKeys::secret_key_file();
 
 		$this->assertFileExists( $script );
 		$this->assertFileExists( $key );
@@ -86,8 +87,11 @@ class SignRulesetScriptTest extends TestCase {
 		$this->assertSame( 'wpcy-ruleset-2026', $signed['kid'] );
 		$this->assertNotSame( '', $signed['signature'] );
 
-		$ruleset = new Ruleset( $this->tmp );
+		$ruleset = new Ruleset( $this->tmp, null, true, TestKeys::keys_by_kid() );
 		$this->assertTrue( $ruleset->verified() );
 		$this->assertSame( 99, $ruleset->version() );
+
+		$shipped = new Ruleset( $this->tmp );
+		$this->assertFalse( $shipped->verified(), 'Throwaway test key must not match the shipped TEST ONLY public key.' );
 	}
 }

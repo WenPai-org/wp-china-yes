@@ -2,7 +2,7 @@
 /**
  * JSON Schema definitions for the five WPCY option keys.
  *
- * Shapes match docs/specs/config-schema.md (draft 2020-12).
+ * Shapes follow JSON Schema draft 2020-12.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0

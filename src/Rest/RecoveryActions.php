@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class RecoveryActions {
 
 	/**
-	 * Known actions from docs/specs/rest-api.md.
+	 * Known actions accepted by the recovery REST endpoint.
 	 *
 	 * @since 4.0.0
 	 */

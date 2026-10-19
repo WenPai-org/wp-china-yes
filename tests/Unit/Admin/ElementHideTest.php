@@ -74,7 +74,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $valid, $bad ) {
 				++$calls;
 				return 1 === $calls ? $valid : $bad;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first = $module->refresh();
@@ -97,7 +99,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $valid, $plain ) {
 				++$calls;
 				return 1 === $calls ? $valid : $plain;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -117,7 +121,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $valid ) {
 				++$calls;
 				return 1 === $calls ? $valid : '';
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -224,7 +230,9 @@ class ElementHideTest extends TestCase {
 						),
 					)
 				);
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 		$module->refresh();
 
@@ -303,7 +311,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $first, $second ) {
 				++$calls;
 				return 1 === $calls ? $first : $second;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$cached = $module->refresh();
@@ -327,7 +337,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $first, $second ) {
 				++$calls;
 				return 1 === $calls ? $first : $second;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first_cached  = $module->refresh();
@@ -350,7 +362,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $first, $second ) {
 				++$calls;
 				return 1 === $calls ? $first : $second;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first_cached  = $module->refresh();
@@ -375,7 +389,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $ok, $bad ) {
 				++$calls;
 				return 1 === $calls ? $ok : $bad;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -411,7 +427,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $ok, $bad ) {
 				++$calls;
 				return 1 === $calls ? $ok : $bad;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first  = $module->refresh();
@@ -458,7 +476,9 @@ class ElementHideTest extends TestCase {
 			static function () use ( &$calls, $payload ) {
 				++$calls;
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 
 		$first = $module->retry();
@@ -544,7 +564,9 @@ class ElementHideTest extends TestCase {
 			'mock://element-hide',
 			static function () use ( $payload ) {
 				return $payload;
-			}
+			},
+			null,
+			SignedPayload::verifier()
 		);
 	}
 }
