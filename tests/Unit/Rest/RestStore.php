@@ -23,6 +23,13 @@ final class RestStore {
 	public static $caps = array();
 
 	/**
+	 * What is_network_admin() returns.
+	 *
+	 * @var bool
+	 */
+	public static $network_admin = false;
+
+	/**
 	 * Nonces that wp_verify_nonce() accepts for wp_rest.
 	 *
 	 * @var array<string, bool>
@@ -141,5 +148,7 @@ final class RestStore {
 		self::$transients   = array();
 		self::$redirect     = null;
 		self::$user_meta    = array();
+
+		self::$network_admin = false;
 	}
 }
