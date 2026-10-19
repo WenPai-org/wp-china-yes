@@ -8,6 +8,7 @@ import {
 	maskHash,
 	packRows,
 	packTitle,
+	presetChanges,
 	resourceSummary,
 } from './wizard';
 import { sceneDefaults } from './profiles';
@@ -120,45 +121,86 @@ describe( 'packRows / packTitle (WZ-05, L-3)', () => {
 } );
 
 describe( 'resourceSummary (WZ-04)', () => {
-	it( 'counts enabled items plus avatar, not a fixed 4', () => {
+	// Each scene preset as PUT /settings stores it (Config\Profile matrix).
+	const presetDoc = ( scene ) => {
+		const def = sceneDefaults( scene );
+		return {
+			profile: scene,
+			connectivity: {
+				wordpress_org: def.wordpress_org,
+				public_assets: def.public_assets,
+				avatar: def.avatar,
+				heartbeat: def.heartbeat,
+				dashboard_feeds: def.dashboard_feeds,
+				icon_photos: def.icon_photos,
+			},
+			modules: { windfonts: def.windfonts },
+		};
+	};
+
+	it.each( [
+		// mirror + 5 assets + avatar + icons
+		[ 'domestic', 8 ],
+		// 5 assets + avatar + heartbeat + feeds + icons (WordPress.org direct)
+		[ 'crossborder', 9 ],
+		// 5 assets + avatar + icons (WordPress.org direct, WP default admin)
+		[ 'inbound', 7 ],
+		// mirror + 5 assets + avatar + heartbeat + feeds + icons
+		[ 'mixed', 10 ],
+	] )( '%s preset changes %d items', ( scene, count ) => {
+		expect( resourceSummary( presetDoc( scene ) ).count ).toBe( count );
+	} );
+
+	it( 'the four scenes do not share one count', () => {
+		const counts = SCENES.map(
+			( scene ) => resourceSummary( presetDoc( scene ) ).count
+		);
+		expect( new Set( counts ).size ).toBe( SCENES.length );
+	} );
+
+	it( 'lists the changed keys', () => {
+		expect( presetChanges( presetDoc( 'inbound' ) ) ).toEqual( [
+			'public_assets.google_fonts',
+			'public_assets.google_ajax',
+			'public_assets.cdnjs',
+			'public_assets.jsdelivr',
+			'public_assets.emoji',
+			'avatar',
+			'icon_photos',
+		] );
+	} );
+
+	it( 'follows the saved document, not the scene name', () => {
 		expect(
 			resourceSummary( {
+				profile: 'mixed',
 				connectivity: {
+					wordpress_org: 'off',
 					public_assets: {
 						items: [ 'google_fonts', 'jsdelivr' ],
 						scope: 'admin',
 					},
 					avatar: 'cravatar_cn',
 				},
+				modules: { windfonts: true },
 			} )
-		).toEqual( { count: 3, admin: true } );
+		).toEqual( { count: 4, admin: true } );
 	} );
 
-	it( 'scope off and avatar off count zero', () => {
+	it( 'stock WordPress counts zero', () => {
 		expect(
 			resourceSummary( {
 				connectivity: {
+					wordpress_org: 'off',
 					public_assets: { items: [ 'emoji' ], scope: 'off' },
 					avatar: 'off',
+					heartbeat: 'off',
+					dashboard_feeds: 'allow',
+					icon_photos: { enabled: 'off' },
 				},
 			} )
 		).toEqual( { count: 0, admin: false } );
 	} );
-
-	it.each( [ 'domestic', 'crossborder', 'inbound', 'mixed' ] )(
-		'%s defaults give items + avatar',
-		( scene ) => {
-			const def = sceneDefaults( scene );
-			expect(
-				resourceSummary( {
-					connectivity: {
-						public_assets: def.public_assets,
-						avatar: def.avatar,
-					},
-				} ).count
-			).toBe( def.public_assets.items.length + 1 );
-		}
-	);
 
 	it( 'maskHash shows first 4 … last 4', () => {
 		expect( maskHash( 'a3f9000000000000c21e' ) ).toBe( 'a3f9…c21e' );

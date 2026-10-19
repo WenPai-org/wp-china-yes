@@ -189,29 +189,65 @@ export function packRows( profile, woo ) {
 }
 
 /**
- * WZ-04 resource card: how many resources go through a domestic-reachable
- * source, counted from the saved settings (not a fixed number).
+ * WZ-04: the settings a scene preset changes from stock WordPress, read from
+ * the saved settings document (so the count follows the real preset, not a
+ * fixed number).
  *
- * Counts each enabled public-asset item plus the avatar when it is not off.
- * The label follows the public-asset scope: admin-only reads 「后台资源」.
+ * One entry each for: WordPress.org mirror (not 'off'), every public-asset
+ * item while the scope is not 'off', avatar (not 'off'), heartbeat throttle
+ * ('on'), dashboard feeds blocked ('block'), icon / photo source (not 'off')
+ * and the Windfonts module.
  *
  * @param {Object} settings Settings document returned by PUT /settings.
- * @return {{count:number,admin:boolean}} Count and whether it is admin-only.
+ * @return {string[]} Changed item keys.
  */
-export function resourceSummary( settings ) {
+export function presetChanges( settings ) {
 	const conn = settings?.connectivity || {};
+	const changed = [];
+	if ( ( conn.wordpress_org || 'auto' ) !== 'off' ) {
+		changed.push( 'wordpress_org' );
+	}
 	const scope = conn.public_assets?.scope || 'both';
 	const items = Array.isArray( conn.public_assets?.items )
 		? conn.public_assets.items
 		: [];
-	let count = scope === 'off' ? 0 : items.length;
+	if ( scope !== 'off' ) {
+		items.forEach( ( item ) => changed.push( 'public_assets.' + item ) );
+	}
 	const avatar = conn.avatar || 'off';
 	const avatarValue =
 		typeof avatar === 'string' ? avatar : avatar.admin || 'off';
 	if ( avatarValue !== 'off' ) {
-		count += 1;
+		changed.push( 'avatar' );
 	}
-	return { count, admin: scope === 'admin' };
+	if ( conn.heartbeat === 'on' ) {
+		changed.push( 'heartbeat' );
+	}
+	if ( conn.dashboard_feeds === 'block' ) {
+		changed.push( 'dashboard_feeds' );
+	}
+	const icons = conn.icon_photos?.enabled || 'off';
+	if ( icons !== 'off' ) {
+		changed.push( 'icon_photos' );
+	}
+	if ( settings?.modules?.windfonts ) {
+		changed.push( 'windfonts' );
+	}
+	return changed;
+}
+
+/**
+ * WZ-04 summary card: how many items the chosen scene preset changed.
+ *
+ * @param {Object} settings Settings document returned by PUT /settings.
+ * @return {{count:number,admin:boolean}} Count, and whether public assets are admin-only.
+ */
+export function resourceSummary( settings ) {
+	const scope = settings?.connectivity?.public_assets?.scope || 'both';
+	return {
+		count: presetChanges( settings ).length,
+		admin: scope === 'admin',
+	};
 }
 
 /**

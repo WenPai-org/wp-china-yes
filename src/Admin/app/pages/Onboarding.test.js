@@ -6,6 +6,7 @@
 import apiFetch from '@wordpress/api-fetch';
 import { dispatch } from '@wordpress/data';
 import { STORE_NAME } from '../store';
+import { sceneDefaults } from '../ui/profiles';
 import Onboarding, { BINDING_POLL_MS } from './Onboarding';
 import {
 	act,
@@ -133,7 +134,7 @@ describe( 'WZ-01', () => {
 		[ 'wpcy_settings_locked', 409 ],
 		[ 'wpcy_settings_network_scope', 403 ],
 	] )(
-		'%s (%d): lock sentence instead of the generic retry text',
+		'%s (%d): locked status line + 返回设置, no 已按…配置好',
 		async ( code, status ) => {
 			routes[ 'PUT /wpcy/v1/settings' ] = () =>
 				Promise.reject( {
@@ -142,16 +143,36 @@ describe( 'WZ-01', () => {
 					data: { status, fields: [ 'profile' ] },
 				} );
 			const { container } = await mount();
+			const line = container.querySelector( '.wizard-lock' );
+			expect( line.getAttribute( 'role' ) ).toBe( 'status' );
+			expect( line.textContent ).toBe( '' );
 			await click( container.querySelector( '#ob-p-mixed' ) );
 			await click( buttonsByText( container, '继续' )[ 0 ] );
-			const alert = container.querySelector( '[role="alert"]' );
-			expect( alert.textContent ).toBe(
-				'网络管理员已锁定此项，修改未保存。'
+			// Same node, only its text changed.
+			expect( container.querySelector( '.wizard-lock' ) ).toBe( line );
+			expect( line.textContent ).toBe(
+				'网络管理员已锁定本站设置，向导里的选择没有保存。'
 			);
+			expect( container.querySelector( '[role="alert"]' ) ).toBeNull();
 			expect( buttonsByText( container, '重试' ) ).toHaveLength( 0 );
+			const back = [ ...container.querySelectorAll( 'a' ) ].find(
+				( a ) => a.textContent.trim() === '返回设置'
+			);
+			expect( back ).toBeTruthy();
+			expect( back.getAttribute( 'href' ) ).toContain(
+				'page=wpcy-connect'
+			);
+			expect( container.textContent ).not.toContain( '配置好' );
 			expect( container.querySelector( 'h1' ).textContent ).toBe(
 				'你的站点在哪里？'
 			);
+			// One refused PUT, nothing else written (no profile_set, no
+			// retry, no event call from the client).
+			const writes = calls.filter(
+				( req ) => req.method && req.method !== 'GET'
+			);
+			expect( writes ).toHaveLength( 1 );
+			expect( writes[ 0 ].path ).toBe( '/wpcy/v1/settings' );
 		}
 	);
 
@@ -376,29 +397,29 @@ describe( 'WZ-03 step 4 states', () => {
 } );
 
 describe( 'WZ-04', () => {
-	it( 'resource count comes from the saved settings, not a fixed 4', async () => {
-		routes[ 'PUT /wpcy/v1/settings' ] = ( req ) =>
-			Promise.resolve(
-				req.data.profile === 'domestic'
-					? settingsFor(
-							'domestic',
-							[
-								'google_fonts',
-								'google_ajax',
-								'cdnjs',
-								'jsdelivr',
-								'emoji',
-							],
-							'both'
-					  )
-					: settingsFor(
-							'crossborder',
-							[ 'google_fonts', 'google_ajax' ],
-							'admin'
-					  )
-			);
+	it( 'count follows what each scene preset changed', async () => {
+		routes[ 'PUT /wpcy/v1/settings' ] = ( req ) => {
+			const def = sceneDefaults( req.data.profile );
+			return Promise.resolve( {
+				profile: req.data.profile,
+				connectivity: {
+					wordpress_org: def.wordpress_org,
+					public_assets: def.public_assets,
+					avatar: def.avatar,
+					heartbeat: def.heartbeat,
+					dashboard_feeds: def.dashboard_feeds,
+					icon_photos: def.icon_photos,
+				},
+				modules: { windfonts: def.windfonts },
+			} );
+		};
 		const counts = {};
-		for ( const scene of [ 'domestic', 'crossborder' ] ) {
+		for ( const scene of [
+			'domestic',
+			'crossborder',
+			'inbound',
+			'mixed',
+		] ) {
 			const { container, unmount } = await mount();
 			await goToBindStep( container, scene );
 			await click( buttonsByText( container, '暂不，稍后再说' )[ 0 ] );
@@ -408,6 +429,11 @@ describe( 'WZ-04', () => {
 			expect( container.textContent ).toContain( '稍后可在服务页绑定' );
 			await unmount();
 		}
-		expect( counts ).toEqual( { domestic: '6 项', crossborder: '3 项' } );
+		expect( counts ).toEqual( {
+			domestic: '8 项',
+			crossborder: '9 项',
+			inbound: '7 项',
+			mixed: '10 项',
+		} );
 	} );
 } );

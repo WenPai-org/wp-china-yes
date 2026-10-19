@@ -2592,3 +2592,12 @@ button.app {
 .saved:empty {
 	margin-left: 0;
 }
+
+.wizard .wizard-lock {
+	margin: 16px 0 0;
+	color: var(--wpcy-ink-2);
+}
+
+.wizard .wizard-lock:empty {
+	margin: 0;
+}

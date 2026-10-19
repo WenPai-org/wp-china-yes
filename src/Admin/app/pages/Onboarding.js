@@ -73,6 +73,7 @@ export default function Onboarding() {
 	const [ suggestion, setSuggestion ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
 	const [ saveError, setSaveError ] = useState( '' );
+	const [ locked, setLocked ] = useState( false );
 	const [ binding, setBinding ] = useState( {
 		status: 'unbound',
 		site_hash: null,
@@ -149,6 +150,7 @@ export default function Onboarding() {
 	const onContinue = () => {
 		setSaving( true );
 		setSaveError( '' );
+		setLocked( false );
 		Promise.resolve( patchSettings( { profile } ) ).then( ( result ) => {
 			setSaving( false );
 			if ( result?.ok ) {
@@ -156,10 +158,10 @@ export default function Onboarding() {
 				return;
 			}
 			if ( result?.error?.locked ) {
-				// 409 wpcy_settings_locked / 403 wpcy_settings_network_scope.
-				setSaveError(
-					__( '网络管理员已锁定此项，修改未保存。', 'wp-china-yes' )
-				);
+				// 409 wpcy_settings_locked / 403 wpcy_settings_network_scope:
+				// nothing was saved (the server records no profile_set), so
+				// stay here and point back to the settings page.
+				setLocked( true );
 				return;
 			}
 			setSaveError(
@@ -269,6 +271,25 @@ export default function Onboarding() {
 						) : null }
 						{ saveError ? (
 							<BadAlert>{ saveError }</BadAlert>
+						) : null }
+						{ /* Always mounted; only the text changes. */ }
+						<p className="wizard-lock" role="status">
+							{ locked
+								? __(
+										'网络管理员已锁定本站设置，向导里的选择没有保存。',
+										'wp-china-yes'
+								  )
+								: '' }
+						</p>
+						{ locked ? (
+							<div className="actions">
+								<Btn
+									variant="secondary"
+									href={ adminPageUrl( PAGES.connect ) }
+								>
+									{ __( '返回设置', 'wp-china-yes' ) }
+								</Btn>
+							</div>
 						) : null }
 						<div className="actions">
 							<Btn
@@ -481,19 +502,21 @@ export default function Onboarding() {
 							<article className="card stat-a">
 								<div className="k">
 									<Icon name="bolt" size={ 16 } />
-									{ summary.admin
-										? __( '后台资源', 'wp-china-yes' )
-										: __( '前端资源', 'wp-china-yes' ) }
+									{ __( '已调整', 'wp-china-yes' ) }
 								</div>
 								<div className="v" data-testid="wpcy-wz-count">
 									{ sprintf(
-										/* translators: %d: number of resources */
+										/* translators: %d: number of settings the scene preset changed */
 										__( '%d 项', 'wp-china-yes' ),
 										summary.count
 									) }
 								</div>
 								<div className="d">
-									{ __( '已走国内可达源', 'wp-china-yes' ) }
+									{ sprintf(
+										/* translators: %s: scene */
+										__( '按「%s」预设', 'wp-china-yes' ),
+										profileLabel( current )
+									) }
 								</div>
 							</article>
 							<article className="card stat-a">
