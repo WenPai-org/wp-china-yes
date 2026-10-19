@@ -30,12 +30,28 @@ final class AppsStore {
 	public static $routes = array();
 
 	/**
+	 * TTL passed to set_transient(), by name.
+	 *
+	 * @var array<string, int>
+	 */
+	public static $transient_ttls = array();
+
+	/**
+	 * Filters registered with add_filter(), by hook.
+	 *
+	 * @var array<string, array<int, callable>>
+	 */
+	public static $filters = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$transients = array();
-		self::$routes     = array();
+		self::$transients     = array();
+		self::$routes         = array();
+		self::$transient_ttls = array();
+		self::$filters        = array();
 	}
 }

@@ -289,12 +289,56 @@ if ( ! function_exists( 'set_transient' ) ) {
 	 *
 	 * @param string $key   Name.
 	 * @param mixed  $value Value.
-	 * @param int    $ttl   Unused.
+	 * @param int    $ttl   TTL, recorded for assertions.
 	 * @return true
 	 */
 	function set_transient( $key, $value, $ttl = 0 ) {
-		unset( $ttl );
-		AppsStore::$transients[ $key ] = $value;
+		AppsStore::$transients[ $key ]     = $value;
+		AppsStore::$transient_ttls[ $key ] = (int) $ttl;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * Delete a test transient.
+	 *
+	 * @param string $key Name.
+	 * @return bool
+	 */
+	function delete_transient( $key ) {
+		$had = array_key_exists( $key, AppsStore::$transients );
+		unset( AppsStore::$transients[ $key ], AppsStore::$transient_ttls[ $key ] );
+		return $had;
+	}
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * No options are stored in this suite.
+	 *
+	 * @param string $key Name.
+	 * @return bool
+	 */
+	function delete_option( $key ) {
+		unset( $key );
+		return false;
+	}
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * Register a test filter (priority and arg count ignored).
+	 *
+	 * @param string   $tag      Hook.
+	 * @param callable $callback Callback.
+	 * @param int      $priority Priority.
+	 * @param int      $accepted Args.
+	 * @return true
+	 */
+	function add_filter( $tag, $callback, $priority = 10, $accepted = 1 ) {
+		unset( $priority, $accepted );
+		AppsStore::$filters[ $tag ][] = $callback;
 		return true;
 	}
 }
@@ -320,15 +364,65 @@ if ( ! function_exists( 'register_rest_route' ) ) {
 
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
-	 * Identity filter.
+	 * Run filters registered with add_filter(); identity when none.
 	 *
-	 * @param string $tag   Hook.
-	 * @param mixed  $value Value.
+	 * @param string $tag     Hook.
+	 * @param mixed  $value   Value.
+	 * @param mixed  ...$args Extra args.
 	 * @return mixed
 	 */
-	function apply_filters( $tag, $value ) {
-		unset( $tag );
+	function apply_filters( $tag, $value, ...$args ) {
+		foreach ( AppsStore::$filters[ $tag ] ?? array() as $callback ) {
+			$value = call_user_func( $callback, $value, ...$args );
+		}
 		return $value;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	/**
+	 * GET through pre_http_request only; no real network in unit tests.
+	 *
+	 * @param string               $url  URL.
+	 * @param array<string, mixed> $args Args.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	function wp_remote_get( $url, $args = array() ) {
+		$pre = apply_filters( 'pre_http_request', false, $args, $url );
+		if ( false !== $pre ) {
+			return $pre;
+		}
+		return new WP_Error( 'http_request_failed', 'No network in unit tests.' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * Response code.
+	 *
+	 * @param mixed $response Response.
+	 * @return int|string
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		if ( ! is_array( $response ) || ! isset( $response['response']['code'] ) ) {
+			return '';
+		}
+		return (int) $response['response']['code'];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * Response body.
+	 *
+	 * @param mixed $response Response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		if ( ! is_array( $response ) || ! isset( $response['body'] ) ) {
+			return '';
+		}
+		return (string) $response['body'];
 	}
 }
 
