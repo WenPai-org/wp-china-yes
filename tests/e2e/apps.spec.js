@@ -339,7 +339,10 @@ test.describe( 'apps A1–A10', () => {
 	test( 'A2: mock 绑定成功', async ( { page } ) => {
 		await mockBound( page );
 		await openAdminPage( page, 'wpcy-services' );
-		await expect( page.getByText( '已绑定' ) ).toBeVisible();
+		await expect(
+			page.getByRole( 'heading', { name: '本站已绑定' } )
+		).toBeVisible();
+		await expect( page.getByText( '已绑定', { exact: true } ) ).toBeVisible();
 		await expect( page.getByTestId( 'wpcy-site-hash-tail' ) ).toHaveText(
 			HASH_TAIL
 		);

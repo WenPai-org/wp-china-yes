@@ -568,7 +568,10 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 }
 
 function AppsSection( { appsUnavailable, bound, apps, onOpen } ) {
-	if ( appsUnavailable ) {
+	// SV-01 first: an unbound site sees the binding prompt, not SV-10. The
+	// index source stays unconfigured until the server is ready, so checking
+	// the directory first would hide SV-01 on every fresh install.
+	if ( bound && appsUnavailable ) {
 		return (
 			<article className="card">
 				<Empty
@@ -579,9 +582,6 @@ function AppsSection( { appsUnavailable, bound, apps, onOpen } ) {
 						'wp-china-yes'
 					) }
 				/>
-				<p className="screen-reader-text">
-					{ __( '小工具目录暂时不可用', 'wp-china-yes' ) }
-				</p>
 			</article>
 		);
 	}

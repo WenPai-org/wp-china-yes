@@ -232,9 +232,9 @@ final class Plugin {
 		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
-		$registry->add( new NoticeControlModule( $config, self::filtered_source( 'wpcy_notice_rules_source' ), null, $logger ) );
-		$registry->add( new AnnouncementsModule( $config, self::filtered_source( 'wpcy_announcements_source' ) ) );
-		$registry->add( new ElementHideModule( $config, self::filtered_source( 'wpcy_element_hide_source' ), null, $logger ) );
+		$registry->add( new NoticeControlModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_notice_rules_source', '' ) : '' ), null, $logger ) );
+		$registry->add( new AnnouncementsModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', '' ) : '' ) ) );
+		$registry->add( new ElementHideModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_element_hide_source', '' ) : '' ), null, $logger ) );
 		$registry->add( new UpdateBridge( $config, null, null, $logger ) );
 
 		return new self( $container, $registry, $environment );
@@ -294,17 +294,16 @@ final class Plugin {
 	}
 
 	/**
-	 * Optional document source from a filter. Empty disables production fetch.
+	 * Optional document source from a filter value. Empty disables production fetch.
+	 *
+	 * Hook names stay literal at the call site so Plugin Check can see the
+	 * `wpcy_` prefix (PrefixAllGlobals.DynamicHooknameFound).
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param string $tag Filter name.
+	 * @param mixed $filtered Value returned by apply_filters().
 	 */
-	private static function filtered_source( string $tag ): string {
-		if ( ! function_exists( 'apply_filters' ) ) {
-			return '';
-		}
-		$filtered = apply_filters( $tag, '' );
+	private static function source_string( $filtered ): string {
 		return is_string( $filtered ) ? $filtered : '';
 	}
 
