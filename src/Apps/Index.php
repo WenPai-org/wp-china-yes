@@ -1,6 +1,6 @@
 <?php
 /**
- * Signed apps index: mock/fixture source, 24h transient, fail closed.
+ * Signed apps index: mock/fixture source, 24h transient, 60s negative cache, fail closed.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -41,6 +41,23 @@ final class Index {
 	 * @since 4.0.0
 	 */
 	public const TTL = 86400;
+
+	/**
+	 * Transient that remembers an upstream failure (unreachable / invalid JSON).
+	 *
+	 * While it is set, refresh() does not contact the source and answers with
+	 * the same previous cache and index_status. Cleared on a successful fetch.
+	 *
+	 * @since 4.0.0
+	 */
+	public const NEGATIVE_TRANSIENT_KEY = 'wpcy_apps_index_negative';
+
+	/**
+	 * Negative cache TTL in seconds.
+	 *
+	 * @since 4.0.0
+	 */
+	public const NEGATIVE_TTL = 60;
 
 	/**
 	 * Verifier.
@@ -134,6 +151,11 @@ final class Index {
 	/**
 	 * Fetch, verify, replace the cache. Index-level failure keeps the previous cache.
 	 *
+	 * Unreachable source (WP_Error, non-2xx, empty) or invalid JSON also sets a
+	 * NEGATIVE_TTL negative cache; until it expires the source is not contacted.
+	 * An invalid index signature reports `invalid` but is not negative-cached
+	 * (see the comment at the verify() call).
+	 *
 	 * @since 4.0.0
 	 *
 	 * @return list<array<string, mixed>>
@@ -145,10 +167,17 @@ final class Index {
 			return $previous;
 		}
 
+		$negative = $this->negative_status();
+		if ( '' !== $negative ) {
+			$this->index_status = $negative;
+			return $previous;
+		}
+
 		$raw = $this->read_source();
 		if ( '' === $raw ) {
 			$this->index_status = 'unreachable';
 			$this->store( $previous );
+			$this->remember_failure();
 			return $previous;
 		}
 
@@ -156,9 +185,18 @@ final class Index {
 		if ( ! is_array( $decoded ) || $this->is_list( $decoded ) ) {
 			$this->index_status = 'invalid';
 			$this->store( $previous );
+			$this->remember_failure();
 			return $previous;
 		}
 
+		// A bad index signature is deliberately NOT negative-cached
+		// (NEGATIVE_TRANSIENT_KEY). The negative cache only covers transport
+		// and parse failures (unreachable / invalid JSON) above. A signature
+		// failure is a security signal, so it is logged on every attempt
+		// rather than hidden behind the cache for NEGATIVE_TTL, and a source
+		// that is re-signed (for example after a key rotation) is picked up
+		// on the next request. Cost: a source serving a badly signed index
+		// is fetched on every refresh().
 		if ( ! $this->verifier->verify( $decoded ) ) {
 			$this->logger->log(
 				'warning',
@@ -183,6 +221,7 @@ final class Index {
 
 		$this->index_status = 'ok';
 		$this->store( $keep );
+		$this->forget_failure();
 		return $keep;
 	}
 
@@ -340,6 +379,38 @@ final class Index {
 				$ttl
 			);
 		}
+	}
+
+	/**
+	 * Remember the current failure status for NEGATIVE_TTL seconds.
+	 */
+	private function remember_failure(): void {
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( self::NEGATIVE_TRANSIENT_KEY, $this->index_status, self::NEGATIVE_TTL );
+		}
+	}
+
+	/**
+	 * Drop the negative cache after a successful fetch.
+	 */
+	private function forget_failure(): void {
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::NEGATIVE_TRANSIENT_KEY );
+		}
+	}
+
+	/**
+	 * Status held by the negative cache, or empty when there is none.
+	 */
+	private function negative_status(): string {
+		if ( ! function_exists( 'get_transient' ) ) {
+			return '';
+		}
+		$stored = get_transient( self::NEGATIVE_TRANSIENT_KEY );
+		if ( is_string( $stored ) && in_array( $stored, array( 'unreachable', 'invalid' ), true ) ) {
+			return $stored;
+		}
+		return '';
 	}
 
 	/**
