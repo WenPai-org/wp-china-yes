@@ -1,0 +1,26 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.8",
+		"scope": "network",
+		"note": "Synthetic 3.8 network option: cravatar weavatar (maps to cravatar_cn), Windfonts empty string, performance and memory keys."
+	},
+	"wp_china_yes": {
+		"store": "off",
+		"admincdn": [
+			"admin"
+		],
+		"cravatar": "weavatar",
+		"windfonts": "",
+		"adblock": "off",
+		"adblock_rule": [],
+		"plane": "off",
+		"monitor": true,
+		"performance": true,
+		"wp_memory_limit": "512M",
+		"wp_max_memory_limit": "1024M",
+		"wp_post_revisions": 5,
+		"autosave_interval": 60,
+		"hide": false
+	}
+}

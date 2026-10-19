@@ -1,0 +1,32 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.8",
+		"scope": "single",
+		"note": "Synthetic 3.8 single site: admincdn present but empty, Windfonts on with empty list, telemetry keys present, memory keys present."
+	},
+	"wp_china_yes": {
+		"store": "off",
+		"admincdn": [],
+		"cravatar": "cn",
+		"windfonts": "on",
+		"windfonts_list": [],
+		"adblock": "off",
+		"adblock_rule": [],
+		"notice_block": "off",
+		"notice_control": [],
+		"notice_method": "hook",
+		"plane": "off",
+		"plane_rule": [],
+		"monitor": true,
+		"performance": true,
+		"wp_memory_limit": "256M",
+		"wp_max_memory_limit": "512M",
+		"wp_post_revisions": 10,
+		"autosave_interval": 120,
+		"telemetry": "on",
+		"telemetry_site_url": "https://www.example.com",
+		"hide": false,
+		"custom_name": "文派叶子"
+	}
+}

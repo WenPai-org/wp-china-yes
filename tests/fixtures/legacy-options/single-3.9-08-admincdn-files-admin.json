@@ -1,0 +1,95 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.9.2",
+		"scope": "single",
+		"note": "Synthetic 3.9.x single site: admincdn_files=[admin] only (admin static rewrite is dropped in 4.0), one Windfonts row."
+	},
+	"wp_china_yes": {
+		"store": "wenpai",
+		"bridge": false,
+		"arkpress": false,
+		"admincdn_public": [],
+		"admincdn_files": [
+			"admin"
+		],
+		"admincdn_dev": [],
+		"admincdn_version_enable": false,
+		"admincdn_version": [],
+		"cravatar": "cn",
+		"windfonts": "on",
+		"windfonts_list": [
+			{
+				"family": "wenfeng-hcszt",
+				"subset": "zh",
+				"lang": "",
+				"weight": 400,
+				"style": "normal",
+				"selector": "p,h1,h2,h3,h4,h5,h6,li,blockquote",
+				"enable": "1"
+			}
+		],
+		"windfonts_typography_cn": "",
+		"windfonts_typography_en": "",
+		"windfonts_reading_enable": false,
+		"windfonts_reading": "off",
+		"motucloud": "cn",
+		"fewmail": "cn",
+		"comments_enable": false,
+		"comments_role_badge": true,
+		"comments_remove_website": false,
+		"comments_validation": true,
+		"comments_herp_derp": false,
+		"comments_sticky_moderate": false,
+		"bisheng": "cn",
+		"deerlogin": "cn",
+		"waimao_enable": false,
+		"waimao_language_split": false,
+		"waimao_admin_language": "zh_CN",
+		"waimao_frontend_language": "zh_CN",
+		"waimao_auto_detect": false,
+		"woocn": "cn",
+		"lelms": "cn",
+		"wapuu": "cn",
+		"adblock": "on",
+		"adblock_rule": [
+			{
+				"name": "示例规则",
+				"selector": ".example-promo-notice",
+				"enable": true
+			},
+			{
+				"name": "已停用规则",
+				"selector": ".example-upsell-box",
+				"enable": false
+			}
+		],
+		"notice_block": "off",
+		"disable_all_notices": false,
+		"notice_control": [],
+		"notice_method": "hook",
+		"plane": "off",
+		"plane_rule": [
+			{
+				"name": "示例规则",
+				"domain": "api.example.org\nupdates.example.com",
+				"enable": true
+			}
+		],
+		"monitor": true,
+		"hide": false,
+		"hide_option": "",
+		"hide_menu": false,
+		"enabled_sections": [
+			"store",
+			"admincdn",
+			"cravatar",
+			"windfonts",
+			"adblock",
+			"plane",
+			"monitor"
+		],
+		"telemetry": "on",
+		"telemetry_site_url": "https://www.example.org"
+	}
+}

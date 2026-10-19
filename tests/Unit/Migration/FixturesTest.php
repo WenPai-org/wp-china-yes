@@ -1,6 +1,6 @@
 <?php
 /**
- * Six legacy-option fixtures: dry-run, execute, schema, leftover 3.x, rollback.
+ * Synthetic 3.x legacy-option fixtures: dry-run, execute, schema, leftover 3.x, rollback.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -45,7 +45,7 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
-	 * Legacy-option fixtures under tests/fixtures/legacy-options/.
+	 * Synthetic legacy-option fixtures under tests/fixtures/legacy-options/ (see README.md there).
 	 *
 	 * @return array<string, array{0: string}>
 	 */
@@ -633,7 +633,7 @@ class FixturesTest extends TestCase {
 	}
 
 	/**
-	 * Expected kept keys (task book + spec §7.2).
+	 * Expected kept keys (spec §7.2).
 	 *
 	 * @param string $file Fixture basename.
 	 * @return array<int, string>
