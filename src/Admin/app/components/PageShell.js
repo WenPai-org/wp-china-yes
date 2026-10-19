@@ -42,15 +42,19 @@ export default function PageShell( {
 	children,
 } ) {
 	const slug = getPageSlug();
-	const { links, version, stats, notice } = useSelect( ( select ) => {
-		const store = select( STORE_NAME );
-		return {
-			links: store.getLinks(),
-			version: store.getPluginVersion(),
-			stats: store.getStats(),
-			notice: store.getNotice(),
-		};
-	}, [] );
+	const { links, version, stats, notice, network } = useSelect(
+		( select ) => {
+			const store = select( STORE_NAME );
+			return {
+				network: Boolean( store.getCapabilities()?.network_admin ),
+				links: store.getLinks(),
+				version: store.getPluginVersion(),
+				stats: store.getStats(),
+				notice: store.getNotice(),
+			};
+		},
+		[]
+	);
 	const { clearNotice } = useDispatch( STORE_NAME );
 
 	const days = daysSince( stats?.installed_at );
@@ -70,7 +74,10 @@ export default function PageShell( {
 					<div className="wpcy-head">
 						<a
 							className="wpcy-brand"
-							href={ adminPageUrl( PAGES.overview ) }
+							href={ adminPageUrl(
+								// Network admin only registers the settings page.
+								network ? PAGES.connect : PAGES.overview
+							) }
 						>
 							<span className="wpcy-mark">
 								<Icon name="leaf" size={ 16 } />

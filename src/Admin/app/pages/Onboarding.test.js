@@ -129,6 +129,32 @@ describe( 'WZ-01', () => {
 		expect( primary( container )[ 0 ].disabled ).toBe( false );
 	} );
 
+	it.each( [
+		[ 'wpcy_settings_locked', 409 ],
+		[ 'wpcy_settings_network_scope', 403 ],
+	] )(
+		'%s (%d): lock sentence instead of the generic retry text',
+		async ( code, status ) => {
+			routes[ 'PUT /wpcy/v1/settings' ] = () =>
+				Promise.reject( {
+					code,
+					message: 'refused',
+					data: { status, fields: [ 'profile' ] },
+				} );
+			const { container } = await mount();
+			await click( container.querySelector( '#ob-p-mixed' ) );
+			await click( buttonsByText( container, '继续' )[ 0 ] );
+			const alert = container.querySelector( '[role="alert"]' );
+			expect( alert.textContent ).toBe(
+				'网络管理员已锁定此项，修改未保存。'
+			);
+			expect( buttonsByText( container, '重试' ) ).toHaveLength( 0 );
+			expect( container.querySelector( 'h1' ).textContent ).toBe(
+				'你的站点在哪里？'
+			);
+		}
+	);
+
 	it( 'save failure: red alert under the cards, stays on step 1', async () => {
 		routes[ 'PUT /wpcy/v1/settings' ] = () =>
 			Promise.reject( { code: 'rest_error' } );
@@ -278,6 +304,74 @@ describe( 'WZ-03 binding', () => {
 			)
 		).toBe( true );
 		expect( container.textContent ).not.toContain( '正在绑定本站' );
+	} );
+} );
+
+describe( 'WZ-03 step 4 states', () => {
+	it( 'one live region on step 4; only its text changes', async () => {
+		routes[ 'POST /wpcy/v1/binding/start' ] = () =>
+			Promise.resolve( { status: 'pending' } );
+		const { container } = await mount();
+		await goToBindStep( container );
+		const regions = () =>
+			container.querySelectorAll(
+				'.wizard [role="status"], .wizard [aria-live]'
+			);
+		expect( regions() ).toHaveLength( 1 );
+		const region = regions()[ 0 ];
+		expect( region.textContent ).toBe( '' );
+
+		await click( buttonsByText( container, '绑定本站' ).pop() );
+
+		expect( regions() ).toHaveLength( 1 );
+		expect( regions()[ 0 ] ).toBe( region );
+		expect( region.textContent ).toBe( '正在绑定本站' );
+	} );
+
+	it( 'already bound: bound state and 继续, not the bind question', async () => {
+		routes[ '/wpcy/v1/binding' ] = () =>
+			Promise.resolve( {
+				status: 'bound',
+				site_hash: 'a3f9000000000000c21e',
+			} );
+		const { container } = await mount();
+		await goToBindStep( container );
+		expect( container.querySelector( 'h1' ).textContent ).toBe(
+			'本站已绑定'
+		);
+		expect( container.textContent ).not.toContain( '要绑定本站吗？' );
+		expect( container.textContent ).toContain( '站点标识 a3f9…c21e' );
+		expect(
+			buttonsByText( container, '绑定本站' ).filter(
+				( b ) => b.tagName === 'BUTTON'
+			)
+		).toHaveLength( 0 );
+		await click( buttonsByText( container, '继续' )[ 0 ] );
+		expect( container.querySelector( 'h1' ).textContent ).toBe(
+			'一切就绪'
+		);
+	} );
+
+	it( 'a leftover pending does not poll or jump from step 1', async () => {
+		jest.useFakeTimers();
+		let reads = 0;
+		routes[ '/wpcy/v1/binding' ] = () => {
+			reads++;
+			return Promise.resolve(
+				reads < 2
+					? { status: 'pending' }
+					: { status: 'bound', site_hash: 'a3f9000000000000c21e' }
+			);
+		};
+		const { container } = await mount();
+		await act( async () => {
+			jest.advanceTimersByTime( BINDING_POLL_MS * 3 );
+		} );
+		await flush();
+		expect( reads ).toBe( 1 );
+		expect( container.querySelector( 'h1' ).textContent ).toBe(
+			'你的站点在哪里？'
+		);
 	} );
 } );
 

@@ -17,6 +17,7 @@ const DEFAULT_DIAGNOSTICS = { targets: [] };
 const DEFAULT_STATE = {
 	settings: {},
 	serverSettings: {},
+	unsaved: {},
 	settingsError: false,
 	capabilities: {},
 	diagnostics: DEFAULT_DIAGNOSTICS,
@@ -100,6 +101,124 @@ export function mergeSettings( base, patch ) {
 			isPlainObject( next ) && isPlainObject( out[ key ] )
 				? mergeSettings( out[ key ], next )
 				: next;
+	} );
+	return out;
+}
+
+/**
+ * Error codes for a refused subsite write (server contract, PR #157).
+ */
+export const LOCK_CODES = [
+	'wpcy_settings_locked',
+	'wpcy_settings_network_scope',
+];
+
+/**
+ * Network refusal of a subsite write, handled the same way: 409
+ * wpcy_settings_locked (locked field changed while allow_site_override is
+ * closed) and 403 wpcy_settings_network_scope (network-scope field changed).
+ * Other codes mentioning "lock" are treated alike, defensively.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {boolean} Whether the write was refused by the network lock.
+ */
+export function isLockError( error ) {
+	const code = String( error?.code || '' );
+	return LOCK_CODES.includes( code ) || /lock/i.test( code );
+}
+
+/**
+ * Field names the server refused. The contract sends root names in
+ * data.fields (e.g. "connectivity"); other keys are read defensively.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {string[]|null} Names (dot paths or leaf names), or null when the
+ *                         error carries no list (treat the whole request as
+ *                         refused).
+ */
+export function lockedFieldNames( error ) {
+	const data = error?.data || {};
+	for ( const key of [
+		'fields',
+		'locked_fields',
+		'rejected_fields',
+		'locked',
+		'rejected',
+		'params',
+	] ) {
+		const value = data[ key ];
+		if ( Array.isArray( value ) && value.length ) {
+			return value.map( String );
+		}
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			const names = Object.keys( value );
+			if ( names.length ) {
+				return names;
+			}
+		}
+	}
+	return null;
+}
+
+/**
+ * Leaf dot paths of a partial settings body.
+ *
+ * @param {Object} data   Partial body.
+ * @param {string} prefix Path prefix.
+ * @return {string[]} Paths.
+ */
+export function leafPaths( data, prefix = '' ) {
+	const out = [];
+	Object.keys( data || {} ).forEach( ( key ) => {
+		const path = prefix ? prefix + '.' + key : key;
+		const value = data[ key ];
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			out.push( ...leafPaths( value, path ) );
+		} else {
+			out.push( path );
+		}
+	} );
+	return out;
+}
+
+/**
+ * Whether a leaf path is covered by one refused name (exact path, a parent
+ * section, or the same leaf name).
+ *
+ * @param {string}   path  Leaf path.
+ * @param {string[]} names Refused names.
+ * @return {boolean} Covered.
+ */
+function refused( path, names ) {
+	return names.some(
+		( name ) =>
+			path === name ||
+			path.startsWith( name + '.' ) ||
+			path.endsWith( '.' + name )
+	);
+}
+
+/**
+ * Body without the refused leaves.
+ *
+ * @param {Object}   data   Partial body.
+ * @param {string[]} names  Refused names.
+ * @param {string}   prefix Path prefix.
+ * @return {Object} Remaining partial body.
+ */
+function withoutRefused( data, names, prefix = '' ) {
+	const out = {};
+	Object.keys( data || {} ).forEach( ( key ) => {
+		const path = prefix ? prefix + '.' + key : key;
+		const value = data[ key ];
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			const rest = withoutRefused( value, names, path );
+			if ( Object.keys( rest ).length ) {
+				out[ key ] = rest;
+			}
+		} else if ( ! refused( path, names ) ) {
+			out[ key ] = value;
+		}
 	} );
 	return out;
 }
@@ -258,12 +377,30 @@ export const actions = {
 			return { type: 'SAVE_RESULT', ok: true, error: null };
 		} catch ( error ) {
 			yield { type: 'ROLLBACK_SETTINGS' };
+			const locked = isLockError( error );
+			let lockedPaths = [];
+			if ( locked ) {
+				// The server refuses the whole request when any field is
+				// locked: refused fields go back to the stored value, the
+				// rest stay on screen as unsaved input for the next save.
+				const names = lockedFieldNames( error );
+				const paths = leafPaths( data );
+				lockedPaths = names
+					? paths.filter( ( leaf ) => refused( leaf, names ) )
+					: paths;
+				const keep = names ? withoutRefused( data, names ) : {};
+				if ( Object.keys( keep ).length ) {
+					yield { type: 'KEEP_UNSAVED', data: keep };
+				}
+			}
 			yield { type: 'SET_SAVING', saving: false };
 			return {
 				type: 'SAVE_RESULT',
 				ok: false,
 				error: {
 					code: error?.code || '',
+					locked,
+					lockedPaths,
 					message: saveErrorMessage( error ),
 				},
 			};
@@ -411,6 +548,7 @@ export function reducer( state = DEFAULT_STATE, action ) {
 				...state,
 				settings: action.settings || {},
 				serverSettings: action.settings || {},
+				unsaved: {},
 				settingsError: false,
 				draft: connectDraftFromSettings( action.settings || {} ),
 			};
@@ -424,8 +562,19 @@ export function reducer( state = DEFAULT_STATE, action ) {
 		case 'ROLLBACK_SETTINGS':
 			return {
 				...state,
-				settings: state.serverSettings || {},
+				settings: mergeSettings(
+					state.serverSettings || {},
+					state.unsaved || {}
+				),
 			};
+		case 'KEEP_UNSAVED': {
+			const unsaved = mergeSettings( state.unsaved || {}, action.data );
+			return {
+				...state,
+				unsaved,
+				settings: mergeSettings( state.serverSettings || {}, unsaved ),
+			};
+		}
 		case 'SET_DRAFT':
 			return {
 				...state,
@@ -516,6 +665,9 @@ const selectors = {
 	},
 	getSettingsError( state ) {
 		return state.settingsError;
+	},
+	getUnsaved( state ) {
+		return state.unsaved || {};
 	},
 	getCapabilities( state ) {
 		return state.capabilities;

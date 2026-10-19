@@ -5,6 +5,8 @@
 
 import {
 	actions,
+	isLockError,
+	lockedFieldNames,
 	mergeSettings,
 	reducer,
 	saveErrorMessage,
@@ -156,5 +158,84 @@ describe( 'patchSettings', () => {
 		expect(
 			reducer( state, { type: 'ROLLBACK_SETTINGS' } ).settings.profile
 		).toBe( 'mixed' );
+	} );
+} );
+
+describe( 'network lock refusal', () => {
+	const DATA = {
+		connectivity: { heartbeat: 'off', dashboard_feeds: false },
+	};
+
+	it( 'detects lock errors defensively', () => {
+		expect( isLockError( { code: 'wpcy_settings_locked' } ) ).toBe( true );
+		expect( isLockError( { code: 'wpcy_settings_network_scope' } ) ).toBe(
+			true
+		);
+		expect( isLockError( { code: 'rest_forbidden' } ) ).toBe( false );
+		expect(
+			lockedFieldNames( {
+				data: { locked_fields: [ 'connectivity.heartbeat' ] },
+			} )
+		).toEqual( [ 'connectivity.heartbeat' ] );
+		expect(
+			lockedFieldNames( { data: { params: { heartbeat: 'locked' } } } )
+		).toEqual( [ 'heartbeat' ] );
+		expect( lockedFieldNames( { data: {} } ) ).toBeNull();
+	} );
+
+	it( '409 wpcy_settings_locked: refused roots revert, other roots stay as unsaved input', () => {
+		const data = {
+			connectivity: { heartbeat: 'off' },
+			modules: { windfonts: true },
+		};
+		const { state, result } = run( data, () => ( {
+			fail: {
+				code: 'wpcy_settings_locked',
+				data: { status: 409, fields: [ 'modules' ] },
+			},
+		} ) );
+		expect( result.ok ).toBe( false );
+		expect( result.error.locked ).toBe( true );
+		expect( result.error.lockedPaths ).toEqual( [ 'modules.windfonts' ] );
+		expect( state.settings.modules ).toBeUndefined();
+		expect( state.settings.connectivity.heartbeat ).toBe( 'off' );
+		expect( state.unsaved ).toEqual( {
+			connectivity: { heartbeat: 'off' },
+		} );
+		expect( state.serverSettings ).toEqual( SERVER );
+
+		const ok = reducer( state, {
+			type: 'SET_SETTINGS',
+			settings: mergeSettings( SERVER, state.unsaved ),
+		} );
+		expect( ok.unsaved ).toEqual( {} );
+	} );
+
+	it( '403 wpcy_settings_network_scope is handled like a lock', () => {
+		const { state, result } = run( DATA, () => ( {
+			fail: {
+				code: 'wpcy_settings_network_scope',
+				data: { status: 403, fields: [ 'connectivity' ] },
+			},
+		} ) );
+		expect( result.error.locked ).toBe( true );
+		expect( result.error.lockedPaths ).toEqual( [
+			'connectivity.heartbeat',
+			'connectivity.dashboard_feeds',
+		] );
+		expect( state.settings ).toEqual( SERVER );
+		expect( state.unsaved ).toEqual( {} );
+	} );
+
+	it( 'without a field list the whole request is refused', () => {
+		const { state, result } = run( DATA, () => ( {
+			fail: { code: 'wpcy_settings_locked', data: { status: 409 } },
+		} ) );
+		expect( result.error.lockedPaths ).toEqual( [
+			'connectivity.heartbeat',
+			'connectivity.dashboard_feeds',
+		] );
+		expect( state.settings ).toEqual( SERVER );
+		expect( state.unsaved ).toEqual( {} );
 	} );
 } );

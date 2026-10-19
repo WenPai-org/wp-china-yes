@@ -2588,3 +2588,7 @@ button.app {
 .wpcy-step-wrap {
 	display: contents;
 }
+
+.saved:empty {
+	margin-left: 0;
+}

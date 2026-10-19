@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
+use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
 
@@ -35,7 +36,8 @@ class AdminNetworkOnboardingTest extends TestCase {
 		parent::setUp();
 		RestStore::reset();
 		OptionStore::reset();
-		$_GET = array();
+		$_GET                           = array();
+		$GLOBALS['wpcy_test_main_site'] = true;
 	}
 
 	/**
@@ -135,8 +137,13 @@ class AdminNetworkOnboardingTest extends TestCase {
 		);
 		$this->assertTrue( ( new AdminModule( new Repository() ) )->network_locked() );
 
+		// Super admins on a subsite are locked too: the server does not keep
+		// subsite writes while the override is closed.
 		RestStore::$caps['manage_network_options'] = true;
-		$this->assertFalse( ( new AdminModule( new Repository() ) )->network_locked() );
+		$this->assertTrue( ( new AdminModule( new Repository() ) )->network_locked() );
+		$this->assertTrue(
+			( new AdminModule( new Repository() ) )->bootstrap_payload()['capabilities']['network_locked']
+		);
 	}
 
 	/**
@@ -184,14 +191,130 @@ class AdminNetworkOnboardingTest extends TestCase {
 	}
 
 	/**
-	 * Multisite and network admin never redirect (L-7 ⑤).
+	 * Multisite: the main site redirects; subsites (L-7 ⑤) and the network
+	 * admin do not.
 	 */
-	public function test_no_redirect_on_multisite() {
+	public function test_multisite_main_site_only() {
 		RestStore::$caps['manage_options'] = true;
 		$_GET['page']                      = 'wpcy';
 		OptionStore::$multisite            = true;
 
+		$this->assertSame(
+			'http://example.test/wp-admin/admin.php?page=wpcy-onboarding',
+			( new AdminModule( new Repository() ) )->onboarding_redirect_target()
+		);
+
+		$GLOBALS['wpcy_test_main_site'] = false;
 		$this->assertSame( '', ( new AdminModule( new Repository() ) )->onboarding_redirect_target() );
+
+		$GLOBALS['wpcy_test_main_site'] = true;
+		RestStore::$network_admin       = true;
+		$this->assertSame( '', ( new AdminModule( new Repository() ) )->onboarding_redirect_target() );
+	}
+
+	/**
+	 * Multisite main site: a network-scoped 3.x migration report blocks it.
+	 */
+	public function test_multisite_reads_report_through_runner() {
+		RestStore::$caps['manage_options']                  = true;
+		$_GET['page']                                       = 'wpcy';
+		OptionStore::$multisite                             = true;
+		OptionStore::$site_options[ Runner::REPORT_OPTION ] = array( 'kept' => array( 'x' ) );
+
+		$this->assertSame( '', ( new AdminModule( new Repository() ) )->onboarding_redirect_target() );
+	}
+
+	/**
+	 * 3.x option present but no report yet (migration failed, retry pending),
+	 * or recovery mode on: no redirect.
+	 */
+	public function test_no_redirect_for_pending_migration_or_recovery() {
+		RestStore::$caps['manage_options'] = true;
+		$_GET['page']                      = 'wpcy';
+
+		OptionStore::$options[ LegacyReader::OPTION ] = array( 'store' => 'off' );
+		$this->assertSame( '', ( new AdminModule( new Repository() ) )->onboarding_redirect_target() );
+		unset( OptionStore::$options[ LegacyReader::OPTION ] );
+
+		$repo = new Repository();
+		$repo->set( 'recovery_mode', true );
+		$this->assertSame( '', ( new AdminModule( $repo ) )->onboarding_redirect_target() );
+	}
+
+	/**
+	 * Redirect writes the per-site marker (get_option scope) and leaves.
+	 */
+	public function test_maybe_redirect_writes_marker_and_redirects() {
+		RestStore::$caps['manage_options'] = true;
+		$_GET['page']                      = 'wpcy';
+		$module                            = new AdminModule( new Repository() );
+
+		try {
+			$module->maybe_redirect_onboarding();
+			$this->fail( 'Expected redirect.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-onboarding', RestStore::$redirect );
+		}
+		$this->assertSame( '1', OptionStore::$options[ AdminModule::ONBOARDING_REDIRECTED ] );
+		$this->assertArrayNotHasKey( AdminModule::ONBOARDING_REDIRECTED, OptionStore::$site_options );
+
+		RestStore::$redirect = null;
+		$module->maybe_redirect_onboarding();
+		$this->assertNull( RestStore::$redirect );
+	}
+
+	/**
+	 * Read-only subsite opening the wizard goes to settings; no marker.
+	 */
+	public function test_locked_subsite_wizard_goes_to_settings() {
+		RestStore::$caps['manage_options'] = true;
+		OptionStore::$multisite            = true;
+		$GLOBALS['wpcy_test_main_site']    = false;
+		$_GET['page']                      = 'wpcy-onboarding';
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 2,
+				'allow_site_override' => false,
+			)
+		);
+		$module = new AdminModule( new Repository() );
+
+		$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-connect', $module->locked_wizard_target() );
+		try {
+			$module->maybe_redirect_onboarding();
+			$this->fail( 'Expected redirect.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-connect', RestStore::$redirect );
+		}
+		$this->assertArrayNotHasKey( AdminModule::ONBOARDING_REDIRECTED, OptionStore::$options );
+
+		$_GET['page'] = 'wpcy-connect';
+		$this->assertSame( '', $module->locked_wizard_target() );
+	}
+
+	/**
+	 * Network admin render: needs manage_network_options, then mounts the app.
+	 */
+	public function test_render_network_branch() {
+		RestStore::$network_admin = true;
+		OptionStore::$multisite   = true;
+		$module                   = new AdminModule( new Repository() );
+
+		ob_start();
+		$module->render();
+		$html = (string) ob_get_clean();
+		$this->assertNotNull( RestStore::$die );
+		$this->assertSame( 403, RestStore::$die_status );
+
+		RestStore::reset();
+		RestStore::$network_admin                  = true;
+		RestStore::$caps['manage_network_options'] = true;
+		ob_start();
+		$module->render();
+		$html = (string) ob_get_clean();
+		$this->assertNull( RestStore::$die );
+		$this->assertStringContainsString( 'id="wpcy-admin-root"', $html );
 	}
 
 	/**

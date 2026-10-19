@@ -159,6 +159,78 @@ describe( 'CO-01 instant save', () => {
 	} );
 } );
 
+describe( 'CO-01 status line (admin-ui-spec §8)', () => {
+	it( 'role=status is mounted from first paint; success only swaps its text', async () => {
+		routes[ 'PUT /wpcy/v1/settings' ] = ( req ) =>
+			Promise.resolve(
+				doc( 'crossborder', { connectivity: req.data.connectivity } )
+			);
+		const { container } = await mount( doc( 'crossborder' ) );
+		const card = container.querySelector( '[data-card="admin"]' );
+		const lines = card.querySelectorAll( '.saved[role="status"]' );
+		expect( lines.length ).toBeGreaterThan( 0 );
+		lines.forEach( ( el ) => expect( el.textContent ).toBe( '' ) );
+		const heart = card.querySelectorAll( '[role="switch"]' )[ 1 ];
+		const line = heart.closest( '.row, .field, li, div' ).parentElement;
+		const before = Array.from(
+			card.querySelectorAll( '.saved[role="status"]' )
+		);
+
+		await click( heart );
+
+		const after = Array.from(
+			card.querySelectorAll( '.saved[role="status"]' )
+		);
+		expect( after ).toEqual( before );
+		expect(
+			after.filter( ( el ) => el.textContent === '已保存 ✓' )
+		).toHaveLength( 1 );
+		expect( line ).toBeTruthy();
+	} );
+
+	it( 'non-2xx: no 已保存 ✓', async () => {
+		routes[ 'PUT /wpcy/v1/settings' ] = () =>
+			Promise.reject( { code: 'rest_forbidden', data: { status: 403 } } );
+		const { container } = await mount( doc( 'crossborder' ) );
+		const card = container.querySelector( '[data-card="admin"]' );
+		await click( card.querySelectorAll( '[role="switch"]' )[ 1 ] );
+		expect( container.textContent ).not.toContain( '已保存 ✓' );
+		expect( card.querySelector( '[role="alert"]' ) ).toBeTruthy();
+	} );
+
+	it.each( [
+		[ 'wpcy_settings_locked', 409 ],
+		[ 'wpcy_settings_network_scope', 403 ],
+	] )(
+		'%s (%d): reverts, no alert or 重试, lock sentence only on the changed item',
+		async ( code, status ) => {
+			routes[ 'PUT /wpcy/v1/settings' ] = () =>
+				Promise.reject( {
+					code,
+					message: 'refused',
+					data: { status, fields: [ 'connectivity' ] },
+				} );
+			const { container } = await mount( doc( 'crossborder' ) );
+			const card = container.querySelector( '[data-card="admin"]' );
+			const heart = card.querySelectorAll( '[role="switch"]' )[ 1 ];
+
+			await click( heart );
+
+			expect( heart.getAttribute( 'aria-checked' ) ).toBe( 'true' );
+			expect( card.querySelector( '[role="alert"]' ) ).toBeNull();
+			expect( buttonsByText( card, '重试' ) ).toHaveLength( 0 );
+			expect( container.textContent ).not.toContain( '已保存 ✓' );
+			const lines = Array.from(
+				card.querySelectorAll( '.saved[role="status"]' )
+			).filter( ( el ) => el.textContent !== '' );
+			expect( lines ).toHaveLength( 1 );
+			expect( lines[ 0 ].textContent ).toBe(
+				'网络管理员已锁定此项，修改未保存。'
+			);
+		}
+	);
+} );
+
 describe( 'CO-11 scene cards and switch modal', () => {
 	it( 'renders four cards in a 2×2 grid and the wizard entry', async () => {
 		const { container } = await mount( doc() );

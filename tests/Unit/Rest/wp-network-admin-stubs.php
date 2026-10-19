@@ -36,3 +36,14 @@ if ( ! function_exists( 'remove_submenu_page' ) ) {
 		return false;
 	}
 }
+
+if ( ! function_exists( 'is_main_site' ) ) {
+	/**
+	 * Main-site flag from $GLOBALS['wpcy_test_main_site'] (default true).
+	 *
+	 * @return bool
+	 */
+	function is_main_site() {
+		return ! isset( $GLOBALS['wpcy_test_main_site'] ) || true === $GLOBALS['wpcy_test_main_site'];
+	}
+}

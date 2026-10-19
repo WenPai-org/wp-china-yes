@@ -113,9 +113,11 @@ export default function Onboarding() {
 		};
 	}, [] );
 
-	// WZ-03: while pending, GET /binding every 3 s until bound or failed.
+	// WZ-03: only on step 4 and only while pending, GET /binding every 3 s
+	// until bound or failed. A pending left over from an earlier visit must
+	// not move the wizard from another step.
 	useEffect( () => {
-		if ( binding.status !== 'pending' ) {
+		if ( binding.status !== 'pending' || step !== 3 ) {
 			stopPoll();
 			return undefined;
 		}
@@ -137,7 +139,7 @@ export default function Onboarding() {
 				.catch( () => undefined );
 		}, BINDING_POLL_MS );
 		return stopPoll;
-	}, [ binding.status ] );
+	}, [ binding.status, step ] );
 
 	const cards = sceneCards();
 	const current = profile || settings.profile || 'domestic';
@@ -151,6 +153,13 @@ export default function Onboarding() {
 			setSaving( false );
 			if ( result?.ok ) {
 				setStep( 1 );
+				return;
+			}
+			if ( result?.error?.locked ) {
+				// 409 wpcy_settings_locked / 403 wpcy_settings_network_scope.
+				setSaveError(
+					__( '网络管理员已锁定此项，修改未保存。', 'wp-china-yes' )
+				);
 				return;
 			}
 			setSaveError(
@@ -381,57 +390,67 @@ export default function Onboarding() {
 				) : null }
 				{ step === 3 ? (
 					<>
-						<h1>{ __( '要绑定本站吗？', 'wp-china-yes' ) }</h1>
-						<p className="lede">
-							{ __(
-								'绑定后可使用文派服务与小工具。绑定是匿名的，不需要注册账号；数据保存在本站，随时可解除。',
-								'wp-china-yes'
-							) }
+						{ /* One live region for step 4 (admin-ui-spec §8):
+						     mounted with the step, only its text changes. */ }
+						<p className="screen-reader-text" role="status">
+							{ bindStatusText( binding.status ) }
 						</p>
-						{ pending ? (
-							<BindingWait
-								busy={ bindBusy }
-								onCancel={ onCancelBind }
+						{ bound ? (
+							<BoundState
+								siteHash={ binding.site_hash }
+								onContinue={ () => setStep( 4 ) }
 							/>
 						) : (
 							<>
-								<BindIntro />
-								{ bindError ? (
-									<BadAlert>
-										{ __(
-											'暂时无法完成站点绑定，请稍后重试。',
-											'wp-china-yes'
-										) }
-									</BadAlert>
-								) : null }
-								<div className="actions">
-									{ bound ? (
-										<Btn
-											variant="primary"
-											onClick={ () => setStep( 4 ) }
-										>
-											{ __( '继续', 'wp-china-yes' ) }
-										</Btn>
-									) : (
-										<Btn
-											variant="primary"
-											disabled={ bindBusy }
-											isBusy={ bindBusy }
-											onClick={ onBind }
-										>
-											{ __( '绑定本站', 'wp-china-yes' ) }
-										</Btn>
+								<h1>
+									{ __( '要绑定本站吗？', 'wp-china-yes' ) }
+								</h1>
+								<p className="lede">
+									{ __(
+										'绑定后可使用文派服务与小工具。绑定是匿名的，不需要注册账号；数据保存在本站，随时可解除。',
+										'wp-china-yes'
 									) }
-									<Btn
-										variant="ghost"
-										onClick={ () => setStep( 4 ) }
-									>
-										{ __(
-											'暂不，稍后再说',
-											'wp-china-yes'
-										) }
-									</Btn>
-								</div>
+								</p>
+								{ pending ? (
+									<BindingWait
+										busy={ bindBusy }
+										onCancel={ onCancelBind }
+									/>
+								) : (
+									<>
+										<BindIntro />
+										{ bindError ? (
+											<BadAlert>
+												{ __(
+													'暂时无法完成站点绑定，请稍后重试。',
+													'wp-china-yes'
+												) }
+											</BadAlert>
+										) : null }
+										<div className="actions">
+											<Btn
+												variant="primary"
+												disabled={ bindBusy }
+												isBusy={ bindBusy }
+												onClick={ onBind }
+											>
+												{ __(
+													'绑定本站',
+													'wp-china-yes'
+												) }
+											</Btn>
+											<Btn
+												variant="ghost"
+												onClick={ () => setStep( 4 ) }
+											>
+												{ __(
+													'暂不，稍后再说',
+													'wp-china-yes'
+												) }
+											</Btn>
+										</div>
+									</>
+								) }
 							</>
 						) }
 					</>
@@ -557,6 +576,63 @@ function BindIntro() {
 }
 
 /**
+ * Screen-reader text for the step 4 status region.
+ *
+ * @param {string} status Binding status.
+ * @return {string} Text.
+ */
+function bindStatusText( status ) {
+	if ( status === 'pending' ) {
+		return __( '正在绑定本站', 'wp-china-yes' );
+	}
+	if ( status === 'bound' ) {
+		return __( '已绑定', 'wp-china-yes' );
+	}
+	return '';
+}
+
+/**
+ * Step 4 when the site is already bound: show the bound state and let the
+ * admin continue instead of asking 「要绑定本站吗？」 again.
+ *
+ * @param {Object}      props
+ * @param {string|null} props.siteHash
+ * @param {Function}    props.onContinue
+ */
+function BoundState( { siteHash, onContinue } ) {
+	return (
+		<>
+			<h1>{ __( '本站已绑定', 'wp-china-yes' ) }</h1>
+			<article className="card">
+				<CardHead
+					tile={ <Tile tone="ok" icon="link" /> }
+					title={ __( '本站已绑定', 'wp-china-yes' ) }
+					sub={
+						siteHash
+							? sprintf(
+									/* translators: %s: masked site hash */
+									__( '站点标识 %s', 'wp-china-yes' ),
+									maskHash( siteHash )
+							  )
+							: null
+					}
+					extra={
+						<Pill tone="ok">
+							{ __( '已绑定', 'wp-china-yes' ) }
+						</Pill>
+					}
+				/>
+			</article>
+			<div className="actions">
+				<Btn variant="primary" onClick={ onContinue }>
+					{ __( '继续', 'wp-china-yes' ) }
+				</Btn>
+			</div>
+		</>
+	);
+}
+
+/**
  * WZ-03 waiting state: SV-02 copy, one secondary 「取消」.
  *
  * @param {Object}   props
@@ -566,7 +642,7 @@ function BindIntro() {
 function BindingWait( { busy, onCancel } ) {
 	return (
 		<>
-			<article className="card" aria-live="polite">
+			<article className="card">
 				<CardHead
 					tile={ <Tile tone="accent" icon="link" /> }
 					title={ __( '正在绑定本站', 'wp-china-yes' ) }
@@ -576,7 +652,7 @@ function BindingWait( { busy, onCancel } ) {
 					) }
 					extra={ <Pill>{ __( '绑定中', 'wp-china-yes' ) }</Pill> }
 				/>
-				<p className="big" role="status">
+				<p className="big">
 					<span className="spin" />
 					{ __( '等待验证', 'wp-china-yes' ) }
 				</p>

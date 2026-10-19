@@ -11,7 +11,12 @@ import { useEffect, useRef, useState } from '@wordpress/element';
 import { Modal } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import PageShell from '../components/PageShell';
-import { NETWORK_SETTINGS_PATH, STORE_NAME } from '../store';
+import {
+	leafPaths,
+	mergeSettings,
+	NETWORK_SETTINGS_PATH,
+	STORE_NAME,
+} from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
 import Btn from '../ui/Btn';
@@ -70,18 +75,26 @@ function onOff( on ) {
 }
 
 export default function Connect() {
-	const { settings, saving, capabilities, binding, bindingError, loadError } =
-		useSelect( ( select ) => {
-			const store = select( STORE_NAME );
-			return {
-				settings: store.getSettings() || {},
-				saving: store.isSaving(),
-				capabilities: store.getCapabilities() || {},
-				binding: store.getBinding(),
-				bindingError: store.getBindingError(),
-				loadError: store.getSettingsError(),
-			};
-		}, [] );
+	const {
+		settings,
+		saving,
+		capabilities,
+		binding,
+		bindingError,
+		loadError,
+		unsaved,
+	} = useSelect( ( select ) => {
+		const store = select( STORE_NAME );
+		return {
+			settings: store.getSettings() || {},
+			saving: store.isSaving(),
+			capabilities: store.getCapabilities() || {},
+			binding: store.getBinding(),
+			bindingError: store.getBindingError(),
+			loadError: store.getSettingsError(),
+			unsaved: store.getUnsaved(),
+		};
+	}, [] );
 	const { patchSettings, fetchBinding, fetchNetworkSettings } =
 		useDispatch( STORE_NAME );
 	const network = Boolean( capabilities.network_admin );
@@ -91,7 +104,7 @@ export default function Connect() {
 	const [ suggest, setSuggest ] = useState( null );
 	const [ pendingProfile, setPendingProfile ] = useState( null );
 	const [ switching, setSwitching ] = useState( false );
-	const [ savedFlash, setSavedFlash ] = useState( '' );
+	const [ savedFlash, setSavedFlash ] = useState( {} );
 	const [ cardError, setCardError ] = useState( null );
 	const [ networkLoaded, setNetworkLoaded ] = useState( ! network );
 	const flashTimer = useRef( 0 );
@@ -149,16 +162,26 @@ export default function Connect() {
 
 	const flash = ( key ) => {
 		window.clearTimeout( flashTimer.current );
-		setSavedFlash( key );
+		setSavedFlash( { [ key ]: __( '已保存 ✓', 'wp-china-yes' ) } );
 		flashTimer.current = window.setTimeout(
-			() => setSavedFlash( '' ),
+			() => setSavedFlash( {} ),
 			2000
 		);
 	};
 
+	// Network lock rejection: stays until the next save on this page.
+	const lockedNotice = ( key ) => {
+		window.clearTimeout( flashTimer.current );
+		setSavedFlash( {
+			[ key ]: __( '网络管理员已锁定此项，修改未保存。', 'wp-china-yes' ),
+		} );
+	};
+
 	/**
-	 * CO-01: PUT the partial object; on failure the store rolls the control
-	 * back and this card shows the red alert with 重试.
+	 * CO-01: PUT the partial object; on any non-2xx the store rolls the
+	 * control back and this card shows the red alert with 重试. A network
+	 * lock rejection is not a generic failure: the item's status line says
+	 * so instead, with no alert and no 重试.
 	 *
 	 * @param {Object} data Partial settings body.
 	 * @param {string} key  Field key for 「已保存 ✓」.
@@ -167,14 +190,28 @@ export default function Connect() {
 	 */
 	const patch = ( data, key, card ) => {
 		setCardError( null );
+		window.clearTimeout( flashTimer.current );
+		setSavedFlash( {} );
 		return Promise.resolve(
 			patchSettings(
-				data,
+				// Input kept after a lock refusal goes out with the next save.
+				mergeSettings( unsaved || {}, data ),
 				network ? { path: NETWORK_SETTINGS_PATH } : undefined
 			)
 		).then( ( result ) => {
 			if ( result?.ok ) {
 				flash( key );
+			} else if ( result?.error?.locked ) {
+				// Refused field: reverted, lock hint in its status line.
+				// Other fields of the request: no 已保存 ✓, kept as unsaved.
+				const own = leafPaths( data );
+				if (
+					( result.error.lockedPaths || [] ).some( ( path ) =>
+						own.includes( path )
+					)
+				) {
+					lockedNotice( key );
+				}
 			} else {
 				setCardError( {
 					card,
@@ -447,13 +484,29 @@ function CardAlert( { cardError, card, onRetry } ) {
 	);
 }
 
-function Saved( { show } ) {
-	if ( ! show ) {
-		return null;
-	}
+/**
+ * Status text for one field ('' when idle).
+ *
+ * @param {Object<string, string>} status Field key → status text.
+ * @param {string}                 key    Field key.
+ * @return {string} Text for that field's status line.
+ */
+function statusText( status, key ) {
+	return ( status && status[ key ] ) || '';
+}
+
+/**
+ * Per-field save status (admin-ui-spec §8): the role=status container is
+ * mounted from first paint and only its text changes, so screen readers
+ * announce 「已保存 ✓」 once per save.
+ *
+ * @param {Object} props
+ * @param {string} props.text Current status text ('' when idle).
+ */
+function Saved( { text } ) {
 	return (
 		<span className="saved" role="status">
-			{ __( '已保存 ✓', 'wp-china-yes' ) }
+			{ text }
 		</span>
 	);
 }
@@ -515,7 +568,9 @@ function OverrideCard( { settings, patch, savedFlash, cardError, onRetry } ) {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'allow_site_override' } />
+				<Saved
+					text={ statusText( savedFlash, 'allow_site_override' ) }
+				/>
 			</SimpleRowWrap>
 		</section>
 	);
@@ -622,7 +677,7 @@ function SceneCard( {
 					) : null }
 				</div>
 			) : null }
-			<Saved show={ savedFlash === 'profile' } />
+			<Saved text={ statusText( savedFlash, 'profile' ) } />
 			{ plain ? (
 				<p className="hint wpcy-wizard-entry">
 					{ __( '拿不准？', 'wp-china-yes' ) }
@@ -660,7 +715,7 @@ function SuggestAction( { profile, suggestion, onPick } ) {
  * @param {boolean}  props.bindingError
  * @param {boolean}  props.disabled
  * @param {Function} props.patch
- * @param {string}   props.savedFlash
+ * @param {Object}   props.savedFlash
  * @param {string}   props.card
  * @param {Function} props.onRetryBinding
  * @param {string}   [props.label]        Advanced switch label.
@@ -730,7 +785,7 @@ function FontControl( {
 					patch( { modules: { windfonts: next } }, 'windfonts', card )
 				}
 			/>
-			<Saved show={ savedFlash === 'windfonts' } />
+			<Saved text={ statusText( savedFlash, 'windfonts' ) } />
 		</>
 	);
 }
@@ -824,7 +879,7 @@ function SimpleAccel( {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'assets' } />
+				<Saved text={ statusText( savedFlash, 'assets' ) } />
 			</SimpleRowWrap>
 			<SimpleRowWrap
 				icon="user"
@@ -852,7 +907,7 @@ function SimpleAccel( {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'avatar' } />
+				<Saved text={ statusText( savedFlash, 'avatar' ) } />
 			</SimpleRowWrap>
 			<SimpleRowWrap
 				icon="font"
@@ -932,7 +987,7 @@ function AdminCard( {
 						save( { admin: { hide_promo: on } }, 'hide_promo' )
 					}
 				/>
-				<Saved show={ savedFlash === 'hide_promo' } />
+				<Saved text={ statusText( savedFlash, 'hide_promo' ) } />
 			</Row>
 			<Row
 				icon="clock"
@@ -954,7 +1009,7 @@ function AdminCard( {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'heartbeat' } />
+				<Saved text={ statusText( savedFlash, 'heartbeat' ) } />
 			</Row>
 			<Row
 				icon="block"
@@ -977,7 +1032,7 @@ function AdminCard( {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'dashboard_feeds' } />
+				<Saved text={ statusText( savedFlash, 'dashboard_feeds' ) } />
 			</Row>
 			<Row
 				icon="globe"
@@ -1010,7 +1065,9 @@ function AdminCard( {
 						)
 					}
 				/>
-				<Saved show={ savedFlash === 'admin_locale_follow' } />
+				<Saved
+					text={ statusText( savedFlash, 'admin_locale_follow' ) }
+				/>
 			</Row>
 		</section>
 	);
@@ -1147,7 +1204,7 @@ function AdvancedConn( {
 						</span>
 					</label>
 				</div>
-				<Saved show={ savedFlash === 'org' } />
+				<Saved text={ statusText( savedFlash, 'org' ) } />
 			</FieldRow>
 			<FieldRow
 				icon="bolt"
@@ -1217,13 +1274,13 @@ function AdvancedConn( {
 						</label>
 					) ) }
 				</div>
-				<Saved show={ savedFlash === 'assets' } />
+				<Saved text={ statusText( savedFlash, 'assets' ) } />
 			</FieldRow>
 			<AvatarField
 				value={ avatarValue }
 				disabled={ disabled }
 				custom={ customs.includes( 'avatar' ) }
-				saved={ savedFlash === 'avatar' }
+				saved={ statusText( savedFlash, 'avatar' ) }
 				onRestore={ () =>
 					save( { connectivity: { avatar: def.avatar } }, 'avatar' )
 				}
@@ -1313,7 +1370,7 @@ function AvatarField( {
 					</label>
 				) ) }
 			</div>
-			<Saved show={ saved } />
+			<Saved text={ saved } />
 			{ custom ? (
 				<div className="customized">
 					{ __( '已自定义', 'wp-china-yes' ) }

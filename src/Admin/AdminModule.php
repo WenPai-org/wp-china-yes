@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 use WenPai\ChinaYes\Diagnostics\RouteGroups;
+use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -42,7 +43,8 @@ final class AdminModule implements Module {
 	public const HANDLE = 'wpcy-admin';
 
 	/**
-	 * Site option set once the first-run redirect to the wizard has happened.
+	 * Per-site option (get_option / update_option, not a network option) set
+	 * once the first-run redirect to the wizard has happened on this site.
 	 *
 	 * @since 4.0.0
 	 */
@@ -119,7 +121,9 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Hook admin_menu and admin_enqueue_scripts. Constructor does not register hooks.
+	 * Hook admin_menu, network_admin_menu, admin_init (first-run redirect and
+	 * wizard guard), admin_head (hide the wizard submenu), admin_enqueue_scripts
+	 * and init. Constructor does not register hooks.
 	 *
 	 * @since 4.0.0
 	 */
@@ -201,7 +205,8 @@ final class AdminModule implements Module {
 	 *
 	 * Runs on admin_head, after core's page access check: removing the
 	 * submenu during admin_menu makes admin.php?page=wpcy-onboarding answer
-	 * "Sorry, you are not allowed to access this page".
+	 * "Sorry, you are not allowed to access this page". The hook has to run
+	 * on every admin screen because the sidebar is rendered on every screen.
 	 *
 	 * @since 4.0.0
 	 */
@@ -231,15 +236,18 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * First visit to any leaf page without a confirmed scene and without a
-	 * 3.x migration report: send the admin to the wizard once (spec §2).
-	 *
-	 * Not on multisite (subsites follow the network, L-7 ⑤), not in network
-	 * admin, not for the wizard or recovery pages themselves.
+	 * On admin_init: keep read-only subsites out of the wizard, then send a
+	 * fresh site to the wizard once (spec §2).
 	 *
 	 * @since 4.0.0
 	 */
 	public function maybe_redirect_onboarding(): void {
+		$blocked = $this->locked_wizard_target();
+		if ( '' !== $blocked ) {
+			wp_safe_redirect( $blocked );
+			exit;
+		}
+
 		$target = $this->onboarding_redirect_target();
 		if ( '' === $target ) {
 			return;
@@ -251,7 +259,26 @@ final class AdminModule implements Module {
 	}
 
 	/**
+	 * Settings URL when a read-only subsite (CO-06) opens the wizard, else
+	 * empty string. The wizard writes the scene, which the subsite cannot.
+	 *
+	 * @since 4.0.0
+	 */
+	public function locked_wizard_target(): string {
+		if ( 'wpcy-onboarding' !== $this->current_page() || ! $this->network_locked() ) {
+			return '';
+		}
+
+		return admin_url( 'admin.php?page=wpcy-connect' );
+	}
+
+	/**
 	 * Wizard URL when the first-run redirect applies, else empty string.
+	 *
+	 * Applies to a single site and to the multisite main site. Subsites follow
+	 * the network (L-7 ⑤) and the network admin has no wizard. Skipped for
+	 * 3.x upgrades (migration report, or a 3.x option whose migration has not
+	 * produced a report yet) and in recovery mode. The marker is per site.
 	 *
 	 * @since 4.0.0
 	 */
@@ -259,17 +286,17 @@ final class AdminModule implements Module {
 		if ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) {
 			return '';
 		}
-		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
+		if ( $this->in_network_admin() ) {
 			return '';
 		}
-		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
+		if ( function_exists( 'is_multisite' ) && is_multisite()
+			&& ( ! function_exists( 'is_main_site' ) || ! is_main_site() ) ) {
 			return '';
 		}
 		if ( ! $this->is_app_screen() ) {
 			return '';
 		}
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page slug.
-		if ( 'wpcy-onboarding' === $page ) {
+		if ( 'wpcy-onboarding' === $this->current_page() ) {
 			return '';
 		}
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -278,16 +305,30 @@ final class AdminModule implements Module {
 		if ( '' !== (string) get_option( self::ONBOARDING_REDIRECTED, '' ) ) {
 			return '';
 		}
+		if ( true === $this->repository->get( 'recovery_mode', false ) ) {
+			return '';
+		}
 		$confirmed = $this->repository->get( 'profile_confirmed_at' );
 		if ( is_string( $confirmed ) && '' !== $confirmed ) {
 			return '';
 		}
-		$report = get_option( Runner::REPORT_OPTION, array() );
-		if ( is_array( $report ) && array() !== $report ) {
+		if ( array() !== ( new Runner() )->stored_report() ) {
+			return '';
+		}
+		if ( ( new LegacyReader() )->exists() ) {
 			return '';
 		}
 
 		return admin_url( 'admin.php?page=wpcy-onboarding' );
+	}
+
+	/**
+	 * Current ?page= slug (read-only).
+	 *
+	 * @since 4.0.0
+	 */
+	private function current_page(): string {
+		return isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page slug.
 	}
 
 	/**
@@ -446,8 +487,10 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * CO-06 subsite read-only: multisite, site screen, the user cannot manage
-	 * network options, and the network has not opened allow_site_override.
+	 * CO-06 subsite read-only: multisite, site screen, and the network has not
+	 * opened allow_site_override. Applies to super admins too: the server does
+	 * not keep subsite writes while the override is closed, so network policy
+	 * is edited in the network admin.
 	 *
 	 * @since 4.0.0
 	 */
@@ -456,9 +499,6 @@ final class AdminModule implements Module {
 			return false;
 		}
 		if ( $this->in_network_admin() ) {
-			return false;
-		}
-		if ( current_user_can( 'manage_network_options' ) ) {
 			return false;
 		}
 
