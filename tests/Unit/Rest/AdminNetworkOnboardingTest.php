@@ -61,6 +61,27 @@ class AdminNetworkOnboardingTest extends TestCase {
 
 		$this->assertArrayHasKey( 'network_admin_menu', RestStore::$hooks );
 		$this->assertArrayHasKey( 'admin_init', RestStore::$hooks );
+		$this->assertArrayHasKey( 'admin_head', RestStore::$hooks );
+	}
+
+	/**
+	 * The wizard stays registered during admin_menu (core access check) and
+	 * is only dropped from the sidebar on admin_head.
+	 */
+	public function test_wizard_hidden_on_admin_head_not_admin_menu() {
+		RestStore::$caps['manage_options']     = true;
+		$GLOBALS['wpcy_test_removed_submenus'] = array();
+		$module                                = new AdminModule( new Repository() );
+
+		$module->add_pages();
+		$this->assertSame( array(), $GLOBALS['wpcy_test_removed_submenus'] );
+		$this->assertContains( 'wpcy-onboarding', array_column( RestStore::$pages, 'menu_slug' ) );
+
+		$module->hide_onboarding_submenu();
+		$this->assertSame(
+			array( array( 'wpcy', 'wpcy-onboarding' ) ),
+			$GLOBALS['wpcy_test_removed_submenus']
+		);
 	}
 
 	/**

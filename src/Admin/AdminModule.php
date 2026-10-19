@@ -127,6 +127,7 @@ final class AdminModule implements Module {
 		add_action( 'admin_menu', array( $this, 'add_pages' ) );
 		add_action( 'network_admin_menu', array( $this, 'add_network_pages' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_onboarding' ) );
+		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
 	}
@@ -193,6 +194,18 @@ final class AdminModule implements Module {
 			'wpcy-onboarding',
 			array( $this, 'render' )
 		);
+	}
+
+	/**
+	 * Hide the wizard from the sidebar without unregistering it.
+	 *
+	 * Runs on admin_head, after core's page access check: removing the
+	 * submenu during admin_menu makes admin.php?page=wpcy-onboarding answer
+	 * "Sorry, you are not allowed to access this page".
+	 *
+	 * @since 4.0.0
+	 */
+	public function hide_onboarding_submenu(): void {
 		if ( function_exists( 'remove_submenu_page' ) ) {
 			remove_submenu_page( self::SLUG, 'wpcy-onboarding' );
 		}

@@ -22,3 +22,17 @@ if ( ! function_exists( 'is_network_admin' ) ) {
 		return RestStore::$network_admin;
 	}
 }
+
+if ( ! function_exists( 'remove_submenu_page' ) ) {
+	/**
+	 * Record removed submenu entries in $GLOBALS['wpcy_test_removed_submenus'].
+	 *
+	 * @param string $menu_slug    Parent slug.
+	 * @param string $submenu_slug Submenu slug.
+	 * @return false
+	 */
+	function remove_submenu_page( $menu_slug, $submenu_slug ) {
+		$GLOBALS['wpcy_test_removed_submenus'][] = array( $menu_slug, $submenu_slug );
+		return false;
+	}
+}
