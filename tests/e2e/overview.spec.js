@@ -366,7 +366,7 @@ test.describe( 'overview', () => {
 			waitUntil: 'domcontentloaded',
 		} );
 		await expect(
-			page.getByText( '暂时无法读取统计，请刷新页面重试。' )
+			page.locator( '.notice' ).getByText( '暂时无法读取统计，请刷新页面重试。' )
 		).toBeVisible( { timeout: 12000 } );
 		await expect( page.getByText( '还没有数据' ) ).toHaveCount( 0 );
 	} );
@@ -375,15 +375,19 @@ test.describe( 'overview', () => {
 		await mockOverview( page, { status: { stats: 500 } } );
 		await openAdminPage( page, 'wpcy' );
 		await expect(
-			page.getByText( '暂时无法读取统计，请刷新页面重试。' )
+			page.locator( '.notice' ).getByText( '暂时无法读取统计，请刷新页面重试。' )
 		).toBeVisible();
+		// Announced once through the persistent @wordpress/a11y region.
+		await expect( page.locator( '#a11y-speak-polite' ) ).toContainText(
+			'暂时无法读取统计，请刷新页面重试。'
+		);
 		await expect( page.getByText( '还没有数据' ) ).toHaveCount( 0 );
 	} );
 
 	test( '/diagnostics 500 Hero 不显示已接通', async ( { page } ) => {
 		await mockOverview( page, { status: { diagnostics: 500 } } );
 		await openAdminPage( page, 'wpcy' );
-		const failed = page.getByText( '暂时无法读取线路状态，请刷新页面重试。' );
+		const failed = page.locator( '.notice' ).getByText( '暂时无法读取线路状态，请刷新页面重试。' );
 		await expect( failed ).toHaveCount( 2 );
 		await expect( failed.first() ).toBeVisible();
 		// .hero-svc (SvcStack) is no longer rendered since M-UI-1c; check the
