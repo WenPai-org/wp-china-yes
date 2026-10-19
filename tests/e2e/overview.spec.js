@@ -122,13 +122,13 @@ async function mockOverview( page, overrides = {} ) {
 			}
 		},
 		async ( route ) => {
-			const raw = restPath( route.request().url() );
-			const path = raw.split( '?' )[ 0 ].replace( /\/+$/, '' );
 			const method = route.request().method().toUpperCase();
 			if ( method !== 'GET' ) {
 				await route.continue();
 				return;
 			}
+			const raw = restPath( route.request().url() );
+			const path = raw.split( '?' )[ 0 ].replace( /\/+$/, '' );
 			if ( path === '/wpcy/v1/diagnostics' ) {
 				await route.fulfill( {
 					status: status.diagnostics || 200,

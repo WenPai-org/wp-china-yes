@@ -47,8 +47,8 @@ function restPath( href ) {
 }
 
 /**
- * @param {import('@playwright/test').Page|import('@playwright/test').BrowserContext} target Route host.
- * @param {(path: string, method: string) => boolean}                                 match  Path matcher.
+ * @param {import('@playwright/test').Page|import('@playwright/test').BrowserContext} target  Route host.
+ * @param {(path: string, method: string) => boolean}                                 match   Path matcher.
  * @param {Function}                                                                  handler Route handler.
  */
 async function restRoute( target, match, handler ) {
@@ -264,58 +264,6 @@ async function mockApps( target, extras ) {
 	};
 }
 
-/**
- * @param {import('@playwright/test').Page|import('@playwright/test').BrowserContext} target Route host.
- */
-async function mockQuotas( target ) {
-	await restRoute(
-		target,
-		( path ) =>
-			path === '/wpcy/v1/entitlements' ||
-			path === '/wpcy/v1/entitlements/',
-		async ( route ) => {
-		await route.fulfill( {
-			json: {
-				entitlements: [
-					{
-						id: 'wpcy-leaf-motusnap-100',
-						service: 'motusnap',
-						status: 'active',
-						quota: {
-							used: 12,
-							limit: 100,
-							period: 'month',
-							resets_at: '2026-10-01T00:00:00Z',
-						},
-					},
-					{
-						id: 'wpcy-leaf-windfonts',
-						service: 'windfonts',
-						status: 'exhausted',
-						quota: {
-							used: 100,
-							limit: 100,
-							period: 'month',
-							resets_at: '2026-10-01T00:00:00Z',
-						},
-					},
-					{
-						id: 'wpcy-leaf-admincdn',
-						service: 'admincdn',
-						status: 'expired',
-						quota: {
-							used: 0,
-							limit: 100,
-							period: 'month',
-							resets_at: null,
-						},
-					},
-				],
-			},
-		} );
-	} );
-}
-
 test.describe( 'apps A1–A10', () => {
 	test.beforeEach( async ( { page } ) => {
 		await loginAsAdmin( page );
@@ -451,7 +399,7 @@ test.describe( 'apps A1–A10', () => {
 		await expect( page.getByText( '已绑定' ).first() ).toBeVisible();
 	} );
 
-	test( 'A9: 双层 iframe', async ( { page, context } ) => {
+	test( 'A9: 双层 iframe', async ( { context } ) => {
 		const entryUrl = fixtureEntryUrl();
 		await mockBound( context );
 		await mockApps( context, { entryUrl } );
