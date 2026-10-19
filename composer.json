@@ -1,0 +1,73 @@
+{
+	"name": "wenpai-org/wp-china-yes",
+	"description": "WordPress Optimized Plugin for Mainland China",
+	"type": "project",
+	"require": {
+		"php": ">=8.0"
+	},
+	"require-dev": {
+		"squizlabs/php_codesniffer": "^3",
+		"wp-coding-standards/wpcs": "^3",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1",
+		"phpstan/phpstan": "^2",
+		"szepeviktor/phpstan-wordpress": "^2",
+		"php-stubs/wordpress-stubs": "^6",
+		"phpunit/phpunit": "^9"
+	},
+	"license": "GPL-3.0-or-later",
+	"autoload": {
+		"psr-4": {
+			"WenPai\\ChinaYes\\": "src/"
+		}
+	},
+	"authors": [
+		{
+			"name": "耗子",
+			"email": "i@haozi.net"
+		}
+	],
+	"config": {
+		"optimize-autoloader": true,
+		"process-timeout": 600,
+		"platform": {
+			"php": "8.0.0"
+		},
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"lint:fix": "phpcbf",
+		"analyse": "phpstan analyse --memory-limit=1G",
+		"test:unit": [
+			"phpunit --testsuite smoke",
+			"phpunit --testsuite core",
+			"phpunit --testsuite config",
+			"phpunit --testsuite connectivity",
+			"phpunit --testsuite telemetry",
+			"phpunit --testsuite privacy",
+			"phpunit --testsuite diagnostics",
+			"phpunit --testsuite stats",
+			"phpunit --testsuite cli",
+			"phpunit --testsuite rest",
+			"phpunit --testsuite integrations",
+			"phpunit --testsuite migration",
+			"phpunit --testsuite site-binding",
+			"phpunit --testsuite apps",
+			"phpunit --testsuite entitlements",
+			"phpunit --testsuite admin",
+			"phpunit --testsuite providers"
+		],
+		"check": [
+			"@lint",
+			"@analyse",
+			"@test:unit"
+		]
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"WenPai\\ChinaYes\\Tests\\": "tests/"
+		}
+	}
+}

@@ -1,0 +1,5 @@
+{
+	"challenge_id": "ch_test_expired",
+	"challenge_token": "wpcy-test-challenge-token-EXPIRED",
+	"expires_at": "2020-01-01T00:00:00Z"
+}

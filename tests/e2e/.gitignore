@@ -1,0 +1,6 @@
+test-results/
+playwright-report/
+blob-report/
+.auth.json
+__screenshots__/*-actual.png
+__screenshots__/*-diff.png

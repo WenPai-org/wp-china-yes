@@ -1,0 +1,9 @@
+.idea
+vendor/
+node_modules/
+dist/
+build/
+.phpunit.result.cache
+.phpcs-cache
+.wp-env.override.json
+.plugin-check-pkg/

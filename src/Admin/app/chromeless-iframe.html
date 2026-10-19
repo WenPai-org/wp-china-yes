@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>WPCY chromeless iframe layout check</title>
+	<style>
+		html, body {
+			margin: 0;
+			height: 100%;
+			background: #f0f0f1;
+		}
+		iframe {
+			width: 100%;
+			height: 100%;
+			border: 0;
+		}
+	</style>
+</head>
+<body>
+	<iframe title="chromeless admin page" srcdoc="<!DOCTYPE html>
+<html lang='zh-CN'>
+<head>
+<meta charset='utf-8'>
+<style>
+:root {
+	--wp-admin--admin-bar--height: 0;
+	--wp-admin-theme-color: #02b930;
+	--wp-admin-theme-color-darker-10: #03d537;
+	--wpcy-status-success: #00a32a;
+}
+html, body { margin: 0; background: #f0f0f1; }
+.wpcy-admin-wrap { margin: 0; max-width: none; }
+.wpcy-page-body {
+	box-sizing: border-box;
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 24px;
+	width: 100%;
+}
+.wpcy-card-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.probe { height: 80px; background: #fff; border: 1px solid #dcdcde; flex: 1 1 280px; }
+#fail { color: #d63638; display: none; }
+#pass { color: #00a32a; }
+</style>
+</head>
+<body>
+<div class='wpcy-admin-wrap'>
+	<div id='wpcy-admin-root'>
+		<div class='wpcy-page-body'>
+			<div class='wpcy-card-row'>
+				<div class='probe'></div>
+				<div class='probe'></div>
+				<div class='probe'></div>
+			</div>
+			<p id='pass'>chromeless layout ok</p>
+			<p id='fail'>layout broke</p>
+		</div>
+	</div>
+</div>
+<script>
+(function () {
+	var body = document.querySelector('.wpcy-page-body');
+	var bar = getComputedStyle(document.documentElement).getPropertyValue('--wp-admin--admin-bar--height').trim();
+	var top = getComputedStyle(body).top;
+	var broken = bar !== '0' && bar !== '0px';
+	broken = broken || top === '32px' || top === '46px';
+	broken = broken || body.getBoundingClientRect().width > 1080 + 48;
+	document.getElementById('fail').style.display = broken ? 'block' : 'none';
+	document.getElementById('pass').style.display = broken ? 'none' : 'block';
+})();
+</script>
+</body>
+</html>"></iframe>
+</body>
+</html>

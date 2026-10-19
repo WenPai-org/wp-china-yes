@@ -1,0 +1,487 @@
+<?php
+/**
+ * REST namespace wpcy/v1. Later tasks hang extra routes on this module.
+ *
+ * @package WenPai\ChinaYes
+ * @since   4.0.0
+ */
+
+declare(strict_types=1);
+
+namespace WenPai\ChinaYes\Rest;
+
+use WenPai\ChinaYes\Admin\RecoveryPage;
+use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Core\Environment;
+use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Diagnostics\Checker;
+use WenPai\ChinaYes\Stats\Counters;
+use WenPai\ChinaYes\Stats\Events;
+use WP_REST_Request;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Registers settings, network-settings, diagnostics, residency, recovery, and binding.
+ */
+final class RestModule implements Module {
+
+	/**
+	 * REST namespace.
+	 *
+	 * @since 4.0.0
+	 */
+	public const NAMESPACE = 'wpcy/v1';
+
+	/**
+	 * Settings access.
+	 *
+	 * @var Repository
+	 */
+	private Repository $repository;
+
+	/**
+	 * Diagnostics probes.
+	 *
+	 * @var Checker
+	 */
+	private Checker $checker;
+
+	/**
+	 * Hidden recovery page. Null constructs the default.
+	 *
+	 * @var RecoveryPage|null
+	 */
+	private $recovery_page;
+
+	/**
+	 * Daily counters. Null constructs a default.
+	 *
+	 * @var Counters|null
+	 */
+	private $counters;
+
+	/**
+	 * Event log. Null constructs a default.
+	 *
+	 * @var Events|null
+	 */
+	private $events;
+
+	/**
+	 * Constructor. Does not register hooks.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param Repository        $repository    Settings access.
+	 * @param Checker|null      $checker       Probe runner.
+	 * @param RecoveryPage|null $recovery_page Hidden admin page.
+	 * @param Counters|null     $counters      Daily counters.
+	 * @param Events|null       $events        Event log.
+	 */
+	public function __construct( Repository $repository, $checker = null, $recovery_page = null, $counters = null, $events = null ) {
+		$this->repository    = $repository;
+		$this->recovery_page = $recovery_page instanceof RecoveryPage ? $recovery_page : null;
+		$this->counters      = $counters instanceof Counters ? $counters : null;
+		$this->events        = $events instanceof Events ? $events : null;
+		$this->checker       = $checker instanceof Checker
+			? $checker
+			: new Checker( null, null, null, $repository, null, $this->events() );
+	}
+
+	/**
+	 * Module id.
+	 *
+	 * @since 4.0.0
+	 */
+	public function id(): string {
+		return 'rest';
+	}
+
+	/**
+	 * Every scene: rest_api_init runs after plugins_loaded, before REST_REQUEST.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<string>
+	 */
+	public function contexts(): array {
+		return Environment::CONTEXTS;
+	}
+
+	/**
+	 * No module graph edges.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<string>
+	 */
+	public function dependencies(): array {
+		return array();
+	}
+
+	/**
+	 * Hook rest_api_init and the recovery page. Constructor does not register hooks.
+	 *
+	 * @since 4.0.0
+	 */
+	public function register(): void {
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_filter( 'rest_post_dispatch', array( $this, 'attach_request_id' ), 10, 3 );
+		$this->recovery_page()->register();
+	}
+
+	/**
+	 * Register this task's routes on wpcy/v1.
+	 *
+	 * @since 4.0.0
+	 */
+	public function register_routes(): void {
+		$writer         = new DocumentWriter( $this->repository );
+		$settings       = new SettingsController( $writer );
+		$network        = new NetworkSettingsController( $writer );
+		$diagnostics    = new DiagnosticsController( $this->checker );
+		$client_probe   = new ClientProbeController( $this->repository );
+		$profile        = new ProfileSuggestController();
+		$residency      = new ResidencyController();
+		$site_blocklist = new SiteBlocklistController( null, $this->repository );
+		$migration      = new MigrationReportController();
+		$recovery       = new RecoveryController( new RecoveryActions( $this->repository ) );
+		$binding        = new BindingController( $this->repository );
+		$stats          = new StatsController( $this->counters() );
+		$event_log      = new EventsController( $this->events() );
+		( new ProvidersController( null, $this->repository ) )->register_routes();
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/settings',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $settings, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $settings, 'update_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/network-settings',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $network, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_network_read' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $network, 'update_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_network_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/diagnostics',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $diagnostics, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/diagnostics/run',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $diagnostics, 'run' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/diagnostics/client-probe',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $client_probe, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $client_probe, 'update_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/profile/suggest',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $profile, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'locale'   => array(
+						'type'      => 'string',
+						'required'  => false,
+						'maxLength' => 64,
+					),
+					'timezone' => array(
+						'type'      => 'string',
+						'required'  => false,
+						'maxLength' => 64,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/ruleset',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_ruleset' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/protected',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_protected' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/test',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $residency, 'test_url' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/site-blocklist',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $site_blocklist, 'get_item' ),
+					'permission_callback' => array( SiteBlocklistController::class, 'permission_read' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $site_blocklist, 'update_item' ),
+					'permission_callback' => array( SiteBlocklistController::class, 'permission_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/residency/log',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $residency, 'get_log' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'page'     => array(
+						'type'    => 'integer',
+						'default' => 1,
+					),
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => ResidencyController::PER_PAGE_DEFAULT,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/migration/report',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $migration, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/recovery',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $recovery, 'update_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				'args'                => array(
+					'action' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $binding, 'get_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( $binding, 'delete_item' ),
+					'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding/start',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $binding, 'start' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/stats',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $stats, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'days' => array(
+						'type'     => 'integer',
+						'required' => false,
+						'default'  => 7,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/events',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $event_log, 'get_items' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+				'args'                => array(
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => EventsController::PER_PAGE_DEFAULT,
+					),
+					'type'     => array(
+						'type'     => 'string',
+						'required' => false,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/binding/challenge',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $binding, 'challenge' ),
+				'permission_callback' => array( BindingController::class, 'public_read' ),
+				'args'                => array(
+					'id' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Add X-WPCY-Request-Id on wpcy/v1 responses, including errors.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed           $response Response.
+	 * @param mixed           $server   Server.
+	 * @param WP_REST_Request $request  Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return mixed
+	 */
+	public function attach_request_id( $response, $server, WP_REST_Request $request ) {
+		unset( $server );
+		$route = (string) $request->get_route();
+		if ( 0 !== strpos( $route, '/' . self::NAMESPACE ) ) {
+			return $response;
+		}
+
+		if ( is_object( $response ) && method_exists( $response, 'header' ) ) {
+			$response->header( RestError::HEADER, RestError::request_id() );
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Hidden recovery page.
+	 *
+	 * @since 4.0.0
+	 */
+	public function recovery_page(): RecoveryPage {
+		if ( ! $this->recovery_page instanceof RecoveryPage ) {
+			$this->recovery_page = new RecoveryPage( new RecoveryActions( $this->repository ) );
+		}
+
+		return $this->recovery_page;
+	}
+
+	/**
+	 * Counters used by GET /stats.
+	 *
+	 * @since 4.0.0
+	 */
+	private function counters(): Counters {
+		if ( ! $this->counters instanceof Counters ) {
+			$this->counters = new Counters( $this->repository );
+		}
+
+		return $this->counters;
+	}
+
+	/**
+	 * Events used by GET /events.
+	 *
+	 * @since 4.0.0
+	 */
+	private function events(): Events {
+		if ( ! $this->events instanceof Events ) {
+			$this->events = new Events( $this->repository );
+		}
+
+		return $this->events;
+	}
+}

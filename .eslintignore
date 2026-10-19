@@ -1,0 +1,11 @@
+vendor
+node_modules
+build
+dist
+framework
+client
+Service
+assets
+tests
+docs
+*.min.js

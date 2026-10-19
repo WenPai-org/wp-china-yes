@@ -1,0 +1,54 @@
+## 开源 WordPress 中国网站加速器。
+
+文派叶子 🍃（WPCY.COM）是中国 WordPress 生态基础设施软件，犹如落叶新芽，生生不息。专为解决困扰了中国互联网数十年的特色问题而存在。此为文派开源（WenPai.org）的一部分。
+
+
+<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/wpcy-home-img.png"></a>
+
+## 简介
+文派叶子 🍃（WPCY.COM）是一款不可多得的 WordPress 系统底层优化和生态基础设施软件。文派（WordPress）中国本土化项目始于 2019 年，由 文派叶子🍃（WPCY） 插件开启，其前身为 WP-China-Yes。
+
+2023 年 4 月，文派科技完成对该项目的收购，并对其进行了全面的品牌重塑。
+
+
+## 功能
+
+- [x] 优化 WordPress 相关服务在中国大陆的访问速度
+- [x] 优化 WordPress 后台加载速度
+- [x] 移除后台无用请求与组件
+- [x] 替换 Gravatar 头像为 Cravatar [初认头像](https://cravatar.com/)
+- [x] 优化 谷歌字体 加载速度
+- [x] 优化 谷歌前端库 加载速度
+- [x] 优化 CDNJS 加载速度
+- [x] 优化 Jsdelivr 加载速度
+- [x] 集成 WPMirror 镜像更新源
+- [x] 集成 Windfonts 中文网页 Webfonts [文风字体](https://windfonts.com)
+- [x] 集成 adminCDN 前端公共库 [萌芽加速](https://admincdn.com)
+- [x] 启用 飞行模式 可屏蔽外部 API 请求
+- [x] 镜像不可用时自动回到原始上游
+- [x] 连接诊断与兼容性报告
+
+> 3.9.3 已移除把站点自身 `wp-content` 资源改写到共享公共端点的“前台加速”。
+
+
+## 安装
+
+同其他 WordPress 插件一样，**从 Release 页面下载最新版本的插件**（不要直接下载源码！！！），在后台插件管理页面上传并启用即可。
+
+当然，你也可以选择将插件手动上传到`wp-content/plugins`目录下，然后在后台启用。
+
+## 问题反馈
+
+对于 WordPress 相关的问题，可在 [文派支持论坛](https://wenpai.org/support) 提问寻求帮助。
+
+对于此插件自身问题，可在`Issues`页面提交问题反馈，注意[提问的智慧](https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/main/README-zh_CN.md)。
+
+交流QQ群：[1046115671](https://qm.qq.com/q/BATf8KsCje)
+
+## 赞助商
+
+<a href="#"><img height="auto" src="https://wpcy.com/wp-content/uploads/2024/12/20241221-122843@2x.png"></a>
+
+---
+
+**Copyright © 2026 · WPCY.COM , All Rights Reserved. 文派 （广州） 科技有限公司；**

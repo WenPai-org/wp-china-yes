@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - run: composer validate --strict
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer test:unit
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer lint
+      - run: composer analyse
+      - run: composer test:unit
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:js
+      - run: npm run format:check
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: build/
+
+  package:
+    runs-on: ubuntu-latest
+    needs: [php, quality, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y zip rsync
+      - run: npm ci && npm run build
+      - run: bash scripts/build-release.sh
+      - name: Verify release contents
+        run: |
+          set -euo pipefail
+          unzip -tq dist/wp-china-yes-*.zip
+          LIST="$(unzip -Z1 dist/wp-china-yes-*.zip)"
+          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/|AGENTS\.md|\.grok-context/)'; then
+            echo 'Release archive contains build-only files.' >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/build/.+\.js$'; then
+            echo 'Release archive missing build/ JavaScript.' >&2
+            exit 1
+          fi
+          if printf '%s\n' "$LIST" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
+            echo 'Release archive contains deleted 3.x paths.' >&2
+            exit 1
+          fi
+          test -f dist/wp-china-yes-*.zip.sha256
+          FILE_HASH="$(awk '{print $1}' dist/wp-china-yes-*.zip.sha256)"
+          SUM_HASH="$(sha256sum dist/wp-china-yes-*.zip | awk '{print $1}')"
+          if [ "$FILE_HASH" != "$SUM_HASH" ]; then
+            echo "SHA-256 mismatch: file=$FILE_HASH sum=$SUM_HASH" >&2
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wp-china-yes-release
+          path: |
+            dist/*.zip
+            dist/*.sha256
+
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      # Plugin Check 必须扫发布包而不是仓库检出（检出里有 .npmrc/.eslintrc.js 等开发文件，会被判 hidden_files）。
+      - name: Build release package for Plugin Check
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq zip rsync unzip
+          bash scripts/build-release.sh
+          rm -rf .plugin-check-pkg && mkdir -p .plugin-check-pkg
+          unzip -q dist/wp-china-yes-*.zip -d .plugin-check-pkg
+          printf '{ "plugins": [ "./.plugin-check-pkg/wp-china-yes" ] }\n' > .wp-env.override.json
+      - run: npx wp-env start
+      # --exclude-checks slugs from plugin-check Default_Check_Repository (same source as `wp plugin list-checks`).
+      # This plugin is not distributed via WordPress.org (wpcy.com / 云桥). Directory-policy checks:
+      # offloading_files — rewriting public libraries onto a China CDN is the product, not a violation.
+      # trademarks — "WordPress" / "WooCommerce" / "wp" appear in product copy, the plugin name, and the slug.
+      # plugin_readme — readme.txt is Chinese by product decision; .org English/format rules do not apply.
+      # file_type — missing_composer_json_file: the release zip omits composer.json by design; hidden_files: src/.gitkeep is dropped in build-release.sh; remaining file_type codes are .org packaging rules.
+      - name: Run Plugin Check
+        run: |
+          set -euo pipefail
+          npx wp-env run cli wp plugin install plugin-check --activate --force
+          npx wp-env run cli wp plugin activate wp-china-yes
+          npx wp-env run cli wp plugin check wp-china-yes \
+            --format=json \
+            --exclude-checks=offloading_files,trademarks,plugin_readme,file_type,plugin_updater \
+            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github \
+            | tee plugin-check.json
+          python3 - <<'PY'
+          import json, re, sys
+          raw = open("plugin-check.json", encoding="utf-8").read()
+          decoder = json.JSONDecoder()
+          payload = None
+          for match in re.finditer(r"[\[{]", raw):
+              try:
+                  payload, _ = decoder.raw_decode(raw[match.start():])
+              except json.JSONDecodeError:
+                  continue
+          if payload is None:
+              # With zero findings Plugin Check prints "Success: Checks complete. No errors found." and no JSON.
+              if "No errors found" in raw:
+                  print("Plugin Check: no findings")
+                  sys.exit(0)
+              sys.stderr.write("plugin-check produced no JSON\n")
+              sys.exit(1)
+
+          findings = []
+          finding_types = {"ERROR", "WARNING", "FATAL", "CRITICAL"}
+          count_keys = {
+              "errors", "warnings", "error_count", "warning_count",
+              "fatal", "fatals", "error", "warning",
+          }
+
+          def walk(node):
+              if isinstance(node, dict):
+                  kind = str(node.get("type") or node.get("level") or node.get("severity") or "").upper()
+                  if kind in finding_types and any(k in node for k in ("message", "code", "check", "text")):
+                      findings.append(node)
+                  for key, value in node.items():
+                      if key.lower() in count_keys and isinstance(value, int) and value > 0:
+                          findings.append({key: value})
+                      else:
+                          walk(value)
+              elif isinstance(node, list):
+                  for item in node:
+                      walk(item)
+
+          walk(payload)
+          if findings:
+              sys.stderr.write("Plugin Check failed with %d ERROR/WARNING-level issue(s)\n" % len(findings))
+              for item in findings[:50]:
+                  sys.stderr.write("%s\n" % json.dumps(item, ensure_ascii=False)[:500])
+              sys.exit(1)
+          print("Plugin Check: no ERROR/WARNING-level issues")
+          PY
+      - if: always()
+        run: npx wp-env stop
+
+  wordpress:
+    runs-on: ubuntu-latest
+    needs: php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npx wp-env start
+      - run: bash tests/wordpress-smoke.sh
+      - run: bash tests/integration-cli.sh
+      - run: bash tests/integration-recovery.sh
+      - run: bash tests/integration-windfonts.sh
+      - run: bash tests/integration-stats.sh
+      - run: bash tests/integration-providers.sh
+      - if: always()
+        run: npx wp-env stop
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install chromium --with-deps
+      - run: npx wp-env start
+      - name: Activate plugin
+        run: |
+          set -euo pipefail
+          npx wp-env run cli wp plugin activate wp-china-yes
+      - run: npm run test:e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:8888
+          WP_USERNAME: admin
+          WP_PASSWORD: password
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-playwright-output
+          path: |
+            tests/e2e/test-results/
+            tests/e2e/playwright-report/
+          if-no-files-found: ignore
+      - if: always()
+        run: npx wp-env stop

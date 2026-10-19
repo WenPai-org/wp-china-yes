@@ -1,0 +1,16 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - src/Admin/app
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        -
+            identifier: require.fileNotFound
+            path: src/Admin/AdminModule.php

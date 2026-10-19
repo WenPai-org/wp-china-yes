@@ -1,0 +1,69 @@
+{
+    "_comment": "ruleset_version 1 is a M0 placeholder; freeze as a ship integer (待定 M0). Omitted pending hosts: Jetpack Stats (A), Jetpack connection/module API (B), Woo.com helper (B), Freemius (B), EDD Software Licensing (B). api.wordpress.org is owned by Connectivity, not this table.",
+    "issued_at": "2026-09-03T00:00:00Z",
+    "ruleset_version": 1,
+    "tiers": {
+        "A": [
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "tracking.woocommerce.com",
+                "match": "exact",
+                "target": "https://updates.wenpai.net/ingest/woo-tracker"
+            },
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "pixel.wp.com",
+                "match": "exact",
+                "target": ""
+            },
+            {
+                "action": "reroute",
+                "enabled_when": "ingest_ready",
+                "host": "stats.wp.com",
+                "match": "exact",
+                "target": ""
+            }
+        ],
+        "B": [
+            {
+                "action": "record",
+                "data_class": "comments",
+                "host": "rest.akismet.com",
+                "match": "suffix"
+            }
+        ],
+        "C": [
+            {
+                "action": "ignore",
+                "host": "*"
+            }
+        ]
+    },
+    "protected_hosts": [
+        {
+            "host": "wenpai.net",
+            "match": "suffix"
+        },
+        {
+            "host": "wpcy.com",
+            "match": "suffix"
+        },
+        {
+            "host": "cravatar.cn",
+            "match": "suffix"
+        },
+        {
+            "host": "cravatar.com",
+            "match": "suffix"
+        },
+        {
+            "host": "admincdn.com",
+            "match": "suffix"
+        }
+    ],
+    "noise_block": [],
+    "kid": "wpcy-ruleset-2026",
+    "signature": "W27N6IHczQraZOGP6hPMLBu2JSFFPs8FFtupXZAJUjoYIXrLtX0yigWHRkhjc5IXgtoFqydgwkWAp0A6RBkJDA=="
+}

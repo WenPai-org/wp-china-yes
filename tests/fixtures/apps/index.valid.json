@@ -1,0 +1,86 @@
+{
+    "schema_version": 1,
+    "generated_at": "2026-09-03T12:00:00Z",
+    "apps": [
+        {
+            "schema_version": 1,
+            "id": "motusnap",
+            "name": {
+                "zh_CN": "墨图截图",
+                "en_US": "MotuSnap"
+            },
+            "description": {
+                "zh_CN": "站点截图",
+                "en_US": "Site screenshots"
+            },
+            "icon": "https://apps.wpcy.com/motusnap/icon.svg",
+            "entry_url": "https://apps.wpcy.com/motusnap/",
+            "version": "1.2.0",
+            "min_plugin_version": "4.0.0",
+            "tier": "limited-free",
+            "entitlement": "wpcy-leaf-motusnap-100",
+            "permissions": [
+                "site:read",
+                "data:read",
+                "data:write",
+                "data:delete",
+                "entitlement:read",
+                "go:open"
+            ],
+            "go_service": "motusnap",
+            "issued_at": "2026-09-03T12:00:00Z",
+            "signature": "C4MQc2WhjctKXuyPjMHlrA4IXNY/c5ZbUSSvS4dwX7NiuhWvd00lfEdCcQ08UKQliJGsbzc8tbWXHRSOelI9Aw=="
+        },
+        {
+            "schema_version": 1,
+            "id": "noteboard",
+            "name": {
+                "zh_CN": "便签",
+                "en_US": "NoteBoard"
+            },
+            "description": {
+                "zh_CN": "只读便签",
+                "en_US": "Read-only notes"
+            },
+            "icon": "https://apps.wpcy.com/noteboard/icon.svg",
+            "entry_url": "https://apps.wpcy.com/noteboard/",
+            "version": "1.0.0",
+            "min_plugin_version": "4.0.0",
+            "tier": "free",
+            "entitlement": null,
+            "permissions": [
+                "data:read"
+            ],
+            "go_service": "noteboard",
+            "issued_at": "2026-09-03T12:00:00Z",
+            "signature": "1GRSYk0JfrQmDTvIurCoY6UmiSxoeufTERonQClGOrq1BHgiMHfYi7gnXtypu+hEw+IyVxpnZlrjeDUI/ZrMBw=="
+        },
+        {
+            "schema_version": 1,
+            "id": "paidtool",
+            "name": {
+                "zh_CN": "付费工具",
+                "en_US": "Paid Tool"
+            },
+            "description": {
+                "zh_CN": "付费",
+                "en_US": "Paid"
+            },
+            "icon": "https://apps.wpcy.com/paidtool/icon.svg",
+            "entry_url": "https://apps.wpcy.com/paidtool/",
+            "version": "1.0.0",
+            "min_plugin_version": "4.0.0",
+            "tier": "paid",
+            "entitlement": "wpcy-leaf-paidtool",
+            "permissions": [
+                "entitlement:read",
+                "data:write",
+                "go:open"
+            ],
+            "go_service": "paidtool",
+            "issued_at": "2026-09-03T12:00:00Z",
+            "signature": "qUZMIgG8PYxZOLk87oSUBvf0jfbgJkTRaZgsdsB3JNpIvSoIRLunnbRFuL6sTXK+aPjbBfptr/GErZK0PhrTAg=="
+        }
+    ],
+    "signature": "19hxmz2I5mwrQIyMKf7kSzO/hwHLtVEcHo0ZykwxwAbuQ3Gs7hK41r5m5QmEtzRaVO1hy4mm9CEnZy2T9i3EAw=="
+}

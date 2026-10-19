@@ -1,0 +1,624 @@
+<?php
+/**
+ * REST permission, nonce, schema, and recovery action tests.
+ *
+ * @package WenPai\ChinaYes
+ * @since   4.0.0
+ */
+
+declare(strict_types=1);
+
+namespace WenPai\ChinaYes\Tests\Unit\Rest;
+
+use PHPUnit\Framework\TestCase;
+use WenPai\ChinaYes\Admin\RecoveryPage;
+use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Config\Schema;
+use WenPai\ChinaYes\Diagnostics\Checker;
+use WenPai\ChinaYes\Rest\DiagnosticsController;
+use WenPai\ChinaYes\Rest\DocumentWriter;
+use WenPai\ChinaYes\Rest\NetworkSettingsController;
+use WenPai\ChinaYes\Rest\Permissions;
+use WenPai\ChinaYes\Rest\RecoveryActions;
+use WenPai\ChinaYes\Rest\RecoveryController;
+use WenPai\ChinaYes\Rest\RestError;
+use WenPai\ChinaYes\Rest\RestModule;
+use WenPai\ChinaYes\Rest\SettingsController;
+use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+
+require_once __DIR__ . '/wp-rest-stubs.php';
+
+/**
+ * Acceptance: 403 without cap, 403 bad nonce, unknown keys dropped, unknown action.
+ */
+class PermissionsTest extends TestCase {
+
+	/**
+	 * Reset bags.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		RestStore::reset();
+		OptionStore::reset();
+		RestError::reset();
+		$_POST = array();
+	}
+
+	/**
+	 * Clear POST.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		$_POST = array();
+		parent::tearDown();
+	}
+
+	/**
+	 * GET /settings without manage_options is 403 wpcy_forbidden.
+	 */
+	public function test_get_settings_without_manage_options_is_forbidden() {
+		$request = new WP_REST_Request();
+		$result  = Permissions::manage_options_read( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_forbidden', $result->get_error_code() );
+		$data = $result->get_error_data();
+		$this->assertSame( 403, $data['status'] );
+		$this->assertArrayHasKey( 'request_id', $data );
+	}
+
+	/**
+	 * PUT /settings with a bad nonce is 403 even when the user can manage_options.
+	 */
+	public function test_put_settings_bad_nonce_is_forbidden() {
+		RestStore::$caps['manage_options'] = true;
+		$request                           = new WP_REST_Request();
+		$request->headers['x-wp-nonce']    = 'not-a-nonce';
+
+		$result = Permissions::manage_options_write( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_forbidden', $result->get_error_code() );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Missing nonce header is also 403.
+	 */
+	public function test_put_settings_missing_nonce_is_forbidden() {
+		RestStore::$caps['manage_options'] = true;
+		$result                            = Permissions::manage_options_write( new WP_REST_Request() );
+		$this->assertSame( 'wpcy_forbidden', $result->get_error_code() );
+	}
+
+	/**
+	 * Unknown keys on PUT are dropped; HTTP 200; the key is absent.
+	 */
+	public function test_put_settings_unknown_key_is_dropped_and_200() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'not_a_real_key' => 'drop-me',
+			'recovery_mode'  => true,
+		);
+
+		$response = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+		$this->assertArrayNotHasKey( 'not_a_real_key', $data );
+		$this->assertTrue( $data['recovery_mode'] );
+		$this->assertArrayHasKey( RestError::HEADER, $response->get_headers() );
+	}
+
+	/**
+	 * Type / enum failures are wpcy_invalid_schema 400, not a silent default.
+	 */
+	public function test_put_settings_invalid_type_is_schema_error() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array( 'recovery_mode' => 'yes' );
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * PUT v1 public_assets array is wpcy_invalid_schema.
+	 */
+	public function test_put_v1_public_assets_array_is_schema_error() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'connectivity' => array(
+				'public_assets' => array( 'google_fonts' ),
+			),
+		);
+		$result        = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+	}
+
+	/**
+	 * Frozen connect page PUTs a string avatar; both sides store that value.
+	 */
+	public function test_put_legacy_avatar_string_expands_both_sides() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'connectivity' => array(
+				'avatar' => 'off',
+			),
+		);
+		$response      = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$data = $response->get_data();
+		$this->assertSame( 'off', $data['connectivity']['avatar'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $data['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $data['connectivity'] );
+
+		$repo = new Repository();
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+		$stored = $repo->all();
+		$this->assertSame( 'off', $stored['connectivity']['avatar'] );
+	}
+
+	/**
+	 * Unknown avatar string is still wpcy_invalid_schema.
+	 */
+	public function test_put_invalid_avatar_string_is_schema_error() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'connectivity' => array(
+				'avatar' => 'gravatar',
+			),
+		);
+		$result        = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+	}
+
+	/**
+	 * PUT a different profile applies D2 defaults then merges the rest of the body.
+	 */
+	public function test_put_profile_switch_applies_defaults() {
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'profile'      => 'crossborder',
+			'modules'      => array( 'notice_control' => false ),
+			'connectivity' => array(
+				'wordpress_org' => 'auto',
+			),
+		);
+		$response      = $controller->update_item( $request );
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$data = $response->get_data();
+		$this->assertSame( 'crossborder', $data['profile'] );
+		$this->assertSame( 'auto', $data['connectivity']['wordpress_org'] );
+		$this->assertSame( 'admin', $data['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
+		$this->assertSame( 'on', $data['connectivity']['heartbeat'] );
+		$this->assertSame( 'block', $data['connectivity']['dashboard_feeds'] );
+		$this->assertArrayNotHasKey( 'admin_assets', $data );
+		$this->assertFalse( $data['modules']['notice_control'] );
+	}
+
+	/**
+	 * Illegal recovery action is wpcy_recovery_unknown_action.
+	 */
+	public function test_unknown_recovery_action_is_bad_request() {
+		$controller      = new RecoveryController( new RecoveryActions( new Repository() ) );
+		$request         = new WP_REST_Request();
+		$request->params = array( 'action' => 'explode' );
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_recovery_unknown_action', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Action disable_rewrites turns rewrite switches off and sets recovery_mode.
+	 */
+	public function test_disable_rewrites_sets_recovery_and_turns_rewrites_off() {
+		$repo    = new Repository();
+		$actions = new RecoveryActions( $repo );
+		$this->assertTrue( $actions->apply( RecoveryActions::DISABLE_REWRITES ) );
+
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
+		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+	}
+
+	/**
+	 * Action disable_modules turns optional modules off and sets recovery_mode.
+	 */
+	public function test_disable_modules_sets_recovery_and_turns_modules_off() {
+		$repo = new Repository();
+		$repo->set( 'modules.notice_control', true );
+		$repo->set( 'modules.windfonts', true );
+		$actions = new RecoveryActions( $repo );
+		$this->assertTrue( $actions->apply( RecoveryActions::DISABLE_MODULES ) );
+
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+		$this->assertFalse( $repo->get( 'modules.notice_control' ) );
+		$this->assertFalse( $repo->get( 'modules.windfonts' ) );
+	}
+
+	/**
+	 * Action exit only clears the flag. Previously disabled rewrites stay off.
+	 */
+	public function test_exit_clears_flag_and_does_not_restore_rewrites() {
+		$repo    = new Repository();
+		$actions = new RecoveryActions( $repo );
+		$actions->apply( RecoveryActions::DISABLE_REWRITES );
+		$actions->apply( RecoveryActions::EXIT );
+
+		$this->assertFalse( $repo->get( 'recovery_mode' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
+		$this->assertSame( array(), $repo->get( 'connectivity.public_assets.items' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.avatar' ) );
+	}
+
+	/**
+	 * GET /settings returns the full object and a request-id header.
+	 */
+	public function test_get_settings_returns_full_object() {
+		$controller = $this->settings_controller();
+		$response   = $controller->get_item( new WP_REST_Request() );
+		$data       = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertFalse( $data['recovery_mode'] );
+		$this->assertArrayHasKey( 'connectivity', $data );
+		$this->assertSame( 'cravatar_cn', $data['connectivity']['avatar'] );
+		$this->assertArrayNotHasKey( 'avatar_admin', $data['connectivity'] );
+		$this->assertArrayNotHasKey( 'avatar_frontend', $data['connectivity'] );
+		$this->assertArrayNotHasKey( 'credential', $data );
+	}
+
+	/**
+	 * GET /diagnostics wraps Checker latest() as { targets }.
+	 */
+	public function test_get_diagnostics_returns_targets_envelope() {
+		RestStore::$transients[ Checker::STORE_KEY ] = array(
+			array(
+				'target'     => 'cdnjs.admincdn.com',
+				'result'     => Checker::RESULT_OK,
+				'latency_ms' => 12,
+				'checked_at' => '2026-09-04T12:00:00Z',
+				'suggestion' => null,
+			),
+		);
+
+		$controller = new DiagnosticsController( new Checker() );
+		$response   = $controller->get_item( new WP_REST_Request() );
+		$data       = $response->get_data();
+
+		$this->assertArrayHasKey( 'targets', $data );
+		$this->assertCount( 1, $data['targets'] );
+		$this->assertSame( 'cdnjs.admincdn.com', $data['targets'][0]['target'] );
+		$this->assertSame( Checker::RESULT_OK, $data['targets'][0]['result'] );
+		$this->assertNull( $data['targets'][0]['suggestion'] );
+	}
+
+	/**
+	 * Single-site PUT /settings with an L0 host is 400; option is unchanged.
+	 */
+	public function test_put_settings_protected_host_is_400_and_option_unchanged() {
+		$before        = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(
+						array(
+							'host'  => 'api.wenpai.net',
+							'match' => 'exact',
+						),
+					),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_blocklist_protected_host', $result->get_error_code() );
+		$this->assertSame( '文派服务不可拦截', $result->get_error_message() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * Multisite PUT /network-settings with an L0 host is 400; network option is unchanged.
+	 */
+	public function test_put_network_settings_protected_host_is_400_and_option_unchanged() {
+		OptionStore::$multisite = true;
+		$before                 = isset( OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] )
+			? OptionStore::$site_options[ Schema::NETWORK_SETTINGS ]
+			: null;
+		$controller             = new NetworkSettingsController( new DocumentWriter( new Repository() ) );
+		$request                = new WP_REST_Request();
+		$request->json          = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(
+						array(
+							'host'  => 'api.wenpai.net',
+							'match' => 'exact',
+						),
+					),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_blocklist_protected_host', $result->get_error_code() );
+		$this->assertSame( '文派服务不可拦截', $result->get_error_message() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] )
+			? OptionStore::$site_options[ Schema::NETWORK_SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * Subsite PUT /settings with modules.site_blocklist is 400 wpcy_settings_network_only_key.
+	 */
+	public function test_subsite_put_settings_site_blocklist_is_network_only_key() {
+		OptionStore::$multisite = true;
+		$before                 = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$controller             = $this->settings_controller();
+		$request                = new WP_REST_Request();
+		$request->json          = array(
+			'modules' => array(
+				'site_blocklist' => array(
+					'enabled' => true,
+					'hosts'   => array(),
+				),
+			),
+		);
+
+		$result = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_settings_network_only_key', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$after = isset( OptionStore::$options[ Schema::SETTINGS ] )
+			? OptionStore::$options[ Schema::SETTINGS ]
+			: null;
+		$this->assertSame( $before, $after );
+	}
+
+	/**
+	 * RestModule registers the five routes on wpcy/v1.
+	 */
+	public function test_rest_module_registers_namespace_routes() {
+		$module = new RestModule( new Repository() );
+		$module->register_routes();
+
+		$routes = array();
+		foreach ( RestStore::$routes as $row ) {
+			$this->assertSame( RestModule::NAMESPACE, $row['namespace'] );
+			$routes[] = $row['route'];
+		}
+
+		$this->assertContains( '/settings', $routes );
+		$this->assertContains( '/network-settings', $routes );
+		$this->assertContains( '/diagnostics', $routes );
+		$this->assertContains( '/diagnostics/run', $routes );
+		$this->assertContains( '/diagnostics/client-probe', $routes );
+		$this->assertContains( '/profile/suggest', $routes );
+		$this->assertContains( '/residency/ruleset', $routes );
+		$this->assertContains( '/residency/log', $routes );
+		$this->assertNotContains( '/element-hide', $routes );
+		$this->assertContains( '/migration/report', $routes );
+		$this->assertContains( '/recovery', $routes );
+		$this->assertContains( '/binding', $routes );
+		$this->assertContains( '/binding/start', $routes );
+		$this->assertContains( '/binding/challenge', $routes );
+		$this->assertContains( '/stats', $routes );
+		$this->assertContains( '/events', $routes );
+		$this->assertContains( '/providers', $routes );
+		$this->assertNotContains( '/apps', $routes );
+	}
+
+	/**
+	 * Recovery page is registered under options.php (hidden) with the wpcy-recovery slug.
+	 */
+	public function test_recovery_page_is_hidden_submenu() {
+		$page = new RecoveryPage( new RecoveryActions( new Repository() ) );
+		$page->add_page();
+
+		$this->assertCount( 1, RestStore::$pages );
+		$this->assertSame( 'options.php', RestStore::$pages[0]['parent'] );
+		$this->assertSame( RecoveryPage::SLUG, RestStore::$pages[0]['menu_slug'] );
+		$this->assertSame( 'manage_options', RestStore::$pages[0]['capability'] );
+		$this->assertSame( '文派叶子 · 恢复模式', RestStore::$pages[0]['page_title'] );
+	}
+
+	/**
+	 * Rendered markup matches admin-ui-spec §3.5 and has no 遥测 copy.
+	 */
+	public function test_recovery_page_render_has_spec_copy_and_no_js() {
+		RestStore::$caps['manage_options'] = true;
+		$page                              = new RecoveryPage( new RecoveryActions( new Repository() ) );
+
+		ob_start();
+		$page->render();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'wpcy-rec', $html );
+		$this->assertStringContainsString( '文派叶子 · 恢复模式', $html );
+		$this->assertStringContainsString( '此页不依赖 JavaScript，后台样式错乱或站点无法访问时也能打开', $html );
+		$this->assertStringContainsString( '只关闭 URL 改写', $html );
+		$this->assertStringContainsString( '关闭 URL 改写', $html );
+		$this->assertStringContainsString( '停用全部模块', $html );
+		$this->assertStringContainsString( 'btn-secondary', $html );
+		$this->assertStringContainsString( 'btn-danger', $html );
+		$this->assertStringContainsString( '返回概览', $html );
+		$this->assertStringNotContainsString( '遥测', $html );
+		$this->assertStringNotContainsString( '匿名数据', $html );
+		$this->assertStringNotContainsString( '<script', $html );
+	}
+
+	/**
+	 * In recovery mode the green notice and exit button appear.
+	 */
+	public function test_recovery_page_shows_notice_when_enabled() {
+		RestStore::$caps['manage_options'] = true;
+		$repo                              = new Repository();
+		$repo->set( 'recovery_mode', true );
+		$page = new RecoveryPage( new RecoveryActions( $repo ) );
+
+		ob_start();
+		$page->render();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'class="notice"', $html );
+		$this->assertStringContainsString( '恢复模式已开启', $html );
+		$this->assertStringContainsString( '退出恢复模式', $html );
+		$this->assertStringContainsString( '返回概览', $html );
+		$this->assertStringNotContainsString( '先试第一项', $html );
+		$this->assertStringNotContainsString( '只关闭 URL 改写', $html );
+		$this->assertStringNotContainsString( '停用全部模块', $html );
+	}
+
+	/**
+	 * Form POST disable_rewrites sets recovery_mode without REST.
+	 */
+	public function test_recovery_page_form_post_sets_recovery_mode() {
+		RestStore::$caps['manage_options'] = true;
+		RestStore::$admin_nonces[ 'wpcy_recovery_' . RecoveryActions::DISABLE_REWRITES ] = 'token';
+		$_POST[ RecoveryPage::ACTION_FIELD ] = RecoveryActions::DISABLE_REWRITES;
+		$_POST[ RecoveryPage::NONCE_FIELD ]  = 'token';
+
+		$repo = new Repository();
+		$page = new RecoveryPage( new RecoveryActions( $repo ) );
+		try {
+			$page->handle_post();
+			$this->fail( 'handle_post must redirect after a successful POST' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-recovery', $e->getMessage() );
+		}
+
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+		$this->assertSame( 'off', $repo->get( 'connectivity.wordpress_org' ) );
+		$this->assertSame( 'http://example.test/wp-admin/admin.php?page=wpcy-recovery', RestStore::$redirect );
+	}
+
+	/**
+	 * Multisite recovery_mode stays on site overrides; network option is unchanged.
+	 */
+	public function test_recovery_actions_multisite_does_not_write_network_option() {
+		\WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 2,
+				'allow_site_override' => true,
+				'recovery_mode'       => false,
+			)
+		);
+
+		$repo    = new Repository();
+		$actions = new RecoveryActions( $repo );
+		$this->assertTrue( $actions->apply( RecoveryActions::DISABLE_REWRITES ) );
+		$this->assertTrue( $repo->get( 'recovery_mode' ) );
+
+		$network   = get_site_option( Schema::NETWORK_SETTINGS );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $network );
+		$this->assertIsArray( $overrides );
+		$this->assertFalse( $network['recovery_mode'] );
+		$this->assertTrue( $overrides['recovery_mode'] );
+	}
+
+	/**
+	 * Multisite PUT /settings writes overrides / network, not wpcy_settings.
+	 */
+	public function test_multisite_put_settings_writes_overrides_not_wpcy_settings() {
+		\WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$multisite = true;
+		update_site_option(
+			Schema::NETWORK_SETTINGS,
+			array(
+				'schema_version'      => 2,
+				'allow_site_override' => true,
+				'profile'             => 'domestic',
+			)
+		);
+
+		$controller    = $this->settings_controller();
+		$request       = new WP_REST_Request();
+		$request->json = array( 'profile' => 'crossborder' );
+		$response      = $controller->update_item( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, \WenPai\ChinaYes\Tests\Unit\Config\OptionStore::$options );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertSame( 'crossborder', $overrides['profile'] );
+		$this->assertSame( 'admin', $overrides['connectivity']['public_assets']['scope'] );
+		$this->assertSame( 'crossborder', $response->get_data()['profile'] );
+		$this->assertSame( 'cravatar_cn', $response->get_data()['connectivity']['avatar'] );
+	}
+
+	/**
+	 * Network write without manage_network_options is forbidden.
+	 */
+	public function test_network_settings_requires_manage_network_options() {
+		RestStore::$caps['manage_options'] = true;
+		$result                            = Permissions::manage_network_read( new WP_REST_Request() );
+		$this->assertSame( 'wpcy_forbidden', $result->get_error_code() );
+	}
+
+	/**
+	 * Filter rest_post_dispatch attaches the request-id header on wpcy/v1.
+	 */
+	public function test_attach_request_id_on_namespace_responses() {
+		$module         = new RestModule( new Repository() );
+		$request        = new WP_REST_Request();
+		$request->route = '/wpcy/v1/settings';
+		$response       = new WP_REST_Response( array(), 200 );
+		$out            = $module->attach_request_id( $response, null, $request );
+
+		$this->assertArrayHasKey( RestError::HEADER, $out->get_headers() );
+	}
+
+	/**
+	 * Settings controller for PUT/GET tests.
+	 *
+	 * @return SettingsController
+	 */
+	private function settings_controller(): SettingsController {
+		return new SettingsController( new DocumentWriter( new Repository() ) );
+	}
+}
