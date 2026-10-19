@@ -567,24 +567,42 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 	);
 }
 
-function AppsSection( { appsUnavailable, bound, apps, onOpen } ) {
+export function AppsSection( { appsUnavailable, bound, apps, onOpen } ) {
 	// SV-01 first: an unbound site sees the binding prompt, not SV-10. The
 	// index source stays unconfigured until the server is ready, so checking
 	// the directory first would hide SV-01 on every fresh install.
-	if ( bound && appsUnavailable ) {
-		return (
-			<article className="card">
-				<Empty
-					icon="grid"
-					why={ __( '小工具目录暂时不可用。', 'wp-china-yes' ) }
-					when={ __(
-						'连接恢复后会自动显示；已打开过的小工具数据仍保存在本站',
-						'wp-china-yes'
-					) }
-				/>
-			</article>
-		);
-	}
+	// SV-10 appears only after the directory request fails, so it must land in
+	// a live region that already exists (admin-ui-spec §8). The role="status"
+	// container is mounted with the page and starts empty; on failure only the
+	// SV-10 copy is swapped into it, rendered once. SV-01 gets no role.
+	const unavailable = bound && appsUnavailable;
+	return (
+		<>
+			<div role="status" data-testid="wpcy-apps-status">
+				{ unavailable ? (
+					<article className="card">
+						<Empty
+							icon="grid"
+							why={ __(
+								'小工具目录暂时不可用。',
+								'wp-china-yes'
+							) }
+							when={ __(
+								'连接恢复后会自动显示；已打开过的小工具数据仍保存在本站',
+								'wp-china-yes'
+							) }
+						/>
+					</article>
+				) : null }
+			</div>
+			{ unavailable ? null : (
+				<AppsBody bound={ bound } apps={ apps } onOpen={ onOpen } />
+			) }
+		</>
+	);
+}
+
+function AppsBody( { bound, apps, onOpen } ) {
 	if ( ! bound ) {
 		return (
 			<article className="card">

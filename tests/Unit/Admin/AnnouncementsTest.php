@@ -12,7 +12,9 @@ namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
+use WenPai\ChinaYes\Config\Defaults;
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Rest\AnnouncementsController;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
@@ -177,7 +179,7 @@ class AnnouncementsTest extends TestCase {
 		for ( $i = 0; $i < 100; $i++ ) {
 			$ids[] = 'old-' . $i;
 		}
-		$repo->set( 'announcements.dismissed', $ids );
+		update_option( AnnouncementsModule::DISMISSED_OPTION, $ids );
 
 		$module = new AnnouncementsModule( $repo );
 		$module->dismiss( 'new-id' );
@@ -187,6 +189,70 @@ class AnnouncementsTest extends TestCase {
 		$this->assertNotContains( 'old-0', $stored );
 		$this->assertContains( 'new-id', $stored );
 		$this->assertSame( 'new-id', $stored[99] );
+	}
+
+	/**
+	 * Dismiss writes the per-site option only, never the settings document.
+	 */
+	public function test_dismiss_writes_site_option_not_settings() {
+		$module = new AnnouncementsModule( new Repository() );
+		$module->dismiss( 'wptea-12345' );
+
+		$this->assertSame( 'wpcy_announcements_dismissed', AnnouncementsModule::DISMISSED_OPTION );
+		$this->assertSame( array( 'wptea-12345' ), get_option( AnnouncementsModule::DISMISSED_OPTION ) );
+		$this->assertArrayNotHasKey( Schema::SETTINGS, OptionStore::$options );
+		$this->assertSame( array(), OptionStore::$site_options );
+	}
+
+	/**
+	 * Reads come from the per-site option; a legacy announcements root still
+	 * stored in the settings document is ignored.
+	 */
+	public function test_dismissed_ids_read_site_option() {
+		$repo = new Repository();
+		update_option( Schema::SETTINGS, array( 'announcements' => array( 'dismissed' => array( 'from-settings' ) ) ) );
+		update_option( AnnouncementsModule::DISMISSED_OPTION, array( 'from-option', '', 7 ) );
+
+		$this->assertSame( array( 'from-option' ), ( new AnnouncementsModule( $repo ) )->dismissed_ids() );
+	}
+
+	/**
+	 * Multisite: a subsite dismiss leaves the network document untouched and
+	 * is visible on that site only.
+	 */
+	public function test_multisite_dismiss_is_per_site_and_skips_network_settings() {
+		OptionStore::$multisite                                = true;
+		OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] = Defaults::network_settings();
+		$network_before                                        = OptionStore::$site_options;
+		AdminStore::$sites                                     = array( 1, 2 );
+
+		switch_to_blog( 2 );
+		$module = $this->module_from_fixture();
+		$module->refresh();
+		$module->dismiss( 'wptea-12345' );
+		$this->assertSame( array( 'wptea-12345' ), $module->dismissed_ids() );
+		$this->assertNotContains( 'wptea-12345', $this->visible_ids( $module ) );
+		restore_current_blog();
+
+		$this->assertSame( $network_before, OptionStore::$site_options );
+		$this->assertSame( array( 'wptea-12345' ), AdminStore::options_of( 2 )[ AnnouncementsModule::DISMISSED_OPTION ] );
+		$this->assertArrayNotHasKey( AnnouncementsModule::DISMISSED_OPTION, AdminStore::options_of( 1 ) );
+		$this->assertSame( array(), $module->dismissed_ids() );
+		$this->assertContains( 'wptea-12345', $this->visible_ids( $module ) );
+	}
+
+	/**
+	 * Ids in the visible payload.
+	 *
+	 * @param AnnouncementsModule $module Module.
+	 * @return list<string>
+	 */
+	private function visible_ids( AnnouncementsModule $module ): array {
+		$ids = array();
+		foreach ( $module->payload()['items'] as $item ) {
+			$ids[] = $item['id'];
+		}
+		return $ids;
 	}
 
 	/**
