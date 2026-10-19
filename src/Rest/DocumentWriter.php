@@ -27,6 +27,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class DocumentWriter {
 
 	/**
+	 * Roots that belong to the network document on multisite.
+	 *
+	 * @since 4.0.0
+	 */
+	private const NETWORK_ROOTS = array( 'data_residency', 'apps', 'diagnostics' );
+
+	/**
+	 * Subsite override roots refused while allow_site_override is false.
+	 *
+	 * @since 4.0.0
+	 */
+	private const LOCKABLE_ROOTS = array( 'profile', 'connectivity', 'modules', 'admin' );
+
+	/**
 	 * Settings access.
 	 *
 	 * @var Repository
@@ -97,7 +111,20 @@ final class DocumentWriter {
 
 	/**
 	 * PUT /settings. Single-site writes wpcy_settings; multisite writes
-	 * site overrides and/or the network option, never an unread wpcy_settings.
+	 * site overrides only, never the network option or an unread wpcy_settings.
+	 *
+	 * On multisite the whole request is refused (nothing saved) when it changes a
+	 * network-scope root (403 wpcy_settings_network_scope) or, while the network
+	 * has allow_site_override=false, a locked root (409 wpcy_settings_locked).
+	 * data.fields lists the refused roots. Roots sent with their current value
+	 * are ignored, so a full-document PUT that only edits other keys succeeds.
+	 *
+	 * These checks apply to every site of a multisite network, including the
+	 * main site, and to every caller, including super admins. That is on
+	 * purpose: network-scope roots may only be changed through PUT
+	 * /network-settings (manage_network_options, NetworkSettingsController),
+	 * so PUT /settings is never a network write path, whoever calls it and on
+	 * whichever site. Super admins use /network-settings for those roots.
 	 *
 	 * @since 4.0.0
 	 *
@@ -113,15 +140,6 @@ final class DocumentWriter {
 			return RestError::invalid_schema();
 		}
 
-		// modules.site_blocklist is network-only (决定 A2): subsites may not store it in overrides either.
-		if ( $this->has_site_blocklist( $incoming ) ) {
-			return RestError::make(
-				'wpcy_settings_network_only_key',
-				__( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' ),
-				400
-			);
-		}
-
 		$incoming  = $this->normalize_incoming_avatar( $incoming );
 		$before    = $this->stored_site_document();
 		$current   = $this->apply_profile_switch( $before, $incoming );
@@ -132,6 +150,52 @@ final class DocumentWriter {
 			return RestError::invalid_schema();
 		}
 
+		// Only changed values count: a full-document PUT echoes untouched locked / network roots.
+		$baseline = ( new Validator() )->sanitize( $before, Schema::NETWORK_SETTINGS );
+
+		// modules.site_blocklist is network-only (决定 A2): subsites may not store it in overrides either.
+		if ( $this->has_site_blocklist( $incoming ) ) {
+			if ( ( $clean['modules']['site_blocklist'] ?? null ) !== ( $baseline['modules']['site_blocklist'] ?? null ) ) {
+				return RestError::make(
+					'wpcy_settings_network_only_key',
+					__( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' ),
+					400
+				);
+			}
+			unset( $incoming['modules']['site_blocklist'] );
+		}
+
+		$network_fields = $this->changed_roots( self::NETWORK_ROOTS, $incoming, $clean, $baseline );
+		if ( array() !== $network_fields ) {
+			return RestError::make(
+				'wpcy_settings_network_scope',
+				__( '这些设置只能在网络后台修改。', 'wp-china-yes' ),
+				403,
+				array( 'fields' => $network_fields )
+			);
+		}
+
+		$locked        = false === $this->repository->get( 'allow_site_override', true );
+		$locked_fields = $locked ? $this->changed_roots( self::LOCKABLE_ROOTS, $incoming, $clean, $baseline ) : array();
+		if ( array() !== $locked_fields ) {
+			return RestError::make(
+				'wpcy_settings_locked',
+				__( '网络管理员已锁定这些设置，子站点暂时无法修改。', 'wp-china-yes' ),
+				409,
+				array( 'fields' => $locked_fields )
+			);
+		}
+
+		// Unchanged network / locked roots are ignored, never stored as overrides.
+		foreach ( $locked ? array_merge( self::NETWORK_ROOTS, self::LOCKABLE_ROOTS ) : self::NETWORK_ROOTS as $key ) {
+			unset( $incoming[ $key ] );
+		}
+		unset( $clean['modules']['site_blocklist'] );
+
+		// Only $override_roots are copied into site overrides. allow_site_override is
+		// neither a network root (no 403) nor an override root, so a subsite
+		// body that carries it is silently dropped: the lock is changed only
+		// through /network-settings. Intentional; keep it that way.
 		$from            = isset( $before['profile'] ) && is_string( $before['profile'] ) ? $before['profile'] : 'domestic';
 		$profile_switch  = isset( $incoming['profile'] ) && is_string( $incoming['profile'] )
 			&& in_array( $incoming['profile'], Schema::PROFILES, true )
@@ -155,19 +219,6 @@ final class DocumentWriter {
 		}
 		if ( $overrides_touch ) {
 			$this->repository->save_option( Schema::SITE_OVERRIDES, $overrides );
-		}
-
-		$network_roots = array( 'diagnostics', 'data_residency', 'announcements', 'apps' );
-		$network       = $this->network_document();
-		$network_touch = false;
-		foreach ( $network_roots as $key ) {
-			if ( array_key_exists( $key, $incoming ) ) {
-				$network[ $key ] = $clean[ $key ];
-				$network_touch   = true;
-			}
-		}
-		if ( $network_touch ) {
-			$this->repository->save_option( Schema::NETWORK_SETTINGS, $network );
 		}
 
 		return true;
@@ -359,6 +410,31 @@ final class DocumentWriter {
 		}
 
 		return Profile::apply_to( $current, $incoming['profile'] );
+	}
+
+	/**
+	 * Roots from $roots that the PUT body names with a value different from the effective one.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param array<int, string>   $roots    Candidate roots.
+	 * @param array<string, mixed> $incoming PUT body.
+	 * @param array<string, mixed> $clean    Sanitized merge.
+	 * @param array<string, mixed> $baseline Sanitized effective document before the PUT.
+	 * @return array<int, string>
+	 */
+	private function changed_roots( array $roots, array $incoming, array $clean, array $baseline ): array {
+		$changed = array();
+		foreach ( $roots as $key ) {
+			if ( ! array_key_exists( $key, $incoming ) ) {
+				continue;
+			}
+			if ( ( $clean[ $key ] ?? null ) !== ( $baseline[ $key ] ?? null ) ) {
+				$changed[] = $key;
+			}
+		}
+
+		return $changed;
 	}
 
 	/**

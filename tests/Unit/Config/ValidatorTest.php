@@ -74,7 +74,7 @@ class ValidatorTest extends TestCase {
 		$this->assertTrue( $out['modules']['noise_block']['enabled'] );
 		$this->assertTrue( $out['diagnostics']['scheduled_checks'] );
 		$this->assertSame( 1, $out['data_residency']['ruleset_version'] );
-		$this->assertSame( array(), $out['announcements']['dismissed'] );
+		$this->assertArrayNotHasKey( 'announcements', $out );
 		$this->assertSame( array(), $out['apps']['disabled'] );
 		$this->assertFalse( $out['recovery_mode'] );
 		foreach ( Schema::settings()['required'] as $key ) {
@@ -199,23 +199,50 @@ class ValidatorTest extends TestCase {
 	}
 
 	/**
-	 * Announcements dismissed is string[] max 100, item length 1–128.
+	 * The announcements root is gone (dismissals live in the per-site option
+	 * wpcy_announcements_dismissed). A legacy document that still has it is
+	 * not rejected: the root is dropped with only an unknown-key warning, in
+	 * site, network and site-override documents.
+	 *
+	 * @dataProvider announcements_options
+	 *
+	 * @param string $option Option name.
 	 */
-	public function test_announcements_dismissed() {
-		$ids = array();
-		for ( $i = 0; $i < 101; $i++ ) {
-			$ids[] = 'id-' . $i;
-		}
+	public function test_legacy_announcements_root_is_dropped( string $option ) {
+		$this->assertArrayNotHasKey( 'announcements', Schema::definition( $option )['properties'] );
+		$this->assertNotContains( 'announcements', Schema::definition( $option )['required'] ?? array() );
+
 		$out = $this->validator->sanitize(
 			array(
-				'announcements' => array(
-					'dismissed' => array_merge( $ids, array( '', str_repeat( 'a', 129 ) ) ),
+				'schema_version' => Schema::VERSION,
+				'announcements'  => array( 'dismissed' => array( 'a1', 'a2' ) ),
+			),
+			$option
+		);
+
+		$this->assertArrayNotHasKey( 'announcements', $out );
+		$this->assertSame(
+			array(
+				array(
+					'path'    => 'announcements',
+					'message' => 'Unknown key discarded.',
 				),
 			),
-			Schema::SETTINGS
+			$this->validator->warnings()
 		);
-		$this->assertCount( 100, $out['announcements']['dismissed'] );
-		$this->assertNotContains( '', $out['announcements']['dismissed'] );
+	}
+
+	/**
+	 * Options whose schema used to carry announcements.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function announcements_options(): array {
+		return array(
+			'site'      => array( Schema::SETTINGS ),
+			'network'   => array( Schema::NETWORK_SETTINGS ),
+			'overrides' => array( Schema::SITE_OVERRIDES ),
+		);
 	}
 
 	/**
