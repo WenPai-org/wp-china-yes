@@ -9,10 +9,15 @@ import { __ } from '@wordpress/i18n';
 
 export const STORE_NAME = 'wpcy/admin';
 
+export const SETTINGS_PATH = '/wpcy/v1/settings';
+export const NETWORK_SETTINGS_PATH = '/wpcy/v1/network-settings';
+
 const DEFAULT_DIAGNOSTICS = { targets: [] };
 
 const DEFAULT_STATE = {
 	settings: {},
+	serverSettings: {},
+	settingsError: false,
 	capabilities: {},
 	diagnostics: DEFAULT_DIAGNOSTICS,
 	diagnosticsError: false,
@@ -68,11 +73,55 @@ export function connectDraftFromSettings( settings ) {
 	};
 }
 
+/**
+ * Plain-object check for merge.
+ *
+ * @param {*} value Value.
+ * @return {boolean} Whether value is a non-array object.
+ */
+function isPlainObject( value ) {
+	return (
+		value !== null && typeof value === 'object' && ! Array.isArray( value )
+	);
+}
+
+/**
+ * Deep-merge a partial PUT body onto a settings document (arrays replace).
+ *
+ * @param {Object} base  Current document.
+ * @param {Object} patch Partial body.
+ * @return {Object} Merged copy.
+ */
+export function mergeSettings( base, patch ) {
+	const out = { ...( isPlainObject( base ) ? base : {} ) };
+	Object.keys( patch || {} ).forEach( ( key ) => {
+		const next = patch[ key ];
+		out[ key ] =
+			isPlainObject( next ) && isPlainObject( out[ key ] )
+				? mergeSettings( out[ key ], next )
+				: next;
+	} );
+	return out;
+}
+
+/**
+ * CO-01 save failure copy: schema 400 vs everything else.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {string} Glossary sentence.
+ */
+export function saveErrorMessage( error ) {
+	if ( error?.code === 'wpcy_invalid_schema' ) {
+		return __( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' );
+	}
+	return __( '暂时无法保存设置，请稍后重试。', 'wp-china-yes' );
+}
+
 function failFlag( type ) {
 	return { type, error: true };
 }
 
-const actions = {
+export const actions = {
 	hydrate( bootstrap ) {
 		return { type: 'HYDRATE', bootstrap: bootstrap || {} };
 	},
@@ -182,38 +231,54 @@ const actions = {
 			return failFlag( 'SET_CLIENT_PROBE_ERROR' );
 		}
 	},
-	*patchSettings( data ) {
+	/**
+	 * CO-01 instant save: optimistic merge, PUT the partial object, roll back
+	 * to the last server document on failure. Never sets the page notice
+	 * (no Snackbar); the caller shows the card-level alert.
+	 *
+	 * @param {Object} data           Partial settings body.
+	 * @param {Object} [options]      Options.
+	 * @param {string} [options.path] REST path (site or network settings).
+	 */
+	*patchSettings( data, options = {} ) {
+		const path = options.path || SETTINGS_PATH;
 		yield { type: 'SET_SAVING', saving: true };
+		yield { type: 'PATCH_SETTINGS', data };
 		try {
 			const settings = yield {
 				type: 'API_FETCH',
 				request: {
-					path: '/wpcy/v1/settings',
+					path,
 					method: 'PUT',
 					data,
 				},
 			};
 			yield { type: 'SET_SETTINGS', settings };
 			yield { type: 'SET_SAVING', saving: false };
-			return { type: 'SET_NOTICE', notice: null };
+			return { type: 'SAVE_RESULT', ok: true, error: null };
 		} catch ( error ) {
+			yield { type: 'ROLLBACK_SETTINGS' };
 			yield { type: 'SET_SAVING', saving: false };
 			return {
-				type: 'SET_NOTICE',
-				notice: {
-					status: 'error',
-					message:
-						error?.code === 'wpcy_invalid_schema'
-							? __(
-									'暂时无法保存设置，请检查填写内容后重试。',
-									'wp-china-yes'
-							  )
-							: __(
-									'暂时无法保存设置，请稍后重试。',
-									'wp-china-yes'
-							  ),
+				type: 'SAVE_RESULT',
+				ok: false,
+				error: {
+					code: error?.code || '',
+					message: saveErrorMessage( error ),
 				},
 			};
+		}
+	},
+	*fetchNetworkSettings() {
+		try {
+			const settings = yield {
+				type: 'API_FETCH',
+				request: { path: NETWORK_SETTINGS_PATH },
+			};
+			return { type: 'SET_SETTINGS', settings };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_SETTINGS_ERROR' );
 		}
 	},
 	*saveSettings( draft ) {
@@ -325,13 +390,14 @@ const controls = {
 	},
 };
 
-function reducer( state = DEFAULT_STATE, action ) {
+export function reducer( state = DEFAULT_STATE, action ) {
 	switch ( action.type ) {
 		case 'HYDRATE': {
 			const settings = action.bootstrap.settings || {};
 			return {
 				...state,
 				settings,
+				serverSettings: settings,
 				capabilities: action.bootstrap.capabilities || {},
 				links: action.bootstrap.links || {},
 				providers: action.bootstrap.providers || {},
@@ -344,7 +410,21 @@ function reducer( state = DEFAULT_STATE, action ) {
 			return {
 				...state,
 				settings: action.settings || {},
+				serverSettings: action.settings || {},
+				settingsError: false,
 				draft: connectDraftFromSettings( action.settings || {} ),
+			};
+		case 'SET_SETTINGS_ERROR':
+			return { ...state, settingsError: true };
+		case 'PATCH_SETTINGS':
+			return {
+				...state,
+				settings: mergeSettings( state.settings, action.data ),
+			};
+		case 'ROLLBACK_SETTINGS':
+			return {
+				...state,
+				settings: state.serverSettings || {},
 			};
 		case 'SET_DRAFT':
 			return {
@@ -433,6 +513,9 @@ function reducer( state = DEFAULT_STATE, action ) {
 const selectors = {
 	getSettings( state ) {
 		return state.settings;
+	},
+	getSettingsError( state ) {
+		return state.settingsError;
 	},
 	getCapabilities( state ) {
 		return state.capabilities;

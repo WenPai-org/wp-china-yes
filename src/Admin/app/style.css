@@ -2521,3 +2521,70 @@ button.app {
 	height: 44px;
 	margin-top: 18px;
 }
+
+/* --- M-UI-2: settings states (CO-01 / CO-06 / CO-11) and wizard binding (WZ-03) --- */
+.notice.bad {
+	background: var(--wpcy-bad-soft);
+	color: #8a2424;
+	align-items: center;
+}
+
+.notice.bad svg {
+	color: var(--wpcy-bad);
+}
+
+.card-alert {
+	margin: 0 0 14px;
+}
+
+.choice.is-disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.wpcy-locked-pill {
+	margin-left: auto;
+}
+
+.wpcy-wizard-entry {
+	margin: 12px 0 0;
+	color: var(--wpcy-ink-3);
+	font-size: 12px;
+}
+
+.wpcy-chk-gap {
+	margin-top: 12px;
+}
+
+.simple-row .r .notice {
+	max-width: 360px;
+}
+
+.wpcy-modal-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- WP Modal class. */
+.components-modal__frame.wpcy-switch-modal {
+	width: 480px;
+	max-width: calc(100% - 32px);
+	border-radius: 12px;
+	box-shadow: none;
+	border: 1px solid #e5e5e5;
+}
+
+.wpcy-switch-modal p {
+	margin: 0 0 12px;
+	color: var(--wpcy-ink-2);
+}
+
+.wizard .wizard-alert {
+	margin-top: 16px;
+}
+
+.wpcy-step-wrap {
+	display: contents;
+}

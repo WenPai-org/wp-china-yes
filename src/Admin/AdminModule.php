@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 use WenPai\ChinaYes\Diagnostics\RouteGroups;
+use WenPai\ChinaYes\Migration\Runner;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -39,6 +40,20 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public const HANDLE = 'wpcy-admin';
+
+	/**
+	 * Site option set once the first-run redirect to the wizard has happened.
+	 *
+	 * @since 4.0.0
+	 */
+	public const ONBOARDING_REDIRECTED = 'wpcy_onboarding_redirected';
+
+	/**
+	 * Network-admin settings slug (same React page, network context).
+	 *
+	 * @since 4.0.0
+	 */
+	public const NETWORK_SLUG = 'wpcy-connect';
 
 	/**
 	 * Pages served by the React app (not the PHP recovery page).
@@ -110,6 +125,8 @@ final class AdminModule implements Module {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'add_pages' ) );
+		add_action( 'network_admin_menu', array( $this, 'add_network_pages' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_onboarding' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
 	}
@@ -182,11 +199,98 @@ final class AdminModule implements Module {
 	}
 
 	/**
+	 * Network admin: 文派叶子 → settings only (CO-06 network view).
+	 *
+	 * Reads and writes wpcy_network_settings through /network-settings.
+	 *
+	 * @since 4.0.0
+	 */
+	public function add_network_pages(): void {
+		add_menu_page(
+			__( '设置', 'wp-china-yes' ),
+			__( '文派叶子', 'wp-china-yes' ),
+			'manage_network_options',
+			self::NETWORK_SLUG,
+			array( $this, 'render' ),
+			$this->menu_icon(),
+			80
+		);
+	}
+
+	/**
+	 * First visit to any leaf page without a confirmed scene and without a
+	 * 3.x migration report: send the admin to the wizard once (spec §2).
+	 *
+	 * Not on multisite (subsites follow the network, L-7 ⑤), not in network
+	 * admin, not for the wizard or recovery pages themselves.
+	 *
+	 * @since 4.0.0
+	 */
+	public function maybe_redirect_onboarding(): void {
+		$target = $this->onboarding_redirect_target();
+		if ( '' === $target ) {
+			return;
+		}
+
+		update_option( self::ONBOARDING_REDIRECTED, '1', false );
+		wp_safe_redirect( $target );
+		exit;
+	}
+
+	/**
+	 * Wizard URL when the first-run redirect applies, else empty string.
+	 *
+	 * @since 4.0.0
+	 */
+	public function onboarding_redirect_target(): string {
+		if ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) {
+			return '';
+		}
+		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
+			return '';
+		}
+		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
+			return '';
+		}
+		if ( ! $this->is_app_screen() ) {
+			return '';
+		}
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page slug.
+		if ( 'wpcy-onboarding' === $page ) {
+			return '';
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return '';
+		}
+		if ( '' !== (string) get_option( self::ONBOARDING_REDIRECTED, '' ) ) {
+			return '';
+		}
+		$confirmed = $this->repository->get( 'profile_confirmed_at' );
+		if ( is_string( $confirmed ) && '' !== $confirmed ) {
+			return '';
+		}
+		$report = get_option( Runner::REPORT_OPTION, array() );
+		if ( is_array( $report ) && array() !== $report ) {
+			return '';
+		}
+
+		return admin_url( 'admin.php?page=wpcy-onboarding' );
+	}
+
+	/**
 	 * Mount point. Title lives in the React Page header.
 	 *
 	 * @since 4.0.0
 	 */
 	public function render(): void {
+		if ( $this->in_network_admin() ) {
+			if ( ! current_user_can( 'manage_network_options' ) ) {
+				wp_die( esc_html__( '暂时无法打开该页面，请确认你有管理权限。', 'wp-china-yes' ), 403 );
+			}
+			echo '<div class="wrap wpcy-admin-wrap"><div id="wpcy-admin-root"></div></div>';
+			return;
+		}
+
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( '暂时无法打开该页面，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 		}
@@ -308,6 +412,8 @@ final class AdminModule implements Module {
 			'capabilities'  => array(
 				'manage_options'         => current_user_can( 'manage_options' ),
 				'manage_network_options' => current_user_can( 'manage_network_options' ),
+				'network_admin'          => $this->in_network_admin(),
+				'network_locked'         => $this->network_locked(),
 			),
 			'settings'      => $this->repository->all(),
 			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
@@ -315,6 +421,35 @@ final class AdminModule implements Module {
 			'links'         => self::links(),
 			'providers'     => self::providers(),
 		);
+	}
+
+	/**
+	 * Whether this request is the network admin screen.
+	 *
+	 * @since 4.0.0
+	 */
+	private function in_network_admin(): bool {
+		return function_exists( 'is_network_admin' ) && is_network_admin();
+	}
+
+	/**
+	 * CO-06 subsite read-only: multisite, site screen, the user cannot manage
+	 * network options, and the network has not opened allow_site_override.
+	 *
+	 * @since 4.0.0
+	 */
+	public function network_locked(): bool {
+		if ( ! function_exists( 'is_multisite' ) || ! is_multisite() ) {
+			return false;
+		}
+		if ( $this->in_network_admin() ) {
+			return false;
+		}
+		if ( current_user_can( 'manage_network_options' ) ) {
+			return false;
+		}
+
+		return true !== $this->repository->get( 'allow_site_override' );
 	}
 
 	/**
