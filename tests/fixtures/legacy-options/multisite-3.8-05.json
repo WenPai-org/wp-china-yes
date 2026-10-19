@@ -1,0 +1,30 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.8",
+		"scope": "network",
+		"note": "Synthetic 3.8 network option: admincdn as empty string, empty Windfonts list, telemetry keys present."
+	},
+	"wp_china_yes": {
+		"store": "off",
+		"admincdn": "",
+		"cravatar": "cn",
+		"windfonts": "off",
+		"windfonts_list": [],
+		"adblock": "off",
+		"adblock_rule": [],
+		"notice_block": "off",
+		"notice_control": [],
+		"plane": "on",
+		"plane_rule": [
+			{
+				"name": "示例规则",
+				"domain": "api.example.org\nupdates.example.com",
+				"enable": true
+			}
+		],
+		"monitor": true,
+		"telemetry": "off",
+		"telemetry_site_url": "https://network.example.com"
+	}
+}

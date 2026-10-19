@@ -5,7 +5,8 @@
  *   BASE_URL=http://127.0.0.1:8891
  *   WP_USERNAME / WP_PASSWORD
  *   WPCY_E2E_SSH_HOST=wenpai
- *   WPCY_E2E_WP='/home/parallels/.studio/bin/studio wp --path /home/parallels/Studio/wpcy-40'
+ *   WPCY_E2E_WP='"$HOME/.studio/bin/studio" wp --path "$HOME/Studio/wpcy-40"'
+ *   (required whenever WPCY_E2E_SSH_HOST is set; expanded by the remote shell)
  *
  * CI: wp-env at http://localhost:8888.
  */
@@ -33,11 +34,15 @@ function shQuote( value ) {
  */
 function wpCli( args ) {
 	const sshHost = process.env.WPCY_E2E_SSH_HOST;
+	const remoteWp = process.env.WPCY_E2E_WP;
+	if ( sshHost && ! remoteWp ) {
+		throw new Error(
+			`WPCY_E2E_SSH_HOST=${ sshHost } requires WPCY_E2E_WP, the WP-CLI command to run on that host ` +
+				`(e.g. WPCY_E2E_WP='"$HOME/.studio/bin/studio" wp --path "$HOME/Studio/wpcy-40"').`
+		);
+	}
 	try {
 		if ( sshHost ) {
-			const remoteWp =
-				process.env.WPCY_E2E_WP ||
-				'/home/parallels/.studio/bin/studio wp --path /home/parallels/Studio/wpcy-40';
 			const remote = `${ remoteWp } ${ args.map( shQuote ).join( ' ' ) }`;
 			return execFileSync( 'ssh', [ '-o', 'BatchMode=yes', sshHost, remote ], {
 				encoding: 'utf8',

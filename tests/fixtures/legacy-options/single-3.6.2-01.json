@@ -1,0 +1,35 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.6.2",
+		"scope": "single",
+		"note": "Synthetic 3.6.2 single site: store off, 3.x admincdn=[admin], Windfonts and notice blocking off."
+	},
+	"wp_china_yes": {
+		"store": "off",
+		"admincdn": [
+			"admin"
+		],
+		"cravatar": "cn",
+		"windfonts": "off",
+		"adblock": "off",
+		"adblock_rule": [
+			{
+				"name": "示例规则",
+				"selector": ".example-dashboard-notice",
+				"enable": true
+			}
+		],
+		"plane": "off",
+		"plane_rule": [
+			{
+				"name": "示例规则",
+				"domain": "api.example.org\nupdates.example.com",
+				"enable": true
+			}
+		],
+		"monitor": true,
+		"hide": false,
+		"custom_name": "文派叶子"
+	}
+}

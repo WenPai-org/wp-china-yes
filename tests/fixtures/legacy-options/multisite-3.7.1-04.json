@@ -1,0 +1,28 @@
+{
+	"_fixture": {
+		"synthetic": true,
+		"version": "3.7.1",
+		"scope": "network",
+		"note": "Synthetic 3.7.1 network option: store off, admincdn=[admin], hide keys set."
+	},
+	"wp_china_yes": {
+		"store": "off",
+		"admincdn": [
+			"admin"
+		],
+		"cravatar": "cn",
+		"windfonts": "off",
+		"adblock": "off",
+		"adblock_rule": [],
+		"plane": "off",
+		"plane_rule": [],
+		"monitor": false,
+		"hide": true,
+		"hide_option": "1",
+		"hide_menu": true,
+		"hide_menu_confirm": [
+			"yes"
+		],
+		"custom_name": "示例网络"
+	}
+}
