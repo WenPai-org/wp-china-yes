@@ -389,11 +389,59 @@ test.describe( 'apps A1–A10', () => {
 	} );
 
 	test( 'A8: 索引不可达', async ( { page } ) => {
+		// admin-ui-spec §8「异步状态的读屏播报」: SV-10 appears only after /apps
+		// answers, so it must be announced. A persistent role="status"
+		// container has to be in the DOM from first render and the text is
+		// swapped into it. Mounting the role="status" node together with the
+		// text does NOT count (NVDA / VoiceOver often stay silent), even if a
+		// plain closest() check would pass. So this test holds /apps back,
+		// asserts the container already exists while loading, tags it, and
+		// then requires the SV-10 text to land inside that same tagged node.
+		// (§8 also allows speak() instead; if the product picks that route,
+		// this test has to be rewritten, not relaxed.)
 		await mockBound( page );
 		await mockApps( page, { apps: [], indexStatus: 'unreachable' } );
+		let releaseApps;
+		const appsGate = new Promise( ( resolve ) => {
+			releaseApps = resolve;
+		} );
+		let appsRequested;
+		const appsSeen = new Promise( ( resolve ) => {
+			appsRequested = resolve;
+		} );
+		// Registered after mockApps, so it runs first and defers to it.
+		await restRoute(
+			page,
+			( path ) => path === '/wpcy/v1/apps',
+			async ( route ) => {
+				appsRequested();
+				await appsGate;
+				await route.fallback();
+			}
+		);
 		await openAdminPage( page, 'wpcy-services' );
+		await appsSeen;
 
 		const sv10 = page.getByText( '小工具目录暂时不可用。', { exact: true } );
+		const appsSection = page.locator(
+			'section[aria-labelledby="wpcy-apps-heading"]'
+		);
+		await expect(
+			page.getByRole( 'heading', { name: '本站已绑定' } )
+		).toBeVisible();
+		await expect( sv10 ).toHaveCount( 0 );
+		// While /apps is still pending, the persistent status container must
+		// already be mounted in the 小工具 section.
+		const pendingStatus = appsSection.locator( '[role="status"]' );
+		await expect(
+			pendingStatus,
+			'A persistent role="status" container must exist in the 小工具 section before the SV-10 text appears (admin-ui-spec §8)'
+		).toHaveCount( 1 );
+		await pendingStatus.evaluate( ( node ) => {
+			node.setAttribute( 'data-wpcy-qa-persistent', '1' );
+		} );
+		releaseApps();
+
 		await expect( sv10 ).toBeVisible();
 		// Rendered exactly once (no duplicate notice elsewhere on the page).
 		await expect( sv10 ).toHaveCount( 1 );
@@ -416,6 +464,15 @@ test.describe( 'apps A1–A10', () => {
 		if ( liveRegion && liveRegion.ariaLive !== null ) {
 			expect( liveRegion.ariaLive ).not.toBe( 'off' );
 		}
+		// Same node as before the response: the text was swapped in, the
+		// container was not re-mounted together with it.
+		const inPersistent = await sv10.evaluate( ( node ) =>
+			Boolean( node.closest( '[data-wpcy-qa-persistent="1"]' ) )
+		);
+		expect(
+			inPersistent,
+			'SV-10 text must be inside the role="status" container that existed before /apps answered'
+		).toBe( true );
 	} );
 
 	test( 'SV-01 优先：未绑定且索引不可达时显示 SV-01，绑定后才显示 SV-10', async ( {
@@ -467,6 +524,44 @@ test.describe( 'apps A1–A10', () => {
 			page.getByText( '小工具目录暂时不可用。', { exact: true } )
 		).toBeVisible();
 		await expect( page.getByTestId( 'wpcy-apps-empty' ) ).toHaveCount( 0 );
+	} );
+
+	test( 'SV-01 静态空态：小工具空态不在 role="status" / aria-live 区域内', async ( {
+		page,
+	} ) => {
+		// admin-ui-spec §8 + SV-01: static empty states present on first
+		// render must NOT carry role="status" (or sit in a live region), so
+		// the screen reader is not interrupted on page load. Reverse check
+		// for the A8 fix: making ui/Empty.js announce must stay opt-in.
+		await mockApps( page, { apps: [], indexStatus: 'unreachable' } );
+		await openAdminPage( page, 'wpcy-services' );
+
+		const empty = page.getByTestId( 'wpcy-apps-empty' );
+		await expect( empty ).toBeVisible();
+		await expect(
+			page.getByText( '绑定本站后，这里会出现可用的小工具。' )
+		).toBeVisible();
+		await expect( page.getByText( '小工具目录暂时不可用' ) ).toHaveCount( 0 );
+		const live = await empty.evaluate( ( node ) => {
+			const self = node.matches( '[role="status"], [aria-live]' )
+				? node
+				: null;
+			const host =
+				self || node.closest( '[role="status"], [aria-live]' );
+			const inner = node.querySelector( '[role="status"], [aria-live]' );
+			const hit = host || inner;
+			return hit
+				? {
+						tag: hit.tagName,
+						role: hit.getAttribute( 'role' ),
+						ariaLive: hit.getAttribute( 'aria-live' ),
+				  }
+				: null;
+		} );
+		expect(
+			live,
+			'SV-01 static 小工具 empty state must not be inside (or contain) role="status" / aria-live'
+		).toBeNull();
 	} );
 
 	test( 'A9: 双层 iframe', async ( { context } ) => {
