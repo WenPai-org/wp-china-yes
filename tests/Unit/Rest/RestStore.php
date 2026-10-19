@@ -140,21 +140,21 @@ final class RestStore {
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$caps         = array();
-		self::$nonces       = array();
-		self::$admin_nonces = array();
-		self::$routes       = array();
-		self::$pages        = array();
-		self::$menus        = array();
-		self::$scripts      = array();
-		self::$inline       = array();
-		self::$hooks        = array();
-		self::$die          = null;
-		self::$die_status   = 0;
-		self::$die_throws   = false;
-		self::$transients   = array();
-		self::$redirect     = null;
-		self::$user_meta    = array();
+		self::$caps          = array();
+		self::$nonces        = array();
+		self::$admin_nonces  = array();
+		self::$routes        = array();
+		self::$pages         = array();
+		self::$menus         = array();
+		self::$scripts       = array();
+		self::$inline        = array();
+		self::$hooks         = array();
+		self::$die           = null;
+		self::$die_status    = 0;
+		self::$die_throws    = false;
+		self::$transients    = array();
+		self::$redirect      = null;
+		self::$user_meta     = array();
 		self::$actions       = array();
 		self::$network_admin = false;
 	}
