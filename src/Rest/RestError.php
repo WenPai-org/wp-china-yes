@@ -123,18 +123,22 @@ final class RestError {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param string $code    Error code, wpcy_ prefix.
-	 * @param string $message Human-readable message.
-	 * @param int    $status  HTTP status.
+	 * @param string               $code    Error code, wpcy_ prefix.
+	 * @param string               $message Human-readable message.
+	 * @param int                  $status  HTTP status.
+	 * @param array<string, mixed> $extra   Extra data keys (status and request_id win).
 	 * @return WP_Error
 	 */
-	public static function make( string $code, string $message, int $status ): WP_Error {
+	public static function make( string $code, string $message, int $status, array $extra = array() ): WP_Error {
 		return new WP_Error(
 			$code,
 			$message,
-			array(
-				'status'     => $status,
-				'request_id' => self::request_id(),
+			array_merge(
+				$extra,
+				array(
+					'status'     => $status,
+					'request_id' => self::request_id(),
+				)
 			)
 		);
 	}
