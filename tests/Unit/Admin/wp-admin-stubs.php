@@ -444,6 +444,48 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_sites' ) ) {
+	/**
+	 * Blog ids from AdminStore::$sites (fields => ids).
+	 *
+	 * @param array<string, mixed> $args Args.
+	 * @return list<int>
+	 */
+	function get_sites( $args = array() ) {
+		unset( $args );
+		return AdminStore::$sites;
+	}
+}
+
+if ( ! function_exists( 'switch_to_blog' ) ) {
+	/**
+	 * Switch the per-blog site option bag.
+	 *
+	 * @param int $blog_id Blog id.
+	 * @return true
+	 */
+	function switch_to_blog( $blog_id ) {
+		AdminStore::$blog_stack[] = AdminStore::$blog_id;
+		AdminStore::use_blog( (int) $blog_id );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'restore_current_blog' ) ) {
+	/**
+	 * Back to the blog before the last switch_to_blog().
+	 *
+	 * @return bool
+	 */
+	function restore_current_blog() {
+		if ( array() === AdminStore::$blog_stack ) {
+			return false;
+		}
+		AdminStore::use_blog( (int) array_pop( AdminStore::$blog_stack ) );
+		return true;
+	}
+}
+
 if ( ! function_exists( 'is_admin' ) ) {
 	/**
 	 * Admin request flag from AdminStore.

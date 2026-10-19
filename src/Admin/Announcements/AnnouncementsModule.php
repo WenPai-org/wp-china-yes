@@ -76,11 +76,16 @@ final class AnnouncementsModule implements Module {
 	public const SOURCES = array( 'wptea', 'one' );
 
 	/**
-	 * Settings access.
+	 * Per-site option holding dismissed announcement ids.
 	 *
-	 * @var Repository
+	 * A plain site option (get_option / update_option), never the network
+	 * settings document: on multisite a subsite admin dismissing an
+	 * announcement must not change the network settings document.
+	 * uninstall.php deletes it on every site.
+	 *
+	 * @since 4.0.0
 	 */
-	private Repository $config;
+	public const DISMISSED_OPTION = 'wpcy_announcements_dismissed';
 
 	/**
 	 * Local path or https://wpcy.com/… URL. Empty means do not fetch.
@@ -108,13 +113,13 @@ final class AnnouncementsModule implements Module {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Repository            $config   Settings access.
+	 * @param Repository            $config   Settings access. Unused since dismissed ids moved to DISMISSED_OPTION; kept for the call sites.
 	 * @param string                $source   Fixture path or wpcy.com HTTPS URL. Empty disables fetch.
 	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
 	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
 	 */
 	public function __construct( Repository $config, string $source = '', $fetcher = null, $verifier = null ) {
-		$this->config   = $config;
+		unset( $config );
 		$this->source   = $source;
 		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
 		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
@@ -232,7 +237,10 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Append $id to announcements.dismissed (max 100, drop oldest). Unknown ids accepted.
+	 * Append $id to this site's dismissed ids (max 100, drop oldest). Unknown ids accepted.
+	 *
+	 * Stored in the DISMISSED_OPTION site option, not in settings, so a
+	 * subsite never writes the network settings document.
 	 *
 	 * @since 4.0.0
 	 *
@@ -254,7 +262,9 @@ final class AnnouncementsModule implements Module {
 			$dismissed = array_slice( $dismissed, -1 * self::DISMISSED_CAP );
 		}
 
-		$this->config->set( 'announcements.dismissed', $dismissed );
+		if ( function_exists( 'update_option' ) ) {
+			update_option( self::DISMISSED_OPTION, $dismissed, false );
+		}
 	}
 
 	/**
@@ -308,14 +318,14 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Dismissed ids from settings.
+	 * Dismissed ids of the current site (DISMISSED_OPTION).
 	 *
 	 * @since 4.0.0
 	 *
 	 * @return list<string>
 	 */
 	public function dismissed_ids(): array {
-		$raw = $this->config->get( 'announcements.dismissed', array() );
+		$raw = function_exists( 'get_option' ) ? get_option( self::DISMISSED_OPTION, array() ) : array();
 		if ( ! is_array( $raw ) ) {
 			return array();
 		}
