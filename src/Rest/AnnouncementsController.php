@@ -93,7 +93,7 @@ final class AnnouncementsController {
 	}
 
 	/**
-	 * Append id to announcements.dismissed. Unknown ids still 200.
+	 * Append id to the per-site wpcy_announcements_dismissed option. Unknown ids still 200.
 	 *
 	 * @since 4.0.0
 	 *

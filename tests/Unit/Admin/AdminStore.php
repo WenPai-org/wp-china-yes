@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
+use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
+
 /**
  * Process-wide transients, routes, and hooks. Reset in each test setUp().
  */
@@ -65,17 +67,75 @@ final class AdminStore {
 	public static $http = array();
 
 	/**
+	 * Blog ids returned by get_sites().
+	 *
+	 * @var list<int>
+	 */
+	public static $sites = array( 1 );
+
+	/**
+	 * Current blog id (switch_to_blog()).
+	 *
+	 * @var int
+	 */
+	public static $blog_id = 1;
+
+	/**
+	 * Site options of blogs that are not current, by blog id.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public static $blog_options = array();
+
+	/**
+	 * Blog stack for restore_current_blog().
+	 *
+	 * @var list<int>
+	 */
+	public static $blog_stack = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$transients = array();
-		self::$routes     = array();
-		self::$hooks      = array();
-		self::$caps       = array();
-		self::$nonces     = array();
-		self::$is_admin   = true;
-		self::$http       = array();
+		self::$transients   = array();
+		self::$routes       = array();
+		self::$hooks        = array();
+		self::$caps         = array();
+		self::$nonces       = array();
+		self::$is_admin     = true;
+		self::$http         = array();
+		self::$sites        = array( 1 );
+		self::$blog_id      = 1;
+		self::$blog_options = array();
+		self::$blog_stack   = array();
+	}
+
+	/**
+	 * Make $blog_id current: park OptionStore::$options, load that blog's.
+	 *
+	 * @param int $blog_id Blog id.
+	 * @return void
+	 */
+	public static function use_blog( int $blog_id ): void {
+		self::$blog_options[ self::$blog_id ] = OptionStore::$options;
+		OptionStore::$options                 = self::$blog_options[ $blog_id ] ?? array();
+		unset( self::$blog_options[ $blog_id ] );
+		self::$blog_id = $blog_id;
+	}
+
+	/**
+	 * Site options of $blog_id, whether or not it is current.
+	 *
+	 * @param int $blog_id Blog id.
+	 * @return array<string, mixed>
+	 */
+	public static function options_of( int $blog_id ): array {
+		if ( $blog_id === self::$blog_id ) {
+			return OptionStore::$options;
+		}
+		return self::$blog_options[ $blog_id ] ?? array();
 	}
 }

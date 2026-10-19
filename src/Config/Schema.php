@@ -128,7 +128,6 @@ final class Schema {
 				'modules',
 				'diagnostics',
 				'data_residency',
-				'announcements',
 				'apps',
 				'recovery_mode',
 			),
@@ -336,23 +335,6 @@ final class Schema {
 						'type'    => 'integer',
 						'minimum' => 1,
 						'default' => 1,
-					),
-				),
-			),
-			'announcements'        => array(
-				'type'                 => 'object',
-				'additionalProperties' => false,
-				'required'             => array( 'dismissed' ),
-				'properties'           => array(
-					'dismissed' => array(
-						'type'     => 'array',
-						'items'    => array(
-							'type'      => 'string',
-							'minLength' => 1,
-							'maxLength' => 128,
-						),
-						'maxItems' => 100,
-						'default'  => array(),
 					),
 				),
 			),

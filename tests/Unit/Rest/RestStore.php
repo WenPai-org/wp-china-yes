@@ -121,6 +121,13 @@ final class RestStore {
 	public static $user_meta = array();
 
 	/**
+	 * Calls recorded by do_action(): hook name and args.
+	 *
+	 * @var array<int, array{tag: string, args: array<int, mixed>}>
+	 */
+	public static $actions = array();
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
@@ -141,5 +148,6 @@ final class RestStore {
 		self::$transients   = array();
 		self::$redirect     = null;
 		self::$user_meta    = array();
+		self::$actions      = array();
 	}
 }
