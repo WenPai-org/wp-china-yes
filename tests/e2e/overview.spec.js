@@ -122,13 +122,13 @@ async function mockOverview( page, overrides = {} ) {
 			}
 		},
 		async ( route ) => {
-			const raw = restPath( route.request().url() );
-			const path = raw.split( '?' )[ 0 ].replace( /\/+$/, '' );
 			const method = route.request().method().toUpperCase();
 			if ( method !== 'GET' ) {
 				await route.continue();
 				return;
 			}
+			const raw = restPath( route.request().url() );
+			const path = raw.split( '?' )[ 0 ].replace( /\/+$/, '' );
 			if ( path === '/wpcy/v1/diagnostics' ) {
 				await route.fulfill( {
 					status: status.diagnostics || 200,
@@ -215,8 +215,41 @@ test.describe( 'overview', () => {
 		await expect( page.getByText( '更新与安装包' ).first() ).toBeVisible();
 		await expect( page.getByText( '已接通' ).first() ).toBeVisible();
 		await expect( page.getByText( '运行诊断' ) ).toBeVisible();
-		await expect( page.locator( '.hero-a-n' ) ).toContainText( '4/5' );
+		// M-MOTU-1: MotuCloud stays 未启用 until a mirrored base is configured,
+		// and Windfonts needs binding, so a default domestic site is 3/5.
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/5' );
 		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
+	} );
+
+	test( '国内正常：MotuCloud 已配置时 4/5', async ( { page } ) => {
+		await mockOverview( page, {
+			settings: {
+				profile: 'domestic',
+				recovery_mode: false,
+				connectivity: {
+					icon_photos: {
+						enabled: 'on',
+						mirrored_base: 'https://motucloud.example',
+					},
+				},
+			},
+			bodies: {
+				diagnostics: {
+					targets: [
+						...OK_TARGETS,
+						{
+							target: 'motucloud',
+							result: 'ok',
+							latency_ms: 80,
+							checked_at: '2026-09-06T04:00:00Z',
+							suggestion: null,
+						},
+					],
+				},
+			},
+		} );
+		await openAdminPage( page, 'wpcy' );
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '4/5' );
 	} );
 
 	test( '跨境：下一步绑定本站，主按钮唯一', async ( { page } ) => {
@@ -305,7 +338,20 @@ test.describe( 'overview', () => {
 	} );
 
 	test( 'Hero 无折叠，锚点查看详情', async ( { page } ) => {
-		await mockOverview( page );
+		await mockOverview( page, {
+			bodies: {
+				events: {
+					events: [
+						{
+							id: 'ev-1',
+							at: '2026-09-06T03:58:00Z',
+							tone: 'ok',
+							title: '更新检查经 WenPai.org 镜像完成',
+						},
+					],
+				},
+			},
+		} );
 		await openAdminPage( page, 'wpcy' );
 		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
 		await expect( page.locator( '.hero-a-more' ) ).toContainText( '查看详情' );
@@ -337,13 +383,13 @@ test.describe( 'overview', () => {
 	test( '/diagnostics 500 Hero 不显示已接通', async ( { page } ) => {
 		await mockOverview( page, { status: { diagnostics: 500 } } );
 		await openAdminPage( page, 'wpcy' );
-		await expect(
-			page.getByText( '暂时无法读取线路状态，请刷新页面重试。' )
-		).toBeVisible();
-		await expect( page.locator( '.hero-svc .pill.ok' ) ).toHaveCount( 0 );
-		await expect( page.locator( '.hero-svc' ).getByText( '已接通' ) ).toHaveCount(
-			0
-		);
+		const failed = page.getByText( '暂时无法读取线路状态，请刷新页面重试。' );
+		await expect( failed ).toHaveCount( 2 );
+		await expect( failed.first() ).toBeVisible();
+		// .hero-svc (SvcStack) is no longer rendered since M-UI-1c; check the
+		// current Hero anchor instead so this cannot pass vacuously.
+		await expect( page.locator( '.hero-a-n' ) ).toHaveCount( 0 );
+		await expect( page.getByText( '核心服务已接通' ) ).toHaveCount( 0 );
 	} );
 
 	test( '混合站用 OV-10 混合标题', async ( { page } ) => {

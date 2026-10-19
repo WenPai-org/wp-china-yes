@@ -21,7 +21,7 @@ test.describe( 'chromeless', () => {
 		await expect( frame.locator( '#pass' ) ).toBeVisible();
 		await expect( frame.locator( '#fail' ) ).toBeHidden();
 		const bar = await frame.locator( 'html' ).evaluate( ( el ) =>
-			getComputedStyle( el )
+			window.getComputedStyle( el )
 				.getPropertyValue( '--wp-admin--admin-bar--height' )
 				.trim()
 		);
@@ -45,7 +45,7 @@ test.describe( 'chromeless', () => {
 			expect( box.width, slug ).toBeGreaterThan( 200 );
 			expect( box.width, slug ).toBeLessThanOrEqual( 1120 + 64 );
 			const top = await body.evaluate( ( el ) =>
-				getComputedStyle( el ).top
+				window.getComputedStyle( el ).top
 			);
 			expect( top === '32px' || top === '46px' ).toBe( false );
 		}
