@@ -39,5 +39,14 @@ npx wp-env run cli wp eval 'do_action( "admin_init" ); $saved = get_option( "wp_
 npx wp-env run cli wp eval 'update_option( "wp_china_yes", [ "store" => "off", "admincdn" => [], "admincdn_public" => [], "admincdn_files" => [], "admincdn_dev" => [], "cravatar" => "off", "webp_support" => true ] );'
 npx wp-env run cli wp eval '$metadata = apply_filters( "wp_generate_attachment_metadata", [] ); if ( [] !== $metadata ) { throw new Exception( "empty media metadata changed" ); }'
 
+# Framework assets (plugins.js/main.js) must only be enqueued on the WPCY
+# settings screens, single-site and multisite network admin, and plugins.js must
+# declare its jQuery dependency. Forcing them onto every admin page caused
+# "jQuery is not defined" on the plugins list. Screen ids are simulated: the
+# Setting filter and the framework only compare the id string. WP-CLI runs
+# outside is_admin(), so the Setting service (loaded only in admin by
+# Service/Base.php) is constructed here the same way the admin bootstrap does.
+npx wp-env run cli wp eval --user=admin 'require_once ABSPATH . "wp-admin/includes/class-wp-screen.php"; require_once ABSPATH . "wp-admin/includes/screen.php"; if ( false !== has_filter( "wp_china_yes_enqueue_assets", "__return_true" ) ) { throw new Exception( "framework assets forced by __return_true before Setting load" ); } new \WenPai\ChinaYes\Service\Setting(); if ( false !== has_filter( "wp_china_yes_enqueue_assets", "__return_true" ) ) { throw new Exception( "Setting forces framework assets with __return_true" ); } foreach ( [ "settings_page_wp-china-yes" => true, "settings_page_wp-china-yes-network" => true, "plugins" => false, "plugins-network" => false, "dashboard" => false ] as $id => $want ) { wp_dequeue_script( "wp_china_yes-plugins" ); wp_dequeue_script( "wp_china_yes" ); WP_CHINA_YES::$enqueue = false; set_current_screen( $id ); do_action( "admin_enqueue_scripts", $id ); $got = wp_script_is( "wp_china_yes-plugins", "enqueued" ); if ( $got !== $want ) { throw new Exception( "framework enqueue on $id: expected " . var_export( $want, true ) ); } } $registered = wp_scripts()->registered; if ( ! isset( $registered["wp_china_yes-plugins"] ) || ! in_array( "jquery", $registered["wp_china_yes-plugins"]->deps, true ) ) { throw new Exception( "plugins script missing jquery dep" ); }'
+
 npx wp-env run cli wp plugin deactivate wp-china-yes
-echo "WordPress activation, maintenance, memory, fonts, language, media and compatibility-report smoke tests passed."
+echo "WordPress activation, maintenance, memory, fonts, language, media, admin-assets and compatibility-report smoke tests passed."

@@ -14,7 +14,7 @@ class ModernSetting {
     
     public function __construct() {
         $this->settings = get_settings();
-        add_filter( 'wp_china_yes_enqueue_assets', '__return_true' );
+        // 未装载。若重新启用，同样不能强制每个后台页加载框架脚本。
         add_filter( 'wp_china_yes_fa4', '__return_true' );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
         add_action( is_multisite() ? 'network_admin_menu' : 'admin_menu', [ $this, 'admin_menu' ] );

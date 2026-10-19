@@ -77,6 +77,21 @@ check_runtime(
     'settings UI avoids jQuery APIs deprecated by current WordPress'
 );
 
+check_runtime(
+    false === strpos($settings, "add_filter( 'wp_china_yes_enqueue_assets', '__return_true' )"),
+    'settings service does not force framework assets onto every admin page'
+);
+$modern_settings = file_get_contents($root . '/Service/ModernSetting.php');
+check_runtime(
+    false === strpos($modern_settings, "add_filter( 'wp_china_yes_enqueue_assets', '__return_true' )"),
+    'unloaded modern settings service does not force framework assets either'
+);
+$setup = file_get_contents($root . '/framework/classes/setup.class.php');
+check_runtime(
+    1 === preg_match("/wp_enqueue_script\(\s*'wp_china_yes-plugins'.*array\(\s*'jquery'\s*\)/", $setup),
+    'framework plugins script declares a jQuery dependency'
+);
+
 if ($failures) {
     exit(1);
 }

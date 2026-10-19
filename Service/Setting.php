@@ -17,13 +17,37 @@ class Setting {
 	private $prefix = 'wp_china_yes';
 	private $settings;
 
+	/** 文派叶子设置页的 screen id：单站与多站点网络后台。 */
+	const SETTINGS_SCREEN_IDS = [
+		'settings_page_wp-china-yes',
+		'settings_page_wp-china-yes-network',
+	];
+
 	public function __construct() {
 		$this->settings = get_settings();
-		add_filter( 'wp_china_yes_enqueue_assets', '__return_true' );
+		// 不要强制 true，否则每个后台页都会加载框架脚本。框架只按 menu_slug 后缀判断，认不出网络后台的 -network 后缀；这里只对本插件设置页补 true，其他后台页保持框架原判断。
+		add_filter( 'wp_china_yes_enqueue_assets', [ __CLASS__, 'filter_enqueue_framework_assets' ] );
 		add_filter( 'wp_china_yes_fa4', '__return_true' );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
 		add_action( is_multisite() ? 'network_admin_menu' : 'admin_menu', [ $this, 'admin_menu' ] );
 		$this->admin_init();
+	}
+
+	/**
+	 * 框架资源只在文派叶子设置页（单站与多站点网络后台）补充加载。
+	 *
+	 * @param bool        $enqueue   框架自己的判断
+	 * @param string|null $screen_id 测试注入；为空时取 get_current_screen()
+	 *
+	 * @return bool
+	 */
+	public static function filter_enqueue_framework_assets( $enqueue, $screen_id = null ) {
+		if ( null === $screen_id ) {
+			$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+			$screen_id = $screen ? $screen->id : '';
+		}
+
+		return (bool) $enqueue || in_array( $screen_id, self::SETTINGS_SCREEN_IDS, true );
 	}
 
 

@@ -593,7 +593,7 @@ if ( ! class_exists( 'WP_CHINA_YES_Setup' ) ) {
       }
 
       // Main scripts
-      wp_enqueue_script( 'wp_china_yes-plugins', self::include_plugin_url( 'assets/js/plugins'. $min .'.js' ), array(), self::$version, true );
+      wp_enqueue_script( 'wp_china_yes-plugins', self::include_plugin_url( 'assets/js/plugins'. $min .'.js' ), array( 'jquery' ), self::$version, true );
       wp_enqueue_script( 'wp_china_yes', self::include_plugin_url( 'assets/js/main'. $min .'.js' ), array( 'wp_china_yes-plugins' ), self::$version, true );
 
       // Main variables

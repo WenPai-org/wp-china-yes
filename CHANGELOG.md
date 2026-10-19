@@ -4,6 +4,11 @@ All notable changes to `WP-China-Yes` will be documented in this file.
 
 ## 未发布
 
+### v3.9.4（待发布）
+
+#### 稳定性
+- 后台框架脚本只在文派叶子设置页（单站 `options-general.php?page=wp-china-yes` 与多站点网络后台 `network/settings.php?page=wp-china-yes`）加载，并为 `plugins.js` 声明 jQuery 依赖。此前每个后台页面都会加载这些脚本，且未声明依赖，插件列表等页面会报 `jQuery is not defined`。
+
 ## v3.9.3 - 2026-09-06（已撤回）
 
 > **已撤回**：3.9.3 于 2026-09-06 发布，当日撤回推送，更新通道仍为 3.8。已升级到 3.9.3 的站点无需操作。本段所列修复将随 3.9.4 重新发布。
