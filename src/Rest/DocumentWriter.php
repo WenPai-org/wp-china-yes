@@ -31,7 +31,7 @@ final class DocumentWriter {
 	 *
 	 * @since 4.0.0
 	 */
-	private const NETWORK_ROOTS = array( 'data_residency', 'announcements', 'apps', 'diagnostics' );
+	private const NETWORK_ROOTS = array( 'data_residency', 'apps', 'diagnostics' );
 
 	/**
 	 * Subsite override roots refused while allow_site_override is false.

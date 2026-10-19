@@ -80,7 +80,7 @@ final class AnnouncementsModule implements Module {
 	 *
 	 * A plain site option (get_option / update_option), never the network
 	 * settings document: on multisite a subsite admin dismissing an
-	 * announcement must not change the network-scope announcements root.
+	 * announcement must not change the network settings document.
 	 * uninstall.php deletes it on every site.
 	 *
 	 * @since 4.0.0

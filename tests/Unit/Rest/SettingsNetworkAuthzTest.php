@@ -58,7 +58,6 @@ class SettingsNetworkAuthzTest extends TestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$stored = get_option( Schema::SETTINGS );
 		$this->assertSame( 7, $stored['data_residency']['ruleset_version'] );
-		$this->assertSame( array( 'a1' ), $stored['announcements']['dismissed'] );
 		$this->assertSame( array( 'demo' ), $stored['apps']['disabled'] );
 		$this->assertFalse( $stored['diagnostics']['scheduled_checks'] );
 	}
@@ -103,7 +102,7 @@ class SettingsNetworkAuthzTest extends TestCase {
 		$this->assertSame( 'wpcy_settings_network_scope', $result->get_error_code() );
 		$data = $result->get_error_data();
 		$this->assertSame( 403, $data['status'] );
-		$this->assertSame( array( 'data_residency', 'announcements', 'apps', 'diagnostics' ), $data['fields'] );
+		$this->assertSame( array( 'data_residency', 'apps', 'diagnostics' ), $data['fields'] );
 		$this->assertSame( $network_before, OptionStore::$site_options );
 		$this->assertArrayNotHasKey( Schema::SITE_OVERRIDES, OptionStore::$options );
 	}
@@ -333,6 +332,78 @@ class SettingsNetworkAuthzTest extends TestCase {
 	}
 
 	/**
+	 * Single site: a client still echoing the removed announcements root is not
+	 * rejected; the root is dropped and never stored.
+	 */
+	public function test_single_site_legacy_announcements_root_is_dropped() {
+		$response = $this->put(
+			array(
+				'announcements' => array( 'dismissed' => array( 'a1' ) ),
+				'connectivity'  => array( 'heartbeat' => 'on' ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$stored = get_option( Schema::SETTINGS );
+		$this->assertSame( 'on', $stored['connectivity']['heartbeat'] );
+		$this->assertArrayNotHasKey( 'announcements', $stored );
+		$this->assertArrayNotHasKey( 'announcements', $response->get_data() );
+	}
+
+	/**
+	 * Subsite: announcements is no longer a network-scope root, so sending it is
+	 * neither 403 nor stored in site overrides or the network document.
+	 */
+	public function test_subsite_legacy_announcements_root_is_dropped_not_forbidden() {
+		$this->multisite( true );
+		$network_before = OptionStore::$site_options;
+
+		$response = $this->put(
+			array(
+				'announcements' => array( 'dismissed' => array( 'a1' ) ),
+				'connectivity'  => array( 'heartbeat' => 'on' ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertSame( 'on', $overrides['connectivity']['heartbeat'] );
+		$this->assertArrayNotHasKey( 'announcements', $overrides );
+		$this->assertSame( $network_before, OptionStore::$site_options );
+	}
+
+	/**
+	 * PUT /network-settings: the removed root in the body is dropped, other
+	 * network roots still save, and a stored legacy root is cleared.
+	 */
+	public function test_network_settings_legacy_announcements_root_is_dropped() {
+		$this->multisite( true );
+		OptionStore::$site_options[ Schema::NETWORK_SETTINGS ]['announcements'] = array( 'dismissed' => array( 'old' ) );
+		RestStore::$caps['manage_network_options']                              = true;
+		RestStore::$nonces['n'] = true;
+
+		$route                          = $this->route( '/network-settings', 'PUT' );
+		$request                        = new WP_REST_Request();
+		$request->headers['x-wp-nonce'] = 'n';
+		$request->json                  = array(
+			'announcements'  => array( 'dismissed' => array( 'a1' ) ),
+			'data_residency' => array( 'ruleset_version' => 7 ),
+		);
+		$this->assertTrue( call_user_func( $route['permission_callback'], $request ) );
+
+		$response = call_user_func( $route['callback'], $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$network = OptionStore::$site_options[ Schema::NETWORK_SETTINGS ];
+		$this->assertSame( 7, $network['data_residency']['ruleset_version'] );
+		$this->assertArrayNotHasKey( 'announcements', $network );
+	}
+
+	/**
 	 * One registered wpcy/v1 route handler by path and method.
 	 *
 	 * @param string $path   Route path.
@@ -355,14 +426,13 @@ class SettingsNetworkAuthzTest extends TestCase {
 	}
 
 	/**
-	 * Changed values for all four network-scope roots.
+	 * Changed values for all three network-scope roots.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function network_changes(): array {
 		return array(
 			'data_residency' => array( 'ruleset_version' => 7 ),
-			'announcements'  => array( 'dismissed' => array( 'a1' ) ),
 			'apps'           => array( 'disabled' => array( 'demo' ) ),
 			'diagnostics'    => array( 'scheduled_checks' => false ),
 		);

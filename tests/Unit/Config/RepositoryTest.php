@@ -67,7 +67,7 @@ class RepositoryTest extends TestCase {
 		$this->assertTrue( $repo->get( 'modules.noise_block.enabled' ) );
 		$this->assertTrue( $repo->get( 'diagnostics.scheduled_checks' ) );
 		$this->assertSame( 1, $repo->get( 'data_residency.ruleset_version' ) );
-		$this->assertSame( array(), $repo->get( 'announcements.dismissed' ) );
+		$this->assertNull( $repo->get( 'announcements' ) );
 		$this->assertSame( array(), $repo->get( 'apps.disabled' ) );
 		$this->assertFalse( $repo->get( 'recovery_mode' ) );
 		$this->assertSame( 2, $repo->get( 'schema_version' ) );
@@ -161,7 +161,8 @@ class RepositoryTest extends TestCase {
 		$this->assertFalse( Defaults::get( 'modules.windfonts' ) );
 		$this->assertTrue( Defaults::get( 'diagnostics.scheduled_checks' ) );
 		$this->assertSame( 1, Defaults::get( 'data_residency.ruleset_version' ) );
-		$this->assertSame( array(), Defaults::get( 'announcements.dismissed' ) );
+		$this->assertArrayNotHasKey( 'announcements', Defaults::settings() );
+		$this->assertArrayNotHasKey( 'announcements', Defaults::network_settings() );
 		$this->assertSame( array(), Defaults::get( 'apps.disabled' ) );
 		$this->assertFalse( Defaults::get( 'recovery_mode' ) );
 		$this->assertSame( array(), Defaults::get( 'integrations.windfonts.fonts' ) );
@@ -224,6 +225,49 @@ class RepositoryTest extends TestCase {
 		$repo = $this->repo();
 		$this->assertTrue( $repo->set( 'connectivity.avatar', 'gravatar' ) );
 		$this->assertSame( 'cravatar_cn', $repo->get( 'connectivity.avatar' ) );
+	}
+
+	/**
+	 * A stored 4.0 document that still carries the removed announcements root
+	 * (dismissals now live in wpcy_announcements_dismissed) reads fine: the root
+	 * is dropped with an unknown-key warning only, and the next save clears it.
+	 */
+	public function test_legacy_announcements_root_is_ignored_and_cleared_on_save() {
+		$legacy                                   = Defaults::settings();
+		$legacy['announcements']                  = array( 'dismissed' => array( 'a1' ) );
+		OptionStore::$options[ Schema::SETTINGS ] = $legacy;
+
+		$repo = $this->repo();
+		$this->assertSame( Defaults::settings(), $repo->all() );
+		$this->assertNull( $repo->get( 'announcements.dismissed' ) );
+		$this->assertFalse( $repo->set( 'announcements.dismissed', array( 'a2' ) ) );
+
+		$reasons = array();
+		foreach ( $this->logs as $log ) {
+			if ( isset( $log[2]['path'] ) && 'announcements' === $log[2]['path'] ) {
+				$reasons[] = $log[2]['reason'];
+			}
+		}
+		$this->assertNotEmpty( $reasons );
+		$this->assertSame( array( 'Unknown key discarded.' ), array_values( array_unique( $reasons ) ) );
+
+		$this->assertTrue( $repo->set( 'connectivity.heartbeat', 'on' ) );
+		$this->assertArrayNotHasKey( 'announcements', OptionStore::$options[ Schema::SETTINGS ] );
+	}
+
+	/**
+	 * Multisite: a network document with the removed root reads fine and loses it on save.
+	 */
+	public function test_legacy_announcements_root_in_network_document_is_cleared_on_save() {
+		OptionStore::$multisite  = true;
+		$legacy                  = Defaults::network_settings();
+		$legacy['announcements'] = array( 'dismissed' => array( 'a1' ) );
+		OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] = $legacy;
+
+		$repo = $this->repo();
+		$this->assertNull( $repo->get( 'announcements' ) );
+		$this->assertTrue( $repo->save_option( Schema::NETWORK_SETTINGS, $legacy ) );
+		$this->assertSame( Defaults::network_settings(), OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] );
 	}
 
 	/**

@@ -205,11 +205,12 @@ class AnnouncementsTest extends TestCase {
 	}
 
 	/**
-	 * Reads come from the per-site option; announcements.dismissed in settings is ignored.
+	 * Reads come from the per-site option; a legacy announcements root still
+	 * stored in the settings document is ignored.
 	 */
 	public function test_dismissed_ids_read_site_option() {
 		$repo = new Repository();
-		$repo->set( 'announcements.dismissed', array( 'from-settings' ) );
+		update_option( Schema::SETTINGS, array( 'announcements' => array( 'dismissed' => array( 'from-settings' ) ) ) );
 		update_option( AnnouncementsModule::DISMISSED_OPTION, array( 'from-option', '', 7 ) );
 
 		$this->assertSame( array( 'from-option' ), ( new AnnouncementsModule( $repo ) )->dismissed_ids() );

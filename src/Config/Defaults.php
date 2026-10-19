@@ -76,9 +76,6 @@ final class Defaults {
 			'data_residency'       => array(
 				'ruleset_version' => 1,
 			),
-			'announcements'        => array(
-				'dismissed' => array(),
-			),
 			'apps'                 => array(
 				'disabled' => array(),
 			),
