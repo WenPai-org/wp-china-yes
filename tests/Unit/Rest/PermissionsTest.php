@@ -389,7 +389,7 @@ class PermissionsTest extends TestCase {
 	}
 
 	/**
-	 * Subsite PUT /settings with modules.site_blocklist is 400 wpcy_settings_network_only_key.
+	 * Subsite PUT /settings that changes modules.site_blocklist is 400 wpcy_settings_network_only_key.
 	 */
 	public function test_subsite_put_settings_site_blocklist_is_network_only_key() {
 		OptionStore::$multisite = true;
@@ -401,7 +401,7 @@ class PermissionsTest extends TestCase {
 		$request->json          = array(
 			'modules' => array(
 				'site_blocklist' => array(
-					'enabled' => true,
+					'enabled' => false,
 					'hosts'   => array(),
 				),
 			),

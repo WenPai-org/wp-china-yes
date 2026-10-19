@@ -106,7 +106,6 @@ class ProfileTest extends TestCase {
 	public function test_switch_does_not_touch_notice_control() {
 		$settings                                      = Defaults::settings();
 		$settings['modules']['notice_control']         = false;
-		$settings['announcements']['dismissed']        = array( 'a1' );
 		$settings['diagnostics']['scheduled_checks']   = false;
 		$settings['recovery_mode']                     = true;
 		$settings['data_residency']['ruleset_version'] = 9;
@@ -124,7 +123,6 @@ class ProfileTest extends TestCase {
 		$this->assertArrayNotHasKey( 'admin_assets', $out );
 		$this->assertFalse( $out['modules']['windfonts'] );
 		$this->assertFalse( $out['modules']['notice_control'] );
-		$this->assertSame( array( 'a1' ), $out['announcements']['dismissed'] );
 		$this->assertFalse( $out['diagnostics']['scheduled_checks'] );
 		$this->assertTrue( $out['recovery_mode'] );
 		$this->assertSame( 9, $out['data_residency']['ruleset_version'] );

@@ -36,7 +36,7 @@ final class Profile {
 
 	/**
 	 * Connectivity defaults for one profile. Does not include notice /
-	 * announcements / diagnostics / recovery / telemetry / data_residency.
+	 * diagnostics / recovery / telemetry / data_residency.
 	 *
 	 * @since 4.0.0
 	 *
@@ -55,7 +55,7 @@ final class Profile {
 	/**
 	 * Overlay D2 connectivity keys onto an existing settings document.
 	 *
-	 * Leaves notice_control, admin.hide_promo, announcements, diagnostics,
+	 * Leaves notice_control, admin.hide_promo, diagnostics,
 	 * recovery_mode, data_residency, and apps untouched.
 	 *
 	 * @since 4.0.0
