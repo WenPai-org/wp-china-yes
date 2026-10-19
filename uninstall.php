@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall: drop provider options and transients. Does not touch wp_china_yes.
+ * Uninstall: drop provider options and transients, and dismissed announcements. Does not touch wp_china_yes.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -37,7 +37,22 @@ function wpcy_uninstall_providers(): void {
 	}
 }
 
+/**
+ * Delete the dismissed announcements option for the current blog.
+ *
+ * Same name as WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule::DISMISSED_OPTION
+ * (autoload is not loaded here).
+ *
+ * @since 4.0.0
+ *
+ * @return void
+ */
+function wpcy_uninstall_announcements_dismissed(): void {
+	delete_option( 'wpcy_announcements_dismissed' );
+}
+
 wpcy_uninstall_providers();
+wpcy_uninstall_announcements_dismissed();
 
 if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'get_sites' ) ) {
 	$wpcy_sites = get_sites(
@@ -49,6 +64,7 @@ if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'ge
 	foreach ( $wpcy_sites as $wpcy_site_id ) {
 		switch_to_blog( (int) $wpcy_site_id );
 		wpcy_uninstall_providers();
+		wpcy_uninstall_announcements_dismissed();
 		restore_current_blog();
 	}
 }

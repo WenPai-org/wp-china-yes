@@ -119,6 +119,13 @@ final class DocumentWriter {
 	 * data.fields lists the refused roots. Roots sent with their current value
 	 * are ignored, so a full-document PUT that only edits other keys succeeds.
 	 *
+	 * These checks apply to every site of a multisite network, including the
+	 * main site, and to every caller, including super admins. That is on
+	 * purpose: network-scope roots may only be changed through PUT
+	 * /network-settings (manage_network_options, NetworkSettingsController),
+	 * so PUT /settings is never a network write path, whoever calls it and on
+	 * whichever site. Super admins use /network-settings for those roots.
+	 *
 	 * @since 4.0.0
 	 *
 	 * @param mixed $incoming PUT body.
@@ -185,6 +192,10 @@ final class DocumentWriter {
 		}
 		unset( $clean['modules']['site_blocklist'] );
 
+		// Only $override_roots are copied into site overrides. allow_site_override is
+		// neither a network root (no 403) nor an override root, so a subsite
+		// body that carries it is silently dropped: the lock is changed only
+		// through /network-settings. Intentional; keep it that way.
 		$from            = isset( $before['profile'] ) && is_string( $before['profile'] ) ? $before['profile'] : 'domestic';
 		$profile_switch  = isset( $incoming['profile'] ) && is_string( $incoming['profile'] )
 			&& in_array( $incoming['profile'], Schema::PROFILES, true )

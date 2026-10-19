@@ -15,6 +15,8 @@ use WenPai\ChinaYes\Config\Defaults;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Rest\DocumentWriter;
+use WenPai\ChinaYes\Rest\NetworkSettingsController;
+use WenPai\ChinaYes\Rest\RestModule;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Rest\SettingsController;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
@@ -23,6 +25,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 
 require_once __DIR__ . '/wp-rest-stubs.php';
+require_once __DIR__ . '/wp-rest-action-stub.php';
 
 /**
  * Single-site and multisite groups for the subsite write rules.
@@ -216,6 +219,139 @@ class SettingsNetworkAuthzTest extends TestCase {
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
 		$this->assertFalse( get_option( Schema::SITE_OVERRIDES )['admin']['hide_promo'] );
+	}
+
+	/**
+	 * Subsite, locked: a changed network root and a changed locked root in one
+	 * PUT is 403 (network scope wins) and data.fields lists only network roots.
+	 */
+	public function test_locked_subsite_network_and_locked_change_is_403_network_fields_only() {
+		$this->multisite( false );
+		$network_before = OptionStore::$site_options;
+
+		$result = $this->put(
+			array(
+				'data_residency' => array( 'ruleset_version' => 7 ),
+				'connectivity'   => array( 'heartbeat' => 'on' ),
+				'admin'          => array( 'hide_promo' => false ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_settings_network_scope', $result->get_error_code() );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+		$this->assertSame( array( 'data_residency' ), $result->get_error_data()['fields'] );
+		$this->assertSame( $network_before, OptionStore::$site_options );
+		$this->assertArrayNotHasKey( Schema::SITE_OVERRIDES, OptionStore::$options );
+	}
+
+	/**
+	 * Subsite, locked: a refused profile change records no profile_set event and
+	 * saves nothing (no overrides, no profile_confirmed_at, network untouched).
+	 */
+	public function test_locked_subsite_refused_profile_records_no_event_and_saves_nothing() {
+		$this->multisite( false );
+		$options_before = OptionStore::$options;
+		$network_before = OptionStore::$site_options;
+
+		$result = $this->put( array( 'profile' => 'crossborder' ) );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_settings_locked', $result->get_error_code() );
+		$this->assertSame( 409, $result->get_error_data()['status'] );
+		$this->assertSame( array( 'profile' ), $result->get_error_data()['fields'] );
+		$this->assertSame( array(), RestStore::$actions );
+		$this->assertSame( $options_before, OptionStore::$options );
+		$this->assertSame( $network_before, OptionStore::$site_options );
+		$this->assertSame( 'domestic', ( new Repository() )->get( 'profile' ) );
+
+		// Control: the same PUT on an unlocked subsite does record profile_set.
+		$this->multisite( true );
+		$this->assertInstanceOf( WP_REST_Response::class, $this->put( array( 'profile' => 'crossborder' ) ) );
+		$this->assertCount( 1, RestStore::$actions );
+		$this->assertSame( 'wpcy_events_record', RestStore::$actions[0]['tag'] );
+		$this->assertSame( 'profile_set', RestStore::$actions[0]['args'][0] );
+	}
+
+	/**
+	 * Subsite: modules.site_blocklist echoed unchanged is accepted (not 400) and
+	 * never stored in the site overrides.
+	 */
+	public function test_subsite_unchanged_site_blocklist_echo_is_accepted_and_not_stored() {
+		$this->multisite( true );
+		$network_before = OptionStore::$site_options;
+		$doc            = $this->full_document();
+		$this->assertArrayHasKey( 'site_blocklist', $doc['modules'] );
+
+		$response = $this->put(
+			array(
+				'modules'      => array( 'site_blocklist' => $doc['modules']['site_blocklist'] ),
+				'connectivity' => array( 'heartbeat' => 'on' ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$overrides = get_option( Schema::SITE_OVERRIDES );
+		$this->assertIsArray( $overrides );
+		$this->assertSame( 'on', $overrides['connectivity']['heartbeat'] );
+		$this->assertFalse( isset( $overrides['modules']['site_blocklist'] ) );
+		$this->assertSame( $network_before, OptionStore::$site_options );
+	}
+
+	/**
+	 * Regression: PUT /network-settings (registered route, manage_network_options
+	 * + nonce) still changes network-scope roots after the subsite checks.
+	 */
+	public function test_network_settings_route_still_writes_network_roots() {
+		$this->multisite( false );
+		RestStore::$caps['manage_network_options'] = true;
+		RestStore::$nonces['n']                    = true;
+
+		$route = $this->route( '/network-settings', 'PUT' );
+		$this->assertSame( array( NetworkSettingsController::class, 'update_item' ), array( get_class( $route['callback'][0] ), $route['callback'][1] ) );
+
+		$request                        = new WP_REST_Request();
+		$request->headers['x-wp-nonce'] = 'n';
+		$request->json                  = array(
+			'data_residency' => array( 'ruleset_version' => 7 ),
+			'apps'           => array( 'disabled' => array( 'demo' ) ),
+			'diagnostics'    => array( 'scheduled_checks' => false ),
+		);
+		$this->assertTrue( call_user_func( $route['permission_callback'], $request ) );
+
+		$response = call_user_func( $route['callback'], $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$network = OptionStore::$site_options[ Schema::NETWORK_SETTINGS ];
+		$this->assertSame( 7, $network['data_residency']['ruleset_version'] );
+		$this->assertSame( array( 'demo' ), $network['apps']['disabled'] );
+		$this->assertFalse( $network['diagnostics']['scheduled_checks'] );
+		$this->assertFalse( $network['allow_site_override'] );
+		$this->assertArrayNotHasKey( Schema::SITE_OVERRIDES, OptionStore::$options );
+	}
+
+	/**
+	 * One registered wpcy/v1 route handler by path and method.
+	 *
+	 * @param string $path   Route path.
+	 * @param string $method HTTP method.
+	 * @return array<string, mixed>
+	 */
+	private function route( string $path, string $method ): array {
+		( new RestModule( new Repository() ) )->register_routes();
+		foreach ( RestStore::$routes as $row ) {
+			if ( $path !== $row['route'] ) {
+				continue;
+			}
+			foreach ( $row['args'] as $handler ) {
+				if ( is_array( $handler ) && isset( $handler['methods'] ) && $method === $handler['methods'] ) {
+					return $handler;
+				}
+			}
+		}
+		$this->fail( 'route not registered: ' . $method . ' ' . $path );
 	}
 
 	/**
