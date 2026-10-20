@@ -48,6 +48,8 @@ class ReportFieldsTest extends TestCase {
 
 		$module = new TelemetryModule( new Repository() );
 		$module->register();
+		$this->assertArrayHasKey( 'init', TelemetryStore::$actions );
+		call_user_func( TelemetryStore::$actions['init'] );
 
 		$this->assertNotEmpty( TelemetryStore::$scheduled[ TelemetryModule::CRON_HOOK ] );
 		$this->assertFalse( TelemetryStore::$cleared );
