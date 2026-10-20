@@ -1008,7 +1008,8 @@ class LoggerExceptionContextTest extends TestCase {
 			'class name digits'      => str_repeat( 'Abc1\\', 40000 ),
 			'bearer chain'           => str_repeat( 'xBearer Bearer ', 14000 ),
 			'bearer glued'           => str_repeat( 'xBearer abc ', 18000 ),
-			'sql N quotes'           => 'SELECT x FROM y WHERE ' . str_repeat( "N'a", 66000 ),
+			// 33000 literals, one PHP loop round each: half of the 200 KB keeps CI stable.
+			'sql N quotes'           => 'SELECT x FROM y WHERE ' . str_repeat( "N'a", 33000 ),
 			'sql apostrophes, quote' => 'SELECT x FROM y WHERE ' . str_repeat( "'it's ", 33000 ),
 			'sql glued close'        => 'SELECT x FROM y WHERE ' . str_repeat( "'a'b", 50000 ),
 			'sql contraction tails'  => "SELECT x FROM y WHERE '" . str_repeat( "a'll ", 40000 ),
