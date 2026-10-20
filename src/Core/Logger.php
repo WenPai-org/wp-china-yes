@@ -447,8 +447,7 @@ final class Logger {
 		$text = $this->redact_sql_literals( $text );
 		$text = $this->redact_query_secrets( $text );
 
-		// No word boundary in front: "dirBearer <token>" is masked too.
-		$text = $this->replace( '/(Bearer|Basic)\s+[^\s,;"\']+/i', '$1 ***', $text );
+		$text = $this->redact_auth_schemes( $text );
 		$text = $this->redact_key_values( $text );
 
 		$patterns = array(
@@ -468,16 +467,53 @@ final class Logger {
 		// as a whole instead of leaving a part shorter than 32 behind.
 		// Possessive match, length and digit check in the callback: one pass.
 		// Runs before the hex rule, so a hex key split by a separator is one run.
+		// A PHP class name is kept for diagnosis: three or more parts split by
+		// "\" (or "\\"), each made of capitalised words (a capital, then
+		// lower case letters) and at most four digits at the end, e.g.
+		// WenPai\ChinaYes\Module\Updater2. A key has no "\", and a random run
+		// almost never has this shape in every part.
 		$masked = preg_replace_callback(
 			'#(?<![\w\\\\/.-])(?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?:[!"\'|~$^`%\\\\](?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++)*+={0,2}#',
 			static function ( array $m ): string {
-				return strlen( $m[0] ) < 32 || false === strpbrk( $m[0], '0123456789' ) ? $m[0] : '***';
+				if ( strlen( $m[0] ) < 32 || false === strpbrk( $m[0], '0123456789' ) ) {
+					return $m[0];
+				}
+				return 1 === preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $m[0] ) ? $m[0] : '***';
 			},
 			$text
 		);
 		$text   = is_string( $masked ) ? $masked : $text;
 
 		return $this->replace( '/\b[0-9a-f]{32,}\b/i', '***', $text );
+	}
+
+	/**
+	 * Bearer / Basic credentials become "Bearer ***".
+	 *
+	 * Scheme words in a row ("X-Cardbearer Bearer <token>", "basic Basic
+	 * <creds>") are kept and the value after the last one is masked. A scheme
+	 * glued to a word in front ("dirBearer <token>") is masked too when the
+	 * value looks like a credential (a digit, one of + / = _ . -, a capital
+	 * after the first character, or 8 hex letters in front, as in a cut-off
+	 * "deadbeefca"), so "flagbearer of" and "NonBasic users" keep their words.
+	 *
+	 * @param string $text Text.
+	 */
+	private function redact_auth_schemes( string $text ): string {
+		$masked = preg_replace_callback(
+			'/([A-Za-z0-9]?)((?:Bearer|Basic)(?:\s++(?:Bearer|Basic)(?=\s))*+)\s++([^\s,;"\']++)/i',
+			static function ( array $m ): string {
+				// Only the last scheme word counts: "xbearer Bearer <value>" is not glued.
+				$glued = '' !== $m[1] && strlen( $m[2] ) === strcspn( $m[2], " \t\n\r\v\f" );
+				if ( $glued && 1 !== preg_match( '/[0-9+\/=_.-]|.[A-Z]|^[a-f]{8}/', $m[3] ) ) {
+					return $m[0];
+				}
+				return $m[1] . $m[2] . ' ***';
+			},
+			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
 	}
 
 	/**
@@ -529,22 +565,27 @@ final class Logger {
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
 		// The first directory is one word (/home/, /chroot/, /u01/). A deeper
-		// directory may contain spaces (/home/alice smith/x/) when
-		// - its words hold no comma and no non-ASCII byte (Chinese text and
-		// punctuation), and
-		// - it is followed by another directory, a file name with an extension,
-		// or the end of the path (whitespace, quote, bracket, , ; : or end).
-		// So prose such as "use /api/v1 then foo bar/baz" or "调用 /wp-json/v1
-		// 失败，请检查 and/or" keeps its words. Possessive throughout and the
-		// look-ahead reads one path part: linear.
-		$word   = '[^\s/:\'"()<>\[\]]++';
-		$sword  = '[^\s/:\'"()<>\[\],\x80-\xFF]++';
-		$file   = '(?:[^\s/:\'"()<>\[\],.\x80-\xFF]++ ++)*+[^\s/:\'"()<>\[\].]*+\.[A-Za-z0-9]';
-		$next   = '(?=' . $word . '/|' . $sword . '(?: ++' . $sword . ')*+/|' . $file . '|[\s\'"()<>\[\],;:]|$)';
-		$spaced = $sword . '(?: ++' . $sword . ')++/' . $next;
+		// directory may contain spaces (/home/alice smith/x/) when it is
+		// - followed by another directory, a file name with an extension, or
+		// the end of the path (whitespace, quote, bracket, , ; : or end); or
+		// - followed by "/name" (/home/alice smith/public_html, /home/张 三/
+		// site, /home/Smith, John/site) and holds no Chinese punctuation
+		// (，。；：！？、), so "调用 /wp-json/wpcy/v1 失败，请检查 and/or" keeps
+		// its words.
+		// Words may hold commas and non-ASCII text. English prose before an
+		// "x/y" ("use /api/v1 then foo bar/baz") cannot be told from a user
+		// directory and is masked: more masking, no leak.
+		// Possessive throughout; each look-ahead reads one path part: linear.
+		$word  = '[^\s/:\'"()<>\[\]]++';
+		$plain = '(?:[^\s/:\'"()<>\[\]\x80-\xFF]|(?!\xEF\xBC[\x81\x8C\x9A\x9B\x9F]|\xE3\x80[\x81\x82])[\x80-\xFF])++';
+		$file  = '(?:[^\s/:\'"()<>\[\],.\x80-\xFF]++ ++)*+[^\s/:\'"()<>\[\].]*+\.[A-Za-z0-9]';
+		$next  = '(?=' . $word . '(?: ++' . $word . ')*+/|' . $file . '|[\s\'"()<>\[\],;:]|$)';
+		$name  = '/(?=[^\s/:\'"()<>\[\]])';
+		$layer = $word . '/|' . $word . '(?: ++' . $word . ')++/' . $next
+			. '|' . $plain . '(?: ++' . $plain . ')++' . $name;
 
 		return $this->replace(
-			'#(?<![\w.:/\]])/(?:' . $word . '/)++(?:' . $word . '/|' . $spaced . ')*+#',
+			'#(?<![\w.:/\]])/(?:' . $word . '/)++(?:' . $layer . ')*+#',
 			'[path]/',
 			$text
 		);
@@ -560,34 +601,51 @@ final class Logger {
 			return $text;
 		}
 
-		return $this->mask_quoted( $this->mask_quoted( $text, "'" ), '"' );
+		return $this->mask_quoted( $text );
 	}
 
 	/**
-	 * Quoted literals with quote $q become '***'.
+	 * Quoted literals ('...' or "...") become '***', left to right.
 	 *
-	 * A quote opens a literal only when no word character is in front of it
-	 * and closes it only when no word character follows, so "doesn't" is not
-	 * a quote; a quote with a word character behind it inside a literal
-	 * ('it's here') stays in the literal. Linear: a literal that never closes
-	 * means no later one can close either (same scan from there on), so the
-	 * scan stops.
+	 * A ' between a letter and an English contraction ending (s, t, re, ve,
+	 * ll, d, m, then a word end: doesn't, it's, you're) is an apostrophe, not
+	 * a quote. Any other ' is a quote, also right after or before a word
+	 * character: N'..', X'..', _utf8mb4'..', pw='..'AND.
+	 *
+	 * Linear: one match per literal. A quote with no closing quote matches
+	 * alone and changes the state, at most three times: no later " can close
+	 * either; for ', from then on the next ' closes (contractions included,
+	 * as without the rule above), and after that no later ' can close.
 	 *
 	 * @param string $text Text.
-	 * @param string $q    Quote character, ' or ".
 	 */
-	private function mask_quoted( string $text, string $q ): string {
-		$open    = '/(?<!\w)' . $q . '/';
-		$literal = '/\G' . $q . '(?:[^' . $q . '\\\\]++|\\\\.|' . $q . '(?=\w))*+' . $q . '(?!\w)/s';
-		$out     = '';
-		$offset  = 0;
-		while ( 1 === preg_match( $open, $text, $o, PREG_OFFSET_CAPTURE, $offset ) ) {
-			$start = $o[0][1];
-			if ( 1 !== preg_match( $literal, $text, $l, 0, $start ) ) {
+	private function mask_quoted( string $text ): string {
+		$apostrophe = '(?<=[A-Za-z])\'(?=(?i:s|t|re|ve|ll|d|m)\b)';
+		$double     = '"(?:[^"\\\\]++|\\\\.)*+"|"';
+		$single     = array(
+			'(?!' . $apostrophe . ')\'(?:[^\'\\\\]++|\\\\.|' . $apostrophe . ')*+\'|(?!' . $apostrophe . ')\'',
+			'\'(?:[^\'\\\\]++|\\\\.)*+\'|\'',
+		);
+		$state      = 0;
+		$out        = '';
+		$offset     = 0;
+		while ( null !== $double || isset( $single[ $state ] ) ) {
+			$pattern = '/' . implode( '|', array_filter( array( $double, $single[ $state ] ?? null ) ) ) . '/s';
+			if ( 1 !== preg_match( $pattern, $text, $m, PREG_OFFSET_CAPTURE, $offset ) ) {
 				break;
 			}
-			$out   .= substr( $text, $offset, $start - $offset ) . "'***'";
-			$offset = $start + strlen( $l[0] );
+			$found = $m[0][0];
+			if ( 1 === strlen( $found ) ) {
+				// A quote that never closes.
+				if ( '"' === $found ) {
+					$double = null;
+				} else {
+					++$state;
+				}
+				continue;
+			}
+			$out   .= substr( $text, $offset, $m[0][1] - $offset ) . "'***'";
+			$offset = $m[0][1] + strlen( $found );
 		}
 
 		return $out . substr( $text, $offset );

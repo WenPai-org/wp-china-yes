@@ -677,18 +677,22 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
-	 * Review-168 follow-up 1: a directory with spaces needs a path part after
-	 * it and plain ASCII words, so prose keeps its words.
+	 * Review-168 follow-up 1, narrowed by review-169: Chinese prose with
+	 * Chinese punctuation keeps its words. English prose with at most one
+	 * slash pair cannot be told from a user directory and is masked (more
+	 * masking, no leak).
 	 */
 	public function test_prose_after_a_url_path_is_not_taken_for_a_directory() {
-		$this->log_exception( 'use /api/v1 then foo bar/baz' );
 		$this->log_exception( '调用 /wp-json/wpcy/v1 失败，请检查 and/or 设置' );
-		$this->log_exception( 'see /docs/intro, then the next step/part' );
+		$this->log_exception( '调用 /wp-json/wpcy/v1 失败。请检查 and/or 设置' );
+		$this->log_exception( '请求 /wp-json/wp/v2/posts 返回 404：请检查 网络/代理' );
+		$this->log_exception( 'use /api/v1 then foo bar/baz' );
 		$logged = $this->logged();
 
-		$this->assertStringContainsString( 'then foo bar/baz @ ', $logged );
-		$this->assertStringContainsString( '失败，请检查 and/or 设置 @ ', $logged );
-		$this->assertStringContainsString( 'then the next step/part @ ', $logged );
+		$this->assertStringContainsString( '调用 [path]/v1 失败，请检查 and/or 设置 @ ', $logged );
+		$this->assertStringContainsString( '调用 [path]/v1 失败。请检查 and/or 设置 @ ', $logged );
+		$this->assertStringContainsString( '请求 [path]/posts 返回 404：请检查 网络/代理 @ ', $logged );
+		$this->assertStringContainsString( 'use [path]/baz @ ', $logged );
 	}
 
 	/**
@@ -821,6 +825,200 @@ class LoggerExceptionContextTest extends TestCase {
 		$this->assertStringNotContainsString( 'dXNlcjpw', $logged );
 		$this->assertStringContainsString( 'header dirBearer *** @ ', $logged );
 		$this->assertStringContainsString( 'header xBasic *** @ ', $logged );
+	}
+
+	/**
+	 * Review-169 1: a directory with spaces followed by a name without an
+	 * extension (the last part of the path) hides the user name.
+	 */
+	public function test_spaced_directory_before_a_bare_name_is_hidden() {
+		$messages = array(
+			'Directory /home/alice smith/public_html is not writable' => 'Directory [path]/public_html is not writable',
+			'/home/alice smith/htdocs'                    => '[path]/htdocs',
+			'/Users/Alice Smith/Desktop'                  => '[path]/Desktop',
+			'"/home/alice smith/site" not found'          => '"[path]/site" not found',
+			'(/home/alice smith/site)'                    => '([path]/site)',
+			'/home/alice smith/site; retry'               => '[path]/site; retry',
+			'/home/alice smith/README missing'            => '[path]/README missing',
+			'/home/alice smith/site,/home/bob jones/site' => '[path]/site',
+			'/data/Maria de la Cruz/public_html failed'   => '[path]/public_html failed',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'Alice', 'smith', 'Smith', 'bob', 'jones', 'Maria', 'Cruz' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 2: Chinese directory names with spaces and names with a
+	 * comma are hidden (宝塔 site directories).
+	 */
+	public function test_cjk_and_comma_directories_are_hidden() {
+		$messages = array(
+			'/www/wwwroot/我的 网站/wp-config.php' => '[path]/wp-config.php',
+			'/www/wwwroot/我的 网站/'              => '[path]/',
+			'/www/wwwroot/我的 网站/public 失败'     => '[path]/public 失败',
+			'/home/张 三/x.php'                  => '[path]/x.php',
+			'/home/张 三/site'                   => '[path]/site',
+			'/home/Smith, John/x.php'          => '[path]/x.php',
+			'/home/Smith, John/site'           => '[path]/site',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( '我的', '网站', '张', '三', 'Smith', 'John' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 1 and 2 as a scan: roots × user names (English, Chinese,
+	 * with spaces, with commas, four words) × last parts × what comes before
+	 * and after. No word of a user name may show up.
+	 */
+	public function test_user_name_scan_leaks_nothing() {
+		$scrub = new \ReflectionMethod( Logger::class, 'scrub' );
+		$scrub->setAccessible( true );
+		$logger = new Logger();
+
+		$names = array( 'alice smith', 'Mary Ann Smith', '张 三', '我的 网站', 'Smith, John', '王五, 赵六', 'José García', 'Tom and Jerry Site' );
+		$leaks = array();
+		foreach ( array( '/home/', '/Users/', '/www/wwwroot/', '/chroot/home/', '/u01/app/', '/data/' ) as $root ) {
+			foreach ( $names as $name ) {
+				foreach ( array( '/x.php', '/public_html', '/', '/My Notes.txt', '/a/b', '/站点' ) as $tail ) {
+					foreach ( array( '', '"', '(', '调用 ' ) as $before ) {
+						foreach ( array( '', ' failed', '"', ')', '; retry', ',', '，失败' ) as $after ) {
+							$message = $before . $root . $name . $tail . $after;
+							$out     = $scrub->invoke( $logger, $message );
+							foreach ( preg_split( '/[\s,]+/u', $name, -1, PREG_SPLIT_NO_EMPTY ) as $word ) {
+								if ( false !== strpos( $out, $word ) ) {
+									$leaks[] = $message . ' => ' . $out;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$this->assertSame( array(), array_slice( $leaks, 0, 5 ), count( $leaks ) . ' leaks' );
+	}
+
+	/**
+	 * Review-169 3: an SQL literal right after a word character (N'', X'',
+	 * _utf8mb4'', LIKE'') or right before one ('..'AND) is masked; an
+	 * English contraction is still not a quote.
+	 */
+	public function test_sql_literal_next_to_a_word_is_masked() {
+		$messages = array(
+			"INSERT INTO t VALUES (N'hunter2pass')"      => "INSERT INTO t VALUES (N'***')",
+			"SELECT * FROM t WHERE pw='hunter2pass'AND x=1" => "SELECT * FROM t WHERE pw='***'AND x=1",
+			"SELECT * FROM t WHERE a = _utf8mb4'hunter2pass'" => "SELECT * FROM t WHERE a = _utf8mb4'***'",
+			"SELECT * FROM t WHERE a = X'4142434445'"    => "SELECT * FROM t WHERE a = X'***'",
+			"SELECT * FROM t WHERE pw LIKE'hunter2pass'" => "SELECT * FROM t WHERE pw LIKE'***'",
+			"SELECT * FROM t WHERE pw = 'hunter2pass'd AND x = 1" => "SELECT * FROM t WHERE pw = '***'d AND x = 1",
+			"Table 'wp_options' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = 'siteurl')" => "Table '***' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = '***')",
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'hunter2', '4142434445', 'siteurl' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 4: with Bearer / Basic twice in a row the value after the
+	 * last one is masked; a scheme glued to a word in front of prose keeps
+	 * the prose.
+	 */
+	public function test_repeated_auth_scheme_masks_the_last_value() {
+		$messages = array(
+			'Header: X-Cardbearer Bearer tok_ab12cd34' => 'Header: X-Cardbearer Bearer ***',
+			'authbearer Bearer tok_ab12cd34'           => 'authbearer Bearer ***',
+			'sent as basic Basic dXNlcjpwdw=='         => 'sent as basic Basic ***',
+			'xbearer Bearer plainlowercasetoken'       => 'xbearer Bearer ***',
+			'flagbearer of the project'                => 'flagbearer of the project',
+			'NonBasic users cannot access'             => 'NonBasic users cannot access',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'tok_ab', 'dXNlcjpw', 'plainlower' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 (non-blocking): a PHP class name with a digit is kept; a
+	 * key split by backslashes is still masked.
+	 */
+	public function test_php_class_name_is_kept() {
+		$this->log_exception( 'Class WenPai\ChinaYes\Module\Mirror\Updater2 not found' );
+		$this->log_exception( '{"class":"WenPai\\\\ChinaYes\\\\Module\\\\Mirror\\\\Updater2"}' );
+		$this->log_exception( 'key Zm9vYmFy4QWx\Y2VkTOPSECRET\ab12cd34Zm9vYmFy end' );
+		$this->log_exception( 'key Zm9vYmFyQWx\Y2VkTOPSECRET\Abcd34Zm9vYmFy end' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'Class WenPai\ChinaYes\Module\Mirror\Updater2 not found @ ', $logged );
+		$this->assertStringContainsString( '{"class":"WenPai\\\\ChinaYes\\\\Module\\\\Mirror\\\\Updater2"} @ ', $logged );
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: key *** end @ ' ) );
+	}
+
+	/**
+	 * The rules changed for review-169 stay linear on 200 KB through mask()
+	 * alone, also with non-ASCII words and commas.
+	 */
+	public function test_review_169_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'path cjk spaced words'  => '/r/' . str_repeat( '张 ', 50000 ),
+			'path cjk spaced chain'  => '/r/' . str_repeat( '张 三/', 25000 ),
+			'path comma words'       => '/r/' . str_repeat( 'a, ', 70000 ),
+			'path cjk punctuation'   => '/r/' . str_repeat( '张 三，', 20000 ),
+			'path cjk, no next'      => str_repeat( '/a/张 三 ', 15000 ),
+			'path spaced to a name'  => str_repeat( '/a/b c/d ', 25000 ),
+			'path u3000'             => '/r/' . str_repeat( "张\u{3000}", 40000 ),
+			'class name runs'        => str_repeat( 'Ab\\', 70000 ),
+			'class name digits'      => str_repeat( 'Abc1\\', 40000 ),
+			'bearer chain'           => str_repeat( 'xBearer Bearer ', 14000 ),
+			'bearer glued'           => str_repeat( 'xBearer abc ', 18000 ),
+			'sql N quotes'           => 'SELECT x FROM y WHERE ' . str_repeat( "N'a", 66000 ),
+			'sql apostrophes, quote' => 'SELECT x FROM y WHERE ' . str_repeat( "'it's ", 33000 ),
+			'sql glued close'        => 'SELECT x FROM y WHERE ' . str_repeat( "'a'b", 50000 ),
+			'sql contraction tails'  => "SELECT x FROM y WHERE '" . str_repeat( "a'll ", 40000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.1, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
 	}
 
 	/**
