@@ -551,6 +551,127 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-164 28a67ca 1: a long message without ASCII whitespace keeps its
+	 * text (Chinese, U+3000, NBSP, compact JSON), not just "…".
+	 */
+	public function test_long_message_without_ascii_whitespace_keeps_text() {
+		$json  = '[' . implode( ',', array_fill( 0, 25, '{"code":"http_request_failed","message":"cURL error 28","data":{"status":503}}' ) ) . ']';
+		$cases = array(
+			'cjk'   => array( str_repeat( '数据库连接失败请稍后重试', 50 ), '数据库连接失败请稍后重试数据库连接失败' ),
+			'u3000' => array( str_repeat( "连接超时\u{3000}timeout\u{3000}", 100 ), "连接超时\u{3000}timeout\u{3000}连接超时" ),
+			'nbsp'  => array( str_repeat( "request\u{00A0}timeout\u{00A0}", 150 ), "request\u{00A0}timeout\u{00A0}request" ),
+			'json'  => array( $json, '[{"code":"http_request_failed","message":"cURL error 28","data":{"status":503}},' ),
+		);
+		foreach ( $cases as $case ) {
+			$this->assertGreaterThan( 1200, strlen( $case[0] ) );
+			$this->log_exception( $case[0] );
+		}
+
+		$lines = explode( "\n", trim( $this->logged() ) );
+		$this->assertCount( 4, $lines );
+		foreach ( array_values( $cases ) as $i => $case ) {
+			$this->assertTrue( mb_check_encoding( $lines[ $i ], 'UTF-8' ), (string) $i );
+			$this->assertStringContainsString( '[RuntimeException: ' . $case[1], $lines[ $i ] );
+			$this->assertStringContainsString( '… @ tests/', $lines[ $i ] );
+		}
+	}
+
+	/**
+	 * Review-164 28a67ca 1: with the new separators a key across the raw cut
+	 * still leaves no piece, whatever ends the text before it.
+	 */
+	public function test_raw_cut_drops_a_long_token_after_unicode_or_json_separators() {
+		$token  = 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd34' . str_repeat( 'Zm9vYmFy4QWxY2Vk', 6 );
+		$last   = strlen( $token ) - 6;
+		$before = array( '，', "\u{3000}", "\u{00A0}", '中', '","api_key":"', ',"token=', '(', ';' );
+		foreach ( $before as $separator ) {
+			foreach ( array( 1105, 1130, 1199 ) as $start ) {
+				$prefix = substr( str_repeat( 'ab', 700 ), 0, $start - strlen( $separator ) ) . $separator;
+				$this->log_exception( $prefix . $token . ' tail' );
+			}
+		}
+
+		$lines = explode( "\n", trim( $this->logged() ) );
+		$this->assertCount( 24, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertSame( 1, preg_match( '/\[RuntimeException: (.*) @ tests\//', $line, $m ), $line );
+			for ( $i = 0; $i <= $last; $i++ ) {
+				$this->assertStringNotContainsString( substr( $token, $i, 6 ), $m[1], $line );
+			}
+			$this->assertTrue( mb_check_encoding( $line, 'UTF-8' ), $line );
+		}
+	}
+
+	/**
+	 * Review-164 28a67ca 2: prose with " /word" and a later "x/y" is not taken
+	 * for a path.
+	 */
+	public function test_prose_with_slashes_is_not_taken_for_a_path() {
+		$messages = array(
+			'see /docs for details about the and/or operator in the manual',
+			'error near /token in this very long sentence, answer yes/no',
+			'expected 3 /4 parts, got 2/3',
+			'use /data or /tmp only; HTTP/1.1 text/html 2026/10/21',
+		);
+		foreach ( $messages as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( $messages as $message ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $message . ' @ ', $logged );
+		}
+		$this->assertStringNotContainsString( '[path]', $logged );
+	}
+
+	/**
+	 * Review-164 28a67ca 2: user names with spaces under common roots and on
+	 * Windows still do not leak.
+	 */
+	public function test_user_names_with_spaces_still_hidden() {
+		$this->log_exception( 'open /home/alice smith/public_html/wp-config.php failed' );
+		$this->log_exception( 'open /Users/alice smith/Sites/wp/wp-config.php failed' );
+		$this->log_exception( 'open /var/www/alice smith/wp-config.php failed' );
+		$this->log_exception( 'open C:\Users\alice smith\AppData\Local\wp-config.php failed' );
+		$this->log_exception( 'open /srv/a/b/c/wp-config.php failed' );
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'smith', 'public_html', 'Sites', 'AppData', '/srv' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertSame( 5, substr_count( $logged, 'open [path]/wp-config.php failed' ) );
+	}
+
+	/**
+	 * Long Chinese and compact JSON messages are scrubbed in bounded time,
+	 * through Logger and through mask() alone.
+	 */
+	public function test_long_cjk_and_json_messages_are_scrubbed_quickly() {
+		$object = '{"code":"http_request_failed","message":"cURL error 28","data":{"status":503,"path":"/a/b"}}';
+		$inputs = array(
+			str_repeat( '数据库连接失败', 25000 ),
+			str_repeat( "连接\u{3000}", 60000 ),
+			'[' . implode( ',', array_fill( 0, 5600, $object ) ) . ']',
+		);
+		$mask   = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		foreach ( $inputs as $input ) {
+			$this->assertGreaterThan( 500000, strlen( $input ) );
+			$start = microtime( true );
+			$this->log_exception( $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( 'Logger: %d bytes took %.3f s', strlen( $input ), $elapsed ) );
+
+			$piece = substr( $input, 0, 200001 );
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $piece );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.1, $elapsed, sprintf( 'mask(): %d bytes took %.3f s', strlen( $piece ), $elapsed ) );
+		}
+	}
+
+	/**
 	 * Log one RuntimeException with $message through Logger::error().
 	 *
 	 * @param string $message Exception message.

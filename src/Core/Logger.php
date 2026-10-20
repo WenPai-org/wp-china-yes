@@ -204,6 +204,19 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
 
 	/**
+	 * Bytes that may belong to one token at the raw cut: printable ASCII
+	 * except whitespace and the separators , ; " ' { } [ ] ( ) < > ! ?
+	 *
+	 * Everything the masking rules match is in here (A-Z a-z 0-9 + / _ - = %
+	 * . @ : & * ...), so a secret is never split at one of its own characters.
+	 * Bytes 0x80-0xFF (any non-ASCII character: CJK text, fullwidth
+	 * punctuation, NBSP, U+3000) end a token.
+	 *
+	 * @var string
+	 */
+	private const CUT_TOKEN_BYTES = '#$%&*+-./0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~';
+
+	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -280,10 +293,13 @@ final class Logger {
 	/**
 	 * Cut raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes before masking.
 	 *
-	 * When the cut falls inside a token, everything after the last whitespace
-	 * is dropped, however long the token: a cut-off key shorter than 32
-	 * characters, or a cut-off email, would no longer match its masking rule.
-	 * Without any whitespace nothing of the raw text is kept.
+	 * When the cut falls inside a token (a run of CUT_TOKEN_BYTES), the whole
+	 * run is dropped, however long: a cut-off key shorter than 32 characters,
+	 * or a cut-off email, would no longer match its masking rule. The run ends
+	 * at whitespace, ASCII separators, or any non-ASCII character, so Chinese
+	 * text, NBSP / U+3000 separated words and compact JSON keep their text.
+	 * The drop never splits a UTF-8 character: the run is ASCII only.
+	 * A cut inside a 1200-byte run of token bytes keeps nothing.
 	 *
 	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
 	 * @param bool   $use_mb Use mb_strcut().
@@ -291,12 +307,12 @@ final class Logger {
 	private function cut_raw( string $text, bool $use_mb ): string {
 		$cut  = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_SCAN_MAX, $use_mb );
 		$next = substr( $text, strlen( $cut ), 1 );
-		if ( '' === $next || 1 === preg_match( '/\s/', $next ) ) {
+		if ( '' === $next || 0 === strspn( $next, self::CUT_TOKEN_BYTES ) ) {
 			return $cut;
 		}
 
-		// Length of the trailing non-whitespace run (same set as PCRE \s): one linear pass.
-		$fragment = strcspn( strrev( $cut ), " \t\n\r\v\f" );
+		// Length of the trailing token run: one linear pass.
+		$fragment = strspn( strrev( $cut ), self::CUT_TOKEN_BYTES );
 
 		return rtrim( substr( $cut, 0, strlen( $cut ) - $fragment ), " \t\n\r\v\f" );
 	}
@@ -401,8 +417,15 @@ final class Logger {
 		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
 		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
 
-		// Unix directories (/home/alice smith/x/). A URL path is preceded by its host, so it is left alone.
-		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)+#', '[path]/', $text );
+		// Unix directories. A URL path is preceded by its host, so it is left alone.
+		// Under a common root (/home/alice smith/x/) a directory may contain
+		// spaces; elsewhere each directory is one word (/a/b/), so prose such
+		// as "see /docs for ... and/or" is not taken for a path.
+		return $this->replace(
+			'#(?<![\w.:/\]])/(?:(?i:home|users|var|srv|opt|tmp|usr|www|wwwroot|web|data|root|mnt|media|private|volumes|library|applications|run|etc)/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+|(?:[^\s/:\'"()<>\[\]]++/)++)#',
+			'[path]/',
+			$text
+		);
 	}
 
 	/**
