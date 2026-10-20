@@ -643,6 +643,40 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-168 6a720ff: a user name with spaces under a root that is not a
+	 * common one (/chroot, /u01) does not leak either.
+	 */
+	public function test_user_names_with_spaces_under_any_root_are_hidden() {
+		$this->log_exception( '/chroot/home/alice smith/site/wp-config.php not readable' );
+		$this->log_exception( '/u01/app/alice smith/wp/index.php failed' );
+		$this->log_exception( 'open /opt2/a b/c d e/f/x.php failed' );
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'smith', 'chroot', 'u01', 'site/', 'wp/', 'opt2', 'c d e' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertStringContainsString( '[RuntimeException: [path]/wp-config.php not readable @ ', $logged );
+		$this->assertStringContainsString( '[RuntimeException: [path]/index.php failed @ ', $logged );
+		$this->assertStringContainsString( '[RuntimeException: open [path]/x.php failed @ ', $logged );
+	}
+
+	/**
+	 * A URL user name with a separator byte in it does not leak when the raw
+	 * cut falls inside the userinfo (inside the token, or right at "(").
+	 */
+	public function test_raw_cut_inside_url_userinfo_keeps_no_user_name() {
+		$this->log_exception( str_repeat( 'ab', 590 ) . ' https://bob(' . str_repeat( 'y', 40 ) . ':pw@h.example.com/x tail' );
+		$this->log_exception( str_repeat( 'ab', 594 ) . ' https://bob(x:pw@h.example.com/x tail' );
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 2, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertStringNotContainsString( 'bob', $line );
+			$this->assertStringContainsString( '[RuntimeException: *** https… @ ', $line );
+		}
+	}
+
+	/**
 	 * Long Chinese and compact JSON messages are scrubbed in bounded time,
 	 * through Logger and through mask() alone.
 	 */

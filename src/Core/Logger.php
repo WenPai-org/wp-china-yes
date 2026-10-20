@@ -207,10 +207,20 @@ final class Logger {
 	 * Bytes that may belong to one token at the raw cut: printable ASCII
 	 * except whitespace and the separators , ; " ' { } [ ] ( ) < > ! ?
 	 *
-	 * Everything the masking rules match is in here (A-Z a-z 0-9 + / _ - = %
-	 * . @ : & * ...), so a secret is never split at one of its own characters.
 	 * Bytes 0x80-0xFF (any non-ASCII character: CJK text, fullwidth
 	 * punctuation, NBSP, U+3000) end a token.
+	 *
+	 * A byte left out of this list is a boundary, so the cut KEEPS the part
+	 * of a secret before it instead of dropping the whole run: leaving out a
+	 * byte that can occur inside a secret makes the cut keep more, not less.
+	 * The list therefore holds every byte the masking rules match (A-Z a-z
+	 * 0-9 + / _ - = % . @ : & * ...). The bytes left out also end a match of
+	 * the base64-like, hex and email rules, and key=value / Bearer still mask
+	 * by their key, so a kept prefix is exactly what the same message leaves
+	 * unmasked without any cut (review-168 scan: 143640 runs, no extra leak;
+	 * kernel scan: 20592 runs, longest kept piece 0). One rule does not end
+	 * at those bytes: URL userinfo (a user name may contain , ; ' ( ) !), so
+	 * cut_raw() also drops an unfinished "scheme://user" at the end.
 	 *
 	 * @var string
 	 */
@@ -307,14 +317,37 @@ final class Logger {
 	private function cut_raw( string $text, bool $use_mb ): string {
 		$cut  = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_SCAN_MAX, $use_mb );
 		$next = substr( $text, strlen( $cut ), 1 );
-		if ( '' === $next || 0 === strspn( $next, self::CUT_TOKEN_BYTES ) ) {
-			return $cut;
+		if ( '' !== $next && 0 < strspn( $next, self::CUT_TOKEN_BYTES ) ) {
+			// Length of the trailing token run: one linear pass.
+			$fragment = strspn( strrev( $cut ), self::CUT_TOKEN_BYTES );
+			$cut      = substr( $cut, 0, strlen( $cut ) - $fragment );
 		}
 
-		// Length of the trailing token run: one linear pass.
-		$fragment = strspn( strrev( $cut ), self::CUT_TOKEN_BYTES );
+		return rtrim( $this->drop_open_userinfo( $cut ), " \t\n\r\v\f" );
+	}
 
-		return rtrim( substr( $cut, 0, strlen( $cut ) - $fragment ), " \t\n\r\v\f" );
+	/**
+	 * Drop an unfinished URL userinfo at the end of the raw cut.
+	 *
+	 * "https://bob(x:pw@host" cut before "@" would keep "https://bob(" and
+	 * the userinfo rule (which needs the "@") could no longer mask "bob".
+	 * Everything from the last "://" on is dropped when no "/", "?", "#",
+	 * "@" or whitespace follows it.
+	 *
+	 * @param string $text Raw text after the cut.
+	 */
+	private function drop_open_userinfo( string $text ): string {
+		$scheme = strrpos( $text, '://' );
+		if ( false === $scheme ) {
+			return $text;
+		}
+
+		$rest = substr( $text, $scheme + 3 );
+		if ( strcspn( $rest, " \t\n\r\v\f/?#@" ) < strlen( $rest ) ) {
+			return $text;
+		}
+
+		return substr( $text, 0, $scheme );
 	}
 
 	/**
@@ -418,11 +451,12 @@ final class Logger {
 		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
-		// Under a common root (/home/alice smith/x/) a directory may contain
-		// spaces; elsewhere each directory is one word (/a/b/), so prose such
-		// as "see /docs for ... and/or" is not taken for a path.
+		// The first directory is one word (/home/, /chroot/, /u01/); deeper
+		// directories may contain spaces (/home/alice smith/x/). Prose such as
+		// "see /docs for ... and/or" is not a path: no "/" right after "docs".
+		// Possessive throughout and the input is capped: linear.
 		return $this->replace(
-			'#(?<![\w.:/\]])/(?:(?i:home|users|var|srv|opt|tmp|usr|www|wwwroot|web|data|root|mnt|media|private|volumes|library|applications|run|etc)/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+|(?:[^\s/:\'"()<>\[\]]++/)++)#',
+			'#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#',
 			'[path]/',
 			$text
 		);
