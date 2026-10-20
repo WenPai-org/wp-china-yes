@@ -219,6 +219,7 @@ final class Logger {
 			$message = $info['message'];
 		}
 
+		$class   = $this->class_label( $class );
 		$message = $this->scrub( $message );
 		if ( '' === $class && '' === $message ) {
 			return '';
@@ -267,6 +268,23 @@ final class Logger {
 		}
 
 		return $text;
+	}
+
+	/**
+	 * Class name safe for one log line.
+	 *
+	 * Anonymous classes are named "Parent@anonymous" followed by a NUL byte and
+	 * the absolute file path; keep only the part before the NUL.
+	 *
+	 * @param string $name Class name.
+	 */
+	private function class_label( string $name ): string {
+		$nul = strpos( $name, "\0" );
+		if ( false !== $nul ) {
+			$name = substr( $name, 0, $nul );
+		}
+
+		return (string) preg_replace( '/[^A-Za-z0-9_\\\\@]/', '', $name );
 	}
 
 	/**

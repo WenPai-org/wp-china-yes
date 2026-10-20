@@ -85,6 +85,33 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * A throwable raised outside the plugin root logs only the file basename,
+	 * and an anonymous class name does not leak its NUL-separated path.
+	 */
+	public function test_file_outside_plugin_root_logs_basename_only() {
+		$error = new class( 'outside' ) extends RuntimeException {
+			/**
+			 * Pretend the throw site is another plugin.
+			 *
+			 * @param string $message Message.
+			 */
+			public function __construct( string $message ) {
+				parent::__construct( $message );
+				$this->file = '/srv/site/wp-content/plugins/other-plugin/includes/class-thing.php';
+				$this->line = 42;
+			}
+		};
+
+		( new Logger() )->error( 'Module register() failed: demo', array( 'exception' => $error ) );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( '[RuntimeException@anonymous: outside @ class-thing.php:42]', $logged );
+		$this->assertStringNotContainsString( "\0", $logged );
+		$this->assertStringNotContainsString( '/srv/site', $logged );
+		$this->assertStringNotContainsString( 'other-plugin/', $logged );
+	}
+
+	/**
 	 * Tokens, keys, passwords, emails, IPs, URL queries, and long hex are masked.
 	 */
 	public function test_secret_and_personal_data_in_message_are_scrubbed() {
