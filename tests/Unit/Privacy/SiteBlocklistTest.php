@@ -165,6 +165,24 @@ class SiteBlocklistTest extends TestCase {
 	}
 
 	/**
+	 * Stored list differs only before normalization (host case) and the write
+	 * fails: the effective list already equals the request, so it is a success.
+	 */
+	public function test_failed_write_with_unnormalized_equal_list_succeeds() {
+		$list = new Repository( new ConfigRepository(), $this->unsigned_ruleset() );
+		$this->assertIsArray( $list->save( $this->tracker_list() ) );
+		OptionStore::$options[ Schema::SETTINGS ]['modules']['site_blocklist']['hosts'][0]['host'] = 'TRACKER.Example.COM';
+		$stored = OptionStore::$options[ Schema::SETTINGS ];
+
+		OptionStore::$fail_writes = true;
+		$result                   = $list->save( $this->tracker_list() );
+
+		$this->assertIsArray( $result, is_wp_error( $result ) ? $result->get_error_code() : '' );
+		$this->assertSame( 'tracker.example.com', $result['hosts'][0]['host'] );
+		$this->assertSame( $stored, OptionStore::$options[ Schema::SETTINGS ] );
+	}
+
+	/**
 	 * A real write failure for a changed list is still a 400 and stores nothing.
 	 */
 	public function test_failed_write_of_changed_list_is_error() {

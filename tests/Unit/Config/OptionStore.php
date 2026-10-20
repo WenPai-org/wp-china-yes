@@ -54,6 +54,10 @@ final class OptionStore {
 	 * When true, update_option() / update_site_option() fail like a database
 	 * error: return false and write nothing.
 	 *
+	 * The stubs check it after the "unchanged" test on purpose: an unchanged
+	 * write already returns false before this flag is read, as in WordPress,
+	 * so the flag only turns a real change into a failed write.
+	 *
 	 * @var bool
 	 */
 	public static $fail_writes = false;
