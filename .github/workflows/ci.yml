@@ -45,6 +45,7 @@ jobs:
       - run: npm ci
       - run: npm run lint:js
       - run: npm run format:check
+      - run: npm run test:unit
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
