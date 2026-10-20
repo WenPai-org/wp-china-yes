@@ -4,7 +4,7 @@
 
 /* eslint-disable jsx-a11y/label-has-associated-control -- prototype choice cards wrap radio + nested copy */
 
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useRef, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -74,6 +74,9 @@ export default function Onboarding() {
 	const [ saving, setSaving ] = useState( false );
 	const [ saveError, setSaveError ] = useState( '' );
 	const [ locked, setLocked ] = useState( false );
+	// WZ-04: settings document as it was before the scene was applied, so
+	// the summary counts what the PUT actually changed.
+	const [ before, setBefore ] = useState( null );
 	const [ binding, setBinding ] = useState( {
 		status: 'unbound',
 		site_hash: null,
@@ -151,6 +154,7 @@ export default function Onboarding() {
 		setSaving( true );
 		setSaveError( '' );
 		setLocked( false );
+		setBefore( settings );
 		Promise.resolve( patchSettings( { profile } ) ).then( ( result ) => {
 			setSaving( false );
 			if ( result?.ok ) {
@@ -203,7 +207,7 @@ export default function Onboarding() {
 			} );
 	};
 
-	const summary = resourceSummary( settings );
+	const summary = resourceSummary( before, settings );
 
 	return (
 		<PageShell showTabs={ false }>
@@ -507,7 +511,12 @@ export default function Onboarding() {
 								<div className="v" data-testid="wpcy-wz-count">
 									{ sprintf(
 										/* translators: %d: number of settings the scene preset changed */
-										__( '%d 项', 'wp-china-yes' ),
+										_n(
+											'%d 项',
+											'%d 项',
+											summary.count,
+											'wp-china-yes'
+										),
 										summary.count
 									) }
 								</div>
@@ -518,6 +527,21 @@ export default function Onboarding() {
 										profileLabel( current )
 									) }
 								</div>
+								{ summary.same ? (
+									<div
+										className="d"
+										data-testid="wpcy-wz-same"
+									>
+										{ sprintf(
+											/* translators: %s: scene */
+											__(
+												'当前已是「%s」，没有改动。',
+												'wp-china-yes'
+											),
+											profileLabel( current )
+										) }
+									</div>
+								) : null }
 							</article>
 							<article className="card stat-a">
 								<div className="k">

@@ -9,9 +9,12 @@ import {
 	packRows,
 	packTitle,
 	presetChanges,
+	presetDiff,
 	resourceSummary,
 } from './wizard';
 import { sceneDefaults } from './profiles';
+import BASE38 from '../test-utils/settings-3.8-defaults.json';
+import { applyScene } from '../test-utils/scene';
 
 const SCENES = [ 'domestic', 'crossborder', 'inbound', 'mixed' ];
 
@@ -120,45 +123,171 @@ describe( 'packRows / packTitle (WZ-05, L-3)', () => {
 	} );
 } );
 
-describe( 'resourceSummary (WZ-04)', () => {
-	// Each scene preset as PUT /settings stores it (Config\Profile matrix).
-	const presetDoc = ( scene ) => {
-		const def = sceneDefaults( scene );
-		return {
-			profile: scene,
-			connectivity: {
-				wordpress_org: def.wordpress_org,
-				public_assets: def.public_assets,
-				avatar: def.avatar,
-				heartbeat: def.heartbeat,
-				dashboard_feeds: def.dashboard_feeds,
-				icon_photos: def.icon_photos,
-			},
-		};
-	};
+describe( 'presetDiff / resourceSummary (WZ-04)', () => {
+	// Measured from the 3.8 baseline: 跨境 9, 内贸 7, 混合 8; 国内站 is the
+	// baseline's own scene (no-op, 0). The spec's 8 / 9 / 7 / 10 are reference
+	// values for an all-off document; see the "all-off" case below.
+	it.each( [
+		[ 'crossborder', 9 ],
+		[ 'inbound', 7 ],
+		[ 'mixed', 8 ],
+		[ 'domestic', 0 ],
+	] )( '3.8 defaults → %s changes %d fields', ( scene, count ) => {
+		const after = applyScene( BASE38, scene );
+		const summary = resourceSummary( BASE38, after );
+		expect( summary.count ).toBe( count );
+		expect( summary.keys ).toEqual( presetDiff( BASE38, after ) );
+		expect( summary.same ).toBe( scene === 'domestic' );
+	} );
+
+	it( '3.8 defaults → 跨境 lists the changed keys', () => {
+		expect(
+			presetDiff( BASE38, applyScene( BASE38, 'crossborder' ) )
+		).toEqual( [
+			'wordpress_org',
+			'public_assets.google_fonts',
+			'public_assets.google_ajax',
+			'public_assets.cdnjs',
+			'public_assets.jsdelivr',
+			'public_assets.emoji',
+			'heartbeat',
+			'dashboard_feeds',
+			'icon_photos',
+		] );
+	} );
 
 	it.each( [
-		// mirror + 5 assets + avatar + icons
 		[ 'domestic', 8 ],
-		// 5 assets + avatar + heartbeat + feeds + icons (WordPress.org direct)
 		[ 'crossborder', 9 ],
-		// 5 assets + avatar + icons (WordPress.org direct, WP default admin)
 		[ 'inbound', 7 ],
-		// mirror + 5 assets + avatar + heartbeat + feeds + icons
 		[ 'mixed', 10 ],
-	] )( '%s preset changes %d items', ( scene, count ) => {
-		expect( resourceSummary( presetDoc( scene ) ).count ).toBe( count );
-	} );
-
-	it( 'the four scenes do not share one count', () => {
-		const counts = SCENES.map(
-			( scene ) => resourceSummary( presetDoc( scene ) ).count
+	] )( 'all-off document → %s changes %d fields', ( scene, count ) => {
+		const off = {
+			profile: 'none',
+			connectivity: {
+				wordpress_org: 'off',
+				public_assets: { items: [], scope: 'off' },
+				avatar: 'off',
+				heartbeat: 'off',
+				dashboard_feeds: 'allow',
+				icon_photos: { enabled: 'off' },
+			},
+		};
+		expect( resourceSummary( off, applyScene( off, scene ) ).count ).toBe(
+			count
 		);
-		expect( new Set( counts ).size ).toBe( SCENES.length );
 	} );
 
-	it( 'lists the changed keys', () => {
-		expect( presetChanges( presetDoc( 'inbound' ) ) ).toEqual( [
+	it( 'same scene: before equals after → 0, no keys', () => {
+		const doc = applyScene( BASE38, 'mixed' );
+		expect( presetDiff( doc, doc ) ).toEqual( [] );
+		expect( resourceSummary( doc, doc ) ).toEqual( {
+			count: 0,
+			keys: [],
+			same: true,
+			admin: true,
+		} );
+	} );
+
+	it( 'non-default baseline counts only the fields that really change', () => {
+		// Hand-tuned: crossborder-like already, but emoji dropped and the
+		// heartbeat left at the WordPress default.
+		const before = {
+			profile: 'domestic',
+			connectivity: {
+				wordpress_org: 'off',
+				public_assets: {
+					items: [
+						'google_fonts',
+						'google_ajax',
+						'cdnjs',
+						'jsdelivr',
+					],
+					scope: 'admin',
+				},
+				avatar: 'cravatar_cn',
+				heartbeat: 'off',
+				dashboard_feeds: 'block',
+				icon_photos: { enabled: 'admin' },
+			},
+		};
+		expect(
+			presetDiff( before, applyScene( before, 'crossborder' ) )
+		).toEqual( [ 'public_assets.emoji', 'heartbeat' ] );
+	} );
+
+	it( 'scope change counts each affected item', () => {
+		const before = applyScene( BASE38, 'domestic' );
+		const both = {
+			...before,
+			connectivity: {
+				...before.connectivity,
+				public_assets: {
+					items: [ 'google_fonts', 'cdnjs' ],
+					scope: 'both',
+				},
+			},
+		};
+		const admin = {
+			...both,
+			connectivity: {
+				...both.connectivity,
+				public_assets: {
+					items: [ 'google_fonts', 'cdnjs' ],
+					scope: 'admin',
+				},
+			},
+		};
+		expect( presetDiff( both, admin ) ).toEqual( [
+			'public_assets.google_fonts',
+			'public_assets.cdnjs',
+		] );
+	} );
+
+	it( 'missing values equal explicit defaults', () => {
+		const explicit = {
+			connectivity: {
+				wordpress_org: 'auto',
+				public_assets: {
+					items: [
+						'google_fonts',
+						'google_ajax',
+						'cdnjs',
+						'jsdelivr',
+						'emoji',
+					],
+					scope: 'both',
+				},
+				avatar: 'off',
+				heartbeat: 'off',
+				dashboard_feeds: 'allow',
+				icon_photos: { enabled: 'off' },
+			},
+		};
+		expect( presetDiff( {}, explicit ) ).toEqual( [] );
+		expect( presetDiff( { connectivity: {} }, explicit ) ).toEqual( [] );
+		expect(
+			presetDiff( {}, { connectivity: { avatar: { admin: 'off' } } } )
+		).toEqual( [] );
+		expect(
+			presetDiff(
+				{},
+				{ connectivity: { avatar: { admin: 'cravatar_cn' } } }
+			)
+		).toEqual( [ 'avatar' ] );
+	} );
+
+	it( 'Windfonts and other modules are not preset fields', () => {
+		expect(
+			presetDiff(
+				{ modules: { windfonts: false } },
+				{ modules: { windfonts: true } }
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'presetChanges still lists enabled items of one document', () => {
+		expect( presetChanges( applyScene( BASE38, 'inbound' ) ) ).toEqual( [
 			'public_assets.google_fonts',
 			'public_assets.google_ajax',
 			'public_assets.cdnjs',
@@ -168,39 +297,9 @@ describe( 'resourceSummary (WZ-04)', () => {
 			'icon_photos',
 		] );
 	} );
+} );
 
-	it( 'follows the saved document; Windfonts is not a preset change', () => {
-		expect(
-			resourceSummary( {
-				profile: 'mixed',
-				connectivity: {
-					wordpress_org: 'off',
-					public_assets: {
-						items: [ 'google_fonts', 'jsdelivr' ],
-						scope: 'admin',
-					},
-					avatar: 'cravatar_cn',
-				},
-				modules: { windfonts: true },
-			} )
-		).toEqual( { count: 3, admin: true } );
-	} );
-
-	it( 'stock WordPress counts zero', () => {
-		expect(
-			resourceSummary( {
-				connectivity: {
-					wordpress_org: 'off',
-					public_assets: { items: [ 'emoji' ], scope: 'off' },
-					avatar: 'off',
-					heartbeat: 'off',
-					dashboard_feeds: 'allow',
-					icon_photos: { enabled: 'off' },
-				},
-			} )
-		).toEqual( { count: 0, admin: false } );
-	} );
-
+describe( 'maskHash', () => {
 	it( 'maskHash shows first 4 … last 4', () => {
 		expect( maskHash( 'a3f9000000000000c21e' ) ).toBe( 'a3f9…c21e' );
 		expect( maskHash( null ) ).toBe( '' );

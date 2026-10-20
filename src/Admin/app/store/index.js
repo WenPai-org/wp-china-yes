@@ -261,15 +261,10 @@ export const actions = {
 			};
 			return { type: 'SET_SETTINGS', settings };
 		} catch ( error ) {
-			return {
-				type: 'SET_NOTICE',
-				notice: {
-					status: 'error',
-					message:
-						error?.message ||
-						__( '无法读取设置。', 'wp-china-yes' ),
-				},
-			};
+			// SH-06: the settings page shows LoadError; never the raw
+			// (English) WP_Error message.
+			void error;
+			return failFlag( 'SET_SETTINGS_ERROR' );
 		}
 	},
 	*fetchDiagnostics() {
