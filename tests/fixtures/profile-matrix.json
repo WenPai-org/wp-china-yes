@@ -1,0 +1,90 @@
+{
+	"domestic": {
+		"wordpress_org": "auto",
+		"public_assets": {
+			"items": [
+				"google_fonts",
+				"google_ajax",
+				"cdnjs",
+				"jsdelivr",
+				"emoji"
+			],
+			"scope": "both"
+		},
+		"avatar": "cravatar_cn",
+		"heartbeat": "off",
+		"dashboard_feeds": "allow",
+		"icon_photos": {
+			"enabled": "on",
+			"mirrored_base": "",
+			"native_api_base": ""
+		},
+		"windfonts": false
+	},
+	"crossborder": {
+		"wordpress_org": "off",
+		"public_assets": {
+			"items": [
+				"google_fonts",
+				"google_ajax",
+				"cdnjs",
+				"jsdelivr",
+				"emoji"
+			],
+			"scope": "admin"
+		},
+		"avatar": "cravatar_cn",
+		"heartbeat": "on",
+		"dashboard_feeds": "block",
+		"icon_photos": {
+			"enabled": "admin",
+			"mirrored_base": "",
+			"native_api_base": ""
+		},
+		"windfonts": false
+	},
+	"inbound": {
+		"wordpress_org": "off",
+		"public_assets": {
+			"items": [
+				"google_fonts",
+				"google_ajax",
+				"cdnjs",
+				"jsdelivr",
+				"emoji"
+			],
+			"scope": "frontend"
+		},
+		"avatar": "cravatar_cn",
+		"heartbeat": "off",
+		"dashboard_feeds": "allow",
+		"icon_photos": {
+			"enabled": "on",
+			"mirrored_base": "",
+			"native_api_base": ""
+		},
+		"windfonts": false
+	},
+	"mixed": {
+		"wordpress_org": "auto",
+		"public_assets": {
+			"items": [
+				"google_fonts",
+				"google_ajax",
+				"cdnjs",
+				"jsdelivr",
+				"emoji"
+			],
+			"scope": "admin"
+		},
+		"avatar": "cravatar_cn",
+		"heartbeat": "on",
+		"dashboard_feeds": "block",
+		"icon_photos": {
+			"enabled": "admin",
+			"mirrored_base": "",
+			"native_api_base": ""
+		},
+		"windfonts": false
+	}
+}

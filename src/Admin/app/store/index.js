@@ -9,10 +9,16 @@ import { __ } from '@wordpress/i18n';
 
 export const STORE_NAME = 'wpcy/admin';
 
+export const SETTINGS_PATH = '/wpcy/v1/settings';
+export const NETWORK_SETTINGS_PATH = '/wpcy/v1/network-settings';
+
 const DEFAULT_DIAGNOSTICS = { targets: [] };
 
 const DEFAULT_STATE = {
 	settings: {},
+	serverSettings: {},
+	unsaved: {},
+	settingsError: false,
 	capabilities: {},
 	diagnostics: DEFAULT_DIAGNOSTICS,
 	diagnosticsError: false,
@@ -68,11 +74,173 @@ export function connectDraftFromSettings( settings ) {
 	};
 }
 
+/**
+ * Plain-object check for merge.
+ *
+ * @param {*} value Value.
+ * @return {boolean} Whether value is a non-array object.
+ */
+function isPlainObject( value ) {
+	return (
+		value !== null && typeof value === 'object' && ! Array.isArray( value )
+	);
+}
+
+/**
+ * Deep-merge a partial PUT body onto a settings document (arrays replace).
+ *
+ * @param {Object} base  Current document.
+ * @param {Object} patch Partial body.
+ * @return {Object} Merged copy.
+ */
+export function mergeSettings( base, patch ) {
+	const out = { ...( isPlainObject( base ) ? base : {} ) };
+	Object.keys( patch || {} ).forEach( ( key ) => {
+		const next = patch[ key ];
+		out[ key ] =
+			isPlainObject( next ) && isPlainObject( out[ key ] )
+				? mergeSettings( out[ key ], next )
+				: next;
+	} );
+	return out;
+}
+
+/**
+ * Error codes for a refused subsite write (server contract, PR #157).
+ */
+export const LOCK_CODES = [
+	'wpcy_settings_locked',
+	'wpcy_settings_network_scope',
+];
+
+/**
+ * Network refusal of a subsite write, handled the same way: 409
+ * wpcy_settings_locked (locked field changed while allow_site_override is
+ * closed) and 403 wpcy_settings_network_scope (network-scope field changed).
+ * Other codes mentioning "lock" are treated alike, defensively.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {boolean} Whether the write was refused by the network lock.
+ */
+export function isLockError( error ) {
+	const code = String( error?.code || '' );
+	return LOCK_CODES.includes( code ) || /lock/i.test( code );
+}
+
+/**
+ * Field names the server refused. The contract sends root names in
+ * data.fields (e.g. "connectivity"); other keys are read defensively.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {string[]|null} Names (dot paths or leaf names), or null when the
+ *                         error carries no list (treat the whole request as
+ *                         refused).
+ */
+export function lockedFieldNames( error ) {
+	const data = error?.data || {};
+	for ( const key of [
+		'fields',
+		'locked_fields',
+		'rejected_fields',
+		'locked',
+		'rejected',
+		'params',
+	] ) {
+		const value = data[ key ];
+		if ( Array.isArray( value ) && value.length ) {
+			return value.map( String );
+		}
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			const names = Object.keys( value );
+			if ( names.length ) {
+				return names;
+			}
+		}
+	}
+	return null;
+}
+
+/**
+ * Leaf dot paths of a partial settings body.
+ *
+ * @param {Object} data   Partial body.
+ * @param {string} prefix Path prefix.
+ * @return {string[]} Paths.
+ */
+export function leafPaths( data, prefix = '' ) {
+	const out = [];
+	Object.keys( data || {} ).forEach( ( key ) => {
+		const path = prefix ? prefix + '.' + key : key;
+		const value = data[ key ];
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			out.push( ...leafPaths( value, path ) );
+		} else {
+			out.push( path );
+		}
+	} );
+	return out;
+}
+
+/**
+ * Whether a leaf path is covered by one refused name (exact path, a parent
+ * section, or the same leaf name).
+ *
+ * @param {string}   path  Leaf path.
+ * @param {string[]} names Refused names.
+ * @return {boolean} Covered.
+ */
+function refused( path, names ) {
+	return names.some(
+		( name ) =>
+			path === name ||
+			path.startsWith( name + '.' ) ||
+			path.endsWith( '.' + name )
+	);
+}
+
+/**
+ * Body without the refused leaves.
+ *
+ * @param {Object}   data   Partial body.
+ * @param {string[]} names  Refused names.
+ * @param {string}   prefix Path prefix.
+ * @return {Object} Remaining partial body.
+ */
+function withoutRefused( data, names, prefix = '' ) {
+	const out = {};
+	Object.keys( data || {} ).forEach( ( key ) => {
+		const path = prefix ? prefix + '.' + key : key;
+		const value = data[ key ];
+		if ( value && typeof value === 'object' && ! Array.isArray( value ) ) {
+			const rest = withoutRefused( value, names, path );
+			if ( Object.keys( rest ).length ) {
+				out[ key ] = rest;
+			}
+		} else if ( ! refused( path, names ) ) {
+			out[ key ] = value;
+		}
+	} );
+	return out;
+}
+
+/**
+ * CO-01 save failure copy: schema 400 vs everything else.
+ *
+ * @param {Object} error api-fetch error.
+ * @return {string} Glossary sentence.
+ */
+export function saveErrorMessage( error ) {
+	if ( error?.code === 'wpcy_invalid_schema' ) {
+		return __( '暂时无法保存设置，请检查填写内容后重试。', 'wp-china-yes' );
+	}
+	return __( '暂时无法保存设置，请稍后重试。', 'wp-china-yes' );
+}
+
 function failFlag( type ) {
 	return { type, error: true };
 }
 
-const actions = {
+export const actions = {
 	hydrate( bootstrap ) {
 		return { type: 'HYDRATE', bootstrap: bootstrap || {} };
 	},
@@ -182,38 +350,72 @@ const actions = {
 			return failFlag( 'SET_CLIENT_PROBE_ERROR' );
 		}
 	},
-	*patchSettings( data ) {
+	/**
+	 * CO-01 instant save: optimistic merge, PUT the partial object, roll back
+	 * to the last server document on failure. Never sets the page notice
+	 * (no Snackbar); the caller shows the card-level alert.
+	 *
+	 * @param {Object} data           Partial settings body.
+	 * @param {Object} [options]      Options.
+	 * @param {string} [options.path] REST path (site or network settings).
+	 */
+	*patchSettings( data, options = {} ) {
+		const path = options.path || SETTINGS_PATH;
 		yield { type: 'SET_SAVING', saving: true };
+		yield { type: 'PATCH_SETTINGS', data };
 		try {
 			const settings = yield {
 				type: 'API_FETCH',
 				request: {
-					path: '/wpcy/v1/settings',
+					path,
 					method: 'PUT',
 					data,
 				},
 			};
 			yield { type: 'SET_SETTINGS', settings };
 			yield { type: 'SET_SAVING', saving: false };
-			return { type: 'SET_NOTICE', notice: null };
+			return { type: 'SAVE_RESULT', ok: true, error: null };
 		} catch ( error ) {
+			yield { type: 'ROLLBACK_SETTINGS' };
+			const locked = isLockError( error );
+			let lockedPaths = [];
+			if ( locked ) {
+				// The server refuses the whole request when any field is
+				// locked: refused fields go back to the stored value, the
+				// rest stay on screen as unsaved input for the next save.
+				const names = lockedFieldNames( error );
+				const paths = leafPaths( data );
+				lockedPaths = names
+					? paths.filter( ( leaf ) => refused( leaf, names ) )
+					: paths;
+				const keep = names ? withoutRefused( data, names ) : {};
+				if ( Object.keys( keep ).length ) {
+					yield { type: 'KEEP_UNSAVED', data: keep };
+				}
+			}
 			yield { type: 'SET_SAVING', saving: false };
 			return {
-				type: 'SET_NOTICE',
-				notice: {
-					status: 'error',
-					message:
-						error?.code === 'wpcy_invalid_schema'
-							? __(
-									'暂时无法保存设置，请检查填写内容后重试。',
-									'wp-china-yes'
-							  )
-							: __(
-									'暂时无法保存设置，请稍后重试。',
-									'wp-china-yes'
-							  ),
+				type: 'SAVE_RESULT',
+				ok: false,
+				error: {
+					code: error?.code || '',
+					locked,
+					lockedPaths,
+					message: saveErrorMessage( error ),
 				},
 			};
+		}
+	},
+	*fetchNetworkSettings() {
+		try {
+			const settings = yield {
+				type: 'API_FETCH',
+				request: { path: NETWORK_SETTINGS_PATH },
+			};
+			return { type: 'SET_SETTINGS', settings };
+		} catch ( error ) {
+			void error;
+			return failFlag( 'SET_SETTINGS_ERROR' );
 		}
 	},
 	*saveSettings( draft ) {
@@ -325,13 +527,14 @@ const controls = {
 	},
 };
 
-function reducer( state = DEFAULT_STATE, action ) {
+export function reducer( state = DEFAULT_STATE, action ) {
 	switch ( action.type ) {
 		case 'HYDRATE': {
 			const settings = action.bootstrap.settings || {};
 			return {
 				...state,
 				settings,
+				serverSettings: settings,
 				capabilities: action.bootstrap.capabilities || {},
 				links: action.bootstrap.links || {},
 				providers: action.bootstrap.providers || {},
@@ -344,8 +547,34 @@ function reducer( state = DEFAULT_STATE, action ) {
 			return {
 				...state,
 				settings: action.settings || {},
+				serverSettings: action.settings || {},
+				unsaved: {},
+				settingsError: false,
 				draft: connectDraftFromSettings( action.settings || {} ),
 			};
+		case 'SET_SETTINGS_ERROR':
+			return { ...state, settingsError: true };
+		case 'PATCH_SETTINGS':
+			return {
+				...state,
+				settings: mergeSettings( state.settings, action.data ),
+			};
+		case 'ROLLBACK_SETTINGS':
+			return {
+				...state,
+				settings: mergeSettings(
+					state.serverSettings || {},
+					state.unsaved || {}
+				),
+			};
+		case 'KEEP_UNSAVED': {
+			const unsaved = mergeSettings( state.unsaved || {}, action.data );
+			return {
+				...state,
+				unsaved,
+				settings: mergeSettings( state.serverSettings || {}, unsaved ),
+			};
+		}
 		case 'SET_DRAFT':
 			return {
 				...state,
@@ -433,6 +662,12 @@ function reducer( state = DEFAULT_STATE, action ) {
 const selectors = {
 	getSettings( state ) {
 		return state.settings;
+	},
+	getSettingsError( state ) {
+		return state.settingsError;
+	},
+	getUnsaved( state ) {
+		return state.unsaved || {};
 	},
 	getCapabilities( state ) {
 		return state.capabilities;

@@ -1,24 +1,31 @@
 /**
- * Settings: scene cards, simple / advanced, instant save.
+ * Settings: scene cards, simple / advanced, instant save (CO-01–CO-13),
+ * subsite read-only and network-admin views (CO-06).
  */
 
 /* eslint-disable jsx-a11y/label-has-associated-control -- prototype choice/opt labels wrap radio + nested copy */
 
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { Modal } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import PageShell from '../components/PageShell';
-import { STORE_NAME } from '../store';
+import {
+	leafPaths,
+	mergeSettings,
+	NETWORK_SETTINGS_PATH,
+	STORE_NAME,
+} from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
 import Btn from '../ui/Btn';
 import Pill from '../ui/Pill';
-import Prov from '../ui/Prov';
 import Scope from '../ui/Scope';
 import Toggle from '../ui/Toggle';
 import Notice from '../ui/Notice';
+import LoadError from '../ui/LoadError';
+import { Skel } from '../ui/Skeleton';
 import {
 	customizedKeys,
 	customKeyLabel,
@@ -46,51 +53,106 @@ function conn( settings ) {
 	return settings?.connectivity || {};
 }
 
+/**
+ * Single avatar value (v2.3 site-wide enum; tolerate the legacy split object).
+ *
+ * @param {Object} settings
+ * @return {string} Avatar enum.
+ */
+function avatarOf( settings ) {
+	const avatar = conn( settings ).avatar || 'cravatar_cn';
+	return typeof avatar === 'string' ? avatar : avatar.admin || 'cravatar_cn';
+}
+
+/**
+ * Visible switch label (§8: switches carry 已开启 / 未开启).
+ *
+ * @param {boolean} on
+ * @return {string} Label.
+ */
+function onOff( on ) {
+	return on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' );
+}
+
 export default function Connect() {
-	const { settings, saving, notice, capabilities } = useSelect(
-		( select ) => {
-			const store = select( STORE_NAME );
-			return {
-				settings: store.getSettings() || {},
-				saving: store.isSaving(),
-				notice: store.getNotice(),
-				capabilities: store.getCapabilities() || {},
-			};
-		},
-		[]
-	);
-	const { patchSettings, clearNotice } = useDispatch( STORE_NAME );
+	const {
+		settings,
+		saving,
+		capabilities,
+		binding,
+		bindingError,
+		loadError,
+		unsaved,
+	} = useSelect( ( select ) => {
+		const store = select( STORE_NAME );
+		return {
+			settings: store.getSettings() || {},
+			saving: store.isSaving(),
+			capabilities: store.getCapabilities() || {},
+			binding: store.getBinding(),
+			bindingError: store.getBindingError(),
+			loadError: store.getSettingsError(),
+			unsaved: store.getUnsaved(),
+		};
+	}, [] );
+	const { patchSettings, fetchBinding, fetchNetworkSettings } =
+		useDispatch( STORE_NAME );
+	const network = Boolean( capabilities.network_admin );
+	const networkLocked = ! network && Boolean( capabilities.network_locked );
+
 	const [ view, setView ] = useState( 'simple' );
 	const [ suggest, setSuggest ] = useState( null );
 	const [ pendingProfile, setPendingProfile ] = useState( null );
-	const [ savedFlash, setSavedFlash ] = useState( '' );
+	const [ switching, setSwitching ] = useState( false );
+	const [ savedFlash, setSavedFlash ] = useState( {} );
+	const [ cardError, setCardError ] = useState( null );
+	const [ networkLoaded, setNetworkLoaded ] = useState( ! network );
+	const flashTimer = useRef( 0 );
 
 	useEffect( () => {
 		let cancelled = false;
-		apiFetch( { path: '/wp/v2/users/me?context=edit' } )
-			.then( ( me ) => {
-				if ( cancelled ) {
-					return;
-				}
-				if ( me?.meta?.[ META_KEY ] === 'advanced' ) {
-					setView( 'advanced' );
-				}
-			} )
-			.catch( () => {} );
-		apiFetch( { path: '/wpcy/v1/profile/suggest' } )
-			.then( ( body ) => {
+		if ( ! networkLocked ) {
+			// L-7 ②: read failure = simple, no message.
+			apiFetch( { path: '/wp/v2/users/me?context=edit' } )
+				.then( ( me ) => {
+					if (
+						! cancelled &&
+						me?.meta?.[ META_KEY ] === 'advanced'
+					) {
+						setView( 'advanced' );
+					}
+				} )
+				.catch( () => {} );
+		}
+		if ( network ) {
+			Promise.resolve( fetchNetworkSettings() ).finally( () => {
 				if ( ! cancelled ) {
-					setSuggest( body );
+					setNetworkLoaded( true );
 				}
-			} )
-			.catch( () => {} );
+			} );
+		} else {
+			fetchBinding();
+		}
+		if ( ! network && ! networkLocked ) {
+			// L-7 ①: failure or timeout = no suggestion, no message.
+			apiFetch( { path: '/wpcy/v1/profile/suggest' } )
+				.then( ( body ) => {
+					if ( ! cancelled ) {
+						setSuggest( body );
+					}
+				} )
+				.catch( () => {} );
+		}
 		return () => {
 			cancelled = true;
+			window.clearTimeout( flashTimer.current );
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] );
 
 	const setViewPersist = ( next ) => {
 		setView( next );
+		// L-7 ②: a failed write only affects the preference; no message.
 		apiFetch( {
 			path: '/wp/v2/users/me',
 			method: 'POST',
@@ -99,46 +161,103 @@ export default function Connect() {
 	};
 
 	const flash = ( key ) => {
-		setSavedFlash( key );
-		window.setTimeout( () => setSavedFlash( '' ), 2000 );
+		window.clearTimeout( flashTimer.current );
+		setSavedFlash( { [ key ]: __( '已保存 ✓', 'wp-china-yes' ) } );
+		flashTimer.current = window.setTimeout(
+			() => setSavedFlash( {} ),
+			2000
+		);
 	};
 
-	const patch = ( data, key ) => {
-		clearNotice();
-		return patchSettings( data ).then( ( action ) => {
-			if ( ! action?.notice ) {
-				flash( key );
-			}
-			return action;
+	// Network lock rejection: stays until the next save on this page.
+	const lockedNotice = ( key ) => {
+		window.clearTimeout( flashTimer.current );
+		setSavedFlash( {
+			[ key ]: __( '网络管理员已锁定此项，修改未保存。', 'wp-china-yes' ),
 		} );
 	};
 
-	const profile = settings.profile || 'domestic';
-	const networkLocked = Boolean(
-		capabilities.network_locked || settings.network_locked
-	);
-	const customs = customizedKeys( settings );
-	const suggestion = suggest?.suggestion;
-	const cards = sceneCards();
+	/**
+	 * CO-01: PUT the partial object; on any non-2xx the store rolls the
+	 * control back and this card shows the red alert with 重试. A network
+	 * lock rejection is not a generic failure: the item's status line says
+	 * so instead, with no alert and no 重试.
+	 *
+	 * @param {Object} data Partial settings body.
+	 * @param {string} key  Field key for 「已保存 ✓」.
+	 * @param {string} card Card id for the alert.
+	 * @return {Promise<Object>} Save result.
+	 */
+	const patch = ( data, key, card ) => {
+		setCardError( null );
+		window.clearTimeout( flashTimer.current );
+		setSavedFlash( {} );
+		return Promise.resolve(
+			patchSettings(
+				// Input kept after a lock refusal goes out with the next save.
+				mergeSettings( unsaved || {}, data ),
+				network ? { path: NETWORK_SETTINGS_PATH } : undefined
+			)
+		).then( ( result ) => {
+			if ( result?.ok ) {
+				flash( key );
+			} else if ( result?.error?.locked ) {
+				// Refused field: reverted, lock hint in its status line.
+				// Other fields of the request: no 已保存 ✓, kept as unsaved.
+				const own = leafPaths( data );
+				if (
+					( result.error.lockedPaths || [] ).some( ( path ) =>
+						own.includes( path )
+					)
+				) {
+					lockedNotice( key );
+				}
+			} else {
+				setCardError( {
+					card,
+					key,
+					data,
+					message:
+						result?.error?.message ||
+						__( '暂时无法保存设置，请稍后重试。', 'wp-china-yes' ),
+				} );
+			}
+			return result;
+		} );
+	};
 
-	const lede =
-		view === 'advanced'
-			? sprintf(
-					/* translators: %s: scene name */
-					__(
-						'已按「%s」配好 · 高级模式显示每项的源与作用域',
-						'wp-china-yes'
-					),
-					profileLabel( profile )
-			  )
-			: sprintf(
-					/* translators: %s: scene name */
-					__(
-						'已按「%s」配好 · 改动即时生效，单项仍可调整',
-						'wp-china-yes'
-					),
-					profileLabel( profile )
-			  );
+	const retry = () => {
+		if ( cardError ) {
+			patch( cardError.data, cardError.key, cardError.card );
+		}
+	};
+
+	const profile = settings.profile || 'domestic';
+	const customs = customizedKeys( settings );
+	const suggestion = suggest?.suggestion || null;
+	const bound = binding?.status === 'bound';
+
+	let lede;
+	if ( networkLocked ) {
+		lede = __( '已由网络设定 · 本站不能单独修改', 'wp-china-yes' );
+	} else if ( network ) {
+		lede = __( '网络策略，子站可覆盖', 'wp-china-yes' );
+	} else if ( view === 'advanced' ) {
+		lede = sprintf(
+			/* translators: %s: scene name */
+			__(
+				'已按「%s」配好 · 高级模式显示每项的源与作用域',
+				'wp-china-yes'
+			),
+			profileLabel( profile )
+		);
+	} else {
+		lede = sprintf(
+			/* translators: %s: scene name */
+			__( '已按「%s」配好 · 改动即时生效，单项仍可调整', 'wp-china-yes' ),
+			profileLabel( profile )
+		);
+	}
 
 	const mode = (
 		<div className="mode">
@@ -148,6 +267,7 @@ export default function Connect() {
 				<button
 					type="button"
 					className={ view === 'simple' ? 'on' : '' }
+					aria-pressed={ view === 'simple' }
 					onClick={ () => setViewPersist( 'simple' ) }
 				>
 					{ __( '简单', 'wp-china-yes' ) }
@@ -155,6 +275,7 @@ export default function Connect() {
 				<button
 					type="button"
 					className={ view === 'advanced' ? 'on' : '' }
+					aria-pressed={ view === 'advanced' }
 					onClick={ () => setViewPersist( 'advanced' ) }
 				>
 					{ __( '高级', 'wp-china-yes' ) }
@@ -163,109 +284,295 @@ export default function Connect() {
 		</div>
 	);
 
-	return (
-		<PageShell
-			title={ __( '设置', 'wp-china-yes' ) }
-			lede={
-				networkLocked
-					? __( '已由网络设定 · 本站不能单独修改', 'wp-china-yes' )
-					: lede
-			}
-			actions={ networkLocked ? null : mode }
-		>
-			{ notice?.status === 'error' ? (
-				<Notice tone="warn">{ notice.message }</Notice>
-			) : null }
-			{ networkLocked ? (
-				<Notice tone="info">
-					{ __(
-						'这些设置由网络管理员统一设定。需要本站单独调整时，请联系网络管理员在网络后台开放「允许子站覆盖」。',
-						'wp-china-yes'
-					) }
-				</Notice>
-			) : null }
+	const confirmSwitch = () => {
+		const next = pendingProfile;
+		setSwitching( true );
+		patch( { profile: next }, 'profile', 'scene' ).finally( () => {
+			setSwitching( false );
+			setPendingProfile( null );
+		} );
+	};
+
+	const shared = {
+		settings,
+		disabled: networkLocked,
+		locked: networkLocked,
+		patch,
+		savedFlash,
+		cardError,
+		onRetry: retry,
+	};
+
+	let body;
+	if ( network && ! networkLoaded ) {
+		body = (
+			<div className="wpcy-stack" aria-busy="true">
+				<section className="card">
+					<Skel className="skel-title" />
+					<Skel />
+					<Skel className="skel-block" />
+				</section>
+			</div>
+		);
+	} else if ( network && loadError ) {
+		body = (
+			<LoadError
+				what={ __( '设置', 'wp-china-yes' ) }
+				onRetry={ () => fetchNetworkSettings() }
+			/>
+		);
+	} else {
+		body = (
 			<div className="wpcy-stack">
+				{ networkLocked ? (
+					<Notice tone="info">
+						{ __(
+							'这些设置由网络管理员统一设定。需要本站单独调整时，请联系网络管理员在网络后台开放「允许子站覆盖」。',
+							'wp-china-yes'
+						) }
+					</Notice>
+				) : null }
+				{ network ? <OverrideCard { ...shared } /> : null }
 				<SceneCard
+					{ ...shared }
 					profile={ profile }
-					cards={ cards }
+					cards={ sceneCards() }
 					suggestion={ suggestion }
 					customs={ customs }
-					disabled={ networkLocked }
+					network={ network }
 					onPick={ ( id ) => {
 						if ( id !== profile ) {
 							setPendingProfile( id );
 						}
 					} }
 				/>
-				{ view === 'simple' ? (
+				{ view === 'simple' || networkLocked ? (
 					<>
 						<SimpleAccel
-							settings={ settings }
-							disabled={ networkLocked }
-							patch={ patch }
-							savedFlash={ savedFlash }
+							{ ...shared }
+							network={ network }
+							bound={ bound }
+							bindingError={ bindingError }
+							onRetryBinding={ () => fetchBinding() }
 						/>
-						<SimpleAdmin
-							settings={ settings }
-							disabled={ networkLocked }
-							patch={ patch }
-						/>
+						<AdminCard { ...shared } />
 					</>
 				) : (
 					<>
 						<AdvancedConn
-							settings={ settings }
-							disabled={ networkLocked }
-							patch={ patch }
-							savedFlash={ savedFlash }
+							{ ...shared }
 							customs={ customs }
+							network={ network }
+							bound={ bound }
+							bindingError={ bindingError }
+							onRetryBinding={ () => fetchBinding() }
 						/>
-						<SimpleAdmin
-							settings={ settings }
-							disabled={ networkLocked }
-							patch={ patch }
-							advanced
-						/>
+						<AdminCard { ...shared } advanced />
 					</>
 				) }
 			</div>
+		);
+	}
+
+	return (
+		<PageShell
+			title={ __( '设置', 'wp-china-yes' ) }
+			lede={ lede }
+			actions={ networkLocked ? null : mode }
+			showTabs={ ! network }
+		>
+			{ body }
 			{ pendingProfile ? (
-				<Modal
-					title={ sprintf(
-						/* translators: %s: scene */
-						__( '切换到「%s」？', 'wp-china-yes' ),
-						profileLabel( pendingProfile )
-					) }
-					onRequestClose={ () => setPendingProfile( null ) }
-				>
-					<p>
-						{ __(
-							'切换场景会把下面各项重置为该场景的默认组合。',
-							'wp-china-yes'
-						) }
-					</p>
-					<p className="wpcy-card-actions">
-						<Btn
-							variant="primary"
-							disabled={ saving }
-							onClick={ () => {
-								const next = pendingProfile;
-								setPendingProfile( null );
-								patch( { profile: next }, 'profile' );
-							} }
-						>
-							{ __( '切换', 'wp-china-yes' ) }
-						</Btn>
-						<Btn
-							variant="secondary"
-							onClick={ () => setPendingProfile( null ) }
-						>
-							{ __( '取消', 'wp-china-yes' ) }
-						</Btn>
-					</p>
-				</Modal>
+				<SwitchModal
+					target={ pendingProfile }
+					customs={ customs }
+					busy={ switching || saving }
+					onConfirm={ confirmSwitch }
+					onClose={ () => {
+						if ( ! switching ) {
+							setPendingProfile( null );
+						}
+					} }
+				/>
 			) : null }
 		</PageShell>
+	);
+}
+
+/**
+ * Customized-items sentence (CO-11 / L-6).
+ *
+ * @param {string[]} customs Customized keys.
+ * @return {string} Sentence.
+ */
+function customsSentence( customs ) {
+	return sprintf(
+		/* translators: 1: count 2: names */
+		__(
+			'改过的设置在切换场景后会恢复默认（当前 %1$d 项：%2$s）。',
+			'wp-china-yes'
+		),
+		customs.length,
+		customs.map( customKeyLabel ).join( '、' )
+	);
+}
+
+function SwitchModal( { target, customs, busy, onConfirm, onClose } ) {
+	return (
+		<Modal
+			title={ sprintf(
+				/* translators: %s: scene */
+				__( '切换到「%s」？', 'wp-china-yes' ),
+				profileLabel( target )
+			) }
+			closeButtonLabel={ __( '关闭', 'wp-china-yes' ) }
+			onRequestClose={ onClose }
+			className="wpcy-app wpcy-switch-modal"
+		>
+			<p>
+				{ __(
+					'切换场景会把下面各项重置为该场景的默认组合。',
+					'wp-china-yes'
+				) }
+			</p>
+			{ customs.length ? (
+				<Notice tone="warn">{ customsSentence( customs ) }</Notice>
+			) : null }
+			<div className="wpcy-modal-foot">
+				<Btn variant="secondary" disabled={ busy } onClick={ onClose }>
+					{ __( '取消', 'wp-china-yes' ) }
+				</Btn>
+				<Btn
+					variant="primary"
+					isBusy={ busy }
+					disabled={ busy }
+					onClick={ onConfirm }
+				>
+					{ __( '切换', 'wp-china-yes' ) }
+				</Btn>
+			</div>
+		</Modal>
+	);
+}
+
+/**
+ * CO-01 card-top red alert with 重试 (L-5). role="alert".
+ *
+ * @param {Object}      props
+ * @param {Object|null} props.cardError
+ * @param {string}      props.card
+ * @param {Function}    props.onRetry
+ */
+function CardAlert( { cardError, card, onRetry } ) {
+	if ( ! cardError || cardError.card !== card ) {
+		return null;
+	}
+	return (
+		<Notice
+			tone="bad"
+			icon="warn"
+			role="alert"
+			className="card-alert"
+			action={
+				<Btn variant="secondary" onClick={ onRetry }>
+					{ __( '重试', 'wp-china-yes' ) }
+				</Btn>
+			}
+		>
+			{ cardError.message }
+		</Notice>
+	);
+}
+
+/**
+ * Status text for one field ('' when idle).
+ *
+ * @param {Object<string, string>} status Field key → status text.
+ * @param {string}                 key    Field key.
+ * @return {string} Text for that field's status line.
+ */
+function statusText( status, key ) {
+	return ( status && status[ key ] ) || '';
+}
+
+/**
+ * Per-field save status (admin-ui-spec §8): the role=status container is
+ * mounted from first paint and only its text changes, so screen readers
+ * announce 「已保存 ✓」 once per save.
+ *
+ * @param {Object} props
+ * @param {string} props.text Current status text ('' when idle).
+ */
+function Saved( { text } ) {
+	return (
+		<span className="saved" role="status">
+			{ text }
+		</span>
+	);
+}
+
+/**
+ * Card title with the subsite 「已由网络设定」 pill (CO-06).
+ *
+ * @param {Object}                    props
+ * @param {string}                    props.icon
+ * @param {boolean}                   props.locked
+ * @param {import('react').ReactNode} props.children
+ */
+function CardTitle( { icon, locked, children } ) {
+	return (
+		<h2 className="section-title">
+			<Icon name={ icon } size={ 18 } />
+			{ children }
+			{ locked ? (
+				<span className="wpcy-locked-pill">
+					<Pill>{ __( '已由网络设定', 'wp-china-yes' ) }</Pill>
+				</span>
+			) : null }
+		</h2>
+	);
+}
+
+function OverrideCard( { settings, patch, savedFlash, cardError, onRetry } ) {
+	const allow = settings.allow_site_override !== false;
+	return (
+		<section className="card" data-card="override">
+			<CardTitle icon="layers">
+				{ __( '子站覆盖', 'wp-china-yes' ) }
+			</CardTitle>
+			<p className="section-desc">
+				{ __( '下面是全网络的默认设置。', 'wp-china-yes' ) }
+			</p>
+			<CardAlert
+				cardError={ cardError }
+				card="override"
+				onRetry={ onRetry }
+			/>
+			<SimpleRowWrap
+				icon="layers"
+				ok={ allow }
+				title={ __( '允许子站覆盖', 'wp-china-yes' ) }
+				help={ __(
+					'开启后，子站管理员可以在本站设置里单独调整；关闭后子站的单独调整不再生效，全网络统一使用这里的设置。恢复模式始终按子站生效。',
+					'wp-china-yes'
+				) }
+			>
+				<Toggle
+					checked={ allow }
+					label={ onOff( allow ) }
+					onChange={ ( on ) =>
+						patch(
+							{ allow_site_override: on },
+							'allow_site_override',
+							'override'
+						)
+					}
+				/>
+				<Saved
+					text={ statusText( savedFlash, 'allow_site_override' ) }
+				/>
+			</SimpleRowWrap>
+		</section>
 	);
 }
 
@@ -275,28 +582,41 @@ function SceneCard( {
 	suggestion,
 	customs,
 	disabled,
+	locked,
+	network,
 	onPick,
+	savedFlash,
+	cardError,
+	onRetry,
 } ) {
-	const suggestLabel = suggestion ? profileLabel( suggestion ) : '';
+	const plain = ! locked && ! network;
 	return (
-		<section className="card">
-			<h2 className="section-title">
-				<Icon name="map" size={ 18 } />
+		<section className="card" data-card="scene">
+			<CardTitle icon="map" locked={ locked }>
 				{ __( '站点场景', 'wp-china-yes' ) }
-			</h2>
+			</CardTitle>
 			<p className="section-desc">
-				{ __(
-					'选对你的生意方向，加速和推荐都会跟着它走；每一项之后仍可单独调整。',
-					'wp-china-yes'
-				) }
+				{ locked
+					? __( '网络管理员为全网络选定的场景。', 'wp-china-yes' )
+					: __(
+							'场景决定下面各项的默认组合；每一项之后仍可单独调整。',
+							'wp-china-yes'
+					  ) }
 			</p>
+			<CardAlert
+				cardError={ cardError }
+				card="scene"
+				onRetry={ onRetry }
+			/>
 			<div className="choice-cards cols-2">
 				{ cards.map( ( card ) => (
 					<label
 						key={ card.id }
 						htmlFor={ 'wpcy-profile-' + card.id }
 						className={
-							'choice' + ( profile === card.id ? ' is-on' : '' )
+							'choice' +
+							( profile === card.id ? ' is-on' : '' ) +
+							( disabled ? ' is-disabled' : '' )
 						}
 					>
 						<input
@@ -310,7 +630,7 @@ function SceneCard( {
 						<span>
 							<div className="t">
 								{ card.title }
-								{ suggestion === card.id ? (
+								{ plain && suggestion === card.id ? (
 									<span className="rec">
 										{ __( '推荐', 'wp-china-yes' ) }
 									</span>
@@ -321,231 +641,306 @@ function SceneCard( {
 					</label>
 				) ) }
 			</div>
-			<div className="scene-assert">
-				{ suggestion ? (
+			{ plain ? (
+				<div className="scene-assert">
 					<Notice
 						tone="info"
 						action={
-							profile === suggestion ? (
-								<Btn variant="secondary" disabled>
-									{ __( '已是推荐场景', 'wp-china-yes' ) }
-								</Btn>
-							) : (
-								<Btn
-									variant="secondary"
-									onClick={ () => onPick( suggestion ) }
-								>
-									{ __( '应用建议', 'wp-china-yes' ) }
-								</Btn>
-							)
+							suggestion ? (
+								<SuggestAction
+									profile={ profile }
+									suggestion={ suggestion }
+									onPick={ onPick }
+								/>
+							) : null
 						}
 					>
-						{ sprintf(
-							/* translators: %s: scene */
-							__(
-								'侦测到服务器在海外、管理员在国内，已为你选好「%s」。',
-								'wp-china-yes'
-							),
-							suggestLabel
-						) }
-					</Notice>
-				) : null }
-				{ customs.length ? (
-					<Notice tone="warn">
-						{ sprintf(
-							/* translators: 1: count 2: names */
-							__(
-								'改过的设置在切换场景后会恢复默认（当前 %1$d 项：%2$s）。',
-								'wp-china-yes'
-							),
-							customs.length,
-							customs.map( customKeyLabel ).join( '、' )
-						) }
-					</Notice>
-				) : null }
-			</div>
-			<p
-				className="hint"
-				style={ {
-					marginTop: 12,
-					color: 'var(--wpcy-ink-3)',
-					fontSize: 12,
-				} }
-			>
-				{ __( '拿不准？', 'wp-china-yes' ) }
-				<a href={ adminPageUrl( PAGES.onboarding ) }>
-					{ __( '跑一次 30 秒设置向导', 'wp-china-yes' ) }
-				</a>
-			</p>
-		</section>
-	);
-}
-
-function SimpleAccel( { settings, disabled, patch, savedFlash } ) {
-	const c = conn( settings );
-	const orgOn = ( c.wordpress_org || 'auto' ) !== 'off';
-	const assetsOn = ( c.public_assets?.scope || 'both' ) !== 'off';
-	const avatar = c.avatar || 'cravatar_cn';
-	const avatarValue =
-		typeof avatar === 'string' ? avatar : avatar.admin || 'cravatar_cn';
-	const avatarOn = avatarValue !== 'off';
-	const assetScope = c.public_assets?.scope || 'both';
-	const def = sceneDefaults( settings.profile || 'domestic' );
-
-	return (
-		<section className="card">
-			<h2 className="section-title">
-				<Icon name="bolt" size={ 18 } />
-				{ __( '加速与优化', 'wp-china-yes' ) }
-			</h2>
-			<p className="section-desc">
-				{ __(
-					'按当前场景已配好，通常不需要改。想看具体走哪个源、只在后台还是前台生效，切到右上角的「高级」。',
-					'wp-china-yes'
-				) }
-			</p>
-			<div className="simple-row">
-				<div className={ 'tile' + ( orgOn ? ' ok' : '' ) }>
-					<Icon name="download" size={ 18 } />
-				</div>
-				<div>
-					<div className="t">
-						{ __( 'WordPress 更新与安装', 'wp-china-yes' ) }
-						<Prov>WenPai.org</Prov>
-					</div>
-					<div className="d">
 						{ __(
-							'按场景自动选择：国内站走国内镜像，跨境站直连 WordPress.org',
+							'切换场景会把下面各项重置为该场景的默认组合。',
 							'wp-china-yes'
 						) }
-					</div>
-				</div>
-				<div className="r">
-					<Pill tone={ orgOn ? 'ok' : '' }>
-						{ orgOn
-							? __( '国内镜像', 'wp-china-yes' )
-							: __( '直连 WordPress.org', 'wp-china-yes' ) }
-					</Pill>
-				</div>
-			</div>
-			<div className="simple-row">
-				<div className={ 'tile' + ( assetsOn ? ' ok' : '' ) }>
-					<Icon name="bolt" size={ 18 } />
-				</div>
-				<div>
-					<div className="t">
-						{ __( '公共库接通', 'wp-china-yes' ) }
-						<Prov>adminCDN</Prov>
-					</div>
-					<div className="d">
-						{ __(
-							'Google Fonts、Ajax、jsDelivr 等改到国内节点',
-							'wp-china-yes'
-						) }
-					</div>
-				</div>
-				<div className="r">
-					{ assetsOn ? (
-						<Scope>{ scopeWord( assetScope ) }</Scope>
+						{ suggestion
+							? sprintf(
+									/* translators: %s: scene */
+									__(
+										'根据服务器位置和你的浏览器，我们建议：%s。',
+										'wp-china-yes'
+									),
+									profileLabel( suggestion )
+							  )
+							: null }
+					</Notice>
+					{ customs.length ? (
+						<Notice tone="warn">
+							{ customsSentence( customs ) }
+						</Notice>
 					) : null }
-					<Toggle
-						checked={ assetsOn }
-						disabled={ disabled }
-						label={
-							assetsOn
-								? __( '已开启', 'wp-china-yes' )
-								: __( '未开启', 'wp-china-yes' )
-						}
-						onChange={ ( on ) =>
-							patch(
-								{
-									connectivity: {
-										public_assets: {
-											items: FIVE,
-											scope: on
-												? def.public_assets.scope
-												: 'off',
-										},
-									},
-								},
-								'assets'
-							)
-						}
-					/>
 				</div>
-			</div>
-			<div className="simple-row">
-				<div className={ 'tile' + ( avatarOn ? ' ok' : '' ) }>
-					<Icon name="user" size={ 18 } />
-				</div>
-				<div>
-					<div className="t">
-						{ __( '头像接通', 'wp-china-yes' ) }
-						<Prov>Cravatar</Prov>
-					</div>
-					<div className="d">
-						{ __(
-							'Gravatar 在国内打不开，头像改走中国线路',
-							'wp-china-yes'
-						) }
-					</div>
-				</div>
-				<div className="r">
-					<Toggle
-						checked={ avatarOn }
-						disabled={ disabled }
-						label={
-							avatarOn
-								? __( '已开启', 'wp-china-yes' )
-								: __( '未开启', 'wp-china-yes' )
-						}
-						onChange={ ( on ) =>
-							patch(
-								{
-									connectivity: {
-										avatar: on ? def.avatar : 'off',
-									},
-								},
-								'avatar'
-							)
-						}
-					/>
-				</div>
-			</div>
-			<div className="simple-row">
-				<div className="tile">
-					<Icon name="font" size={ 18 } />
-				</div>
-				<div>
-					<div className="t">
-						{ __( '中文字体', 'wp-china-yes' ) }
-						<Prov>Windfonts</Prov>
-					</div>
-					<div className="d">
-						{ __( '让站点用上更好看的中文字体', 'wp-china-yes' ) }
-					</div>
-				</div>
-				<div className="r">
-					<Scope href={ adminPageUrl( PAGES.services ) }>
-						{ __( '绑定本站后可用', 'wp-china-yes' ) }
-					</Scope>
-					<Toggle
-						checked={ false }
-						disabled
-						label={ __( '未开启', 'wp-china-yes' ) }
-					/>
-				</div>
-			</div>
-			{ savedFlash ? (
-				<span className="saved">
-					{ __( '已保存 ✓', 'wp-china-yes' ) }
-				</span>
+			) : null }
+			<Saved text={ statusText( savedFlash, 'profile' ) } />
+			{ plain ? (
+				<p className="hint wpcy-wizard-entry">
+					{ __( '拿不准？', 'wp-china-yes' ) }
+					<a href={ adminPageUrl( PAGES.onboarding ) }>
+						{ __( '跑一次 30 秒设置向导', 'wp-china-yes' ) }
+					</a>
+				</p>
 			) : null }
 		</section>
 	);
 }
 
-function SimpleAdmin( { settings, disabled, patch, advanced } ) {
+function SuggestAction( { profile, suggestion, onPick } ) {
+	if ( profile === suggestion ) {
+		return (
+			<Btn variant="secondary" disabled>
+				{ __( '已是推荐场景', 'wp-china-yes' ) }
+			</Btn>
+		);
+	}
+	return (
+		<Btn variant="secondary" onClick={ () => onPick( suggestion ) }>
+			{ __( '应用建议', 'wp-china-yes' ) }
+		</Btn>
+	);
+}
+
+/**
+ * CO-13 ④ / CO-05 right-hand control for 中文字体, by binding state.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.settings
+ * @param {boolean}  props.network
+ * @param {boolean}  props.bound
+ * @param {boolean}  props.bindingError
+ * @param {boolean}  props.disabled
+ * @param {Function} props.patch
+ * @param {Object}   props.savedFlash
+ * @param {string}   props.card
+ * @param {Function} props.onRetryBinding
+ * @param {string}   [props.label]        Advanced switch label.
+ */
+function FontControl( {
+	settings,
+	network,
+	bound,
+	bindingError,
+	disabled,
+	patch,
+	savedFlash,
+	card,
+	onRetryBinding,
+	label,
+} ) {
+	const on = Boolean( settings?.modules?.windfonts );
+	if ( network ) {
+		return (
+			<>
+				<Scope>{ __( '各子站绑定后可用', 'wp-china-yes' ) }</Scope>
+				<Toggle
+					checked={ false }
+					disabled
+					label={ label || onOff( false ) }
+				/>
+			</>
+		);
+	}
+	if ( bindingError ) {
+		// L-7 ③: SH-06 instead of 「绑定本站后可用」, switch disabled.
+		return (
+			<>
+				<LoadError
+					what={ __( '绑定状态', 'wp-china-yes' ) }
+					onRetry={ onRetryBinding }
+				/>
+				<Toggle
+					checked={ on }
+					disabled
+					label={ label || onOff( on ) }
+				/>
+			</>
+		);
+	}
+	if ( ! bound ) {
+		return (
+			<>
+				<Scope href={ adminPageUrl( PAGES.services ) }>
+					{ __( '绑定本站后可用', 'wp-china-yes' ) }
+				</Scope>
+				<Toggle
+					checked={ false }
+					disabled
+					label={ label || onOff( false ) }
+				/>
+			</>
+		);
+	}
+	return (
+		<>
+			<Toggle
+				checked={ on }
+				disabled={ disabled }
+				label={ label || onOff( on ) }
+				onChange={ ( next ) =>
+					patch( { modules: { windfonts: next } }, 'windfonts', card )
+				}
+			/>
+			<Saved text={ statusText( savedFlash, 'windfonts' ) } />
+		</>
+	);
+}
+
+function SimpleAccel( {
+	settings,
+	disabled,
+	locked,
+	network,
+	patch,
+	savedFlash,
+	cardError,
+	onRetry,
+	bound,
+	bindingError,
+	onRetryBinding,
+} ) {
+	const c = conn( settings );
+	const orgOn = ( c.wordpress_org || 'auto' ) !== 'off';
+	const assetScope = c.public_assets?.scope || 'both';
+	const assetsOn = assetScope !== 'off';
+	const avatarOn = avatarOf( settings ) !== 'off';
+	const def = sceneDefaults( settings.profile || 'domestic' );
+	const fontOn = Boolean( settings?.modules?.windfonts );
+
+	return (
+		<section className="card" data-card="accel">
+			<CardTitle icon="bolt" locked={ locked }>
+				{ __( '加速与优化', 'wp-china-yes' ) }
+			</CardTitle>
+			<p className="section-desc">
+				{ locked
+					? __( '按网络选定的场景配好。', 'wp-china-yes' )
+					: __(
+							'按当前场景已配好，通常不需要改。想看具体走哪个源、只在后台还是前台生效，切到右上角的「高级」。',
+							'wp-china-yes'
+					  ) }
+			</p>
+			<CardAlert
+				cardError={ cardError }
+				card="accel"
+				onRetry={ onRetry }
+			/>
+			<SimpleRowWrap
+				icon="download"
+				ok
+				title={ __( 'WordPress 更新与安装', 'wp-china-yes' ) }
+				help={ __(
+					'按场景自动选择：跨境站直连 WordPress.org，国内站走国内镜像',
+					'wp-china-yes'
+				) }
+			>
+				<Pill tone="ok">
+					{ orgOn
+						? __( '国内镜像', 'wp-china-yes' )
+						: __( '直连 WordPress.org', 'wp-china-yes' ) }
+				</Pill>
+			</SimpleRowWrap>
+			<SimpleRowWrap
+				icon="bolt"
+				ok={ assetsOn }
+				title={ __( '公共库接通', 'wp-china-yes' ) }
+				help={ __(
+					'字体、脚本等第三方公共资源改到更快的源',
+					'wp-china-yes'
+				) }
+			>
+				{ assetsOn ? <Scope>{ scopeWord( assetScope ) }</Scope> : null }
+				<Toggle
+					checked={ assetsOn }
+					disabled={ disabled }
+					label={ onOff( assetsOn ) }
+					onChange={ ( on ) =>
+						patch(
+							{
+								connectivity: {
+									public_assets: {
+										items: Array.isArray(
+											c.public_assets?.items
+										)
+											? c.public_assets.items
+											: FIVE,
+										scope: on
+											? def.public_assets.scope
+											: 'off',
+									},
+								},
+							},
+							'assets',
+							'accel'
+						)
+					}
+				/>
+				<Saved text={ statusText( savedFlash, 'assets' ) } />
+			</SimpleRowWrap>
+			<SimpleRowWrap
+				icon="user"
+				ok={ avatarOn }
+				title={ __( '头像接通', 'wp-china-yes' ) }
+				help={ __(
+					'Gravatar 的中国替代，头像不再空白',
+					'wp-china-yes'
+				) }
+			>
+				{ avatarOn ? <Scope>{ scopeWord( 'both' ) }</Scope> : null }
+				<Toggle
+					checked={ avatarOn }
+					disabled={ disabled }
+					label={ onOff( avatarOn ) }
+					onChange={ ( on ) =>
+						patch(
+							{
+								connectivity: {
+									avatar: on ? def.avatar : 'off',
+								},
+							},
+							'avatar',
+							'accel'
+						)
+					}
+				/>
+				<Saved text={ statusText( savedFlash, 'avatar' ) } />
+			</SimpleRowWrap>
+			<SimpleRowWrap
+				icon="font"
+				ok={ fontOn && bound }
+				title={ __( '中文字体（Windfonts）', 'wp-china-yes' ) }
+				help={ __( '让站点用上更好看的中文字体', 'wp-china-yes' ) }
+			>
+				<FontControl
+					settings={ settings }
+					network={ network }
+					bound={ bound }
+					bindingError={ bindingError }
+					disabled={ disabled }
+					patch={ patch }
+					savedFlash={ savedFlash }
+					card="accel"
+					onRetryBinding={ onRetryBinding }
+				/>
+			</SimpleRowWrap>
+		</section>
+	);
+}
+
+function AdminCard( {
+	settings,
+	disabled,
+	locked,
+	patch,
+	savedFlash,
+	cardError,
+	onRetry,
+	advanced,
+} ) {
 	const c = conn( settings );
 	const heart = ( c.heartbeat || 'off' ) === 'on';
 	const feeds = ( c.dashboard_feeds || 'allow' ) === 'block';
@@ -558,20 +953,26 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 			? true
 			: Boolean( settings.admin.hide_promo );
 	const Row = advanced ? FieldRow : SimpleRowWrap;
+	const save = ( data, key ) => patch( data, key, 'admin' );
 	return (
-		<section className="card">
-			<h2 className="section-title">
-				<Icon name="monitor" size={ 18 } />
+		<section className="card" data-card="admin">
+			<CardTitle icon="monitor" locked={ locked }>
 				{ __( '后台体验', 'wp-china-yes' ) }
-			</h2>
+			</CardTitle>
 			<p className="section-desc">
 				{ __(
 					'为人在中国大陆、操作海外后台的管理员减少等待。',
 					'wp-china-yes'
 				) }
 			</p>
+			<CardAlert
+				cardError={ cardError }
+				card="admin"
+				onRetry={ onRetry }
+			/>
 			<Row
 				icon="bell"
+				ok={ hidePromo }
 				title={ __( '隐藏后台的推广与广告', 'wp-china-yes' ) }
 				help={ __(
 					'由文派服务下发规则，核心更新与安全通知不会隐藏。规则集最多沿用 72 小时。',
@@ -581,20 +982,16 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 				<Toggle
 					checked={ hidePromo }
 					disabled={ disabled }
-					label={
-						hidePromo
-							? __( '已开启', 'wp-china-yes' )
-							: __( '未开启', 'wp-china-yes' )
-					}
+					label={ onOff( hidePromo ) }
 					onChange={ ( on ) =>
-						patch( {
-							admin: { hide_promo: on },
-						} )
+						save( { admin: { hide_promo: on } }, 'hide_promo' )
 					}
 				/>
+				<Saved text={ statusText( savedFlash, 'hide_promo' ) } />
 			</Row>
 			<Row
 				icon="clock"
+				ok={ heart }
 				title={ __( '减少后台心跳', 'wp-china-yes' ) }
 				help={ __(
 					'仪表盘不再轮询，编辑器 60 秒一次',
@@ -604,42 +1001,42 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 				<Toggle
 					checked={ heart }
 					disabled={ disabled }
-					label={
-						heart
-							? __( '已开启', 'wp-china-yes' )
-							: __( '未开启', 'wp-china-yes' )
-					}
+					label={ onOff( heart ) }
 					onChange={ ( on ) =>
-						patch( {
-							connectivity: { heartbeat: on ? 'on' : 'off' },
-						} )
+						save(
+							{ connectivity: { heartbeat: on ? 'on' : 'off' } },
+							'heartbeat'
+						)
 					}
 				/>
+				<Saved text={ statusText( savedFlash, 'heartbeat' ) } />
 			</Row>
 			<Row
 				icon="block"
+				ok={ feeds }
 				title={ __( '不加载仪表盘的外部内容', 'wp-china-yes' ) }
 				help={ __( 'WordPress 新闻、活动等出站请求', 'wp-china-yes' ) }
 			>
 				<Toggle
 					checked={ feeds }
 					disabled={ disabled }
-					label={
-						feeds
-							? __( '已开启', 'wp-china-yes' )
-							: __( '未开启', 'wp-china-yes' )
-					}
+					label={ onOff( feeds ) }
 					onChange={ ( on ) =>
-						patch( {
-							connectivity: {
-								dashboard_feeds: on ? 'block' : 'allow',
+						save(
+							{
+								connectivity: {
+									dashboard_feeds: on ? 'block' : 'allow',
+								},
 							},
-						} )
+							'dashboard_feeds'
+						)
 					}
 				/>
+				<Saved text={ statusText( savedFlash, 'dashboard_feeds' ) } />
 			</Row>
 			<Row
 				icon="globe"
+				ok={ locale }
 				title={
 					advanced
 						? __( '后台界面语言', 'wp-china-yes' )
@@ -660,26 +1057,26 @@ function SimpleAdmin( { settings, disabled, patch, advanced } ) {
 				<Toggle
 					checked={ locale }
 					disabled={ disabled }
-					label={
-						locale
-							? __( '已开启', 'wp-china-yes' )
-							: __( '未开启', 'wp-china-yes' )
-					}
+					label={ onOff( locale ) }
 					onChange={ ( on ) =>
-						patch( {
-							connectivity: { admin_locale_follow: on },
-						} )
+						save(
+							{ connectivity: { admin_locale_follow: on } },
+							'admin_locale_follow'
+						)
 					}
+				/>
+				<Saved
+					text={ statusText( savedFlash, 'admin_locale_follow' ) }
 				/>
 			</Row>
 		</section>
 	);
 }
 
-function SimpleRowWrap( { icon, title, help, children } ) {
+function SimpleRowWrap( { icon, ok, title, help, children } ) {
 	return (
 		<div className="simple-row">
-			<div className="tile ok">
+			<div className={ 'tile' + ( ok ? ' ok' : '' ) }>
 				<Icon name={ icon } size={ 18 } />
 			</div>
 			<div>
@@ -706,37 +1103,45 @@ function FieldRow( { icon, title, help, children } ) {
 	);
 }
 
-function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
+function AdvancedConn( {
+	settings,
+	disabled,
+	network,
+	patch,
+	savedFlash,
+	customs,
+	cardError,
+	onRetry,
+	bound,
+	bindingError,
+	onRetryBinding,
+} ) {
 	const c = conn( settings );
 	const org = c.wordpress_org || 'auto';
 	const scope = c.public_assets?.scope || 'both';
 	const items = Array.isArray( c.public_assets?.items )
 		? c.public_assets.items
 		: FIVE;
-	const avatar = c.avatar || 'cravatar_cn';
-	const avatarValue =
-		typeof avatar === 'string' ? avatar : avatar.admin || 'cravatar_cn';
+	const avatarValue = avatarOf( settings );
 	const def = sceneDefaults( settings.profile || 'domestic' );
-
-	const restoreAvatar = () =>
-		patch( {
-			connectivity: {
-				avatar: def.avatar,
-			},
-		} );
+	const save = ( data, key ) => patch( data, key, 'conn' );
 
 	return (
-		<section className="card">
-			<h2 className="section-title">
-				<Icon name="globe" size={ 18 } />
+		<section className="card" data-card="conn">
+			<CardTitle icon="globe">
 				{ __( '连通性', 'wp-china-yes' ) }
-			</h2>
+			</CardTitle>
 			<p className="section-desc">
 				{ __(
 					'每一项都可以选择只作用于后台、只作用于前台，或两者。',
 					'wp-china-yes'
 				) }
 			</p>
+			<CardAlert
+				cardError={ cardError }
+				card="conn"
+				onRetry={ onRetry }
+			/>
 			<FieldRow
 				icon="download"
 				title={ __( 'WordPress.org 源', 'wp-china-yes' ) }
@@ -754,9 +1159,10 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 							checked={ org === 'auto' }
 							disabled={ disabled }
 							onChange={ () =>
-								patch( {
-									connectivity: { wordpress_org: 'auto' },
-								} )
+								save(
+									{ connectivity: { wordpress_org: 'auto' } },
+									'org'
+								)
 							}
 						/>
 						<span>
@@ -779,9 +1185,10 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 							checked={ org === 'off' }
 							disabled={ disabled }
 							onChange={ () =>
-								patch( {
-									connectivity: { wordpress_org: 'off' },
-								} )
+								save(
+									{ connectivity: { wordpress_org: 'off' } },
+									'org'
+								)
 							}
 						/>
 						<span>
@@ -797,11 +1204,7 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 						</span>
 					</label>
 				</div>
-				{ savedFlash === 'org' ? (
-					<span className="saved">
-						{ __( '已保存 ✓', 'wp-china-yes' ) }
-					</span>
-				) : null }
+				<Saved text={ statusText( savedFlash, 'org' ) } />
 			</FieldRow>
 			<FieldRow
 				icon="bolt"
@@ -822,23 +1225,27 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 							key={ value }
 							type="button"
 							className={ scope === value ? 'on' : '' }
+							aria-pressed={ scope === value }
 							disabled={ disabled }
 							onClick={ () =>
-								patch( {
-									connectivity: {
-										public_assets: {
-											items,
-											scope: value,
+								save(
+									{
+										connectivity: {
+											public_assets: {
+												items,
+												scope: value,
+											},
 										},
 									},
-								} )
+									'assets'
+								)
 							}
 						>
 							{ label }
 						</button>
 					) ) }
 				</div>
-				<div className="chk" style={ { marginTop: 12 } }>
+				<div className="chk wpcy-chk-gap">
 					{ FIVE.map( ( item ) => (
 						<label key={ item } htmlFor={ 'wpcy-asset-' + item }>
 							<input
@@ -850,33 +1257,36 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 									const next = ev.target.checked
 										? [ ...items, item ]
 										: items.filter( ( v ) => v !== item );
-									patch( {
-										connectivity: {
-											public_assets: {
-												items: next,
-												scope,
+									save(
+										{
+											connectivity: {
+												public_assets: {
+													items: next,
+													scope,
+												},
 											},
 										},
-									} );
+										'assets'
+									);
 								} }
 							/>
 							{ ASSET_LABEL[ item ] }
 						</label>
 					) ) }
 				</div>
+				<Saved text={ statusText( savedFlash, 'assets' ) } />
 			</FieldRow>
 			<AvatarField
 				value={ avatarValue }
 				disabled={ disabled }
 				custom={ customs.includes( 'avatar' ) }
-				onRestore={ restoreAvatar }
+				saved={ statusText( savedFlash, 'avatar' ) }
+				onRestore={ () =>
+					save( { connectivity: { avatar: def.avatar } }, 'avatar' )
+				}
 				defaultWord={ __( 'Cravatar 中国线路', 'wp-china-yes' ) }
 				onChange={ ( value ) =>
-					patch( {
-						connectivity: {
-							avatar: value,
-						},
-					} )
+					save( { connectivity: { avatar: value } }, 'avatar' )
 				}
 			/>
 			<FieldRow
@@ -887,14 +1297,18 @@ function AdvancedConn( { settings, disabled, patch, savedFlash, customs } ) {
 					'wp-china-yes'
 				) }
 			>
-				<Toggle
-					checked={ false }
-					disabled
+				<FontControl
+					settings={ settings }
+					network={ network }
+					bound={ bound }
+					bindingError={ bindingError }
+					disabled={ disabled }
+					patch={ patch }
+					savedFlash={ savedFlash }
+					card="conn"
+					onRetryBinding={ onRetryBinding }
 					label={ __( '启用 Windfonts', 'wp-china-yes' ) }
 				/>
-				<div className="hint">
-					{ __( '绑定本站后可用', 'wp-china-yes' ) }
-				</div>
 			</FieldRow>
 		</section>
 	);
@@ -905,75 +1319,67 @@ function AvatarField( {
 	disabled,
 	onChange,
 	custom,
+	saved,
 	onRestore,
 	defaultWord,
 } ) {
 	const title = __( '头像', 'wp-china-yes' );
 	const help = __( '评论与后台的头像源 · 由 Cravatar 提供', 'wp-china-yes' );
 	const name = 'avatar';
+	const options = [
+		[
+			'cravatar_cn',
+			'-cn',
+			__( 'Cravatar 中国线路', 'wp-china-yes' ),
+			__( 'cravatar.cn · 国内节点', 'wp-china-yes' ),
+		],
+		[
+			'cravatar_global',
+			'-global',
+			__( 'Cravatar 国际线路', 'wp-china-yes' ),
+			__( 'cravatar.com · 全球节点', 'wp-china-yes' ),
+		],
+		[
+			'off',
+			'-off',
+			__( '关闭', 'wp-china-yes' ),
+			__( '保留 Gravatar', 'wp-china-yes' ),
+		],
+	];
 	return (
 		<FieldRow icon="user" title={ title } help={ help }>
 			<div className="opts">
-				<label className="opt" htmlFor={ name + '-cn' }>
-					<input
-						id={ name + '-cn' }
-						type="radio"
-						name={ name }
-						checked={ value === 'cravatar_cn' }
-						disabled={ disabled }
-						onChange={ () => onChange( 'cravatar_cn' ) }
-					/>
-					<span>
-						<span className="t">
-							{ __( 'Cravatar 中国线路', 'wp-china-yes' ) }
+				{ options.map( ( [ val, suffix, t, d ] ) => (
+					<label
+						key={ val }
+						className="opt"
+						htmlFor={ name + suffix }
+					>
+						<input
+							id={ name + suffix }
+							type="radio"
+							name={ name }
+							checked={ value === val }
+							disabled={ disabled }
+							onChange={ () => onChange( val ) }
+						/>
+						<span>
+							<span className="t">{ t }</span>
+							<div className="d">{ d }</div>
 						</span>
-						<div className="d">
-							{ __( 'cravatar.cn · 国内节点', 'wp-china-yes' ) }
-						</div>
-					</span>
-				</label>
-				<label className="opt" htmlFor={ name + '-global' }>
-					<input
-						id={ name + '-global' }
-						type="radio"
-						name={ name }
-						checked={ value === 'cravatar_global' }
-						disabled={ disabled }
-						onChange={ () => onChange( 'cravatar_global' ) }
-					/>
-					<span>
-						<span className="t">
-							{ __( 'Cravatar 国际线路', 'wp-china-yes' ) }
-						</span>
-						<div className="d">
-							{ __( 'cravatar.com · 全球节点', 'wp-china-yes' ) }
-						</div>
-					</span>
-				</label>
-				<label className="opt" htmlFor={ name + '-off' }>
-					<input
-						id={ name + '-off' }
-						type="radio"
-						name={ name }
-						checked={ value === 'off' }
-						disabled={ disabled }
-						onChange={ () => onChange( 'off' ) }
-					/>
-					<span>
-						<span className="t">
-							{ __( '关闭', 'wp-china-yes' ) }
-						</span>
-						<div className="d">
-							{ __( '保留 Gravatar', 'wp-china-yes' ) }
-						</div>
-					</span>
-				</label>
+					</label>
+				) ) }
 			</div>
+			<Saved text={ saved } />
 			{ custom ? (
 				<div className="customized">
 					{ __( '已自定义', 'wp-china-yes' ) }
 					{ ' · ' }
-					<button type="button" onClick={ onRestore }>
+					<button
+						type="button"
+						onClick={ onRestore }
+						disabled={ disabled }
+					>
 						{ sprintf(
 							/* translators: %s: default */
 							__( '恢复场景默认（%s）', 'wp-china-yes' ),

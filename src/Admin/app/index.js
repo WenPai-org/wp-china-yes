@@ -3,7 +3,7 @@
  */
 
 import { createRoot, lazy, Suspense } from '@wordpress/element';
-import { dispatch } from '@wordpress/data';
+import { dispatch, useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { STORE_NAME } from './store';
 import Commands from './commands';
@@ -37,7 +37,13 @@ function configureApiFetch( bootstrap ) {
  * @param {string} props.slug Menu slug.
  */
 function PageForSlug( { slug } ) {
-	if ( slug === PAGES.connect ) {
+	const locked = useSelect(
+		( select ) =>
+			Boolean( select( STORE_NAME ).getCapabilities()?.network_locked ),
+		[]
+	);
+	// CO-06: read-only subsites have no wizard (PHP redirects too).
+	if ( slug === PAGES.connect || ( slug === PAGES.onboarding && locked ) ) {
 		return <Connect />;
 	}
 	if ( slug === PAGES.services ) {

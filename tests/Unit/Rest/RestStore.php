@@ -23,6 +23,13 @@ final class RestStore {
 	public static $caps = array();
 
 	/**
+	 * What is_network_admin() returns.
+	 *
+	 * @var bool
+	 */
+	public static $network_admin = false;
+
+	/**
 	 * Nonces that wp_verify_nonce() accepts for wp_rest.
 	 *
 	 * @var array<string, bool>
@@ -133,21 +140,22 @@ final class RestStore {
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$caps         = array();
-		self::$nonces       = array();
-		self::$admin_nonces = array();
-		self::$routes       = array();
-		self::$pages        = array();
-		self::$menus        = array();
-		self::$scripts      = array();
-		self::$inline       = array();
-		self::$hooks        = array();
-		self::$die          = null;
-		self::$die_status   = 0;
-		self::$die_throws   = false;
-		self::$transients   = array();
-		self::$redirect     = null;
-		self::$user_meta    = array();
-		self::$actions      = array();
+		self::$caps          = array();
+		self::$nonces        = array();
+		self::$admin_nonces  = array();
+		self::$routes        = array();
+		self::$pages         = array();
+		self::$menus         = array();
+		self::$scripts       = array();
+		self::$inline        = array();
+		self::$hooks         = array();
+		self::$die           = null;
+		self::$die_status    = 0;
+		self::$die_throws    = false;
+		self::$transients    = array();
+		self::$redirect      = null;
+		self::$user_meta     = array();
+		self::$actions       = array();
+		self::$network_admin = false;
 	}
 }

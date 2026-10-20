@@ -1,6 +1,8 @@
 <?php
 /**
- * Uninstall: drop provider options and transients, dismissed announcements, and the apps index negative cache. Does not touch wp_china_yes.
+ * Uninstall: drop provider options and transients, first-run wizard state,
+ * dismissed announcements, and the apps index negative cache.
+ * Does not touch wp_china_yes.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -38,6 +40,17 @@ function wpcy_uninstall_providers(): void {
 }
 
 /**
+ * Delete the one-time wizard redirect flag for the current blog.
+ *
+ * @since 4.0.0
+ *
+ * @return void
+ */
+function wpcy_uninstall_onboarding(): void {
+	delete_option( 'wpcy_onboarding_redirected' );
+}
+
+/**
  * Delete the dismissed announcements option for the current blog.
  *
  * Same name as WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule::DISMISSED_OPTION
@@ -65,6 +78,7 @@ function wpcy_uninstall_apps_index_negative(): void {
 }
 
 wpcy_uninstall_providers();
+wpcy_uninstall_onboarding();
 wpcy_uninstall_announcements_dismissed();
 wpcy_uninstall_apps_index_negative();
 
@@ -78,6 +92,7 @@ if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'ge
 	foreach ( $wpcy_sites as $wpcy_site_id ) {
 		switch_to_blog( (int) $wpcy_site_id );
 		wpcy_uninstall_providers();
+		wpcy_uninstall_onboarding();
 		wpcy_uninstall_announcements_dismissed();
 		wpcy_uninstall_apps_index_negative();
 		restore_current_blog();
