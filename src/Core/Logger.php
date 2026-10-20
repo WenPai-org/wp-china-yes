@@ -77,6 +77,7 @@ final class Logger {
 			return;
 		}
 
+		$suffix          = $this->exception_suffix( $context['exception'] ?? null );
 		$message         = $this->redact_query_secrets( $message );
 		$context         = $this->redact( $context );
 		$this->records[] = array(
@@ -91,7 +92,7 @@ final class Logger {
 		}
 
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- kernel sink; failures also go to ModuleRegistry::failures().
-		error_log( sprintf( 'WPCY.%s: %s', $level, $message ) );
+		error_log( sprintf( 'WPCY.%s: %s', $level, $message ) . $suffix );
 	}
 
 	/**
@@ -185,6 +186,101 @@ final class Logger {
 			'class'   => '',
 			'message' => is_string( $value ) ? $value : '',
 		);
+	}
+
+	/**
+	 * Maximum length of the scrubbed exception message in an error_log line.
+	 *
+	 * @var int
+	 */
+	private const EXCEPTION_MESSAGE_MAX = 300;
+
+	/**
+	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
+	 *
+	 * Only class, scrubbed message, and file:line (relative to the plugin root,
+	 * basename outside it). Never a stack trace or other context values.
+	 *
+	 * @param mixed $value Throwable, redacted array, message string, or null.
+	 */
+	private function exception_suffix( $value ): string {
+		if ( null === $value ) {
+			return '';
+		}
+
+		$where = '';
+		if ( $value instanceof \Throwable ) {
+			$class   = get_class( $value );
+			$message = $value->getMessage();
+			$where   = $this->relative_file( $value->getFile() ) . ':' . $value->getLine();
+		} else {
+			$info    = $this->redact_exception( $value );
+			$class   = $info['class'];
+			$message = $info['message'];
+		}
+
+		$message = $this->scrub( $message );
+		if ( '' === $class && '' === $message ) {
+			return '';
+		}
+
+		$text = '' === $class ? $message : $class . ': ' . $message;
+		if ( '' !== $where ) {
+			$text .= ' @ ' . $where;
+		}
+
+		return ' [' . $text . ']';
+	}
+
+	/**
+	 * Mask secrets and personal data in free text, then cap its length.
+	 *
+	 * URL query strings, Bearer tokens, key=/token=/password= values, emails,
+	 * IPv4/IPv6 addresses, and long hex / base64-like runs are replaced.
+	 *
+	 * @param string $text Raw text (e.g. an exception message).
+	 */
+	private function scrub( string $text ): string {
+		$text     = $this->redact_query_secrets( $text );
+		$patterns = array(
+			'#(\bhttps?://[^\s?\#]+)\?[^\s\#]*#i'         => '$1',
+			'/\bBearer\s+[^\s,;]+/i'                      => 'Bearer ***',
+			'/\b((?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|auth)\s*[=:]\s*)("[^"]*"|\'[^\']*\'|[^\s&,;]+)/i' => '$1***',
+			'/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i'    => '***@***',
+			'/\b(?:\d{1,3}\.){3}\d{1,3}\b/'               => '***',
+			'/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i' => '***',
+			'/\b[0-9a-f]{32,}\b/i'                        => '***',
+			'#(?<![\w\\\\/.-])(?=[A-Za-z0-9+/_-]*\d)[A-Za-z0-9+/_-]{32,}={0,2}#' => '***',
+		);
+		foreach ( $patterns as $pattern => $replacement ) {
+			$replaced = preg_replace( $pattern, $replacement, $text );
+			if ( is_string( $replaced ) ) {
+				$text = $replaced;
+			}
+		}
+
+		if ( strlen( $text ) > self::EXCEPTION_MESSAGE_MAX ) {
+			$text  = function_exists( 'mb_strcut' )
+				? mb_strcut( $text, 0, self::EXCEPTION_MESSAGE_MAX, 'UTF-8' )
+				: substr( $text, 0, self::EXCEPTION_MESSAGE_MAX );
+			$text .= '…';
+		}
+
+		return $text;
+	}
+
+	/**
+	 * File path relative to the plugin root; basename when outside it.
+	 *
+	 * @param string $file Absolute file path.
+	 */
+	private function relative_file( string $file ): string {
+		$root = dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR;
+		if ( 0 === strpos( $file, $root ) ) {
+			return str_replace( DIRECTORY_SEPARATOR, '/', substr( $file, strlen( $root ) ) );
+		}
+
+		return basename( $file );
 	}
 
 	/**
