@@ -204,6 +204,29 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
 
 	/**
+	 * Bytes that may belong to one token at the raw cut: printable ASCII
+	 * except whitespace and the separators , ; " ' { } [ ] ( ) < > ! ?
+	 *
+	 * Bytes 0x80-0xFF (any non-ASCII character: CJK text, fullwidth
+	 * punctuation, NBSP, U+3000) end a token.
+	 *
+	 * A byte left out of this list is a boundary, so the cut KEEPS the part
+	 * of a secret before it instead of dropping the whole run: leaving out a
+	 * byte that can occur inside a secret makes the cut keep more, not less.
+	 * The list therefore holds every byte the masking rules match (A-Z a-z
+	 * 0-9 + / _ - = % . @ : & * ...). The bytes left out also end a match of
+	 * the base64-like, hex and email rules, and key=value / Bearer still mask
+	 * by their key, so a kept prefix is exactly what the same message leaves
+	 * unmasked without any cut (review-168 scan: 143640 runs, no extra leak;
+	 * kernel scan: 20592 runs, longest kept piece 0). One rule does not end
+	 * at those bytes: URL userinfo (a user name may contain , ; ' ( ) !), so
+	 * cut_raw() also drops an unfinished "scheme://user" at the end.
+	 *
+	 * @var string
+	 */
+	private const CUT_TOKEN_BYTES = '#$%&*+-./0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~';
+
+	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -280,10 +303,13 @@ final class Logger {
 	/**
 	 * Cut raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes before masking.
 	 *
-	 * When the cut falls inside a token, everything after the last whitespace
-	 * is dropped, however long the token: a cut-off key shorter than 32
-	 * characters, or a cut-off email, would no longer match its masking rule.
-	 * Without any whitespace nothing of the raw text is kept.
+	 * When the cut falls inside a token (a run of CUT_TOKEN_BYTES), the whole
+	 * run is dropped, however long: a cut-off key shorter than 32 characters,
+	 * or a cut-off email, would no longer match its masking rule. The run ends
+	 * at whitespace, ASCII separators, or any non-ASCII character, so Chinese
+	 * text, NBSP / U+3000 separated words and compact JSON keep their text.
+	 * The drop never splits a UTF-8 character: the run is ASCII only.
+	 * A cut inside a 1200-byte run of token bytes keeps nothing.
 	 *
 	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
 	 * @param bool   $use_mb Use mb_strcut().
@@ -291,14 +317,37 @@ final class Logger {
 	private function cut_raw( string $text, bool $use_mb ): string {
 		$cut  = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_SCAN_MAX, $use_mb );
 		$next = substr( $text, strlen( $cut ), 1 );
-		if ( '' === $next || 1 === preg_match( '/\s/', $next ) ) {
-			return $cut;
+		if ( '' !== $next && 0 < strspn( $next, self::CUT_TOKEN_BYTES ) ) {
+			// Length of the trailing token run: one linear pass.
+			$fragment = strspn( strrev( $cut ), self::CUT_TOKEN_BYTES );
+			$cut      = substr( $cut, 0, strlen( $cut ) - $fragment );
 		}
 
-		// Length of the trailing non-whitespace run (same set as PCRE \s): one linear pass.
-		$fragment = strcspn( strrev( $cut ), " \t\n\r\v\f" );
+		return rtrim( $this->drop_open_userinfo( $cut ), " \t\n\r\v\f" );
+	}
 
-		return rtrim( substr( $cut, 0, strlen( $cut ) - $fragment ), " \t\n\r\v\f" );
+	/**
+	 * Drop an unfinished URL userinfo at the end of the raw cut.
+	 *
+	 * "https://bob(x:pw@host" cut before "@" would keep "https://bob(" and
+	 * the userinfo rule (which needs the "@") could no longer mask "bob".
+	 * Everything from the last "://" on is dropped when no "/", "?", "#",
+	 * "@" or whitespace follows it.
+	 *
+	 * @param string $text Raw text after the cut.
+	 */
+	private function drop_open_userinfo( string $text ): string {
+		$scheme = strrpos( $text, '://' );
+		if ( false === $scheme ) {
+			return $text;
+		}
+
+		$rest = substr( $text, $scheme + 3 );
+		if ( strcspn( $rest, " \t\n\r\v\f/?#@" ) < strlen( $rest ) ) {
+			return $text;
+		}
+
+		return substr( $text, 0, $scheme );
 	}
 
 	/**
@@ -401,8 +450,16 @@ final class Logger {
 		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
 		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
 
-		// Unix directories (/home/alice smith/x/). A URL path is preceded by its host, so it is left alone.
-		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)+#', '[path]/', $text );
+		// Unix directories. A URL path is preceded by its host, so it is left alone.
+		// The first directory is one word (/home/, /chroot/, /u01/); deeper
+		// directories may contain spaces (/home/alice smith/x/). Prose such as
+		// "see /docs for ... and/or" is not a path: no "/" right after "docs".
+		// Possessive throughout and the input is capped: linear.
+		return $this->replace(
+			'#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#',
+			'[path]/',
+			$text
+		);
 	}
 
 	/**
