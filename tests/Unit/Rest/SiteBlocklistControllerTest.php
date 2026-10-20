@@ -118,6 +118,32 @@ class SiteBlocklistControllerTest extends TestCase {
 	}
 
 	/**
+	 * PUT the same list twice: both are 200 (an unchanged save is not a 400).
+	 */
+	public function test_put_unchanged_list_twice_is_ok() {
+		$controller    = new SiteBlocklistController(
+			new BlocklistRepository( new Repository(), new Ruleset( null, null, false ) )
+		);
+		$request       = new WP_REST_Request();
+		$request->json = array(
+			'enabled' => true,
+			'hosts'   => array(
+				array(
+					'host'  => 'tracker.example.com',
+					'match' => 'exact',
+				),
+			),
+		);
+
+		foreach ( array( 1, 2 ) as $attempt ) {
+			$result = $controller->update_item( $request );
+			$this->assertNotInstanceOf( WP_Error::class, $result, 'attempt ' . $attempt );
+			$this->assertSame( 200, $result->get_status() );
+			$this->assertSame( 'tracker.example.com', $result->get_data()['hosts'][0]['host'] );
+		}
+	}
+
+	/**
 	 * Twenty-one hosts via PUT is wpcy_invalid_schema.
 	 */
 	public function test_put_twenty_one_is_invalid_schema() {
