@@ -185,6 +185,167 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-164 ①: CR / LF in the message cannot forge a second log line.
+	 */
+	public function test_newlines_cannot_forge_a_log_line() {
+		$this->log_exception( "first line\nWPCY.error: forged line\r\nanother" );
+		$logged = $this->logged();
+
+		$this->assertSame( 1, substr_count( $logged, "\n" ), $logged );
+		$this->assertStringNotContainsString( "\r", $logged );
+		$this->assertSame( 0, preg_match( '/^WPCY\.error: forged line/m', $logged ) );
+		$this->assertStringContainsString( '[RuntimeException: first line WPCY.error: forged line another @ ', $logged );
+	}
+
+	/**
+	 * Review-164 ②: a NUL byte does not cut the line; file:line and "]" stay.
+	 */
+	public function test_nul_byte_does_not_truncate_the_line() {
+		$this->log_exception( "before\0after" );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( "\0", $logged );
+		$this->assertSame( 1, preg_match( '/\[RuntimeException: before after @ tests\/Unit\/Core\/LoggerExceptionContextTest\.php:\d+\]$/m', $logged ), $logged );
+	}
+
+	/**
+	 * Review-164 ③ (Unix): absolute paths in the message keep only the file name.
+	 */
+	public function test_unix_absolute_path_in_message_is_hidden() {
+		$this->log_exception( 'include(/home/alice/public_html/wp-content/...)' );
+		$this->log_exception( 'include(/home/alice/public_html/wp-content/plugins/other/thing.php): failed to open stream' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( '/home/alice', $logged );
+		$this->assertStringNotContainsString( 'public_html', $logged );
+		$this->assertStringContainsString( 'include([path]/...)', $logged );
+		$this->assertStringContainsString( 'include([path]/thing.php): failed to open stream', $logged );
+	}
+
+	/**
+	 * Review-164 ③ (Windows): drive and UNC paths keep only the file name.
+	 */
+	public function test_windows_absolute_path_in_message_is_hidden() {
+		$this->log_exception( 'C:\inetpub\wwwroot\wp-config.php' );
+		$this->log_exception( 'open \\\\fileserver\share\site\wp-config.php failed' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'inetpub', $logged );
+		$this->assertStringNotContainsString( 'fileserver', $logged );
+		$this->assertStringContainsString( '[RuntimeException: [path]/wp-config.php @ ', $logged );
+		$this->assertStringContainsString( 'open [path]/wp-config.php failed', $logged );
+	}
+
+	/**
+	 * Review-164 ③: a path inside the plugin becomes relative to the plugin root.
+	 */
+	public function test_plugin_path_in_message_is_relative() {
+		$root = dirname( __DIR__, 3 );
+		$this->log_exception( 'require(' . $root . '/src/Core/Missing.php): failed' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( $root, $logged );
+		$this->assertStringContainsString( 'require(src/Core/Missing.php): failed', $logged );
+	}
+
+	/**
+	 * Review-164 ④: JSON-style keys and values are masked.
+	 */
+	public function test_json_secrets_are_masked() {
+		$this->log_exception( '{"api_key":"sk_live_abcdef","secret":"s3cr3t"}' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'sk_live_abcdef', $logged );
+		$this->assertStringNotContainsString( 's3cr3t', $logged );
+		$this->assertStringContainsString( '{"api_key":"***","secret":"***"}', $logged );
+	}
+
+	/**
+	 * Review-164 ⑤: Authorization Basic and Bearer credentials are masked.
+	 */
+	public function test_basic_and_bearer_credentials_are_masked() {
+		$this->log_exception( 'Authorization: Basic dXNlcjpwYXNz' );
+		$this->log_exception( 'Authorization: Bearer abc.def-ghi' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'dXNlcjpwYXNz', $logged );
+		$this->assertStringNotContainsString( 'abc.def-ghi', $logged );
+		$this->assertStringContainsString( 'Authorization: Basic *** @ ', $logged );
+		$this->assertStringContainsString( 'Authorization: Bearer *** @ ', $logged );
+	}
+
+	/**
+	 * Review-164 ⑥: the query string of a relative URL is removed.
+	 */
+	public function test_relative_url_query_is_removed() {
+		$this->log_exception( '/wp-login.php?redirect_to=x&sig=abc123' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'sig=', $logged );
+		$this->assertStringNotContainsString( 'abc123', $logged );
+		$this->assertStringNotContainsString( 'redirect_to', $logged );
+		$this->assertStringContainsString( '[RuntimeException: /wp-login.php @ ', $logged );
+	}
+
+	/**
+	 * Review-164 ⑦: quoted SQL literals become '***'.
+	 */
+	public function test_sql_literals_are_masked() {
+		$this->log_exception( 'WordPress database error for query SELECT * FROM wp_users WHERE user_login = "alice" AND phone = "13800138000"' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( '13800138000', $logged );
+		$this->assertStringContainsString( "WHERE user_login = '***' AND phone = '***'", $logged );
+	}
+
+	/**
+	 * Review-164 ⑧: without mbstring the cut keeps UTF-8 valid.
+	 */
+	public function test_cut_without_mbstring_keeps_utf8_valid() {
+		$cut  = new \ReflectionMethod( Logger::class, 'utf8_cut' );
+		$text = str_repeat( '中', 150 );
+		$cut->setAccessible( true );
+
+		foreach ( array( 300, 301, 302 ) as $max ) {
+			$out = $cut->invoke( new Logger(), $text, $max, false );
+			$this->assertTrue( mb_check_encoding( $out, 'UTF-8' ), (string) $max );
+			$this->assertSame( 300, strlen( $out ), (string) $max );
+		}
+		$this->assertSame( 'a', $cut->invoke( new Logger(), 'a中', 2, false ) );
+		$this->assertSame( $cut->invoke( new Logger(), $text, 301, true ), $cut->invoke( new Logger(), $text, 301, false ) );
+
+		$this->log_exception( $text );
+		$this->assertTrue( mb_check_encoding( $this->logged(), 'UTF-8' ) );
+	}
+
+	/**
+	 * Masking happens before the cap: a secret across the 300-byte boundary
+	 * leaves no fragment behind.
+	 */
+	public function test_secret_across_the_cap_leaves_no_fragment() {
+		$tail = str_repeat( ' tail', 20 );
+		$this->log_exception( str_repeat( 'x', 290 ) . ' token=SECRETVALUE1234567890' . $tail );
+		$this->log_exception( str_repeat( 'y', 285 ) . ' Bearer abcdefghijklmnopqrstuvwxyz' . $tail );
+		$this->log_exception( str_repeat( 'z', 280 ) . ' ' . str_repeat( 'deadbeef', 6 ) . $tail );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'SECR', $logged );
+		$this->assertStringNotContainsString( 'abcdefgh', $logged );
+		$this->assertStringNotContainsString( 'dead', $logged );
+		$this->assertSame( 3, substr_count( $logged, '…' ) );
+	}
+
+	/**
+	 * Log one RuntimeException with $message through Logger::error().
+	 *
+	 * @param string $message Exception message.
+	 */
+	private function log_exception( string $message ): void {
+		( new Logger() )->error( 'Module register() failed: demo', array( 'exception' => new RuntimeException( $message ) ) );
+	}
+
+	/**
 	 * Captured error_log output.
 	 */
 	private function logged(): string {
