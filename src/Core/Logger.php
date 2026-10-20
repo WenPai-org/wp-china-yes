@@ -196,6 +196,21 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_MAX = 300;
 
 	/**
+	 * Raw bytes of an exception message that are masked at all. Every regex
+	 * in mask() sees at most this many bytes, whatever the message length.
+	 *
+	 * @var int
+	 */
+	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
+
+	/**
+	 * Longest token tail dropped when the raw cut falls inside a token.
+	 *
+	 * @var int
+	 */
+	private const CUT_FRAGMENT_MAX = 64;
+
+	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -236,19 +251,32 @@ final class Logger {
 	/**
 	 * Mask secrets and personal data in free text, then cap its length.
 	 *
-	 * Masking runs before the cap and once more on the capped text, so a cut
-	 * never leaves half a secret behind. The cut is UTF-8 safe.
+	 * 1. Cut the raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes, so masking
+	 *    cost is bounded however long the message is; a token the cut falls
+	 *    into is dropped.
+	 * 2. Mask, cut to EXCEPTION_MESSAGE_MAX bytes, mask once more, so the
+	 *    final cut never leaves half a secret behind.
+	 *
+	 * Every cut is UTF-8 safe.
 	 *
 	 * @param string $text Raw text (e.g. an exception message).
 	 */
 	private function scrub( string $text ): string {
-		$text = $this->mask( $text );
-		if ( strlen( $text ) <= self::EXCEPTION_MESSAGE_MAX ) {
-			return $text;
+		$use_mb    = function_exists( 'mb_strcut' );
+		$truncated = strlen( $text ) > self::EXCEPTION_MESSAGE_SCAN_MAX;
+		if ( $truncated ) {
+			$text = $this->cut_raw( $text, $use_mb );
 		}
 
-		$use_mb = function_exists( 'mb_strcut' );
-		$text   = $this->mask( $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_MAX, $use_mb ) );
+		$text = $this->mask( $text );
+		if ( ! $truncated && strlen( $text ) <= self::EXCEPTION_MESSAGE_MAX ) {
+			return $text;
+		}
+		if ( strlen( $text ) <= self::EXCEPTION_MESSAGE_MAX ) {
+			return $text . '…';
+		}
+
+		$text = $this->mask( $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_MAX, $use_mb ) );
 		if ( strlen( $text ) > self::EXCEPTION_MESSAGE_MAX ) {
 			$text = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_MAX, $use_mb );
 		}
@@ -257,23 +285,52 @@ final class Logger {
 	}
 
 	/**
+	 * Cut raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes before masking.
+	 *
+	 * When the cut falls inside a token, that token (at most CUT_FRAGMENT_MAX
+	 * bytes back to the previous whitespace) is dropped: a cut-off hex key or
+	 * email would no longer match its masking rule.
+	 *
+	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
+	 * @param bool   $use_mb Use mb_strcut().
+	 */
+	private function cut_raw( string $text, bool $use_mb ): string {
+		$cut  = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_SCAN_MAX, $use_mb );
+		$next = substr( $text, strlen( $cut ), 1 );
+		if ( '' === $next || 1 === preg_match( '/\s/', $next ) ) {
+			return $cut;
+		}
+
+		$keep = max( 0, strlen( $cut ) - self::CUT_FRAGMENT_MAX );
+		if ( 1 === preg_match( '/\s\S*$/D', substr( $cut, $keep ), $m, PREG_OFFSET_CAPTURE ) ) {
+			$keep += $m[0][1];
+		}
+
+		return $this->utf8_cut( $cut, $keep, $use_mb );
+	}
+
+	/**
 	 * Masking pipeline for one log line. Order matters.
 	 *
-	 * 1. Control characters (CR, LF, NUL, ...) become spaces: no forged or
-	 *    cut-off lines.
+	 * 1. Control characters (CR, LF, NUL, ...), Unicode line / paragraph
+	 *    separators and bidi controls become spaces: no forged, cut-off, or
+	 *    visually reordered lines.
 	 * 2. Paths inside the plugin become relative; other absolute paths (Unix,
 	 *    Windows drive, UNC) keep only the file name behind "[path]/".
-	 * 3. Quoted literals in SQL become '***'.
+	 * 3. URL userinfo (https://user:pass@) becomes "***@"; quoted literals
+	 *    in SQL become '***'.
 	 * 4. Bearer / Basic credentials; key=, token=, password=, secret=, ...
-	 *    values, also with quoted (JSON) keys and values.
+	 *    values, also with quoted (JSON) keys and values and URL-encoded
+	 *    separators (token%3D...).
 	 * 5. Query strings (absolute and relative URLs), emails, IPv4/IPv6, long
-	 *    hex and base64-like runs.
+	 *    hex and base64-like runs. Every rule is linear in the input.
 	 *
 	 * @param string $text Raw text.
 	 */
 	private function mask( string $text ): string {
 		$text = $this->strip_controls( $text );
 		$text = $this->relative_paths( $text );
+		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*://)[^\s/?\#@]++@#i', '$1***@', $text );
 		$text = $this->redact_sql_literals( $text );
 		$text = $this->redact_query_secrets( $text );
 
@@ -287,13 +344,22 @@ final class Logger {
 			'/\b(?:\d{1,3}\.){3}\d{1,3}\b/'               => '***',
 			'/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i' => '***',
 			'/\b[0-9a-f]{32,}\b/i'                        => '***',
-			'#(?<![\w\\\\/.-])(?=[A-Za-z0-9+/_-]*\d)[A-Za-z0-9+/_-]{32,}={0,2}#' => '***',
 		);
 		foreach ( $patterns as $pattern => $replacement ) {
 			$text = $this->replace( $pattern, $replacement, $text );
 		}
 
-		return $text;
+		// Base64-like runs of 32+ that contain a digit. Possessive match, digit
+		// check in the callback: one pass, no look-ahead rescans.
+		$masked = preg_replace_callback(
+			'#(?<![\w\\\\/.-])[A-Za-z0-9+/_-]{32,}+={0,2}#',
+			static function ( array $m ): string {
+				return false === strpbrk( $m[0], '0123456789' ) ? $m[0] : '***';
+			},
+			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
 	}
 
 	/**
@@ -309,15 +375,17 @@ final class Logger {
 	}
 
 	/**
-	 * Every ASCII control character (0x00-0x1F, 0x7F) becomes one space.
+	 * Control characters (C0, DEL, C1 incl. U+0085 NEL), line / paragraph
+	 * separators (U+2028, U+2029) and bidi controls (U+061C, U+200E, U+200F,
+	 * U+202A-U+202E, U+2066-U+2069) become one space per run.
 	 *
 	 * @param string $text Raw text.
 	 */
 	private function strip_controls( string $text ): string {
-		$clean = preg_replace( '/[\x00-\x1F\x7F]+/u', ' ', $text );
+		$clean = preg_replace( '/[\p{Cc}\p{Zl}\p{Zp}\x{061C}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]+/u', ' ', $text );
 		if ( ! is_string( $clean ) ) {
-			// Not valid UTF-8: replace byte-wise.
-			$clean = preg_replace( '/[\x00-\x1F\x7F]+/', ' ', $text );
+			// Not valid UTF-8: replace byte-wise, including the UTF-8 encodings of the characters above.
+			$clean = preg_replace( '/(?:[\x00-\x1F\x7F]|\xC2[\x80-\x9F]|\xD8\x9C|\xE2\x80[\x8E\x8F\xA8-\xAE]|\xE2\x81[\xA6-\xA9])+/', ' ', $text );
 		}
 
 		return is_string( $clean ) ? $clean : '';
@@ -337,10 +405,11 @@ final class Logger {
 		);
 
 		// Directories after a Windows drive letter or a UNC server / share prefix.
-		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]+)[\\\\/](?:[^\s\\\\/:*?"\'<>|()]+[\\\\/])*#', '[path]/', $text );
+		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++){0,4}+[\\\\/])*+#', '[path]/', $text );
 
-		// Unix directories (/home/alice/x/). A URL path is preceded by its host, so it is left alone.
-		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]+/)+#', '[path]/', $text );
+		// Unix directories (/home/alice smith/x/). A URL path is preceded by its host, so it is left alone.
+		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++){0,4}+/)+#', '[path]/', $text );
 	}
 
 	/**
@@ -364,7 +433,7 @@ final class Logger {
 	 */
 	private function redact_key_values( string $text ): string {
 		$masked = preg_replace_callback(
-			'/(["\']?)\b((?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|authorization|auth))\1(\s*[=:]\s*)(?!(?:Bearer|Basic)\s\*\*\*)("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|[^\s&,;}\]]+)/i',
+			'/(["\']?)\b((?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|authorization|auth))\1(\s*(?:[=:]|%3D|%3A)\s*)(?!(?:Bearer|Basic)\s\*\*\*)("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|[^\s&,;}\]]+)/i',
 			static function ( array $m ): string {
 				$quote = substr( $m[4], 0, 1 );
 				$value = ( '"' === $quote || "'" === $quote ) ? $quote . '***' . $quote : '***';

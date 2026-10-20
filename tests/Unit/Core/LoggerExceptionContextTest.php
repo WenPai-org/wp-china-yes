@@ -337,6 +337,161 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-164 c9767d7 2a: a 500 KB base64-like message is scrubbed in
+	 * bounded time (was 72 s through the old quadratic look-ahead rule).
+	 */
+	public function test_500kb_base64_like_message_is_scrubbed_quickly() {
+		$inputs = array(
+			str_repeat( 'Ab+_', 128000 ),
+			str_repeat( 'a+', 256000 ),
+			str_repeat( 'Ab+/', 128000 ),
+			str_repeat( 'Ab+_', 127999 ) . 'Ab1=',
+		);
+		foreach ( $inputs as $input ) {
+			$start = microtime( true );
+			$this->log_exception( $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%d bytes of %s took %.3f s', strlen( $input ), substr( $input, 0, 4 ), $elapsed ) );
+		}
+
+		$lines = explode( "\n", trim( $this->logged() ) );
+		$this->assertCount( 4, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertLessThan( 500, strlen( $line ), $line );
+			$this->assertStringContainsString( '… @ tests/Unit/Core/LoggerExceptionContextTest.php:', $line );
+		}
+	}
+
+	/**
+	 * Review-164 c9767d7 2a: the base64-like rule itself is linear (200 KB
+	 * through mask() alone, no length cap in front of it).
+	 */
+	public function test_base64_like_rule_is_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$start   = microtime( true );
+		$out     = $mask->invoke( new Logger(), str_repeat( 'Ab+_', 50000 ) );
+		$elapsed = microtime( true ) - $start;
+
+		$this->assertLessThan( 0.1, $elapsed, sprintf( '200 KB took %.3f s', $elapsed ) );
+		$this->assertSame( str_repeat( 'Ab+_', 50000 ), $out );
+	}
+
+	/**
+	 * The linear base64-like rule still masks runs with a digit and keeps
+	 * long identifiers without one.
+	 */
+	public function test_base64_like_run_with_digit_is_still_masked() {
+		$this->log_exception( 'key material QWxhZGRpbjpvcGVuIHNlc2FtZQ1234abcdEFGH== end' );
+		$this->log_exception( 'class WenPaiChinaYesTelemetryReportBuilderFactory missing' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'key material *** end', $logged );
+		$this->assertStringNotContainsString( 'QWxhZGRp', $logged );
+		$this->assertStringContainsString( 'class WenPaiChinaYesTelemetryReportBuilderFactory missing', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 2b: Unicode line / paragraph separators, NEL, and
+	 * bidi controls become spaces, so no reader splits or reorders the line.
+	 */
+	public function test_unicode_separators_and_bidi_controls_become_spaces() {
+		$this->log_exception( "a\u{2028}WPCY.error: forged\u{2029}b\u{0085}c\u{202E}d\u{2066}e\u{200F}f\u{061C}g\u{2069}h" );
+		$logged = $this->logged();
+
+		foreach ( array( "\u{2028}", "\u{2029}", "\u{0085}", "\u{202E}", "\u{2066}", "\u{200F}", "\u{061C}", "\u{2069}" ) as $char ) {
+			$this->assertStringNotContainsString( $char, $logged, bin2hex( $char ) );
+		}
+		$this->assertCount( 1, (array) preg_split( '/\R/u', trim( $logged ) ) );
+		$this->assertStringContainsString( '[RuntimeException: a WPCY.error: forged b c d e f g h @ ', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 2b: invalid UTF-8 falls back to byte-wise stripping,
+	 * which also catches the UTF-8 encoded separators.
+	 */
+	public function test_invalid_utf8_still_strips_unicode_separators() {
+		$this->log_exception( "bad\xFF a\u{2028}b\u{202E}c\nd" );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( "\u{2028}", $logged );
+		$this->assertStringNotContainsString( "\u{202E}", $logged );
+		$this->assertSame( 1, substr_count( $logged, "\n" ) );
+		$this->assertStringContainsString( ' a b c d @ ', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 2c (Windows): directories with spaces do not leak.
+	 */
+	public function test_windows_path_with_spaces_is_hidden() {
+		$this->log_exception( 'C:\Program Files\Acme Corp\alice\wp-config.php' );
+		$this->log_exception( 'open C:\Program Files (x86)\Acme\alice smith\cache.json failed' );
+		$logged = $this->logged();
+
+		foreach ( array( 'Program Files', 'Acme', 'alice', 'smith', 'x86' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertStringContainsString( '[RuntimeException: [path]/wp-config.php @ ', $logged );
+		$this->assertStringContainsString( 'open [path]/cache.json failed', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 2c (Unix): directories with spaces do not leak.
+	 */
+	public function test_unix_path_with_spaces_is_hidden() {
+		$this->log_exception( '/home/alice smith/public_html/wp-config.php' );
+		$this->log_exception( 'read /Users/alice/Library/Application Support/WPCY/cache.json failed' );
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'smith', 'public_html', 'Application Support', 'Library' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertStringContainsString( '[RuntimeException: [path]/wp-config.php @ ', $logged );
+		$this->assertStringContainsString( 'read [path]/cache.json failed', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 (non-blocking): URL-encoded separators are masked.
+	 */
+	public function test_url_encoded_key_value_is_masked() {
+		$this->log_exception( 'form body token%3Dsupersecret and api_key%3dK123xyz password%3Ahunter2' );
+		$logged = $this->logged();
+
+		foreach ( array( 'supersecret', 'K123xyz', 'hunter2' ) as $secret ) {
+			$this->assertStringNotContainsString( $secret, $logged );
+		}
+		$this->assertStringContainsString( 'token%3D*** and api_key%3d*** password%3A***', $logged );
+	}
+
+	/**
+	 * Review-164 c9767d7 (non-blocking): URL userinfo hides the user name too;
+	 * the host stays for diagnosis.
+	 */
+	public function test_url_userinfo_is_masked() {
+		$this->log_exception( 'connect https://bob:pa55w0rd@api.example.com/v1 refused' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'bob', $logged );
+		$this->assertStringNotContainsString( 'pa55w0rd', $logged );
+		$this->assertStringContainsString( 'connect https://***@api.example.com/v1 refused', $logged );
+	}
+
+	/**
+	 * The raw pre-mask cut drops the token it falls into: a shrinking mask
+	 * (here a long path) cannot pull half a secret into the 300-byte line.
+	 */
+	public function test_raw_cut_drops_the_token_it_falls_into() {
+		$prefix = '/' . str_repeat( 'dir/', 294 ) . 'file.php ';
+		$this->assertSame( 1186, strlen( $prefix ) );
+		$this->log_exception( $prefix . str_repeat( 'deadbeef', 5 ) . str_repeat( ' tail', 200 ) );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'dea', $logged );
+		$this->assertStringContainsString( '[RuntimeException: [path]/file.php… @ ', $logged );
+	}
+
+	/**
 	 * Log one RuntimeException with $message through Logger::error().
 	 *
 	 * @param string $message Exception message.
