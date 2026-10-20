@@ -677,6 +677,180 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-168 follow-up 1: a directory with spaces needs a path part after
+	 * it and plain ASCII words, so prose keeps its words.
+	 */
+	public function test_prose_after_a_url_path_is_not_taken_for_a_directory() {
+		$this->log_exception( 'use /api/v1 then foo bar/baz' );
+		$this->log_exception( '调用 /wp-json/wpcy/v1 失败，请检查 and/or 设置' );
+		$this->log_exception( 'see /docs/intro, then the next step/part' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'then foo bar/baz @ ', $logged );
+		$this->assertStringContainsString( '失败，请检查 and/or 设置 @ ', $logged );
+		$this->assertStringContainsString( 'then the next step/part @ ', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 1: user names with spaces still do not leak, also
+	 * at the end of a path and before a file name with spaces.
+	 */
+	public function test_spaced_user_directories_are_still_hidden() {
+		$messages = array(
+			'/chroot/home/alice smith/x.php failed'       => '[path]/x.php failed',
+			'/u01/app/alice smith/wp/index.php failed'    => '[path]/index.php failed',
+			'/home/alice smith/public_html/wp-config.php' => '[path]/wp-config.php',
+			'cannot open /home/alice smith/ now'          => 'cannot open [path]/ now',
+			'read /home/alice smith/My Notes.txt failed'  => 'read [path]/My Notes.txt failed',
+			'read /Users/Alice Smith/Local Sites/a/b.php ok' => 'read [path]/b.php ok',
+			'C:\Users\alice smith\AppData\x.log'          => '[path]/x.log',
+			'C:\Program Files\Acme Corp\alice\x.dll'      => '[path]/x.dll',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'Alice', 'smith', 'Smith', 'chroot', 'u01', 'Program', 'Local Sites' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 2: a complete URL before the raw cut is kept; a cut
+	 * inside a userinfo still hides the user name.
+	 */
+	public function test_raw_cut_keeps_a_complete_url() {
+		$this->log_exception( '无法连接到https://api.wenpai.net，' . str_repeat( '请稍后重试', 100 ) );
+		$this->log_exception( 'GET https://api.wenpai.net' . str_repeat( ' x', 600 ) );
+		$this->log_exception( str_repeat( 'ab', 590 ) . ' https://bob(' . str_repeat( 'y', 40 ) . ':pw@h.example.com/x tail' );
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 3, $lines );
+		$this->assertStringContainsString( '[RuntimeException: 无法连接到https://api.wenpai.net，请稍后重试', $lines[0] );
+		$this->assertStringContainsString( '[RuntimeException: GET https://api.wenpai.net x x', $lines[1] );
+		$this->assertStringNotContainsString( 'bob', $lines[2] );
+	}
+
+	/**
+	 * Review-168 follow-up 3a: JSON-escaped base64 (\/ and \\) is masked.
+	 */
+	public function test_json_escaped_base64_is_masked() {
+		$this->log_exception( 'x "Zm9vYmFy4QWx\/Y2VkTOPSECRETab12cd34\/Zm9vYmFy4QWxY2Vk"' );
+		$this->log_exception( 'x "Zm9vYmFy4QWx\\\\Y2VkTOPSECRETab12cd34Zm9vYmFy4QWxY2Vk"' );
+		$this->log_exception( 'x AbCdEfGh\\' . str_repeat( 'Zm9vYmFy4QWxY2Vk', 6 ) );
+		$logged = $this->logged();
+
+		foreach ( array( 'Zm9vYm', 'TOPSECRET', 'AbCdEfGh', 'Y2Vk' ) as $piece ) {
+			$this->assertStringNotContainsString( $piece, $logged );
+		}
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: x "***" @ ' ) );
+		$this->assertStringContainsString( '[RuntimeException: x *** @ ', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 3b: a key with one of ! " ' | ~ $ inside is masked
+	 * as a whole, the part before the separator included.
+	 */
+	public function test_key_with_inner_separator_is_masked_whole() {
+		foreach ( array( '!', '"', "'", '|', '~', '$', '^', '%' ) as $sep ) {
+			$this->log_exception( 'key material Zm9vYmFy4QWxY2Vk' . $sep . 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd34 end' );
+			$this->log_exception( 'hex 0123456789abcdef0123456789abcdef01234567' . $sep . '89abcdef end' );
+		}
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 16, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertStringNotContainsString( 'Zm9vYm', $line );
+			$this->assertStringNotContainsString( '89abcdef', $line );
+			$this->assertSame( 1, preg_match( '/\[RuntimeException: (?:key material|hex) \*\*\* end @ /', $line ), $line );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 3b at the raw cut: a key "A'B" cut inside B, or
+	 * right at the separator, keeps no part of A.
+	 */
+	public function test_raw_cut_inside_a_key_with_inner_separator_keeps_no_part() {
+		$a = 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd';
+		$b = str_repeat( 'Qk9QU0VDUkVUMTIz', 4 );
+		foreach ( array( '!', '"', "'" ) as $sep ) {
+			foreach ( array( 1110, 1150, 1168, 1169 ) as $start ) {
+				$prefix = substr( str_repeat( 'ab', 700 ), 0, $start - 1 ) . ' ';
+				$this->log_exception( $prefix . $a . $sep . $b . ' tail' );
+			}
+		}
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 12, $lines );
+		$last = strlen( $a ) - 6;
+		foreach ( $lines as $line ) {
+			for ( $i = 0; $i <= $last; $i++ ) {
+				$this->assertStringNotContainsString( substr( $a, $i, 6 ), $line );
+			}
+			$this->assertStringNotContainsString( 'Qk9QU0', $line );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 3c: an apostrophe inside a word is not an SQL quote.
+	 */
+	public function test_sql_apostrophe_in_a_word_is_not_a_quote() {
+		$this->log_exception( "Table 'wp_options' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = 'siteurl')" );
+		$this->log_exception( "WordPress database error for query UPDATE wp_posts SET note = 'it's here' WHERE ID = 1" );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( "Table '***' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = '***')", $logged );
+		$this->assertStringContainsString( "SET note = '***' WHERE ID = 1", $logged );
+		$this->assertStringNotContainsString( 'siteurl', $logged );
+		$this->assertStringNotContainsString( 'here', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 3d: Bearer / Basic glued to a word are masked.
+	 */
+	public function test_bearer_without_word_boundary_is_masked() {
+		$this->log_exception( 'header dirBearer eyJhbGciOiJIUzI1NiJ9abc' );
+		$this->log_exception( 'header xBasic dXNlcjpwYXNz' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'eyJhbGci', $logged );
+		$this->assertStringNotContainsString( 'dXNlcjpw', $logged );
+		$this->assertStringContainsString( 'header dirBearer *** @ ', $logged );
+		$this->assertStringContainsString( 'header xBasic *** @ ', $logged );
+	}
+
+	/**
+	 * The rules changed for the review-168 follow-up stay linear on 200 KB
+	 * through mask() alone (no length cap in front).
+	 */
+	public function test_follow_up_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'base64 inner separators' => str_repeat( 'Ab+|', 50000 ),
+			'base64 json escapes'     => str_repeat( 'Ab\\/', 40000 ),
+			'base64 backslashes'      => str_repeat( 'Ab1\\', 50000 ),
+			'sql unclosed quotes'     => 'SELECT x FROM y WHERE ' . str_repeat( " 'a", 66000 ),
+			'sql apostrophes'         => 'SELECT x FROM y WHERE ' . str_repeat( "it's ", 40000 ),
+			'path spaced, no next'    => str_repeat( '/a/b c ', 28000 ),
+			'path spaced chain'       => '/r/' . str_repeat( 'a b/', 50000 ),
+			'path spaced words'       => '/r/' . str_repeat( 'a ', 100000 ),
+			'bearer'                  => str_repeat( 'xBearer ', 25000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.1, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
+	}
+
+	/**
 	 * Long Chinese and compact JSON messages are scrubbed in bounded time,
 	 * through Logger and through mask() alone.
 	 */
