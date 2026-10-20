@@ -80,8 +80,7 @@ final class SettingsController {
 			return $result;
 		}
 
-		if ( $had_key ) {
-			$this->writer->repository()->set( 'profile_confirmed_at', RestError::now() );
+		if ( $had_key && $this->writer->repository()->set( 'profile_confirmed_at', RestError::now() ) ) {
 			$stamp = $before['profile_confirmed_at'] ?? null;
 			$first = ! is_string( $stamp ) || '' === $stamp;
 			if ( $profile !== $from || $first ) {
