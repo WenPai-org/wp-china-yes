@@ -80,12 +80,16 @@ if ( ! function_exists( 'restore_current_blog' ) ) {
 
 if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
 	/**
-	 * Record which blog cleared which hook.
+	 * Record which blog cleared which hook. Throws on DeactivateStore::$throw_on_blog.
 	 *
 	 * @param string $hook Hook name.
 	 * @return int
+	 * @throws RuntimeException On DeactivateStore::$throw_on_blog.
 	 */
 	function wp_clear_scheduled_hook( $hook ) {
+		if ( DeactivateStore::$throw_on_blog === DeactivateStore::$blog ) {
+			throw new RuntimeException( 'cron filter failed' );
+		}
 		DeactivateStore::$cleared[] = array( DeactivateStore::$blog, (string) $hook );
 		return 1;
 	}
