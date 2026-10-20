@@ -77,6 +77,7 @@ final class Logger {
 			return;
 		}
 
+		$suffix          = $this->exception_suffix( $context['exception'] ?? null );
 		$message         = $this->redact_query_secrets( $message );
 		$context         = $this->redact( $context );
 		$this->records[] = array(
@@ -91,7 +92,7 @@ final class Logger {
 		}
 
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- kernel sink; failures also go to ModuleRegistry::failures().
-		error_log( sprintf( 'WPCY.%s: %s', $level, $message ) );
+		error_log( sprintf( 'WPCY.%s: %s', $level, $message ) . $suffix );
 	}
 
 	/**
@@ -185,6 +186,306 @@ final class Logger {
 			'class'   => '',
 			'message' => is_string( $value ) ? $value : '',
 		);
+	}
+
+	/**
+	 * Maximum length of the scrubbed exception message in an error_log line.
+	 *
+	 * @var int
+	 */
+	private const EXCEPTION_MESSAGE_MAX = 300;
+
+	/**
+	 * Raw bytes of an exception message that are masked at all. Every regex
+	 * in mask() sees at most this many bytes, whatever the message length.
+	 *
+	 * @var int
+	 */
+	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
+
+	/**
+	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
+	 *
+	 * Only class, scrubbed message, and file:line (relative to the plugin root,
+	 * basename outside it). Never a stack trace or other context values.
+	 *
+	 * @param mixed $value Throwable, redacted array, message string, or null.
+	 */
+	private function exception_suffix( $value ): string {
+		if ( null === $value ) {
+			return '';
+		}
+
+		$where = '';
+		if ( $value instanceof \Throwable ) {
+			$class   = get_class( $value );
+			$message = $value->getMessage();
+			$where   = $this->relative_file( $value->getFile() ) . ':' . $value->getLine();
+		} else {
+			$info    = $this->redact_exception( $value );
+			$class   = $info['class'];
+			$message = $info['message'];
+		}
+
+		$class   = $this->class_label( $class );
+		$message = $this->scrub( $message );
+		if ( '' === $class && '' === $message ) {
+			return '';
+		}
+
+		$text = '' === $class ? $message : $class . ': ' . $message;
+		if ( '' !== $where ) {
+			$text .= ' @ ' . $where;
+		}
+
+		return ' [' . $text . ']';
+	}
+
+	/**
+	 * Mask secrets and personal data in free text, then cap its length.
+	 *
+	 * 1. Cut the raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes, so masking
+	 *    cost is bounded however long the message is; a token the cut falls
+	 *    into is dropped.
+	 * 2. Mask, cut to EXCEPTION_MESSAGE_MAX bytes, mask once more, so the
+	 *    final cut never leaves half a secret behind.
+	 *
+	 * Every cut is UTF-8 safe.
+	 *
+	 * @param string $text Raw text (e.g. an exception message).
+	 */
+	private function scrub( string $text ): string {
+		$use_mb    = function_exists( 'mb_strcut' );
+		$truncated = strlen( $text ) > self::EXCEPTION_MESSAGE_SCAN_MAX;
+		if ( $truncated ) {
+			$text = $this->cut_raw( $text, $use_mb );
+		}
+
+		$text = $this->mask( $text );
+		if ( ! $truncated && strlen( $text ) <= self::EXCEPTION_MESSAGE_MAX ) {
+			return $text;
+		}
+		if ( strlen( $text ) <= self::EXCEPTION_MESSAGE_MAX ) {
+			return $text . '…';
+		}
+
+		$text = $this->mask( $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_MAX, $use_mb ) );
+		if ( strlen( $text ) > self::EXCEPTION_MESSAGE_MAX ) {
+			$text = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_MAX, $use_mb );
+		}
+
+		return $text . '…';
+	}
+
+	/**
+	 * Cut raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes before masking.
+	 *
+	 * When the cut falls inside a token, everything after the last whitespace
+	 * is dropped, however long the token: a cut-off key shorter than 32
+	 * characters, or a cut-off email, would no longer match its masking rule.
+	 * Without any whitespace nothing of the raw text is kept.
+	 *
+	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
+	 * @param bool   $use_mb Use mb_strcut().
+	 */
+	private function cut_raw( string $text, bool $use_mb ): string {
+		$cut  = $this->utf8_cut( $text, self::EXCEPTION_MESSAGE_SCAN_MAX, $use_mb );
+		$next = substr( $text, strlen( $cut ), 1 );
+		if ( '' === $next || 1 === preg_match( '/\s/', $next ) ) {
+			return $cut;
+		}
+
+		// Length of the trailing non-whitespace run (same set as PCRE \s): one linear pass.
+		$fragment = strcspn( strrev( $cut ), " \t\n\r\v\f" );
+
+		return rtrim( substr( $cut, 0, strlen( $cut ) - $fragment ), " \t\n\r\v\f" );
+	}
+
+	/**
+	 * Masking pipeline for one log line. Order matters.
+	 *
+	 * 1. Control characters (CR, LF, NUL, ...), Unicode line / paragraph
+	 *    separators and bidi controls become spaces: no forged, cut-off, or
+	 *    visually reordered lines.
+	 * 2. Paths inside the plugin become relative; other absolute paths (Unix,
+	 *    Windows drive, UNC) keep only the file name behind "[path]/".
+	 * 3. URL userinfo (https://user:pass@) becomes "***@"; quoted literals
+	 *    in SQL become '***'.
+	 * 4. Bearer / Basic credentials; key=, token=, password=, secret=, ...
+	 *    values, also with quoted (JSON) keys and values and URL-encoded
+	 *    separators (token%3D...).
+	 * 5. Query strings (absolute and relative URLs), emails, IPv4/IPv6, long
+	 *    hex and base64-like runs. Every rule is linear in the input.
+	 *
+	 * @param string $text Raw text.
+	 */
+	private function mask( string $text ): string {
+		$text = $this->strip_controls( $text );
+		$text = $this->relative_paths( $text );
+		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*://)[^\s/?\#@]++@#i', '$1***@', $text );
+		$text = $this->redact_sql_literals( $text );
+		$text = $this->redact_query_secrets( $text );
+
+		$text = $this->replace( '/\b(Bearer|Basic)\s+[^\s,;"\']+/i', '$1 ***', $text );
+		$text = $this->redact_key_values( $text );
+
+		$patterns = array(
+			'#(\bhttps?://[^\s?\#]+)\?[^\s\#]*#i'         => '$1',
+			'#\?[^\s?\#=&]+=[^\s\#]*#'                    => '',
+			'/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i'    => '***@***',
+			'/\b(?:\d{1,3}\.){3}\d{1,3}\b/'               => '***',
+			'/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i' => '***',
+			'/\b[0-9a-f]{32,}\b/i'                        => '***',
+		);
+		foreach ( $patterns as $pattern => $replacement ) {
+			$text = $this->replace( $pattern, $replacement, $text );
+		}
+
+		// Base64-like runs of 32+ that contain a digit. Possessive match, digit
+		// check in the callback: one pass, no look-ahead rescans.
+		$masked = preg_replace_callback(
+			'#(?<![\w\\\\/.-])[A-Za-z0-9+/_-]{32,}+={0,2}#',
+			static function ( array $m ): string {
+				return false === strpbrk( $m[0], '0123456789' ) ? $m[0] : '***';
+			},
+			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
+	}
+
+	/**
+	 * Preg_replace() that keeps the input when the pattern fails.
+	 *
+	 * @param string $pattern     Regex.
+	 * @param string $replacement Replacement.
+	 * @param string $text        Subject.
+	 */
+	private function replace( string $pattern, string $replacement, string $text ): string {
+		$replaced = preg_replace( $pattern, $replacement, $text );
+		return is_string( $replaced ) ? $replaced : $text;
+	}
+
+	/**
+	 * Control characters (C0, DEL, C1 incl. U+0085 NEL), line / paragraph
+	 * separators (U+2028, U+2029) and bidi controls (U+061C, U+200E, U+200F,
+	 * U+202A-U+202E, U+2066-U+2069) become one space per run.
+	 *
+	 * @param string $text Raw text.
+	 */
+	private function strip_controls( string $text ): string {
+		$clean = preg_replace( '/[\p{Cc}\p{Zl}\p{Zp}\x{061C}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]+/u', ' ', $text );
+		if ( ! is_string( $clean ) ) {
+			// Not valid UTF-8: replace byte-wise, including the UTF-8 encodings of the characters above.
+			$clean = preg_replace( '/(?:[\x00-\x1F\x7F]|\xC2[\x80-\x9F]|\xD8\x9C|\xE2\x80[\x8E\x8F\xA8-\xAE]|\xE2\x81[\xA6-\xA9])+/', ' ', $text );
+		}
+
+		return is_string( $clean ) ? $clean : '';
+	}
+
+	/**
+	 * Plugin paths become relative; other absolute paths keep the file name.
+	 *
+	 * @param string $text Text without control characters.
+	 */
+	private function relative_paths( string $text ): string {
+		$root = dirname( __DIR__, 2 );
+		$text = str_replace(
+			array( $root . '/', $root . '\\', str_replace( '/', '\\', $root ) . '\\' ),
+			'',
+			$text
+		);
+
+		// Directories after a Windows drive letter or a UNC server / share prefix.
+		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
+		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
+
+		// Unix directories (/home/alice smith/x/). A URL path is preceded by its host, so it is left alone.
+		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)+#', '[path]/', $text );
+	}
+
+	/**
+	 * Quoted literals in an SQL statement become '***'.
+	 *
+	 * @param string $text Text.
+	 */
+	private function redact_sql_literals( string $text ): string {
+		if ( ! preg_match( '/\b(?:SELECT|INSERT|UPDATE|DELETE|REPLACE)\b.*\b(?:FROM|INTO|SET|WHERE|VALUES)\b/is', $text ) ) {
+			return $text;
+		}
+
+		return $this->replace( '/"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'/s', "'***'", $text );
+	}
+
+	/**
+	 * Mask key=value / "key":"value" secrets. Quotes around the key and the
+	 * value are kept; an already masked Bearer / Basic value is left alone.
+	 *
+	 * @param string $text Text.
+	 */
+	private function redact_key_values( string $text ): string {
+		$masked = preg_replace_callback(
+			'/(["\']?)\b((?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|authorization|auth))\1(\s*(?:[=:]|%3D|%3A)\s*)(?!(?:Bearer|Basic)\s\*\*\*)("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|[^\s&,;}\]]+)/i',
+			static function ( array $m ): string {
+				$quote = substr( $m[4], 0, 1 );
+				$value = ( '"' === $quote || "'" === $quote ) ? $quote . '***' . $quote : '***';
+				return $m[1] . $m[2] . $m[1] . $m[3] . $value;
+			},
+			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
+	}
+
+	/**
+	 * Cut to at most $max bytes without splitting a UTF-8 character.
+	 *
+	 * @param string $text   Text.
+	 * @param int    $max    Byte limit.
+	 * @param bool   $use_mb Use mb_strcut() (false: substr() plus trailing fix-up).
+	 */
+	private function utf8_cut( string $text, int $max, bool $use_mb ): string {
+		if ( $use_mb ) {
+			return mb_strcut( $text, 0, $max, 'UTF-8' );
+		}
+
+		$cut = substr( $text, 0, $max );
+
+		// Drop a trailing lead byte whose continuation bytes were cut off.
+		return $this->replace( '/(?:[\xC0-\xDF]|[\xE0-\xEF][\x80-\xBF]?|[\xF0-\xF7][\x80-\xBF]{0,2})$/', '', $cut );
+	}
+
+	/**
+	 * Class name safe for one log line.
+	 *
+	 * Anonymous classes are named "Parent@anonymous" followed by a NUL byte and
+	 * the absolute file path; keep only the part before the NUL.
+	 *
+	 * @param string $name Class name.
+	 */
+	private function class_label( string $name ): string {
+		$nul = strpos( $name, "\0" );
+		if ( false !== $nul ) {
+			$name = substr( $name, 0, $nul );
+		}
+
+		return (string) preg_replace( '/[^A-Za-z0-9_\\\\@]/', '', $name );
+	}
+
+	/**
+	 * File path relative to the plugin root; basename when outside it.
+	 *
+	 * @param string $file Absolute file path.
+	 */
+	private function relative_file( string $file ): string {
+		$file = $this->strip_controls( $file );
+		$root = dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR;
+		if ( 0 === strpos( $file, $root ) ) {
+			return str_replace( DIRECTORY_SEPARATOR, '/', substr( $file, strlen( $root ) ) );
+		}
+
+		return basename( str_replace( '\\', '/', $file ) );
 	}
 
 	/**
