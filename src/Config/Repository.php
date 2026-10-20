@@ -39,6 +39,15 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	private Validator $validator;
 
 	/**
+	 * Validator warnings already logged in this PHP process, keyed by
+	 * option|path|message. One request reads the same option many times;
+	 * each distinct warning is logged once.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $emitted_warnings = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 4.0.0
@@ -188,7 +197,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	public function get_identity(): array {
 		$stored = get_option( Schema::SITE_IDENTITY, array() );
 		$clean  = $this->validator->sanitize( is_array( $stored ) ? $stored : array(), Schema::SITE_IDENTITY );
-		$this->emit_validator_warnings();
+		$this->emit_validator_warnings( Schema::SITE_IDENTITY );
 
 		$uuid = isset( $clean['site_uuid'] ) ? (string) $clean['site_uuid'] : '';
 		if ( '' === $uuid || ! $this->is_uuid( $uuid ) ) {
@@ -274,7 +283,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		}
 
 		$clean = $this->validator->sanitize( $value, $option );
-		$this->emit_validator_warnings();
+		$this->emit_validator_warnings( $option );
 
 		if ( ! $this->blocklist_write_allowed( $option, $value, $clean ) ) {
 			$this->warn( 'Site blocklist write rejected.', array( 'option' => $option ) );
@@ -455,7 +464,7 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 		}
 
 		$clean = $this->validator->sanitize( $raw, $option );
-		$this->emit_validator_warnings();
+		$this->emit_validator_warnings( $option );
 
 		if ( $needs_upgrade ) {
 			$this->persist_upgraded( $option, $clean );
@@ -566,14 +575,35 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 * @return bool
 	 */
 	private function set_override_path( string $path, $value ): bool {
-		$root = explode( '.', $path )[0];
-		if ( 'recovery_mode' !== $root && ! $this->allows_site_override() ) {
+		if ( $this->is_locked_path( $path ) ) {
 			$this->warn( 'Site overrides ignored because allow_site_override is false.', array( 'path' => $path ) );
 			return false;
 		}
 		$current = $this->load_option( Schema::SITE_OVERRIDES );
 		$updated = self::path_set( $current, $path, $value );
 		return $this->save_option( Schema::SITE_OVERRIDES, $updated );
+	}
+
+	/**
+	 * Whether set() refuses this path because the network locks site overrides.
+	 *
+	 * True on multisite for a site-override path other than recovery_mode while
+	 * the network has allow_site_override=false (every site, the main site
+	 * included, as DocumentWriter::put_site() does). set() then writes nothing.
+	 * Use this, not set()'s return value, to tell whether a write is allowed:
+	 * set() also returns false when the value is unchanged (update_option()).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $path Dotted path.
+	 * @return bool
+	 */
+	public function is_locked_path( string $path ): bool {
+		if ( ! $this->is_multisite() || ! $this->is_override_path( $path ) ) {
+			return false;
+		}
+
+		return 'recovery_mode' !== explode( '.', $path )[0] && ! $this->allows_site_override();
 	}
 
 	/**
@@ -779,12 +809,29 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	}
 
 	/**
-	 * Forward Validator warnings to the optional logger.
+	 * Forget which Validator warnings were logged. For tests and long-running
+	 * processes that want warnings again.
 	 *
+	 * @since 4.0.0
+	 */
+	public static function reset_warning_dedupe(): void {
+		self::$emitted_warnings = array();
+	}
+
+	/**
+	 * Forward Validator warnings to the optional logger, once per
+	 * option|path|message in this process.
+	 *
+	 * @param string $option Option the warnings came from.
 	 * @return void
 	 */
-	private function emit_validator_warnings(): void {
+	private function emit_validator_warnings( string $option ): void {
 		foreach ( $this->validator->warnings() as $warning ) {
+			$key = $option . '|' . $warning['path'] . '|' . $warning['message'];
+			if ( isset( self::$emitted_warnings[ $key ] ) ) {
+				continue;
+			}
+			self::$emitted_warnings[ $key ] = true;
 			$this->warn(
 				'Unknown or invalid config key discarded.',
 				array(

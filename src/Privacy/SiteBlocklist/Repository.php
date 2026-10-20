@@ -102,7 +102,10 @@ final class Repository {
 		}
 		$doc['modules']['site_blocklist'] = $checked;
 
-		if ( ! $this->config->save_option( $option, $doc ) ) {
+		// update_option() / update_site_option() also return false when the stored
+		// value is unchanged, so false alone is not a failure: re-read and accept
+		// the save when the stored list already equals the validated one.
+		if ( ! $this->config->save_option( $option, $doc ) && ! $this->stored_list_equals( $option, $checked ) ) {
 			return $this->invalid_schema();
 		}
 
@@ -284,6 +287,21 @@ final class Repository {
 			'enabled' => $enabled,
 			'hosts'   => $hosts,
 		);
+	}
+
+	/**
+	 * Whether the list stored under $option is already $expected.
+	 *
+	 * @param string                                                                              $option   Option key.
+	 * @param array{enabled: bool, hosts: list<array{host: string, match: string, note: string}>} $expected Validated list.
+	 */
+	private function stored_list_equals( string $option, array $expected ): bool {
+		$stored = $this->load_option( $option );
+		if ( ! isset( $stored['modules']['site_blocklist'] ) || ! is_array( $stored['modules']['site_blocklist'] ) ) {
+			return false;
+		}
+
+		return $this->normalize_document( $stored['modules']['site_blocklist'] ) === $expected;
 	}
 
 	/**

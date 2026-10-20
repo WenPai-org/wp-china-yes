@@ -31,14 +31,23 @@ final class SettingsController {
 	private DocumentWriter $writer;
 
 	/**
+	 * UTC ISO 8601 clock for profile_confirmed_at.
+	 *
+	 * @var \Closure(): string
+	 */
+	private \Closure $clock;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param DocumentWriter $writer Merge / persist helper.
+	 * @param DocumentWriter            $writer Merge / persist helper.
+	 * @param (callable(): string)|null $clock  Timestamp source; defaults to RestError::now(). Tests pass a fixed clock.
 	 */
-	public function __construct( DocumentWriter $writer ) {
+	public function __construct( DocumentWriter $writer, ?callable $clock = null ) {
 		$this->writer = $writer;
+		$this->clock  = \Closure::fromCallable( $clock ?? array( RestError::class, 'now' ) );
 	}
 
 	/**
@@ -80,16 +89,46 @@ final class SettingsController {
 			return $result;
 		}
 
+		// Not set()'s return value: update_option() also returns false when the
+		// document is unchanged (same-second timestamp after a profile switch).
+		$repository = $this->writer->repository();
+		$written    = $had_key && ! $repository->is_locked_path( 'profile_confirmed_at' );
 		if ( $had_key ) {
-			$this->writer->repository()->set( 'profile_confirmed_at', RestError::now() );
-			$stamp = $before['profile_confirmed_at'] ?? null;
-			$first = ! is_string( $stamp ) || '' === $stamp;
-			if ( $profile !== $from || $first ) {
-				$this->record_profile_set( $profile );
-			}
+			$repository->set( 'profile_confirmed_at', ( $this->clock )() );
+		}
+		if ( $this->should_record_profile_set( $written, $profile, $from, $before['profile_confirmed_at'] ?? null ) ) {
+			$this->record_profile_set( $profile );
 		}
 
 		return RestError::ok( $this->writer->site_document() );
+	}
+
+	/**
+	 * Whether this PUT records a profile_set event.
+	 *
+	 * Only when profile_confirmed_at is written (a network-locked site
+	 * writes nothing), and then only when the profile changed or this is
+	 * the first confirmation (no stored timestamp before the PUT). An echo
+	 * of an unchanged, already confirmed profile records nothing.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param bool   $written Whether profile_confirmed_at is written (not locked).
+	 * @param string $profile Profile after the PUT.
+	 * @param string $from    Stored profile before the PUT.
+	 * @param mixed  $stamp   Stored profile_confirmed_at before the PUT.
+	 */
+	private function should_record_profile_set( bool $written, string $profile, string $from, $stamp ): bool {
+		if ( ! $written ) {
+			return false;
+		}
+		if ( $profile !== $from ) {
+			return true;
+		}
+
+		// First confirmation of the unchanged profile still records one event
+		// (onboarding confirms the default profile this way).
+		return ! is_string( $stamp ) || '' === $stamp;
 	}
 
 	/**
