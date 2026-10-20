@@ -31,6 +31,9 @@ if ( ! function_exists( 'update_option' ) ) {
 	/**
 	 * Write a site option into OptionStore.
 	 *
+	 * Like WordPress, returns false and writes nothing (no update hooks) when
+	 * the stored value is unchanged (=== or equal after maybe_serialize()).
+	 *
 	 * @param string $key      Option name.
 	 * @param mixed  $value    Value.
 	 * @param mixed  $autoload Unused; WP network autoload is 待定（M0）.
@@ -38,6 +41,9 @@ if ( ! function_exists( 'update_option' ) ) {
 	 */
 	function update_option( $key, $value, $autoload = null ) {
 		unset( $autoload );
+		if ( array_key_exists( $key, OptionStore::$options ) && OptionStore::unchanged( OptionStore::$options[ $key ], $value ) ) {
+			return false;
+		}
 		if ( is_callable( OptionStore::$on_update ) ) {
 			( OptionStore::$on_update )( $key, $value );
 		}
@@ -63,11 +69,17 @@ if ( ! function_exists( 'update_site_option' ) ) {
 	/**
 	 * Write a network option into OptionStore.
 	 *
+	 * Like WordPress, returns false and writes nothing (no update hooks) when
+	 * the stored value is unchanged (=== or equal after maybe_serialize()).
+	 *
 	 * @param string $key   Option name.
 	 * @param mixed  $value Value.
 	 * @return bool
 	 */
 	function update_site_option( $key, $value ) {
+		if ( array_key_exists( $key, OptionStore::$site_options ) && OptionStore::unchanged( OptionStore::$site_options[ $key ], $value ) ) {
+			return false;
+		}
 		if ( is_callable( OptionStore::$on_update ) ) {
 			( OptionStore::$on_update )( $key, $value );
 		}

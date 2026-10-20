@@ -36,6 +36,7 @@ class RepositoryTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		OptionStore::reset();
+		Repository::reset_warning_dedupe();
 		$this->logs = array();
 	}
 
@@ -256,6 +257,82 @@ class RepositoryTest extends TestCase {
 	}
 
 	/**
+	 * One request reads the same stored document many times (and through more
+	 * than one Repository); each unknown-key warning is logged once, and
+	 * distinct paths are still logged separately.
+	 */
+	public function test_validator_warning_is_logged_once_per_request() {
+		$legacy                                   = Defaults::settings();
+		$legacy['announcements']                  = array( 'dismissed' => array( 'a1' ) );
+		$legacy['wpcy_bogus_root']                = 'x';
+		OptionStore::$options[ Schema::SETTINGS ] = $legacy;
+
+		$repo = $this->repo();
+		$repo->all();
+		$repo->all();
+		$repo->get( 'profile' );
+		$this->repo()->all();
+
+		$this->assertSame( 1, $this->warning_count( 'announcements' ) );
+		$this->assertSame( 1, $this->warning_count( 'wpcy_bogus_root' ) );
+	}
+
+	/**
+	 * After reset_warning_dedupe() the same warning is logged again.
+	 */
+	public function test_reset_warning_dedupe_logs_again() {
+		$legacy                                   = Defaults::settings();
+		$legacy['announcements']                  = array( 'dismissed' => array( 'a1' ) );
+		OptionStore::$options[ Schema::SETTINGS ] = $legacy;
+
+		$repo = $this->repo();
+		$repo->all();
+		$repo->all();
+		$this->assertSame( 1, $this->warning_count( 'announcements' ) );
+
+		Repository::reset_warning_dedupe();
+		$repo->all();
+		$this->assertSame( 2, $this->warning_count( 'announcements' ) );
+	}
+
+	/**
+	 * Locked paths: only multisite + allow_site_override=false locks the
+	 * site-override paths, recovery_mode excepted; set() agrees with it.
+	 */
+	public function test_is_locked_path_matches_set() {
+		$repo = $this->repo();
+		$this->assertFalse( $repo->is_locked_path( 'profile_confirmed_at' ) );
+
+		OptionStore::$multisite = true;
+		$network                = Defaults::network_settings();
+
+		$network['allow_site_override']                        = true;
+		OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] = $network;
+		$this->assertFalse( $repo->is_locked_path( 'profile_confirmed_at' ) );
+		$this->assertTrue( $repo->set( 'profile_confirmed_at', '2026-10-20T03:00:00Z' ) );
+
+		$network['allow_site_override']                        = false;
+		OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] = $network;
+		$this->assertTrue( $repo->is_locked_path( 'profile_confirmed_at' ) );
+		$this->assertTrue( $repo->is_locked_path( 'connectivity.heartbeat' ) );
+		$this->assertFalse( $repo->is_locked_path( 'recovery_mode' ) );
+		$this->assertFalse( $repo->is_locked_path( 'data_residency.ruleset_version' ) );
+		$this->assertFalse( $repo->set( 'profile_confirmed_at', '2026-10-20T03:00:01Z' ) );
+		$this->assertTrue( $repo->set( 'recovery_mode', true ) );
+	}
+
+	/**
+	 * WordPress semantics in the option stubs: writing an unchanged value
+	 * returns false, so set() returning false does not mean "refused".
+	 */
+	public function test_unchanged_set_returns_false_like_wordpress() {
+		$repo = $this->repo();
+		$this->assertTrue( $repo->set( 'profile_confirmed_at', '2026-10-20T03:00:00Z' ) );
+		$this->assertFalse( $repo->set( 'profile_confirmed_at', '2026-10-20T03:00:00Z' ) );
+		$this->assertFalse( $repo->is_locked_path( 'profile_confirmed_at' ) );
+	}
+
+	/**
 	 * Multisite: a network document with the removed root reads fine and loses it on save.
 	 */
 	public function test_legacy_announcements_root_in_network_document_is_cleared_on_save() {
@@ -268,6 +345,22 @@ class RepositoryTest extends TestCase {
 		$this->assertNull( $repo->get( 'announcements' ) );
 		$this->assertTrue( $repo->save_option( Schema::NETWORK_SETTINGS, $legacy ) );
 		$this->assertSame( Defaults::network_settings(), OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] );
+	}
+
+	/**
+	 * Logged Validator warnings for one dotted path.
+	 *
+	 * @param string $path Dotted path.
+	 * @return int
+	 */
+	private function warning_count( string $path ): int {
+		$count = 0;
+		foreach ( $this->logs as $log ) {
+			if ( isset( $log[2]['path'] ) && $path === $log[2]['path'] && isset( $log[2]['reason'] ) ) {
+				++$count;
+			}
+		}
+		return $count;
 	}
 
 	/**
