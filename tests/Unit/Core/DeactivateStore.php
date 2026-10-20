@@ -51,6 +51,13 @@ final class DeactivateStore {
 	public static $cleared = array();
 
 	/**
+	 * Blog id on which wp_clear_scheduled_hook() throws, or 0 for none.
+	 *
+	 * @var int
+	 */
+	public static $throw_on_blog = 0;
+
+	/**
 	 * Arguments of each get_sites() call.
 	 *
 	 * @var array<int, array<string, mixed>>

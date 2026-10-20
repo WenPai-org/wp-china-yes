@@ -35,6 +35,7 @@ class PluginDeactivateTest extends TestCase {
 		DeactivateStore::$stack           = array();
 		DeactivateStore::$cleared         = array();
 		DeactivateStore::$get_sites_calls = array();
+		DeactivateStore::$throw_on_blog   = 0;
 	}
 
 	/**
@@ -108,6 +109,30 @@ class PluginDeactivateTest extends TestCase {
 
 		$this->assertSame( $sites, $this->cleared_blogs() );
 		$this->assertCount( 2, DeactivateStore::$get_sites_calls );
+	}
+
+	/**
+	 * If wp_clear_scheduled_hook() throws on a site, restore_current_blog()
+	 * still runs and the request is back on the original site.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_network_deactivation_restores_blog_when_clear_throws() {
+		$this->network( true, array( 1, 2, 3 ) );
+		DeactivateStore::$throw_on_blog = 2;
+
+		$thrown = null;
+		try {
+			Plugin::deactivate( true );
+		} catch ( \RuntimeException $e ) {
+			$thrown = $e;
+		}
+
+		$this->assertInstanceOf( \RuntimeException::class, $thrown );
+		$this->assertSame( 1, DeactivateStore::$blog );
+		$this->assertSame( array(), DeactivateStore::$stack );
+		$this->assertSame( array( 1 ), $this->cleared_blogs() );
 	}
 
 	/**
