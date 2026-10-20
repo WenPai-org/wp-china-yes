@@ -376,6 +376,14 @@ class LoggerExceptionContextTest extends TestCase {
 
 		$this->assertLessThan( 0.1, $elapsed, sprintf( '200 KB took %.3f s', $elapsed ) );
 		$this->assertSame( str_repeat( 'Ab+_', 50000 ), $out );
+
+		// Path rules with many-word directories stay linear too.
+		foreach ( array( str_repeat( '/a b c d e f g ', 14000 ), '/' . str_repeat( 'a ', 100000 ), 'C:\\' . str_repeat( 'a b ', 50000 ), str_repeat( 'C:\\a b ', 25000 ) ) as $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.1, $elapsed, sprintf( '%d bytes of %s took %.3f s', strlen( $input ), substr( $input, 0, 6 ), $elapsed ) );
+		}
 	}
 
 	/**
@@ -489,6 +497,57 @@ class LoggerExceptionContextTest extends TestCase {
 
 		$this->assertStringNotContainsString( 'dea', $logged );
 		$this->assertStringContainsString( '[RuntimeException: [path]/file.php… @ ', $logged );
+	}
+
+	/**
+	 * Review-164 f7e09b8: a token longer than 64 bytes across the raw cut is
+	 * dropped whole. A compressible prefix (hex run → ***) would otherwise
+	 * pull a sub-32-character key prefix into the line.
+	 */
+	public function test_raw_cut_drops_a_long_token_whole() {
+		$token = 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd34' . str_repeat( 'Zm9vYmFy4QWxY2Vk', 6 );
+		$this->assertGreaterThan( 64, strlen( $token ) );
+		$last = strlen( $token ) - 6;
+
+		// 0-based token start; 1105 leaves the longest (31-character) prefix in f7e09b8.
+		foreach ( array( 1105, 1130, 1104, 1150, 1199 ) as $start ) {
+			$prefix = substr( str_repeat( 'ab', 600 ), 0, $start - 1 ) . ' ';
+			$this->log_exception( $prefix . $token . ' tail' );
+		}
+
+		$lines = explode( "\n", trim( $this->logged() ) );
+		$this->assertCount( 5, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertSame( 1, preg_match( '/\[RuntimeException: (.*) @ tests\//', $line, $m ), $line );
+			for ( $i = 0; $i <= $last; $i++ ) {
+				$this->assertStringNotContainsString( substr( $token, $i, 6 ), $m[1], $line );
+			}
+			$this->assertSame( '***…', $m[1], $line );
+		}
+	}
+
+	/**
+	 * Review-164 f7e09b8 (non-blocking): a directory name of more than five
+	 * words does not leak.
+	 */
+	public function test_path_with_long_multi_word_directory_is_hidden() {
+		$this->log_exception( '/home/alice/My Very Long Folder Name Here Now/secret.txt' );
+		$this->log_exception( 'D:\Users\alice\My Very Long Folder Name Here Now\secret.txt' );
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'Folder', 'Here Now' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: [path]/secret.txt @ ' ) );
+	}
+
+	/**
+	 * A raw message over the cap without any whitespace keeps nothing raw.
+	 */
+	public function test_raw_cut_without_whitespace_keeps_nothing() {
+		$this->log_exception( 'x' . str_repeat( 'Zm9vYmFy4QWxY2Vk', 100 ) );
+
+		$this->assertStringContainsString( '[RuntimeException: … @ tests/', $this->logged() );
 	}
 
 	/**

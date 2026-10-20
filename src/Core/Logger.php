@@ -204,13 +204,6 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
 
 	/**
-	 * Longest token tail dropped when the raw cut falls inside a token.
-	 *
-	 * @var int
-	 */
-	private const CUT_FRAGMENT_MAX = 64;
-
-	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -287,9 +280,10 @@ final class Logger {
 	/**
 	 * Cut raw text to EXCEPTION_MESSAGE_SCAN_MAX bytes before masking.
 	 *
-	 * When the cut falls inside a token, that token (at most CUT_FRAGMENT_MAX
-	 * bytes back to the previous whitespace) is dropped: a cut-off hex key or
-	 * email would no longer match its masking rule.
+	 * When the cut falls inside a token, everything after the last whitespace
+	 * is dropped, however long the token: a cut-off key shorter than 32
+	 * characters, or a cut-off email, would no longer match its masking rule.
+	 * Without any whitespace nothing of the raw text is kept.
 	 *
 	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
 	 * @param bool   $use_mb Use mb_strcut().
@@ -301,12 +295,10 @@ final class Logger {
 			return $cut;
 		}
 
-		$keep = max( 0, strlen( $cut ) - self::CUT_FRAGMENT_MAX );
-		if ( 1 === preg_match( '/\s\S*$/D', substr( $cut, $keep ), $m, PREG_OFFSET_CAPTURE ) ) {
-			$keep += $m[0][1];
-		}
+		// Length of the trailing non-whitespace run (same set as PCRE \s): one linear pass.
+		$fragment = strcspn( strrev( $cut ), " \t\n\r\v\f" );
 
-		return $this->utf8_cut( $cut, $keep, $use_mb );
+		return rtrim( substr( $cut, 0, strlen( $cut ) - $fragment ), " \t\n\r\v\f" );
 	}
 
 	/**
@@ -406,10 +398,11 @@ final class Logger {
 
 		// Directories after a Windows drive letter or a UNC server / share prefix.
 		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
-		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++){0,4}+[\\\\/])*+#', '[path]/', $text );
+		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
 
 		// Unix directories (/home/alice smith/x/). A URL path is preceded by its host, so it is left alone.
-		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++){0,4}+/)+#', '[path]/', $text );
+		return $this->replace( '#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)+#', '[path]/', $text );
 	}
 
 	/**
