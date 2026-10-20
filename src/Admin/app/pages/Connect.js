@@ -95,7 +95,7 @@ export default function Connect() {
 			unsaved: store.getUnsaved(),
 		};
 	}, [] );
-	const { patchSettings, fetchBinding, fetchNetworkSettings, fetchSettings } =
+	const { patchSettings, fetchBinding, fetchNetworkSettings } =
 		useDispatch( STORE_NAME );
 	const network = Boolean( capabilities.network_admin );
 	const networkLocked = ! network && Boolean( capabilities.network_locked );
@@ -107,11 +107,6 @@ export default function Connect() {
 	const [ savedFlash, setSavedFlash ] = useState( {} );
 	const [ cardError, setCardError ] = useState( null );
 	const [ networkLoaded, setNetworkLoaded ] = useState( ! network );
-	// SH-06: when the bootstrap carried no site settings, read them over REST;
-	// a failure shows LoadError instead of a blank page.
-	const [ siteLoaded, setSiteLoaded ] = useState(
-		network || Object.keys( settings ).length > 0
-	);
 	const flashTimer = useRef( 0 );
 
 	useEffect( () => {
@@ -137,13 +132,6 @@ export default function Connect() {
 			} );
 		} else {
 			fetchBinding();
-			if ( ! siteLoaded ) {
-				Promise.resolve( fetchSettings() ).finally( () => {
-					if ( ! cancelled ) {
-						setSiteLoaded( true );
-					}
-				} );
-			}
 		}
 		if ( ! network && ! networkLocked ) {
 			// L-7 ①: failure or timeout = no suggestion, no message.
@@ -316,7 +304,7 @@ export default function Connect() {
 	};
 
 	let body;
-	if ( ( network && ! networkLoaded ) || ! siteLoaded ) {
+	if ( network && ! networkLoaded ) {
 		body = (
 			<div className="wpcy-stack" aria-busy="true">
 				<section className="card">
@@ -326,13 +314,11 @@ export default function Connect() {
 				</section>
 			</div>
 		);
-	} else if ( loadError ) {
+	} else if ( network && loadError ) {
 		body = (
 			<LoadError
 				what={ __( '设置', 'wp-china-yes' ) }
-				onRetry={ () =>
-					network ? fetchNetworkSettings() : fetchSettings()
-				}
+				onRetry={ () => fetchNetworkSettings() }
 			/>
 		);
 	} else {
