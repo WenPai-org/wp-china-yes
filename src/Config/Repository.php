@@ -575,14 +575,35 @@ final class Repository implements \WenPai\ChinaYes\Core\Config {
 	 * @return bool
 	 */
 	private function set_override_path( string $path, $value ): bool {
-		$root = explode( '.', $path )[0];
-		if ( 'recovery_mode' !== $root && ! $this->allows_site_override() ) {
+		if ( $this->is_locked_path( $path ) ) {
 			$this->warn( 'Site overrides ignored because allow_site_override is false.', array( 'path' => $path ) );
 			return false;
 		}
 		$current = $this->load_option( Schema::SITE_OVERRIDES );
 		$updated = self::path_set( $current, $path, $value );
 		return $this->save_option( Schema::SITE_OVERRIDES, $updated );
+	}
+
+	/**
+	 * Whether set() refuses this path because the network locks site overrides.
+	 *
+	 * True on multisite for a site-override path other than recovery_mode while
+	 * the network has allow_site_override=false (every site, the main site
+	 * included, as DocumentWriter::put_site() does). set() then writes nothing.
+	 * Use this, not set()'s return value, to tell whether a write is allowed:
+	 * set() also returns false when the value is unchanged (update_option()).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $path Dotted path.
+	 * @return bool
+	 */
+	public function is_locked_path( string $path ): bool {
+		if ( ! $this->is_multisite() || ! $this->is_override_path( $path ) ) {
+			return false;
+		}
+
+		return 'recovery_mode' !== explode( '.', $path )[0] && ! $this->allows_site_override();
 	}
 
 	/**

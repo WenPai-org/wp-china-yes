@@ -33,12 +33,20 @@ require_once __DIR__ . '/wp-rest-action-stub.php';
 class SettingsNetworkAuthzTest extends TestCase {
 
 	/**
+	 * Clock passed to the controller; null uses RestError::now().
+	 *
+	 * @var (callable(): string)|null
+	 */
+	private $clock = null;
+
+	/**
 	 * Reset bags.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		$this->clock = null;
 		RestStore::reset();
 		OptionStore::reset();
 		RestError::reset();
@@ -348,6 +356,63 @@ class SettingsNetworkAuthzTest extends TestCase {
 	}
 
 	/**
+	 * Regression (#162 review): onboarding confirms domestic and Connect
+	 * switches to crossborder within the same second. The switch PUT writes the
+	 * same timestamp, so the document equals the one put_site() just saved and
+	 * update_option() returns false; the switch still records one profile_set.
+	 */
+	public function test_single_site_same_second_confirm_then_switch_records_switch() {
+		$this->freeze_clock( '2026-10-20T03:00:00Z' );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->assertSame( 1, $this->profile_set_count() );
+
+		$this->put( array( 'profile' => 'crossborder' ) );
+		$this->assertSame( 2, $this->profile_set_count() );
+		$last = RestStore::$actions[ count( RestStore::$actions ) - 1 ];
+		$this->assertSame( 'crossborder', $last['args'][1]['profile'] );
+		$this->assertSame( 'crossborder', ( new Repository() )->get( 'profile' ) );
+		$this->assertSame( '2026-10-20T03:00:00Z', ( new Repository() )->get( 'profile_confirmed_at' ) );
+	}
+
+	/**
+	 * Same-second switch with a timestamp of that second already stored: the
+	 * switch records exactly one profile_set (single site and unlocked subsite).
+	 */
+	public function test_same_second_switch_with_confirmed_profile_records_one_profile_set() {
+		foreach ( array( false, true ) as $multisite ) {
+			OptionStore::reset();
+			RestStore::reset();
+			if ( $multisite ) {
+				$this->multisite( true );
+			}
+			$this->freeze_clock( '2026-10-20T03:00:00Z' );
+			$this->assertTrue( ( new Repository() )->set( 'profile_confirmed_at', '2026-10-20T03:00:00Z' ) );
+
+			$this->put( array( 'profile' => 'domestic' ) );
+			$this->assertSame( 0, $this->profile_set_count() );
+
+			$this->put( array( 'profile' => 'crossborder' ) );
+			$this->assertSame( 1, $this->profile_set_count(), $multisite ? 'unlocked subsite' : 'single site' );
+		}
+	}
+
+	/**
+	 * Subsite, locked: same-second profile PUTs never record profile_set and
+	 * never write the timestamp.
+	 */
+	public function test_locked_subsite_same_second_profile_put_records_nothing() {
+		$this->multisite( false );
+		$this->freeze_clock( '2026-10-20T03:00:00Z' );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->put( array( 'profile' => 'domestic' ) );
+
+		$this->assertSame( 0, $this->profile_set_count() );
+		$this->assertNull( ( new Repository() )->get( 'profile_confirmed_at' ) );
+	}
+
+	/**
 	 * Subsite: modules.site_blocklist echoed unchanged is accepted (not 400) and
 	 * never stored in the site overrides.
 	 */
@@ -570,6 +635,18 @@ class SettingsNetworkAuthzTest extends TestCase {
 	 * @return SettingsController
 	 */
 	private function controller(): SettingsController {
-		return new SettingsController( new DocumentWriter( new Repository() ) );
+		return new SettingsController( new DocumentWriter( new Repository() ), $this->clock );
+	}
+
+	/**
+	 * Give the controller a fixed clock (every PUT lands in the same second).
+	 *
+	 * @param string $now UTC ISO 8601 timestamp.
+	 * @return void
+	 */
+	private function freeze_clock( string $now ): void {
+		$this->clock = static function () use ( $now ): string {
+			return $now;
+		};
 	}
 }

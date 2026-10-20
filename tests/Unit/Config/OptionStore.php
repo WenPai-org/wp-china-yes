@@ -51,6 +51,25 @@ final class OptionStore {
 	public static $on_update = null;
 
 	/**
+	 * WordPress update_option() / update_network_option() "unchanged" check:
+	 * the new value is identical to the stored one, or both serialize the
+	 * same way (maybe_serialize() serializes arrays and objects only).
+	 *
+	 * @param mixed $old_value Stored value.
+	 * @param mixed $value     New value.
+	 * @return bool
+	 */
+	public static function unchanged( $old_value, $value ): bool {
+		if ( $value === $old_value ) {
+			return true;
+		}
+		$serialize = static function ( $data ) {
+			return is_array( $data ) || is_object( $data ) ? serialize( $data ) : $data; // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		};
+		return $serialize( $value ) === $serialize( $old_value );
+	}
+
+	/**
 	 * Clear bags between tests.
 	 *
 	 * @return void
