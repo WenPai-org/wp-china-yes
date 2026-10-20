@@ -131,6 +131,62 @@ class SiteBlocklistTest extends TestCase {
 	}
 
 	/**
+	 * Single site: saving the same list twice succeeds (update_option() returns
+	 * false for an unchanged value; that is not a failure).
+	 */
+	public function test_resave_unchanged_list_succeeds_single_site() {
+		$list = new Repository( new ConfigRepository(), $this->unsigned_ruleset() );
+		$doc  = $this->tracker_list();
+
+		$first = $list->save( $doc );
+		$this->assertIsArray( $first );
+		$stored = OptionStore::$options[ Schema::SETTINGS ];
+
+		$again = $list->save( $doc );
+		$this->assertIsArray( $again, is_wp_error( $again ) ? $again->get_error_code() : '' );
+		$this->assertSame( $first, $again );
+		$this->assertSame( $stored, OptionStore::$options[ Schema::SETTINGS ] );
+	}
+
+	/**
+	 * Multisite: re-saving the unchanged network list succeeds as well.
+	 */
+	public function test_resave_unchanged_list_succeeds_multisite() {
+		OptionStore::$multisite = true;
+		$list                   = new Repository( new ConfigRepository(), $this->unsigned_ruleset() );
+		$doc                    = $this->tracker_list();
+
+		$this->assertIsArray( $list->save( $doc ) );
+		$stored = OptionStore::$site_options[ Schema::NETWORK_SETTINGS ];
+
+		$again = $list->save( $doc );
+		$this->assertIsArray( $again, is_wp_error( $again ) ? $again->get_error_code() : '' );
+		$this->assertSame( $stored, OptionStore::$site_options[ Schema::NETWORK_SETTINGS ] );
+	}
+
+	/**
+	 * A real write failure for a changed list is still a 400 and stores nothing.
+	 */
+	public function test_failed_write_of_changed_list_is_error() {
+		$list = new Repository( new ConfigRepository(), $this->unsigned_ruleset() );
+		$this->assertIsArray( $list->save( $this->tracker_list() ) );
+		$stored = OptionStore::$options[ Schema::SETTINGS ];
+
+		OptionStore::$fail_writes = true;
+		$result                   = $list->save(
+			array(
+				'enabled' => false,
+				'hosts'   => array(),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'wpcy_invalid_schema', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$this->assertSame( $stored, OptionStore::$options[ Schema::SETTINGS ] );
+	}
+
+	/**
 	 * Suffix matches a.example.com and not notexample.com.
 	 */
 	public function test_suffix_matches_subdomain_not_lookalike() {
@@ -254,6 +310,24 @@ class SiteBlocklistTest extends TestCase {
 		);
 		$this->assertInstanceOf( WP_Error::class, $fail );
 		$this->assertSame( 'wpcy_invalid_schema', $fail->get_error_code() );
+	}
+
+	/**
+	 * One ordinary host row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function tracker_list(): array {
+		return array(
+			'enabled' => true,
+			'hosts'   => array(
+				array(
+					'host'  => 'tracker.example.com',
+					'match' => 'suffix',
+					'note'  => '统计脚本',
+				),
+			),
+		);
 	}
 
 	/**
