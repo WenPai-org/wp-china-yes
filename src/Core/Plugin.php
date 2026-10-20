@@ -51,6 +51,13 @@ use WenPai\ChinaYes\Telemetry\TelemetryModule;
 final class Plugin {
 
 	/**
+	 * Sites per get_sites() page when a network deactivation clears cron.
+	 *
+	 * @since 4.0.0
+	 */
+	public const DEACTIVATE_SITES_BATCH = 100;
+
+	/**
 	 * Service locator.
 	 *
 	 * @var Container
@@ -309,11 +316,63 @@ final class Plugin {
 
 	/**
 	 * Clear the daily compatibility-report cron. Same hook name as 3.x.
+	 *
+	 * Cron events live per site, so a network deactivation clears the event on
+	 * every site of the current network, paging get_sites() so large networks
+	 * are not loaded at once.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param bool $network_wide True when WordPress deactivates the plugin network-wide.
 	 */
-	public static function deactivate(): void {
-		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
-			wp_clear_scheduled_hook( TelemetryModule::CRON_HOOK );
+	public static function deactivate( $network_wide = false ): void {
+		if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
+			return;
 		}
+
+		if ( $network_wide && self::can_walk_network() ) {
+			self::clear_cron_on_every_site();
+			return;
+		}
+
+		wp_clear_scheduled_hook( TelemetryModule::CRON_HOOK );
+	}
+
+	/**
+	 * Whether this is multisite and the site-switching API is loaded.
+	 */
+	private static function can_walk_network(): bool {
+		return function_exists( 'is_multisite' ) && is_multisite()
+			&& function_exists( 'get_sites' )
+			&& function_exists( 'switch_to_blog' )
+			&& function_exists( 'restore_current_blog' );
+	}
+
+	/**
+	 * Clear the telemetry cron on each site of the current network, in pages.
+	 */
+	private static function clear_cron_on_every_site(): void {
+		$args = array(
+			'fields'                 => 'ids',
+			'number'                 => self::DEACTIVATE_SITES_BATCH,
+			'update_site_cache'      => false,
+			'update_site_meta_cache' => false,
+		);
+		if ( function_exists( 'get_current_network_id' ) ) {
+			$args['network_id'] = get_current_network_id();
+		}
+
+		$offset = 0;
+		do {
+			$ids = get_sites( $args + array( 'offset' => $offset ) );
+			foreach ( $ids as $id ) {
+				switch_to_blog( (int) $id );
+				wp_clear_scheduled_hook( TelemetryModule::CRON_HOOK );
+				restore_current_blog();
+			}
+			$page    = count( $ids );
+			$offset += self::DEACTIVATE_SITES_BATCH;
+		} while ( self::DEACTIVATE_SITES_BATCH === $page );
 	}
 
 	/**
