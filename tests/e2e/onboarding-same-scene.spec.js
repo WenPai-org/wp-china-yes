@@ -139,7 +139,7 @@ test.describe( 'onboarding WZ-04 same scene (O1 B1–B3)', () => {
 		}
 	} );
 
-	test( 'B1–B3 选当前场景：只有第 1 步一次写入，文档不变，0 项且无「更新」行，profile_set 不变', async ( {
+	test( 'B1–B3 选当前场景：只有第 1 步一次写入，文档不变，0 项且第 5 步无「更新」卡，profile_set 不变', async ( {
 		page,
 	} ) => {
 		const seen = await watchWizard( page );
@@ -183,7 +183,10 @@ test.describe( 'onboarding WZ-04 same scene (O1 B1–B3)', () => {
 		await expect(
 			page.locator( '[data-testid="wpcy-wz-same"]' )
 		).toHaveText( `当前已是「${ label[ 1 ] }」，没有改动。` );
-		await expect( card ).not.toContainText( '更新' );
+		// No 「更新」 summary card anywhere on step 5.
+		const step5 = page.locator( '.wpcy-grid-3' );
+		await expect( step5 ).not.toContainText( '更新' );
+		await expect( step5.locator( 'article' ) ).toHaveCount( 2 );
 
 		// … and leaving the wizard does not write either.
 		await page.getByRole( 'link', { name: '进入概览' } ).click();

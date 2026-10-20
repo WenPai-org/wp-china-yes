@@ -421,6 +421,9 @@ describe( 'WZ-04', () => {
 				.textContent,
 			same: container.querySelector( '[data-testid="wpcy-wz-same"]' ),
 			text: container.textContent,
+			cards: Array.from(
+				container.querySelectorAll( '.wpcy-grid-3 > article .k' )
+			).map( ( el ) => el.textContent.trim() ),
 		};
 		await unmount();
 		return out;
@@ -438,6 +441,7 @@ describe( 'WZ-04', () => {
 			counts[ scene ] = out.count;
 			expect( out.same ).toBeNull();
 			expect( out.text ).toContain( '稍后可在服务页绑定' );
+			expect( out.cards ).toEqual( [ '更新', '已调整', '服务' ] );
 		}
 		expect( counts ).toEqual( {
 			crossborder: '9 项',
@@ -451,6 +455,8 @@ describe( 'WZ-04', () => {
 		expect( out.count ).toBe( '0 项' );
 		expect( out.same.textContent ).toBe( '当前已是「国内站」，没有改动。' );
 		expect( out.text ).toContain( '按「国内站」预设' );
+		// Nothing changed: no 「更新」 summary card on step 5.
+		expect( out.cards ).toEqual( [ '已调整', '服务' ] );
 		// One PUT /settings {profile} from step 1, nothing extra.
 		expect( calls.filter( ( req ) => req.method === 'PUT' ) ).toHaveLength(
 			1

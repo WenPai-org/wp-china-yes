@@ -75,7 +75,9 @@ export default function Onboarding() {
 	const [ saveError, setSaveError ] = useState( '' );
 	const [ locked, setLocked ] = useState( false );
 	// WZ-04: settings document as it was before the scene was applied, so
-	// the summary counts what the PUT actually changed.
+	// the summary counts what the PUT actually changed. Taken on every step-1
+	// 「继续」: after going back and picking another scene, the count is
+	// relative to the previous save, not to the document the wizard opened with.
 	const [ before, setBefore ] = useState( null );
 	const [ binding, setBinding ] = useState( {
 		status: 'unbound',
@@ -490,19 +492,23 @@ export default function Onboarding() {
 							) }
 						</p>
 						<div className="wpcy-grid-3">
-							<article className="card stat-a">
-								<div className="k">
-									<Icon name="globe" size={ 16 } />
-									{ __( '更新', 'wp-china-yes' ) }
-								</div>
-								<div className="v">
-									{ ( settings.connectivity?.wordpress_org ||
-										'auto' ) === 'off'
-										? __( '直连', 'wp-china-yes' )
-										: __( '国内镜像', 'wp-china-yes' ) }
-								</div>
-								<div className="d">WordPress.org</div>
-							</article>
+							{ /* WZ-04 same scene: nothing changed, so no 「更新」 card. */ }
+							{ summary.same ? null : (
+								<article className="card stat-a">
+									<div className="k">
+										<Icon name="globe" size={ 16 } />
+										{ __( '更新', 'wp-china-yes' ) }
+									</div>
+									<div className="v">
+										{ ( settings.connectivity
+											?.wordpress_org || 'auto' ) ===
+										'off'
+											? __( '直连', 'wp-china-yes' )
+											: __( '国内镜像', 'wp-china-yes' ) }
+									</div>
+									<div className="d">WordPress.org</div>
+								</article>
+							) }
 							<article className="card stat-a">
 								<div className="k">
 									<Icon name="bolt" size={ 16 } />
