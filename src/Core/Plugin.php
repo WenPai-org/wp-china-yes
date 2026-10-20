@@ -367,8 +367,12 @@ final class Plugin {
 			$ids = get_sites( $args + array( 'offset' => $offset ) );
 			foreach ( $ids as $id ) {
 				switch_to_blog( (int) $id );
-				wp_clear_scheduled_hook( TelemetryModule::CRON_HOOK );
-				restore_current_blog();
+				try {
+					wp_clear_scheduled_hook( TelemetryModule::CRON_HOOK );
+				} finally {
+					// Never leave the request on another site, even if a cron filter throws.
+					restore_current_blog();
+				}
 			}
 			$page    = count( $ids );
 			$offset += self::DEACTIVATE_SITES_BATCH;
