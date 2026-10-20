@@ -204,13 +204,6 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
 
 	/**
-	 * Raw bytes past the cut looked at to tell a URL userinfo from a host.
-	 *
-	 * @var int
-	 */
-	private const USERINFO_SCAN_MAX = 256;
-
-	/**
 	 * Bytes that may belong to one token at the raw cut: printable ASCII
 	 * except whitespace and the separators , ; " ' { } [ ] ( ) < > ! ?
 	 *
@@ -374,13 +367,14 @@ final class Logger {
 	 * the userinfo rule (which needs the "@") could no longer mask "bob".
 	 *
 	 * Decided on the raw text, not on the cut: from the last "://" of the cut,
-	 * look for the first byte that cannot be in a userinfo (whitespace, "/",
-	 * "?", "#", "\"", "<", ">", "[", "]", "{", "}", "|", "\\", "^", "`", or
-	 * any non-ASCII byte such as a Chinese comma) or "@". Only an "@" past
+	 * look for the first byte the userinfo rule does not read across
+	 * (whitespace, "/", "?", "#"; any other byte, also non-ASCII such as a
+	 * Chinese comma, can be in what it masks) or "@". Only an "@" past
 	 * the cut means the cut ends inside a userinfo: everything from "://" on
 	 * is dropped. An "@" inside the cut is masked by the userinfo rule; any
-	 * other end means a complete URL, which is kept. No end within
-	 * USERINFO_SCAN_MAX bytes past the cut also drops (fail closed).
+	 * other end (also the end of the text) means a complete URL, which is
+	 * kept: the userinfo rule could not match it in the whole text either.
+	 * One strcspn() over the rest of the raw text: linear.
 	 *
 	 * @param string $cut  Raw text after the cut.
 	 * @param string $text Raw text before the cut ($cut is its prefix).
@@ -392,25 +386,13 @@ final class Logger {
 		}
 
 		$kept = strlen( $cut ) - $scheme - 3;
-		$rest = substr( $text, $scheme + 3, $kept + self::USERINFO_SCAN_MAX );
-		$stop = strcspn( $rest, " \t\n\r\v\f/?#@\"<>[]{}|\\^`" . self::non_ascii_bytes() );
-		if ( $stop < strlen( $rest ) && ( '@' !== $rest[ $stop ] || $stop < $kept ) ) {
+		$rest = substr( $text, $scheme + 3 );
+		$stop = strcspn( $rest, " \t\n\r\v\f/?#@" );
+		if ( $stop >= strlen( $rest ) || '@' !== $rest[ $stop ] || $stop < $kept ) {
 			return $cut;
 		}
 
 		return substr( $cut, 0, $scheme );
-	}
-
-	/**
-	 * Bytes 0x80-0xFF, for strcspn().
-	 */
-	private static function non_ascii_bytes(): string {
-		static $bytes = null;
-		if ( null === $bytes ) {
-			$bytes = implode( '', array_map( 'chr', range( 0x80, 0xFF ) ) );
-		}
-
-		return $bytes;
 	}
 
 	/**
@@ -471,14 +453,25 @@ final class Logger {
 		// "\" (or "\\"), each made of capitalised words (a capital, then
 		// lower case letters) and at most four digits at the end, e.g.
 		// WenPai\ChinaYes\Module\Updater2. A key has no "\", and a random run
-		// almost never has this shape in every part.
+		// almost never has this shape in every part. A part of 32+ bytes with
+		// a digit is still masked.
 		$masked = preg_replace_callback(
 			'#(?<![\w\\\\/.-])(?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?:[!"\'|~$^`%\\\\](?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++)*+={0,2}#',
 			static function ( array $m ): string {
 				if ( strlen( $m[0] ) < 32 || false === strpbrk( $m[0], '0123456789' ) ) {
 					return $m[0];
 				}
-				return 1 === preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $m[0] ) ? $m[0] : '***';
+				if ( 1 !== preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $m[0] ) ) {
+					return '***';
+				}
+				// A part of 32+ bytes with a digit is a key on its own (masked
+				// without the class name rule too): no exception then.
+				foreach ( preg_split( '/\\\\++/', $m[0] ) as $part ) {
+					if ( strlen( $part ) >= 32 && false !== strpbrk( $part, '0123456789' ) ) {
+						return '***';
+					}
+				}
+				return $m[0];
 			},
 			$text
 		);
@@ -564,28 +557,16 @@ final class Logger {
 		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
-		// The first directory is one word (/home/, /chroot/, /u01/). A deeper
-		// directory may contain spaces (/home/alice smith/x/) when it is
-		// - followed by another directory, a file name with an extension, or
-		// the end of the path (whitespace, quote, bracket, , ; : or end); or
-		// - followed by "/name" (/home/alice smith/public_html, /home/张 三/
-		// site, /home/Smith, John/site) and holds no Chinese punctuation
-		// (，。；：！？、), so "调用 /wp-json/wpcy/v1 失败，请检查 and/or" keeps
-		// its words.
-		// Words may hold commas and non-ASCII text. English prose before an
-		// "x/y" ("use /api/v1 then foo bar/baz") cannot be told from a user
-		// directory and is masked: more masking, no leak.
-		// Possessive throughout; each look-ahead reads one path part: linear.
-		$word  = '[^\s/:\'"()<>\[\]]++';
-		$plain = '(?:[^\s/:\'"()<>\[\]\x80-\xFF]|(?!\xEF\xBC[\x81\x8C\x9A\x9B\x9F]|\xE3\x80[\x81\x82])[\x80-\xFF])++';
-		$file  = '(?:[^\s/:\'"()<>\[\],.\x80-\xFF]++ ++)*+[^\s/:\'"()<>\[\].]*+\.[A-Za-z0-9]';
-		$next  = '(?=' . $word . '(?: ++' . $word . ')*+/|' . $file . '|[\s\'"()<>\[\],;:]|$)';
-		$name  = '/(?=[^\s/:\'"()<>\[\]])';
-		$layer = $word . '/|' . $word . '(?: ++' . $word . ')++/' . $next
-			. '|' . $plain . '(?: ++' . $plain . ')++' . $name;
-
+		// The first directory is one word (/home/, /chroot/, /u01/); deeper
+		// directories may contain spaces, commas and any non-ASCII text
+		// (/home/alice smith/x/, /home/张 三，李四/site). Prose such as
+		// "see /docs for ... and/or" is not a path: no "/" right after "docs".
+		// Prose with a "/" after a word ("use /api/v1 then foo bar/baz") is
+		// masked like a path: a user directory cannot be told from it, so
+		// more masking, no leak.
+		// Possessive throughout and the input is capped: linear.
 		return $this->replace(
-			'#(?<![\w.:/\]])/(?:' . $word . '/)++(?:' . $layer . ')*+#',
+			'#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#',
 			'[path]/',
 			$text
 		);
@@ -605,30 +586,82 @@ final class Logger {
 	}
 
 	/**
-	 * Quoted literals ('...' or "...") become '***', left to right.
+	 * Quoted literals ('...' or "...") become '***'.
 	 *
-	 * A ' between a letter and an English contraction ending (s, t, re, ve,
-	 * ll, d, m, then a word end: doesn't, it's, you're) is an apostrophe, not
-	 * a quote. Any other ' is a quote, also right after or before a word
-	 * character: N'..', X'..', _utf8mb4'..', pw='..'AND.
+	 * Two readings of the quotes are masked together (the union of their
+	 * byte ranges):
+	 * - plain: each ' or " closes at the next one of its kind;
+	 * - contractions: a ' between a letter and an English contraction ending
+	 *   (s, t, re, ve, ll, d, m, then a word end: doesn't, it's) is an
+	 *   apostrophe, so 'it's here' is one literal.
+	 * Then a quote left outside every masked range (one that never pairs up)
+	 * masks the rest of the text from the start of its word. More masking,
+	 * no leak: the text after doesn't may be masked as well.
 	 *
-	 * Linear: one match per literal. A quote with no closing quote matches
-	 * alone and changes the state, at most three times: no later " can close
-	 * either; for ', from then on the next ' closes (contractions included,
-	 * as without the rule above), and after that no later ' can close.
+	 * Linear: one match per literal in each reading, then one merge pass.
 	 *
 	 * @param string $text Text.
 	 */
 	private function mask_quoted( string $text ): string {
 		$apostrophe = '(?<=[A-Za-z])\'(?=(?i:s|t|re|ve|ll|d|m)\b)';
-		$double     = '"(?:[^"\\\\]++|\\\\.)*+"|"';
-		$single     = array(
-			'(?!' . $apostrophe . ')\'(?:[^\'\\\\]++|\\\\.|' . $apostrophe . ')*+\'|(?!' . $apostrophe . ')\'',
-			'\'(?:[^\'\\\\]++|\\\\.)*+\'|\'',
-		);
-		$state      = 0;
-		$out        = '';
-		$offset     = 0;
+		$plain      = '\'(?:[^\'\\\\]++|\\\\.)*+\'|\'';
+		$contracted = '(?!' . $apostrophe . ')\'(?:[^\'\\\\]++|\\\\.|' . $apostrophe . ')*+\'|(?!' . $apostrophe . ')\'';
+		$first      = $this->quoted_spans( $text, array( $plain ) );
+		$second     = $this->quoted_spans( $text, array( $contracted, $plain ) );
+
+		// Both lists run left to right: merge them by start in one pass.
+		$spans = array();
+		for ( $i = 0, $j = 0, $n1 = count( $first ), $n2 = count( $second ); $i < $n1 || $j < $n2; ) {
+			$spans[] = ( $j >= $n2 || ( $i < $n1 && $first[ $i ][0] <= $second[ $j ][0] ) ) ? $first[ $i++ ] : $second[ $j++ ];
+		}
+
+		$out = '';
+		$end = 0;
+		foreach ( $spans as $span ) {
+			if ( $span[0] < $end ) {
+				// Overlaps the masked range before it: extend that range.
+				$end = max( $end, $span[1] );
+				continue;
+			}
+			$gap = substr( $text, $end, $span[0] - $end );
+			if ( false !== strpbrk( $gap, '\'"' ) ) {
+				break;
+			}
+			$out .= ( 0 === $end ? '' : "'***'" ) . $gap;
+			$end  = $span[1];
+		}
+		if ( 0 !== $end ) {
+			$out .= "'***'";
+		}
+
+		$rest  = substr( $text, $end );
+		$quote = strcspn( $rest, '\'"' );
+		if ( $quote < strlen( $rest ) ) {
+			// A quote that never pairs up: mask from the start of its word
+			// ("hunter2pass'" after 'O'Brien' AND p=') to the end.
+			$word = $quote - strcspn( strrev( substr( $rest, 0, $quote ) ), " \t\n\r\v\f" );
+			return $out . substr( $rest, 0, $word ) . "'***";
+		}
+
+		return $out . $rest;
+	}
+
+	/**
+	 * Byte ranges [start, end) of quoted literals, left to right.
+	 *
+	 * One match per literal. A quote that never closes matches alone and
+	 * changes the state: no later " can close either; for ' the next reading
+	 * in $single is used, and after the last one no later ' can close.
+	 *
+	 * @param string   $text   Text.
+	 * @param string[] $single Patterns for a ' literal, each ending in |' (an unclosed quote).
+	 * @return array<int, array{0: int, 1: int}>
+	 */
+	private function quoted_spans( string $text, array $single ): array {
+		$double = '"(?:[^"\\\\]++|\\\\.)*+"|"';
+		$state  = 0;
+		$offset = 0;
+		$spans  = array();
 		while ( null !== $double || isset( $single[ $state ] ) ) {
 			$pattern = '/' . implode( '|', array_filter( array( $double, $single[ $state ] ?? null ) ) ) . '/s';
 			if ( 1 !== preg_match( $pattern, $text, $m, PREG_OFFSET_CAPTURE, $offset ) ) {
@@ -636,7 +669,6 @@ final class Logger {
 			}
 			$found = $m[0][0];
 			if ( 1 === strlen( $found ) ) {
-				// A quote that never closes.
 				if ( '"' === $found ) {
 					$double = null;
 				} else {
@@ -644,11 +676,11 @@ final class Logger {
 				}
 				continue;
 			}
-			$out   .= substr( $text, $offset, $m[0][1] - $offset ) . "'***'";
-			$offset = $m[0][1] + strlen( $found );
+			$spans[] = array( $m[0][1], $m[0][1] + strlen( $found ) );
+			$offset  = $m[0][1] + strlen( $found );
 		}
 
-		return $out . substr( $text, $offset );
+		return $spans;
 	}
 
 	/**
