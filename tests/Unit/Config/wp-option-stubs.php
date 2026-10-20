@@ -44,6 +44,9 @@ if ( ! function_exists( 'update_option' ) ) {
 		if ( array_key_exists( $key, OptionStore::$options ) && OptionStore::unchanged( OptionStore::$options[ $key ], $value ) ) {
 			return false;
 		}
+		if ( OptionStore::$fail_writes ) {
+			return false;
+		}
 		if ( is_callable( OptionStore::$on_update ) ) {
 			( OptionStore::$on_update )( $key, $value );
 		}
@@ -78,6 +81,9 @@ if ( ! function_exists( 'update_site_option' ) ) {
 	 */
 	function update_site_option( $key, $value ) {
 		if ( array_key_exists( $key, OptionStore::$site_options ) && OptionStore::unchanged( OptionStore::$site_options[ $key ], $value ) ) {
+			return false;
+		}
+		if ( OptionStore::$fail_writes ) {
 			return false;
 		}
 		if ( is_callable( OptionStore::$on_update ) ) {

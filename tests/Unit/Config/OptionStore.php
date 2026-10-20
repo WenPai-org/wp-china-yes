@@ -51,6 +51,14 @@ final class OptionStore {
 	public static $on_update = null;
 
 	/**
+	 * When true, update_option() / update_site_option() fail like a database
+	 * error: return false and write nothing.
+	 *
+	 * @var bool
+	 */
+	public static $fail_writes = false;
+
+	/**
 	 * WordPress update_option() / update_network_option() "unchanged" check:
 	 * the new value is identical to the stored one, or both serialize the
 	 * same way (maybe_serialize() serializes arrays and objects only).
@@ -79,6 +87,7 @@ final class OptionStore {
 		self::$site_options = array();
 		self::$multisite    = false;
 		self::$on_update    = null;
+		self::$fail_writes  = false;
 		\WenPai\ChinaYes\Config\Repository::reset_warning_dedupe();
 	}
 }
