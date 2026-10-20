@@ -60,5 +60,6 @@ final class OptionStore {
 		self::$site_options = array();
 		self::$multisite    = false;
 		self::$on_update    = null;
+		\WenPai\ChinaYes\Config\Repository::reset_warning_dedupe();
 	}
 }

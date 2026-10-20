@@ -80,15 +80,40 @@ final class SettingsController {
 			return $result;
 		}
 
-		if ( $had_key && $this->writer->repository()->set( 'profile_confirmed_at', RestError::now() ) ) {
-			$stamp = $before['profile_confirmed_at'] ?? null;
-			$first = ! is_string( $stamp ) || '' === $stamp;
-			if ( $profile !== $from || $first ) {
-				$this->record_profile_set( $profile );
-			}
+		$written = $had_key && $this->writer->repository()->set( 'profile_confirmed_at', RestError::now() );
+		if ( $this->should_record_profile_set( $written, $profile, $from, $before['profile_confirmed_at'] ?? null ) ) {
+			$this->record_profile_set( $profile );
 		}
 
 		return RestError::ok( $this->writer->site_document() );
+	}
+
+	/**
+	 * Whether this PUT records a profile_set event.
+	 *
+	 * Only when profile_confirmed_at was really written (a locked subsite
+	 * writes nothing), and then only when the profile changed or this is
+	 * the first confirmation (no stored timestamp before the PUT). An echo
+	 * of an unchanged, already confirmed profile records nothing.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param bool   $written Whether profile_confirmed_at was persisted.
+	 * @param string $profile Profile after the PUT.
+	 * @param string $from    Stored profile before the PUT.
+	 * @param mixed  $stamp   Stored profile_confirmed_at before the PUT.
+	 */
+	private function should_record_profile_set( bool $written, string $profile, string $from, $stamp ): bool {
+		if ( ! $written ) {
+			return false;
+		}
+		if ( $profile !== $from ) {
+			return true;
+		}
+
+		// First confirmation of the unchanged profile still records one event
+		// (onboarding confirms the default profile this way).
+		return ! is_string( $stamp ) || '' === $stamp;
 	}
 
 	/**

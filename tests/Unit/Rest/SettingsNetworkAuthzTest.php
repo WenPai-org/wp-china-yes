@@ -42,6 +42,7 @@ class SettingsNetworkAuthzTest extends TestCase {
 		RestStore::reset();
 		OptionStore::reset();
 		RestError::reset();
+		Repository::reset_warning_dedupe();
 	}
 
 	/*
@@ -273,6 +274,80 @@ class SettingsNetworkAuthzTest extends TestCase {
 	}
 
 	/**
+	 * Subsite, locked: echoing the whole GET document back (profile unchanged,
+	 * profile_confirmed_at null) is accepted but records no profile_set and
+	 * writes no timestamp, however often it is repeated.
+	 */
+	public function test_locked_subsite_full_document_echo_records_no_profile_set() {
+		$this->multisite( false );
+		$doc = $this->full_document();
+		$this->assertSame( 'domestic', $doc['profile'] );
+		$this->assertNull( $doc['profile_confirmed_at'] );
+
+		$with_recovery                  = $doc;
+		$with_recovery['recovery_mode'] = true;
+		foreach ( array( $doc, $doc, $with_recovery ) as $body ) {
+			$response = $this->put( $body );
+			$this->assertInstanceOf( WP_REST_Response::class, $response );
+			$this->assertSame( 200, $response->get_status() );
+		}
+
+		$this->assertSame( 0, $this->profile_set_count() );
+		$overrides = get_option( Schema::SITE_OVERRIDES, array() );
+		$this->assertIsArray( $overrides );
+		$this->assertArrayNotHasKey( 'profile_confirmed_at', $overrides );
+		$this->assertNull( ( new Repository() )->get( 'profile_confirmed_at' ) );
+	}
+
+	/**
+	 * Single site: once the profile is confirmed, PUT {"profile":"domestic"}
+	 * with the same profile records nothing; a real switch records one event.
+	 */
+	public function test_single_site_confirmed_unchanged_profile_put_records_no_profile_set() {
+		$this->assertTrue( ( new Repository() )->set( 'profile_confirmed_at', '2026-10-19T12:00:00Z' ) );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->assertSame( 0, $this->profile_set_count() );
+
+		$this->put( array( 'profile' => 'crossborder' ) );
+		$this->assertSame( 1, $this->profile_set_count() );
+	}
+
+	/**
+	 * Subsite, unlocked: once the profile is confirmed, an unchanged profile PUT
+	 * records nothing; a real switch records one event.
+	 */
+	public function test_unlocked_subsite_confirmed_unchanged_profile_put_records_no_profile_set() {
+		$this->multisite( true );
+		$this->assertTrue( ( new Repository() )->set( 'profile_confirmed_at', '2026-10-19T12:00:00Z' ) );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->assertSame( 0, $this->profile_set_count() );
+
+		$this->put( array( 'profile' => 'mixed' ) );
+		$this->assertSame( 1, $this->profile_set_count() );
+	}
+
+	/**
+	 * First confirmation semantics (kept on purpose; flip here if the rule
+	 * changes): with no stored timestamp, PUT of the unchanged default profile
+	 * records exactly one profile_set and writes the timestamp; repeating it
+	 * records nothing more.
+	 */
+	public function test_first_confirmation_of_unchanged_profile_records_one_profile_set() {
+		$this->assertNull( ( new Repository() )->get( 'profile_confirmed_at' ) );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->assertSame( 1, $this->profile_set_count() );
+		$this->assertIsString( ( new Repository() )->get( 'profile_confirmed_at' ) );
+
+		$this->put( array( 'profile' => 'domestic' ) );
+		$this->assertSame( 1, $this->profile_set_count() );
+	}
+
+	/**
 	 * Subsite: modules.site_blocklist echoed unchanged is accepted (not 400) and
 	 * never stored in the site overrides.
 	 */
@@ -472,6 +547,21 @@ class SettingsNetworkAuthzTest extends TestCase {
 		$request       = new WP_REST_Request();
 		$request->json = $body;
 		return $this->controller()->update_item( $request );
+	}
+
+	/**
+	 * Number of profile_set events recorded so far.
+	 *
+	 * @return int
+	 */
+	private function profile_set_count(): int {
+		$count = 0;
+		foreach ( RestStore::$actions as $action ) {
+			if ( 'wpcy_events_record' === $action['tag'] && 'profile_set' === $action['args'][0] ) {
+				++$count;
+			}
+		}
+		return $count;
 	}
 
 	/**
