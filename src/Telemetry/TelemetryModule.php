@@ -101,15 +101,37 @@ final class TelemetryModule implements Module {
 	}
 
 	/**
-	 * Hook the cron callback and schedule the next run if missing.
+	 * Hook the cron callback; schedule the next run on init if missing.
 	 *
 	 * Unconditional. Leftover `telemetry` / `telemetry_site_url` options are ignored.
+	 *
+	 * register() runs while the plugin file is included, before
+	 * wp-settings.php loads pluggable.php, so wp_rand() does not exist yet.
+	 * Scheduling therefore waits for init (as 3.x did). Without this, every
+	 * request on a site that has no event yet (e.g. a new subsite) failed
+	 * with "Call to undefined function wp_rand()".
 	 *
 	 * @since 4.0.0
 	 */
 	public function register(): void {
 		add_action( self::CRON_HOOK, array( $this, 'send_report' ) );
 
+		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
+			$this->ensure_scheduled();
+			return;
+		}
+
+		add_action( 'init', array( $this, 'ensure_scheduled' ) );
+	}
+
+	/**
+	 * Schedule the first run with a 0–6h jitter when none is pending.
+	 *
+	 * Runs on init, after pluggable.php.
+	 *
+	 * @since 4.0.0
+	 */
+	public function ensure_scheduled(): void {
 		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			$delay = wp_rand( 0, 6 * HOUR_IN_SECONDS );
 			wp_schedule_single_event( time() + $delay, self::CRON_HOOK );
