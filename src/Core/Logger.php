@@ -227,6 +227,12 @@ final class Logger {
 	private const CUT_TOKEN_BYTES = '#$%&*+-./0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~';
 
 	/**
+	 * Unix directories, see relative_paths(). An escaped slash still marked
+	 * with \x01 (see mask()) may start a path whatever is in front of it.
+	 */
+	private const UNIX_PATH = '#(?:(?<![\w.:/\]])|(?<=file://|phar://|FILE://|PHAR://))/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#';
+
+	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -417,19 +423,25 @@ final class Logger {
 		$text = $this->strip_controls( $text );
 		// JSON-escaped slashes ("https:\/\/..", "Zm9v\/Y2Vk..") are read as "/", so
 		// URL, path and base64 rules see the real text. "\\" pairs stay as they are.
+		// Until the path rule has run, an escaped slash carries a marker byte
+		// (\x01; strip_controls() leaves none in the text): a path may start at
+		// an escaped slash whatever is in front of it ("file:\/\/\/home\/..",
+		// "src\/home\/alice\/x"), as on the raw text before the slashes were read.
 		$text = strtr(
 			$text,
 			array(
 				'\\\\' => '\\\\',
-				'\\/'  => '/',
+				'\\/'  => "\x01/",
 			)
 		);
-		$text = $this->relative_paths( $text );
-		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*://)[^\s/?\#@]++@#i', '$1***@', $text );
+		// URL userinfo before paths: the path rule may take the "//" of an escaped URL.
+		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*:\x01?/\x01?/)[^\s/?\#@]++@#i', '$1***@', $text );
+		$text = $this->mask_escaped_runs( $text );
+		$text = str_replace( "\x01", '', $this->relative_paths( $text ) );
 		$text = $this->redact_sql_literals( $text );
 		$text = $this->redact_query_secrets( $text );
 
-		$text = $this->redact_auth_schemes( $text );
+		$text = $this->redact_auth_schemes( $text, false );
 		$text = $this->redact_key_values( $text );
 
 		$patterns = array(
@@ -442,6 +454,7 @@ final class Logger {
 		foreach ( $patterns as $pattern => $replacement ) {
 			$text = $this->replace( $pattern, $replacement, $text );
 		}
+		$text = $this->redact_auth_schemes( $text, true );
 
 		// Base64-like runs of 32+ bytes that contain a digit. A run may hold
 		// JSON escapes (\/ and \\) and single inner separators ! " ' | ~ $ ^ ` % \
@@ -456,28 +469,26 @@ final class Logger {
 		// almost never has this shape in every part. A part of 32+ bytes with
 		// a digit is still masked.
 		$masked = preg_replace_callback(
-			'#(?<![\w\\\\/.-])(?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?:[!"\'|~$^`%\\\\](?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++)*+={0,2}#',
+			'#(?<![\w\\\\/.-])(?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?:[!"\'|~$^`%\\\\](?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?!:))*+={0,2}#',
 			static function ( array $m ): string {
-				if ( strlen( $m[0] ) < 32 || false === strpbrk( $m[0], '0123456789' ) ) {
-					return $m[0];
-				}
-				if ( 1 !== preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $m[0] ) ) {
-					return '***';
-				}
-				// A part of 32+ bytes with a digit is a key on its own (masked
-				// without the class name rule too): no exception then.
-				foreach ( preg_split( '/\\\\++/', $m[0] ) as $part ) {
-					if ( strlen( $part ) >= 32 && false !== strpbrk( $part, '0123456789' ) ) {
-						return '***';
-					}
-				}
-				return $m[0];
+				return self::is_key_run( $m[0] ) ? '***' : $m[0];
 			},
 			$text
 		);
 		$text   = is_string( $masked ) ? $masked : $text;
+		$text   = $this->replace( '/\b[0-9a-f]{32,}\b/i', '***', $text );
 
-		return $this->replace( '/\b[0-9a-f]{32,}\b/i', '***', $text );
+		// A plain run right after a masked hex key ("<hex>/<base64>"), as
+		// when the hex rule came first.
+		$masked = preg_replace_callback(
+			'#(?<=\*\*\*)[A-Za-z0-9+/_-]{32,}+={0,2}#',
+			static function ( array $m ): string {
+				return false === strpbrk( $m[0], '0123456789' ) ? $m[0] : '***';
+			},
+			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
 	}
 
 	/**
@@ -490,20 +501,62 @@ final class Logger {
 	 * after the first character, or 8 hex letters in front, as in a cut-off
 	 * "deadbeefca"), so "flagbearer of" and "NonBasic users" keep their words.
 	 *
-	 * @param string $text Text.
+	 * A free-standing scheme runs before the key=value rule ($glued false),
+	 * a glued one after the query, URL and e-mail rules ($glued true): those
+	 * rules then see the text as they did when only a free-standing scheme
+	 * was masked, and a glued scheme masks what they left.
+	 *
+	 * @param string $text  Text.
+	 * @param bool   $glued Pass for glued scheme words.
 	 */
-	private function redact_auth_schemes( string $text ): string {
+	private function redact_auth_schemes( string $text, bool $glued ): string {
 		$masked = preg_replace_callback(
-			'/([A-Za-z0-9]?)((?:Bearer|Basic)(?:\s++(?:Bearer|Basic)(?=\s))*+)\s++([^\s,;"\']++)/i',
-			static function ( array $m ): string {
-				// Only the last scheme word counts: "xbearer Bearer <value>" is not glued.
-				$glued = '' !== $m[1] && strlen( $m[2] ) === strcspn( $m[2], " \t\n\r\v\f" );
-				if ( $glued && 1 !== preg_match( '/[0-9+\/=_.-]|.[A-Z]|^[a-f]{8}/', $m[3] ) ) {
-					return $m[0];
+			'/([A-Za-z0-9]?)((?:Bearer|Basic)(?:\s++(?:Bearer|Basic)(?=\s))*+)\s++((?:(?!(?:Bearer|Basic)\s)[^\s,;"\'])*+)/i',
+			static function ( array $m ) use ( $text, $glued ): string {
+				$at = $m[2][1];
+				// Only the last scheme word counts: "xbearer Bearer <value>" is
+				// not glued. The character in front may be the end of the match
+				// before ("Basic Q0ZBearer <value>").
+				$is_glued = $at > 0 && 1 === preg_match( '/[A-Za-z0-9]/', $text[ $at - 1 ] ) && strlen( $m[2][0] ) === strcspn( $m[2][0], " \t\n\r\v\f" );
+				$value    = $m[3][0];
+				// An empty value still matches, so a run of scheme words with
+				// nothing after it is passed over once, not retried from each
+				// word ("Bearer Bearer ... " stays linear).
+				if ( $is_glued !== $glued || '' === $value ) {
+					return $m[0][0];
 				}
-				return $m[1] . $m[2] . ' ***';
+				$keys = '/((?<![a-z0-9])(?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|authorization|auth)(?:[=:]|%3D|%3A))/i';
+				if ( $glued ) {
+					// Keys are masked by now ("xBearer token=***").
+					if ( 1 === preg_match( $keys, $value ) || 1 !== preg_match( '/[0-9+\/=_.-]|.[A-Z]|^[a-f]{8}/', $value ) ) {
+						return $m[0][0];
+					}
+					return $m[1][0] . $m[2][0] . ' ***';
+				}
+				// A query string in the value ("Bearer abc?x=1", "Bearer ?x=1")
+				// is left to the query rule, which drops it whole up to a space
+				// or "#".
+				$q = strpos( $value, '?' );
+				if ( false !== $q && false === strpos( $value, '#', $q ) && 1 === preg_match( '/\G\?[^\s?\#=&]++=/', $text, $qm, 0, $m[3][1] + $q ) ) {
+					return 0 === $q ? $m[0][0] : $m[1][0] . $m[2][0] . ' ***' . substr( $value, $q );
+				}
+				// Keys in the value ("Bearer token= <value>", "Bearer x&token=y")
+				// are kept and only the text between them is masked: the
+				// key=value rule then masks what follows the last key too.
+				$parts = preg_split( $keys, $value, -1, PREG_SPLIT_DELIM_CAPTURE );
+				if ( is_array( $parts ) && count( $parts ) > 1 ) {
+					$out = '';
+					foreach ( $parts as $i => $part ) {
+						$out .= ( 1 === $i % 2 || '' === $part ) ? $part : '***';
+					}
+					return $out === $value ? $m[0][0] : $m[1][0] . $m[2][0] . ' ' . $out;
+				}
+				return $m[1][0] . $m[2][0] . ' ***';
 			},
-			$text
+			$text,
+			-1,
+			$found,
+			PREG_OFFSET_CAPTURE
 		);
 
 		return is_string( $masked ) ? $masked : $text;
@@ -539,6 +592,109 @@ final class Logger {
 	}
 
 	/**
+	 * Whether a base64-like run is masked: 32+ bytes with a digit, unless it
+	 * is a PHP class name (see mask()) whose parts are all shorter than 32
+	 * bytes or have no digit.
+	 *
+	 * @param string $run Run matched by the base64-like rule.
+	 */
+	private static function is_key_run( string $run ): bool {
+		if ( strlen( $run ) < 32 || false === strpbrk( $run, '0123456789' ) ) {
+			return false;
+		}
+		if ( 1 !== preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $run ) ) {
+			return true;
+		}
+		// A part of 32+ bytes with a digit is a key on its own (masked
+		// without the class name rule too): no exception then.
+		foreach ( preg_split( '/\\\\++/', $run ) as $part ) {
+			if ( strlen( $part ) >= 32 && false !== strpbrk( $part, '0123456789' ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Length of $run without a URL scheme at its end ("<key>\/x/https"
+	 * before "://"): the scheme stays for the URL rules, as when the "\" of
+	 * the escaped slash ended the run.
+	 *
+	 * @param string $run  Base64-like run.
+	 * @param string $next Text right after the run.
+	 */
+	private static function run_without_scheme( string $run, string $next ): int {
+		if ( 0 === strncmp( $next, '://', 3 ) && 1 === preg_match( '#^(.*/)[a-z][a-z0-9+.-]*+$#isD', $run, $m ) ) {
+			return strlen( $m[1] );
+		}
+		return strlen( $run );
+	}
+
+	/**
+	 * Mask base64-like runs that hold an escaped slash ("\x01/" in mask())
+	 * before the path rule could split them ("Zm9v\/Y2Vk..\/Zm9v"). A run
+	 * that starts with an escaped slash is left to the path rule, as a
+	 * "/..." run is without escapes. Same alphabet, separators and
+	 * decision as the base64-like rule in mask(), so the run is masked as
+	 * it is without escapes. Possessive, one pass: linear.
+	 *
+	 * @param string $text Text with escaped slashes marked.
+	 */
+	private function mask_escaped_runs( string $text ): string {
+		if ( false === strpos( $text, "\x01" ) ) {
+			return $text;
+		}
+		// Paths as the path rule would see them now. A run that one of them
+		// crosses into or out of is left to the path rule, so nothing it
+		// masked on the raw text is shown ("x/Q0Z&<key>\/", "<key>\/a，b/").
+		$paths = array();
+		if ( preg_match_all( self::UNIX_PATH, $text, $pm, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $pm[0] as $p ) {
+				$paths[] = array( $p[1], $p[1] + strlen( $p[0] ) );
+			}
+		}
+		$next   = 0;
+		$masked = preg_replace_callback(
+			'#(?<![\w\\\\/.\x01-])(?!/)(?:[A-Za-z0-9+/_-]|\\\\\\\\|\x01/)++#',
+			static function ( array $m ) use ( $paths, &$next, $text ): string {
+				$run   = $m[0][0];
+				$start = $m[0][1];
+				// A word after the last escaped slash ("<key>\/Basic <token>",
+				// "<key>\/token=x", "<key>\//home/Basic") stays for the scheme
+				// and key=value rules. A run before "@" is left to the e-mail
+				// rule, "=" after a run to the query and key=value rules.
+				$run = substr( $run, 0, self::run_without_scheme( $run, (string) substr( $text, $start + strlen( $run ), 3 ) ) );
+				if ( 1 === preg_match( '#^(.*)\x01/[A-Za-z_/]*+$#s', $run, $w ) ) {
+					$run = $w[1];
+				}
+				if ( '' === $run || "\x01" === $run[0] || false === strpos( $run, "\x01" ) || '@' === substr( $text, $start + strlen( $m[0][0] ), 1 ) ) {
+					return $m[0][0];
+				}
+				$end   = $start + strlen( $run );
+				$count = count( $paths );
+				while ( $next < $count && $paths[ $next ][1] <= $start ) {
+					++$next;
+				}
+				for ( $i = $next; $i < $count && $paths[ $i ][0] < $end; $i++ ) {
+					if ( $paths[ $i ][0] < $start || $paths[ $i ][1] > $end ) {
+						return $m[0][0];
+					}
+				}
+				if ( ! self::is_key_run( str_replace( "\x01", '', $run ) ) ) {
+					return $m[0][0];
+				}
+				return '***' . substr( $m[0][0], strlen( $run ) );
+			},
+			$text,
+			-1,
+			$runs,
+			PREG_OFFSET_CAPTURE
+		);
+
+		return is_string( $masked ) ? $masked : $text;
+	}
+
+	/**
 	 * Plugin paths become relative; other absolute paths keep the file name.
 	 *
 	 * @param string $text Text without control characters.
@@ -553,8 +709,9 @@ final class Logger {
 
 		// Directories after a Windows drive letter or a UNC server / share prefix.
 		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
+		// The \x01 of an escaped slash (see mask()) is a separator, as the "\" was.
 		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
-		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/\x01]++)[\\\\/\x01](?:[^\s\\\\/:*?"\'<>|\x01]++(?: ++[^\s\\\\/:*?"\'<>|\x01]++)*+[\\\\/\x01])*+#', '[path]/', $text );
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
 		// The first directory is one word (/home/, /chroot/, /u01/); deeper
@@ -564,12 +721,10 @@ final class Logger {
 		// Prose with a "/" after a word ("use /api/v1 then foo bar/baz") is
 		// masked like a path: a user directory cannot be told from it, so
 		// more masking, no leak.
+		// A file or phar URL with an empty host (file:///home/..,
+		// phar:///home/..) is followed by a local path.
 		// Possessive throughout and the input is capped: linear.
-		return $this->replace(
-			'#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#',
-			'[path]/',
-			$text
-		);
+		return $this->replace( self::UNIX_PATH, '[path]/', $text );
 	}
 
 	/**

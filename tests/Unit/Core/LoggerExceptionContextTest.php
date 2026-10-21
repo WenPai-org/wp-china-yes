@@ -1234,6 +1234,145 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-169-06d92a2 A: a JSON-escaped path is hidden whatever is in
+	 * front of its first slash (a scheme, a word), as on the raw text.
+	 */
+	public function test_json_escaped_path_after_a_word_or_scheme_is_hidden() {
+		$cases = array(
+			'{"file":"file:\/\/\/home\/alice smith\/wp-config.php"}' => 'file:[path]/wp-config.php',
+			'{"f":"phar:\/\/\/home\/alice\/site\/x.phar"}' => 'phar:[path]/x.phar',
+			'{"cwd":"src\/home\/alice\/x"}'                => 'src[path]/x',
+			'data:{"dir":"x\/home\/alice\/site"}'          => 'x[path]/site',
+			'{"path":"wp-content\/uploads\/alice\/passport.jpg"}' => 'wp-content[path]/passport.jpg',
+			'{"url":"https:\/\/example.com\/home\/alice\/x.php"}' => 'https:[path]/x.php',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$logged = $this->logged();
+			$this->assertStringContainsString( $expected, $logged, $message );
+		}
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( 'smith', $logged );
+	}
+
+	/**
+	 * Review-169-06d92a2 A: file:// and phar:// with an empty host are
+	 * followed by a local path; a URL path after a host stays readable.
+	 */
+	public function test_file_and_phar_url_with_an_empty_host_hide_the_path() {
+		$this->log_exception( 'open file:///home/alice smith/wp-config.php failed' );
+		$this->log_exception( 'include phar:///home/alice/site/x.phar/a.php' );
+		$this->log_exception( 'see https://example.com/docs/x.php' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'open file://[path]/wp-config.php failed', $logged );
+		$this->assertStringContainsString( 'include phar://[path]/a.php', $logged );
+		$this->assertStringContainsString( 'see https://example.com/docs/x.php', $logged );
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( 'smith', $logged );
+	}
+
+	/**
+	 * Review-169-06d92a2 B: a key after a glued scheme word ("CdBearer
+	 * token= <value>") is no scheme value; the key=value rule masks the value.
+	 */
+	public function test_glued_scheme_word_leaves_a_key_to_the_key_rule() {
+		$cases = array(
+			'x CdBearer token= {"k":")secretQ3Z'    => 'CdBearer token= ***',
+			'token=Q0ZBasic token= CdQ1Z'           => 'token=*** token= ***',
+			'Q0Z/home/%Q1ZBasic ，Basic Q2Z%Basic x' => '，Basic ***',
+			'auth failed: Bearer token= secretQ4Z'  => 'Bearer token= ***',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$this->assertStringContainsString( $expected, $this->logged(), $message );
+		}
+		$logged = $this->logged();
+		foreach ( array( 'secretQ3Z', 'CdQ1Z', 'Q2Z', 'secretQ4Z' ) as $secret ) {
+			$this->assertStringNotContainsString( $secret, $logged );
+		}
+	}
+
+	/**
+	 * Review-169-06d92a2 differential fuzz: a scheme value leaves a query
+	 * string, a key and a glued scheme to their own rules, so nothing that
+	 * e423f4b masked is shown.
+	 */
+	public function test_scheme_value_leaves_a_query_or_key_to_its_rule() {
+		$cases = array(
+			'Bearer Bearer ?@{"k":"Q0Z~(=SELECT .'         => 'Q0Z',
+			'Basic Basic /home/.token=\'Q1ZQ2ZSELECT .Q3Z' => 'Q1Z',
+			' Q0ZBearer pw=.)?{"k":"!，Q1Ztoken='           => 'Q1Z',
+			'"Q0Z#|token=Q1ZBearer https://|?\')~Q2Z'      => 'Q2Z',
+			'Bearer token=&Q0ZQ1Z&"/home/x'                => 'Q0Z',
+			'Bearer Q0Z/bearerQ1ZQ2ZBearer token=@:{"k":"\'!Q3Z' => 'Q3Z',
+			'Basic ~Basic  ~%?Q0Z"}|{"k":"AbQ1Zpw="'       => 'Q1Z',
+		);
+		foreach ( $cases as $message => $secret ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			$this->assertStringNotContainsString( $secret, $line, $message );
+		}
+	}
+
+	/**
+	 * Review-169-06d92a2 differential fuzz: a key run with an escaped slash
+	 * is masked whole, but leaves a path it is part of, a word after it and
+	 * a key glued behind a hex key to their rules.
+	 */
+	public function test_escaped_key_run_leaves_paths_and_words_to_their_rules() {
+		$cases = array(
+			'CdZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ0Z\/Q1Z，Q2Z/' => 'Q2Z',
+			'Q1Z.deadbeefcafe0123deadbeefcafe0123/Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ2ZQ3ZBearer x' => 'Q2Z',
+			'deadbeefcafe0123deadbeefcafe0123\/Basic Q0Zx.php' => 'Q0Z',
+			'Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/token=Q1Ztoken=' => 'Q1Z',
+			'%Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/Bearer Q1Z中文' => 'Q1Z',
+			'& WHERE 中文(Ab|/Q0Z&Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/Q1ZQ2Z' => 'Q0Z',
+			'Q2Z\/Q3ZZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk@Updater2x.phpQ4ZQ5Z WHERE ' => 'Q4Z',
+			'smithQ1Z?(Q2Z"deadbeefcafe0123deadbeefcafe0123Q3Z\/=' => 'Q2Z',
+			'pw=x@bearerQ0ZZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ1Z\/AbQ2Z/home/https://Q3Z=Q4Z?Q5Z' => 'Q5Z',
+			'张 三!\\\\Q0Z\/Q1Zhttps://中文' => 'Q0Z',
+			'Q0Z，\\\\\\/Cd|Q1ZQ2Z/Q3Z'   => 'Q1Z',
+		);
+		foreach ( $cases as $message => $secret ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			$this->assertStringNotContainsString( $secret, $line, $message );
+		}
+		$this->log_exception( 'x "Zm9vYmFy4QWx\/Y2VkTOPSECRETab12cd34\/Zm9vYmFy4QWxY2Vk"' );
+		$this->assertStringContainsString( '[RuntimeException: x "***" @ ', $this->logged() );
+	}
+
+	/**
+	 * The rules changed for review-169-06d92a2 stay linear on 200 KB through
+	 * mask() alone (no length cap in front).
+	 */
+	public function test_review_169_06d92a2_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'bearer spaced'       => str_repeat( 'Bearer ', 28000 ),
+			'basic spaced'        => str_repeat( 'Basic ', 33000 ),
+			'bearer query'        => str_repeat( 'Bearer a?b=1 ', 15000 ),
+			'bearer keys'         => str_repeat( 'Bearer a&token=b ', 12000 ),
+			'glued bearer key'    => str_repeat( 'xBearer token= ', 13000 ),
+			'escaped userinfo'    => str_repeat( 'x:\\/\\/a@', 25000 ),
+			'escaped run, word'   => str_repeat( 'Ab1\\/Basic ', 18000 ),
+			'escaped run, paths'  => str_repeat( 'Ab1\\/a/', 28000 ),
+			'escaped run, scheme' => str_repeat( 'Ab1\\/x/https://', 13000 ),
+			'escaped unc'         => str_repeat( '\\\\a\\/', 33000 ),
+			'escaped file url'    => str_repeat( 'file:\\/\\/\\/a\\/', 14000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
+	}
+
+	/**
 	 * Log one RuntimeException with $message through Logger::error().
 	 *
 	 * @param string $message Exception message.
