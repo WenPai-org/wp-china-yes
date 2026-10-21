@@ -152,16 +152,18 @@ class TrustAnchorTest extends TestCase {
 	 */
 	public function test_index_signature_failure_does_not_restore_previous_cache() {
 		$path = $this->fixture_path( 'apps/index.valid.json' );
-		$ok   = ( new Index( LegacyFixtureKey::verifier(), $path, null, null, '4.0.0' ) )->refresh();
+		$seed = new Index( LegacyFixtureKey::verifier(), $path, null, null, '4.0.0' );
+		$ok   = $seed->refresh();
 		$this->assertNotSame( array(), $ok );
-		$this->assertArrayHasKey( Index::TRANSIENT_KEY, AppsStore::$transients );
+		$this->assertArrayHasKey( $seed->cache_key(), AppsStore::$transients );
 
 		AppsStore::$transient_ttls = array();
 		$codes                     = array();
 		$index                     = new Index( new ManifestVerifier(), $path, null, $this->logger( $codes ), '4.0.0' );
-		$this->assertSame( $ok, $index->refresh() );
+		$this->assertSame( array(), $index->refresh(), 'a cache verified under other keys is not read' );
 		$this->assertSame( 'invalid', $index->index_status() );
-		$this->assertArrayNotHasKey( Index::TRANSIENT_KEY, AppsStore::$transient_ttls );
+		$this->assertArrayNotHasKey( $seed->cache_key(), AppsStore::$transient_ttls );
+		$this->assertArrayNotHasKey( $index->cache_key(), AppsStore::$transient_ttls );
 	}
 
 	/**
