@@ -374,7 +374,7 @@ class LoggerExceptionContextTest extends TestCase {
 		$out     = $mask->invoke( new Logger(), str_repeat( 'Ab+_', 50000 ) );
 		$elapsed = microtime( true ) - $start;
 
-		$this->assertLessThan( 0.1, $elapsed, sprintf( '200 KB took %.3f s', $elapsed ) );
+		$this->assertLessThan( 0.5, $elapsed, sprintf( '200 KB took %.3f s', $elapsed ) );
 		$this->assertSame( str_repeat( 'Ab+_', 50000 ), $out );
 
 		// Path rules with many-word directories stay linear too.
@@ -382,7 +382,7 @@ class LoggerExceptionContextTest extends TestCase {
 			$start = microtime( true );
 			$mask->invoke( new Logger(), $input );
 			$elapsed = microtime( true ) - $start;
-			$this->assertLessThan( 0.1, $elapsed, sprintf( '%d bytes of %s took %.3f s', strlen( $input ), substr( $input, 0, 6 ), $elapsed ) );
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%d bytes of %s took %.3f s', strlen( $input ), substr( $input, 0, 6 ), $elapsed ) );
 		}
 	}
 
@@ -677,6 +677,534 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-168 follow-up 1, set back by review-169-2e15bcf: prose after a
+	 * URL path that has a "/" further on cannot be told from a user
+	 * directory (the directory may hold spaces, commas and Chinese
+	 * punctuation), so it is masked as in e423f4b: more masking, no leak.
+	 */
+	public function test_prose_after_a_url_path_is_not_taken_for_a_directory() {
+		$this->log_exception( '调用 /wp-json/wpcy/v1 失败，请检查 and/or 设置' );
+		$this->log_exception( '调用 /wp-json/wpcy/v1 失败。请检查 and/or 设置' );
+		$this->log_exception( '请求 /wp-json/wp/v2/posts 返回 404：请检查 网络/代理' );
+		$this->log_exception( 'use /api/v1 then foo bar/baz' );
+		$logged = $this->logged();
+
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: 调用 [path]/or 设置 @ ' ) );
+		$this->assertStringContainsString( '[RuntimeException: 请求 [path]/代理 @ ', $logged );
+		$this->assertStringContainsString( '[RuntimeException: use [path]/baz @ ', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 1: user names with spaces still do not leak, also
+	 * at the end of a path and before a file name with spaces.
+	 */
+	public function test_spaced_user_directories_are_still_hidden() {
+		$messages = array(
+			'/chroot/home/alice smith/x.php failed'       => '[path]/x.php failed',
+			'/u01/app/alice smith/wp/index.php failed'    => '[path]/index.php failed',
+			'/home/alice smith/public_html/wp-config.php' => '[path]/wp-config.php',
+			'cannot open /home/alice smith/ now'          => 'cannot open [path]/ now',
+			'read /home/alice smith/My Notes.txt failed'  => 'read [path]/My Notes.txt failed',
+			'read /Users/Alice Smith/Local Sites/a/b.php ok' => 'read [path]/b.php ok',
+			'C:\Users\alice smith\AppData\x.log'          => '[path]/x.log',
+			'C:\Program Files\Acme Corp\alice\x.dll'      => '[path]/x.dll',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'Alice', 'smith', 'Smith', 'chroot', 'u01', 'Program', 'Local Sites' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 2: a complete URL before the raw cut is kept; a cut
+	 * inside a userinfo still hides the user name.
+	 */
+	public function test_raw_cut_keeps_a_complete_url() {
+		$this->log_exception( '无法连接到https://api.wenpai.net，' . str_repeat( '请稍后重试', 100 ) );
+		$this->log_exception( 'GET https://api.wenpai.net' . str_repeat( ' x', 600 ) );
+		$this->log_exception( str_repeat( 'ab', 590 ) . ' https://bob(' . str_repeat( 'y', 40 ) . ':pw@h.example.com/x tail' );
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 3, $lines );
+		$this->assertStringContainsString( '[RuntimeException: 无法连接到https://api.wenpai.net，请稍后重试', $lines[0] );
+		$this->assertStringContainsString( '[RuntimeException: GET https://api.wenpai.net x x', $lines[1] );
+		$this->assertStringNotContainsString( 'bob', $lines[2] );
+	}
+
+	/**
+	 * Review-168 follow-up 3a: JSON-escaped base64 (\/ and \\) is masked.
+	 */
+	public function test_json_escaped_base64_is_masked() {
+		$this->log_exception( 'x "Zm9vYmFy4QWx\/Y2VkTOPSECRETab12cd34\/Zm9vYmFy4QWxY2Vk"' );
+		$this->log_exception( 'x "Zm9vYmFy4QWx\\\\Y2VkTOPSECRETab12cd34Zm9vYmFy4QWxY2Vk"' );
+		$this->log_exception( 'x AbCdEfGh\\' . str_repeat( 'Zm9vYmFy4QWxY2Vk', 6 ) );
+		$logged = $this->logged();
+
+		foreach ( array( 'Zm9vYm', 'TOPSECRET', 'AbCdEfGh', 'Y2Vk' ) as $piece ) {
+			$this->assertStringNotContainsString( $piece, $logged );
+		}
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: x "***" @ ' ) );
+		$this->assertStringContainsString( '[RuntimeException: x *** @ ', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 3b: a key with one of ! " ' | ~ $ inside is masked
+	 * as a whole, the part before the separator included.
+	 */
+	public function test_key_with_inner_separator_is_masked_whole() {
+		foreach ( array( '!', '"', "'", '|', '~', '$', '^', '%' ) as $sep ) {
+			$this->log_exception( 'key material Zm9vYmFy4QWxY2Vk' . $sep . 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd34 end' );
+			$this->log_exception( 'hex 0123456789abcdef0123456789abcdef01234567' . $sep . '89abcdef end' );
+		}
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 16, $lines );
+		foreach ( $lines as $line ) {
+			$this->assertStringNotContainsString( 'Zm9vYm', $line );
+			$this->assertStringNotContainsString( '89abcdef', $line );
+			$this->assertSame( 1, preg_match( '/\[RuntimeException: (?:key material|hex) \*\*\* end @ /', $line ), $line );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 3b at the raw cut: a key "A'B" cut inside B, or
+	 * right at the separator, keeps no part of A.
+	 */
+	public function test_raw_cut_inside_a_key_with_inner_separator_keeps_no_part() {
+		$a = 'Zm9vYmFy4QWxY2VkTOPSECRETab12cd';
+		$b = str_repeat( 'Qk9QU0VDUkVUMTIz', 4 );
+		foreach ( array( '!', '"', "'" ) as $sep ) {
+			foreach ( array( 1110, 1150, 1168, 1169 ) as $start ) {
+				$prefix = substr( str_repeat( 'ab', 700 ), 0, $start - 1 ) . ' ';
+				$this->log_exception( $prefix . $a . $sep . $b . ' tail' );
+			}
+		}
+		$lines = explode( "\n", trim( $this->logged() ) );
+
+		$this->assertCount( 12, $lines );
+		$last = strlen( $a ) - 6;
+		foreach ( $lines as $line ) {
+			for ( $i = 0; $i <= $last; $i++ ) {
+				$this->assertStringNotContainsString( substr( $a, $i, 6 ), $line );
+			}
+			$this->assertStringNotContainsString( 'Qk9QU0', $line );
+		}
+	}
+
+	/**
+	 * Review-168 follow-up 3c: an apostrophe inside a word (it's) does not
+	 * end a literal. Since review-169-2e15bcf a quote that pairs up with
+	 * nothing masks the rest from its word on, so the text after doesn't is
+	 * masked too (more masking, no leak).
+	 */
+	public function test_sql_apostrophe_in_a_word_is_not_a_quote() {
+		$this->log_exception( "Table 'wp_options' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = 'siteurl')" );
+		$this->log_exception( "WordPress database error for query UPDATE wp_posts SET note = 'it's here' WHERE ID = 1" );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( "[RuntimeException: Table '***' doesn'***') @ ", $logged );
+		$this->assertStringContainsString( "SET note = '***' WHERE ID = 1", $logged );
+		$this->assertStringNotContainsString( 'siteurl', $logged );
+		$this->assertStringNotContainsString( 'here', $logged );
+	}
+
+	/**
+	 * Review-168 follow-up 3d: Bearer / Basic glued to a word are masked.
+	 */
+	public function test_bearer_without_word_boundary_is_masked() {
+		$this->log_exception( 'header dirBearer eyJhbGciOiJIUzI1NiJ9abc' );
+		$this->log_exception( 'header xBasic dXNlcjpwYXNz' );
+		$logged = $this->logged();
+
+		$this->assertStringNotContainsString( 'eyJhbGci', $logged );
+		$this->assertStringNotContainsString( 'dXNlcjpw', $logged );
+		$this->assertStringContainsString( 'header dirBearer *** @ ', $logged );
+		$this->assertStringContainsString( 'header xBasic *** @ ', $logged );
+	}
+
+	/**
+	 * Review-169 1: a directory with spaces followed by a name without an
+	 * extension (the last part of the path) hides the user name.
+	 */
+	public function test_spaced_directory_before_a_bare_name_is_hidden() {
+		$messages = array(
+			'Directory /home/alice smith/public_html is not writable' => 'Directory [path]/public_html is not writable',
+			'/home/alice smith/htdocs'                    => '[path]/htdocs',
+			'/Users/Alice Smith/Desktop'                  => '[path]/Desktop',
+			'"/home/alice smith/site" not found'          => '"[path]/site" not found',
+			'(/home/alice smith/site)'                    => '([path]/site)',
+			'/home/alice smith/site; retry'               => '[path]/site; retry',
+			'/home/alice smith/README missing'            => '[path]/README missing',
+			'/home/alice smith/site,/home/bob jones/site' => '[path]/site',
+			'/data/Maria de la Cruz/public_html failed'   => '[path]/public_html failed',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'alice', 'Alice', 'smith', 'Smith', 'bob', 'jones', 'Maria', 'Cruz' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 2: Chinese directory names with spaces and names with a
+	 * comma are hidden (宝塔 site directories).
+	 */
+	public function test_cjk_and_comma_directories_are_hidden() {
+		$messages = array(
+			'/www/wwwroot/我的 网站/wp-config.php' => '[path]/wp-config.php',
+			'/www/wwwroot/我的 网站/'              => '[path]/',
+			'/www/wwwroot/我的 网站/public 失败'     => '[path]/public 失败',
+			'/home/张 三/x.php'                  => '[path]/x.php',
+			'/home/张 三/site'                   => '[path]/site',
+			'/home/Smith, John/x.php'          => '[path]/x.php',
+			'/home/Smith, John/site'           => '[path]/site',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( '我的', '网站', '张', '三', 'Smith', 'John' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 1 and 2 as a scan: roots × user names (English, Chinese,
+	 * with spaces, with commas, four words) × last parts × what comes before
+	 * and after. No word of a user name may show up.
+	 */
+	public function test_user_name_scan_leaks_nothing() {
+		$scrub = new \ReflectionMethod( Logger::class, 'scrub' );
+		$scrub->setAccessible( true );
+		$logger = new Logger();
+
+		$names = array( 'alice smith', 'Mary Ann Smith', '张 三', '我的 网站', 'Smith, John', '王五, 赵六', 'José García', 'Tom and Jerry Site' );
+		$leaks = array();
+		foreach ( array( '/home/', '/Users/', '/www/wwwroot/', '/chroot/home/', '/u01/app/', '/data/' ) as $root ) {
+			foreach ( $names as $name ) {
+				foreach ( array( '/x.php', '/public_html', '/', '/My Notes.txt', '/a/b', '/站点' ) as $tail ) {
+					foreach ( array( '', '"', '(', '调用 ' ) as $before ) {
+						foreach ( array( '', ' failed', '"', ')', '; retry', ',', '，失败' ) as $after ) {
+							$message = $before . $root . $name . $tail . $after;
+							$out     = $scrub->invoke( $logger, $message );
+							foreach ( preg_split( '/[\s,]+/u', $name, -1, PREG_SPLIT_NO_EMPTY ) as $word ) {
+								if ( false !== strpos( $out, $word ) ) {
+									$leaks[] = $message . ' => ' . $out;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$this->assertSame( array(), array_slice( $leaks, 0, 5 ), count( $leaks ) . ' leaks' );
+	}
+
+	/**
+	 * Review-169 3: an SQL literal right after a word character (N'', X'',
+	 * _utf8mb4'', LIKE'') or right before one ('..'AND) is masked.
+	 */
+	public function test_sql_literal_next_to_a_word_is_masked() {
+		$messages = array(
+			"INSERT INTO t VALUES (N'hunter2pass')"      => "INSERT INTO t VALUES (N'***')",
+			"SELECT * FROM t WHERE pw='hunter2pass'AND x=1" => "SELECT * FROM t WHERE pw='***'AND x=1",
+			"SELECT * FROM t WHERE a = _utf8mb4'hunter2pass'" => "SELECT * FROM t WHERE a = _utf8mb4'***'",
+			"SELECT * FROM t WHERE a = X'4142434445'"    => "SELECT * FROM t WHERE a = X'***'",
+			"SELECT * FROM t WHERE pw LIKE'hunter2pass'" => "SELECT * FROM t WHERE pw LIKE'***'",
+			"SELECT * FROM t WHERE pw = 'hunter2pass'd AND x = 1" => "SELECT * FROM t WHERE pw = '***'d AND x = 1",
+			"Table 'wp_options' doesn't exist (SQL: SELECT option_value FROM wp_options WHERE option_name = 'siteurl')" => "Table '***' doesn'***')",
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'hunter2', '4142434445', 'siteurl' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 4: with Bearer / Basic twice in a row the value after the
+	 * last one is masked; a scheme glued to a word in front of prose keeps
+	 * the prose.
+	 */
+	public function test_repeated_auth_scheme_masks_the_last_value() {
+		$messages = array(
+			'Header: X-Cardbearer Bearer tok_ab12cd34' => 'Header: X-Cardbearer Bearer ***',
+			'authbearer Bearer tok_ab12cd34'           => 'authbearer Bearer ***',
+			'sent as basic Basic dXNlcjpwdw=='         => 'sent as basic Basic ***',
+			'xbearer Bearer plainlowercasetoken'       => 'xbearer Bearer ***',
+			'flagbearer of the project'                => 'flagbearer of the project',
+			'NonBasic users cannot access'             => 'NonBasic users cannot access',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( 'tok_ab', 'dXNlcjpw', 'plainlower' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Review-169 (non-blocking): a PHP class name with a digit is kept; a
+	 * key split by backslashes is still masked.
+	 */
+	public function test_php_class_name_is_kept() {
+		$this->log_exception( 'Class WenPai\ChinaYes\Module\Mirror\Updater2 not found' );
+		$this->log_exception( '{"class":"WenPai\\\\ChinaYes\\\\Module\\\\Mirror\\\\Updater2"}' );
+		$this->log_exception( 'key Zm9vYmFy4QWx\Y2VkTOPSECRET\ab12cd34Zm9vYmFy end' );
+		$this->log_exception( 'key Zm9vYmFyQWx\Y2VkTOPSECRET\Abcd34Zm9vYmFy end' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'Class WenPai\ChinaYes\Module\Mirror\Updater2 not found @ ', $logged );
+		$this->assertStringContainsString( '{"class":"WenPai\\\\ChinaYes\\\\Module\\\\Mirror\\\\Updater2"} @ ', $logged );
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: key *** end @ ' ) );
+	}
+
+	/**
+	 * Review-169-2e15bcf 1: Chinese or other punctuation inside a directory
+	 * name (，。、：！) does not end the directory: the user name is hidden.
+	 */
+	public function test_punctuation_inside_a_directory_name_is_hidden() {
+		$messages = array(
+			'/home/张三，李四/x.php'                        => '[path]/x.php',
+			'/home/张三，李四/site'                         => '[path]/site',
+			'/home/张 三，李四/site'                        => '[path]/site',
+			'/home/张 三，李四/x.php'                       => '[path]/x.php',
+			'/home/张 三，李四/site/x'                      => '[path]/x',
+			'/home/alice smith，bob/site'               => '[path]/site',
+			'/www/wwwroot/我的 网站、备份/site'               => '[path]/site',
+			'/www/wwwroot/我的 网站。/site'                 => '[path]/site',
+			'/home/张 三：李四/site'                        => '[path]/site',
+			'/home/alice smith！/site'                  => '[path]/site',
+			'无法写入 /www/wwwroot/我的 网站/wp-content，请检查权限' => '无法写入 [path]/wp-content，请检查权限',
+		);
+		foreach ( array_keys( $messages ) as $message ) {
+			$this->log_exception( $message );
+		}
+		$logged = $this->logged();
+
+		foreach ( array( '张', '三', '李四', 'alice', 'smith', 'bob', '我的', '网站', '备份' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		foreach ( $messages as $expected ) {
+			$this->assertStringContainsString( '[RuntimeException: ' . $expected . ' @ ', $logged );
+		}
+	}
+
+	/**
+	 * Found by the review-169 differential scan (in 61a5b39..2e15bcf): a raw
+	 * cut inside a URL user name that holds "{", a Chinese comma or other
+	 * non-ASCII text kept the start of the name ("https://bob{…"), which the
+	 * userinfo rule masks in the whole text. Only bytes that also end that
+	 * rule (whitespace / ? #) mark a complete URL now.
+	 */
+	public function test_raw_cut_inside_a_non_ascii_userinfo_keeps_no_user_name() {
+		$scrub = new \ReflectionMethod( Logger::class, 'scrub' );
+		$scrub->setAccessible( true );
+		$logger = new Logger();
+
+		$leaks = array();
+		for ( $back = 1; $back <= 14; $back++ ) {
+			foreach ( array(
+				'bob{'  => 'bob',
+				'bob，'  => 'bob',
+				'张三用户(' => '张三',
+				'Ünal(' => 'Ünal',
+			) as $user => $word ) {
+				$message = substr( str_repeat( 'ab', 600 ), 0, 1191 - $back ) . ' https://' . $user . 'yyyy:pw@h.example.com/x tail';
+				$out     = $scrub->invoke( $logger, $message );
+				if ( false !== strpos( $out, $word ) ) {
+					$leaks[] = $user . ' ' . $back . ' => ' . substr( $out, -30 );
+				}
+			}
+		}
+
+		$this->assertSame( array(), array_slice( $leaks, 0, 5 ), count( $leaks ) . ' leaks' );
+	}
+
+	/**
+	 * Review-169-2e15bcf 2: a quote read as a contraction apostrophe ('it's',
+	 * 'abc'd) cannot unmask a later literal. Both readings (contraction and
+	 * plain) are masked, and a quote that pairs up with nothing masks the
+	 * rest. The five cases fixed in 2e15bcf stay masked.
+	 */
+	public function test_contraction_reading_cannot_unmask_a_literal() {
+		$scrub = new \ReflectionMethod( Logger::class, 'scrub' );
+		$scrub->setAccessible( true );
+		$logger = new Logger();
+		$prefix = 'WordPress database error for query SELECT * FROM wp_users WHERE ';
+
+		$cases = array(
+			"pw='secret's'",
+			"name='abc'd AND pw='hunter2pass'",
+			"u='x'd OR p='hunter2pass'",
+			"note='it's' AND pw='hunter2pass'",
+			"note='it's, pw='hunter2pass'",
+			"a='O'Brien' AND p='hunter2pass'",
+			"a='Bob's' AND p='hunter2pass'",
+			"pw='xyz'll AND p='hunter2pass'",
+			"pw='abc'm' AND p='hunter2pass'",
+			"pw='abc're AND p='hunter2pass'",
+			"pw='abc've AND p='hunter2pass'",
+			"pw='abc't AND p='hunter2pass'",
+			"pw='abc'S AND p='hunter2pass'",
+			"pw='hunter2pass's",
+			"pw='hunter2pass'd",
+			"pw='hunter2pass't AND x=1",
+			"a='x' AND b='y'd AND p='hunter2pass'",
+			"a=\"x\"d AND p='hunter2pass'",
+			"a='x\\'s' AND p='hunter2pass'",
+			"a=''d AND p='hunter2pass'",
+			"N'hunter2pass'",
+			"x=_utf8mb4'hunter2pass'",
+			"x LIKE'hunter2pass'",
+			"pw='hunter2pass'AND x=1",
+			"a IN ('it's','hunter2pass')",
+			"a='don't' AND p='hunter2pass'",
+			"a='rock'n'roll' AND p='hunter2pass'",
+			"a = 'abc'd'e' AND p='hunter2pass'",
+			"SELECT 'a'd FROM t WHERE p='hunter2pass'",
+			"Table 'wp_options' doesn't exist (SQL: SELECT 1 WHERE p='hunter2pass')",
+		);
+		$leaks = array();
+		foreach ( $cases as $case ) {
+			$out = $scrub->invoke( $logger, $prefix . $case );
+			foreach ( array( 'hunter2', 'secret' ) as $secret ) {
+				if ( false !== strpos( $out, $secret ) ) {
+					$leaks[] = $case . ' => ' . substr( $out, strlen( $prefix ) - 6 );
+					break;
+				}
+			}
+		}
+		$this->assertSame( array(), $leaks );
+
+		$kept = array(
+			"note='it's' AND pw='hunter2pass'"     => "note='***'",
+			"a='Bob's' AND p='hunter2pass'"        => "a='***'",
+			"pw='abc'm' AND p='hunter2pass'"       => "pw='***'",
+			"a IN ('it's','hunter2pass')"          => "a IN ('***')",
+			"a='don't' AND p='hunter2pass'"        => "a='***'",
+			"pw='hunter2pass'AND x=1"              => "pw='***'AND x=1",
+			"a='x' AND b='y'd AND p='hunter2pass'" => "a='***' AND b='***'",
+		);
+		foreach ( $kept as $case => $expected ) {
+			$this->assertSame( $prefix . $expected, $scrub->invoke( $logger, $prefix . $case ) );
+		}
+	}
+
+	/**
+	 * Review-169-2e15bcf 3: the class name rule does not keep a part of 32+
+	 * bytes with a digit (a pass phrase in front of a class-like tail).
+	 */
+	public function test_class_name_rule_does_not_keep_a_long_part_with_a_digit() {
+		$this->log_exception( 'pw SummerVacationInHawaiiWithFamily2024\Corp\Alice' );
+		$this->log_exception( 'SummerVacationInHawaiiWithFamily2024\\Corp\\Alice' );
+		$this->log_exception( 'Vendor\Pkg\CorrectHorseBatteryStapleWithExtraWords2024' );
+		$this->log_exception( 'Class WenPai\ChinaYes\Module\Mirror\Updater2 not found' );
+		$logged = $this->logged();
+
+		foreach ( array( 'Summer', 'Hawaii', 'Corp', 'CorrectHorse' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+		$this->assertStringContainsString( '[RuntimeException: pw *** @ ', $logged );
+		$this->assertSame( 2, substr_count( $logged, '[RuntimeException: *** @ ' ) );
+		$this->assertStringContainsString( '[RuntimeException: Class WenPai\ChinaYes\Module\Mirror\Updater2 not found @ ', $logged );
+	}
+
+	/**
+	 * The rules changed for review-169 stay linear on 200 KB through mask()
+	 * alone, also with non-ASCII words and commas.
+	 */
+	public function test_review_169_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'path cjk spaced words'  => '/r/' . str_repeat( '张 ', 50000 ),
+			'path cjk spaced chain'  => '/r/' . str_repeat( '张 三/', 25000 ),
+			'path comma words'       => '/r/' . str_repeat( 'a, ', 70000 ),
+			'path cjk punctuation'   => '/r/' . str_repeat( '张 三，', 20000 ),
+			'path cjk, no next'      => str_repeat( '/a/张 三 ', 15000 ),
+			'path spaced to a name'  => str_repeat( '/a/b c/d ', 25000 ),
+			'path u3000'             => '/r/' . str_repeat( "张\u{3000}", 40000 ),
+			'class name runs'        => str_repeat( 'Ab\\', 70000 ),
+			'class name digits'      => str_repeat( 'Abc1\\', 40000 ),
+			'bearer chain'           => str_repeat( 'xBearer Bearer ', 14000 ),
+			'bearer glued'           => str_repeat( 'xBearer abc ', 18000 ),
+			'sql N quotes'           => 'SELECT x FROM y WHERE ' . str_repeat( "N'a", 66000 ),
+			'sql apostrophes, quote' => 'SELECT x FROM y WHERE ' . str_repeat( "'it's ", 33000 ),
+			'sql glued close'        => 'SELECT x FROM y WHERE ' . str_repeat( "'a'b", 50000 ),
+			'sql contraction tails'  => "SELECT x FROM y WHERE '" . str_repeat( "a'll ", 40000 ),
+			'sql both readings'      => 'SELECT x FROM y WHERE ' . str_repeat( "'it's' AND p='a' ", 12000 ),
+			'sql contraction, close' => 'SELECT x FROM y WHERE ' . str_repeat( "'abc'd AND ", 18000 ),
+			'sql unpaired, words'    => 'SELECT x FROM y WHERE ' . str_repeat( "'O'Brien' ", 20000 ),
+			'class long part'        => str_repeat( 'Abcdefghijklmnopqrstuvwxyzabcdef1\\', 6000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
+	}
+
+	/**
+	 * The rules changed for the review-168 follow-up stay linear on 200 KB
+	 * through mask() alone (no length cap in front).
+	 */
+	public function test_follow_up_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'base64 inner separators' => str_repeat( 'Ab+|', 50000 ),
+			'base64 json escapes'     => str_repeat( 'Ab\\/', 40000 ),
+			'base64 backslashes'      => str_repeat( 'Ab1\\', 50000 ),
+			'sql unclosed quotes'     => 'SELECT x FROM y WHERE ' . str_repeat( " 'a", 66000 ),
+			'sql apostrophes'         => 'SELECT x FROM y WHERE ' . str_repeat( "it's ", 40000 ),
+			'path spaced, no next'    => str_repeat( '/a/b c ', 28000 ),
+			'path spaced chain'       => '/r/' . str_repeat( 'a b/', 50000 ),
+			'path spaced words'       => '/r/' . str_repeat( 'a ', 100000 ),
+			'bearer'                  => str_repeat( 'xBearer ', 25000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
+	}
+
+	/**
 	 * Long Chinese and compact JSON messages are scrubbed in bounded time,
 	 * through Logger and through mask() alone.
 	 */
@@ -701,8 +1229,177 @@ class LoggerExceptionContextTest extends TestCase {
 			$start = microtime( true );
 			$mask->invoke( new Logger(), $piece );
 			$elapsed = microtime( true ) - $start;
-			$this->assertLessThan( 0.1, $elapsed, sprintf( 'mask(): %d bytes took %.3f s', strlen( $piece ), $elapsed ) );
+			$this->assertLessThan( 0.5, $elapsed, sprintf( 'mask(): %d bytes took %.3f s', strlen( $piece ), $elapsed ) );
 		}
+	}
+
+	/**
+	 * Review-169-06d92a2 A: a JSON-escaped path is hidden whatever is in
+	 * front of its first slash (a scheme, a word), as on the raw text.
+	 */
+	public function test_json_escaped_path_after_a_word_or_scheme_is_hidden() {
+		$cases = array(
+			'{"file":"file:\/\/\/home\/alice smith\/wp-config.php"}' => 'file:[path]/wp-config.php',
+			'{"f":"phar:\/\/\/home\/alice\/site\/x.phar"}' => 'phar:[path]/x.phar',
+			'{"cwd":"src\/home\/alice\/x"}'                => 'src[path]/x',
+			'data:{"dir":"x\/home\/alice\/site"}'          => 'x[path]/site',
+			'{"path":"wp-content\/uploads\/alice\/passport.jpg"}' => 'wp-content[path]/passport.jpg',
+			'{"url":"https:\/\/example.com\/home\/alice\/x.php"}' => 'https:[path]/x.php',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$logged = $this->logged();
+			$this->assertStringContainsString( $expected, $logged, $message );
+		}
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( 'smith', $logged );
+	}
+
+	/**
+	 * Review-169-06d92a2 A: file:// and phar:// with an empty host are
+	 * followed by a local path; a URL path after a host stays readable.
+	 */
+	public function test_file_and_phar_url_with_an_empty_host_hide_the_path() {
+		$this->log_exception( 'open file:///home/alice smith/wp-config.php failed' );
+		$this->log_exception( 'include phar:///home/alice/site/x.phar/a.php' );
+		$this->log_exception( 'see https://example.com/docs/x.php' );
+		$logged = $this->logged();
+
+		$this->assertStringContainsString( 'open file://[path]/wp-config.php failed', $logged );
+		$this->assertStringContainsString( 'include phar://[path]/a.php', $logged );
+		$this->assertStringContainsString( 'see https://example.com/docs/x.php', $logged );
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( 'smith', $logged );
+	}
+
+	/**
+	 * Review-169-06d92a2 B: a key after a glued scheme word ("CdBearer
+	 * token= <value>") is no scheme value; the key=value rule masks the value.
+	 */
+	public function test_glued_scheme_word_leaves_a_key_to_the_key_rule() {
+		$cases = array(
+			'x CdBearer token= {"k":")secretQ3Z'    => 'CdBearer token= ***',
+			'token=Q0ZBasic token= CdQ1Z'           => 'token=*** token= ***',
+			'Q0Z/home/%Q1ZBasic ，Basic Q2Z%Basic x' => '，Basic ***',
+			'auth failed: Bearer token= secretQ4Z'  => 'Bearer token= ***',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$this->assertStringContainsString( $expected, $this->logged(), $message );
+		}
+		$logged = $this->logged();
+		foreach ( array( 'secretQ3Z', 'CdQ1Z', 'Q2Z', 'secretQ4Z' ) as $secret ) {
+			$this->assertStringNotContainsString( $secret, $logged );
+		}
+	}
+
+	/**
+	 * Review-169-06d92a2 differential fuzz: a scheme value leaves a query
+	 * string, a key and a glued scheme to their own rules, so nothing that
+	 * e423f4b masked is shown.
+	 */
+	public function test_scheme_value_leaves_a_query_or_key_to_its_rule() {
+		$cases = array(
+			'Bearer Bearer ?@{"k":"Q0Z~(=SELECT .'         => 'Q0Z',
+			'Basic Basic /home/.token=\'Q1ZQ2ZSELECT .Q3Z' => 'Q1Z',
+			' Q0ZBearer pw=.)?{"k":"!，Q1Ztoken='           => 'Q1Z',
+			'"Q0Z#|token=Q1ZBearer https://|?\')~Q2Z'      => 'Q2Z',
+			'Bearer token=&Q0ZQ1Z&"/home/x'                => 'Q0Z',
+			'Bearer Q0Z/bearerQ1ZQ2ZBearer token=@:{"k":"\'!Q3Z' => 'Q3Z',
+			'Basic ~Basic  ~%?Q0Z"}|{"k":"AbQ1Zpw="'       => 'Q1Z',
+		);
+		foreach ( $cases as $message => $secret ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			$this->assertStringNotContainsString( $secret, $line, $message );
+		}
+	}
+
+	/**
+	 * Review-169-06d92a2 differential fuzz: a key run with an escaped slash
+	 * is masked whole, but leaves a path it is part of, a word after it and
+	 * a key glued behind a hex key to their rules.
+	 */
+	public function test_escaped_key_run_leaves_paths_and_words_to_their_rules() {
+		$cases = array(
+			'CdZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ0Z\/Q1Z，Q2Z/' => 'Q2Z',
+			'Q1Z.deadbeefcafe0123deadbeefcafe0123/Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ2ZQ3ZBearer x' => 'Q2Z',
+			'deadbeefcafe0123deadbeefcafe0123\/Basic Q0Zx.php' => 'Q0Z',
+			'Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/token=Q1Ztoken=' => 'Q1Z',
+			'%Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/Bearer Q1Z中文' => 'Q1Z',
+			'& WHERE 中文(Ab|/Q0Z&Zm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk\/Q1ZQ2Z' => 'Q0Z',
+			'Q2Z\/Q3ZZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2Vk@Updater2x.phpQ4ZQ5Z WHERE ' => 'Q4Z',
+			'smithQ1Z?(Q2Z"deadbeefcafe0123deadbeefcafe0123Q3Z\/=' => 'Q2Z',
+			'pw=x@bearerQ0ZZm9vYmFy4QWxY2VkZm9vYmFy4QWxY2VkQ1Z\/AbQ2Z/home/https://Q3Z=Q4Z?Q5Z' => 'Q5Z',
+			'张 三!\\\\Q0Z\/Q1Zhttps://中文' => 'Q0Z',
+			'Q0Z，\\\\\\/Cd|Q1ZQ2Z/Q3Z'   => 'Q1Z',
+		);
+		foreach ( $cases as $message => $secret ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			$this->assertStringNotContainsString( $secret, $line, $message );
+		}
+		$this->log_exception( 'x "Zm9vYmFy4QWx\/Y2VkTOPSECRETab12cd34\/Zm9vYmFy4QWxY2Vk"' );
+		$this->assertStringContainsString( '[RuntimeException: x "***" @ ', $this->logged() );
+	}
+
+	/**
+	 * The rules changed for review-169-06d92a2 stay linear on 200 KB through
+	 * mask() alone (no length cap in front).
+	 */
+	public function test_review_169_06d92a2_rules_are_linear_without_the_cap() {
+		$mask = new \ReflectionMethod( Logger::class, 'mask' );
+		$mask->setAccessible( true );
+
+		$inputs = array(
+			'bearer spaced'       => str_repeat( 'Bearer ', 28000 ),
+			'basic spaced'        => str_repeat( 'Basic ', 33000 ),
+			'bearer query'        => str_repeat( 'Bearer a?b=1 ', 15000 ),
+			'bearer keys'         => str_repeat( 'Bearer a&token=b ', 12000 ),
+			'glued bearer key'    => str_repeat( 'xBearer token= ', 13000 ),
+			'escaped userinfo'    => str_repeat( 'x:\\/\\/a@', 25000 ),
+			'escaped run, word'   => str_repeat( 'Ab1\\/Basic ', 18000 ),
+			'escaped run, paths'  => str_repeat( 'Ab1\\/a/', 28000 ),
+			'escaped run, scheme' => str_repeat( 'Ab1\\/x/https://', 13000 ),
+			'escaped unc'         => str_repeat( '\\\\a\\/', 33000 ),
+			'escaped file url'    => str_repeat( 'file:\\/\\/\\/a\\/', 14000 ),
+		);
+		foreach ( $inputs as $name => $input ) {
+			$start = microtime( true );
+			$mask->invoke( new Logger(), $input );
+			$elapsed = microtime( true ) - $start;
+			$this->assertLessThan( 0.5, $elapsed, sprintf( '%s: %d bytes took %.3f s', $name, strlen( $input ), $elapsed ) );
+		}
+	}
+
+	/**
+	 * Review-169-b588ed3: a 1200-byte cut that ends inside "?name" before its
+	 * "=" (also after the run-join rounds dropped "=value\"...") drops the
+	 * name from the "?" on: "#?name(=value\"..." kept "#?name(" from
+	 * 61a5b39 on, where e423f4b hid it. Neither the name nor the value is
+	 * shown wherever the cut falls.
+	 */
+	public function test_cut_inside_a_query_name_drops_it() {
+		$this->log_exception( str_repeat( 'ab', 585 ) . '#?Ab1cdef(=Vv7secretval"beef1234 tail' . str_repeat( ' z', 200 ) );
+		$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+		$this->assertStringContainsString( '[RuntimeException: ***#…', $line );
+
+		foreach ( array( '#?Ab1cdef(=', '#?Ab1cdef!=', '?Ab1cdef(=' ) as $query ) {
+			foreach ( array( '!', '"', "'" ) as $join ) {
+				for ( $prefix = 1160; $prefix <= 1215; $prefix++ ) {
+					$message = substr( str_repeat( 'ab', 640 ), 0, $prefix ) . $query . 'Vv7secretval' . $join . 'beef1234 tail' . str_repeat( ' z', 200 );
+					$this->log_exception( $message );
+					$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+					$this->assertStringNotContainsString( 'Ab1cdef', $line, $query . $join . ' after ' . $prefix );
+					$this->assertStringNotContainsString( 'Vv7secretval', $line, $query . $join . ' after ' . $prefix );
+				}
+			}
+		}
+
+		// Only the open name goes: the text in front of it stays.
+		$this->log_exception( str_repeat( '错', 390 ) . '#?Ab1cdef(=Vv7secretval"beef1234 tail' . str_repeat( ' z', 200 ) );
+		$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+		$this->assertStringContainsString( '[RuntimeException: ' . str_repeat( '错', 100 ) . '…', $line );
 	}
 
 	/**

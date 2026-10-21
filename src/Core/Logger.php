@@ -227,6 +227,12 @@ final class Logger {
 	private const CUT_TOKEN_BYTES = '#$%&*+-./0123456789:=@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~';
 
 	/**
+	 * Unix directories, see relative_paths(). An escaped slash still marked
+	 * with \x01 (see mask()) may start a path whatever is in front of it.
+	 */
+	private const UNIX_PATH = '#(?:(?<![\w.:/\]])|(?<=file://|phar://|FILE://|PHAR://))/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#';
+
+	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
 	 *
 	 * Only class, scrubbed message, and file:line (relative to the plugin root,
@@ -309,7 +315,9 @@ final class Logger {
 	 * at whitespace, ASCII separators, or any non-ASCII character, so Chinese
 	 * text, NBSP / U+3000 separated words and compact JSON keep their text.
 	 * The drop never splits a UTF-8 character: the run is ASCII only.
-	 * A cut inside a 1200-byte run of token bytes keeps nothing.
+	 * A cut inside a 1200-byte run of token bytes keeps nothing. An
+	 * unfinished query parameter name or URL userinfo at the end goes too
+	 * (drop_open_query(), drop_open_userinfo()).
 	 *
 	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
 	 * @param bool   $use_mb Use mb_strcut().
@@ -323,7 +331,76 @@ final class Logger {
 			$cut      = substr( $cut, 0, strlen( $cut ) - $fragment );
 		}
 
-		return rtrim( $this->drop_open_userinfo( $cut ), " \t\n\r\v\f" );
+		// mask() reads a base64-like run across one of ! " ' (not token bytes),
+		// so a key "A'B" cut inside B must not keep A: drop the run in front of
+		// such a separator too, also when the cut is right at it. Each round
+		// drops at least one byte.
+		while ( true ) {
+			$len  = strlen( $cut );
+			$last = substr( $cut, -1 );
+			$next = substr( $text, $len, 1 );
+			if ( $this->is_run_join( $last ) && $this->is_base64_byte( substr( $cut, -2, 1 ) ) && $this->is_base64_byte( $next ) ) {
+				$cut = substr( $cut, 0, -1 );
+			} elseif ( ! $this->is_base64_byte( $last ) || ! $this->is_run_join( $next ) || ! $this->is_base64_byte( substr( $text, $len + 1, 1 ) ) ) {
+				break;
+			}
+			$cut = substr( $cut, 0, strlen( $cut ) - strspn( strrev( $cut ), self::CUT_TOKEN_BYTES ) );
+		}
+
+		return rtrim( $this->drop_open_userinfo( $this->drop_open_query( $cut, $text ), $text ), " \t\n\r\v\f" );
+	}
+
+	/**
+	 * Drop an unfinished query parameter name at the end of the raw cut.
+	 *
+	 * The query rule needs "?name=": "#?name(=value\"..." cut (or dropped
+	 * back by the run-join rounds above) before the "=" would keep
+	 * "?name(" in clear. Decided on the raw text, as for the userinfo: when
+	 * the name run that starts at the last "?" of the cut (bytes the rule
+	 * reads in a name: not whitespace, "?", "#", "=", "&") goes on past the
+	 * cut and ends at "=", everything from that "?" on is dropped. Only a
+	 * cut that ends inside such a name reads on, with one strcspn() over
+	 * the rest of the raw text: linear.
+	 *
+	 * @param string $cut  Raw text after the cut.
+	 * @param string $text Raw text before the cut ($cut is its prefix).
+	 */
+	private function drop_open_query( string $cut, string $text ): string {
+		$query = strrpos( $cut, '?' );
+		if ( false === $query ) {
+			return $cut;
+		}
+
+		$stops = " \t\n\r\v\f?#=&";
+		$kept  = strlen( $cut ) - $query - 1;
+		if ( 0 === $kept || strcspn( $cut, $stops, $query + 1 ) < $kept ) {
+			return $cut;
+		}
+
+		$name = $kept + strcspn( $text, $stops, strlen( $cut ) );
+		if ( '=' !== substr( $text, $query + 1 + $name, 1 ) ) {
+			return $cut;
+		}
+
+		return substr( $cut, 0, $query );
+	}
+
+	/**
+	 * One byte of the base64-like rule's alphabet.
+	 *
+	 * @param string $byte One byte or "".
+	 */
+	private function is_base64_byte( string $byte ): bool {
+		return '' !== $byte && 1 === strspn( $byte, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/_-' );
+	}
+
+	/**
+	 * A separator the base64-like rule reads across that is not a token byte.
+	 *
+	 * @param string $byte One byte or "".
+	 */
+	private function is_run_join( string $byte ): bool {
+		return '' !== $byte && false !== strpos( '!"\'', $byte );
 	}
 
 	/**
@@ -331,23 +408,34 @@ final class Logger {
 	 *
 	 * "https://bob(x:pw@host" cut before "@" would keep "https://bob(" and
 	 * the userinfo rule (which needs the "@") could no longer mask "bob".
-	 * Everything from the last "://" on is dropped when no "/", "?", "#",
-	 * "@" or whitespace follows it.
 	 *
-	 * @param string $text Raw text after the cut.
+	 * Decided on the raw text, not on the cut: from the last "://" of the cut,
+	 * look for the first byte the userinfo rule does not read across
+	 * (whitespace, "/", "?", "#"; any other byte, also non-ASCII such as a
+	 * Chinese comma, can be in what it masks) or "@". Only an "@" past
+	 * the cut means the cut ends inside a userinfo: everything from "://" on
+	 * is dropped. An "@" inside the cut is masked by the userinfo rule; any
+	 * other end (also the end of the text) means a complete URL, which is
+	 * kept: the userinfo rule could not match it in the whole text either.
+	 * One strcspn() over the rest of the raw text: linear.
+	 *
+	 * @param string $cut  Raw text after the cut.
+	 * @param string $text Raw text before the cut ($cut is its prefix).
 	 */
-	private function drop_open_userinfo( string $text ): string {
-		$scheme = strrpos( $text, '://' );
+	private function drop_open_userinfo( string $cut, string $text ): string {
+		$scheme = strrpos( $cut, '://' );
 		if ( false === $scheme ) {
-			return $text;
+			return $cut;
 		}
 
+		$kept = strlen( $cut ) - $scheme - 3;
 		$rest = substr( $text, $scheme + 3 );
-		if ( strcspn( $rest, " \t\n\r\v\f/?#@" ) < strlen( $rest ) ) {
-			return $text;
+		$stop = strcspn( $rest, " \t\n\r\v\f/?#@" );
+		if ( $stop >= strlen( $rest ) || '@' !== $rest[ $stop ] || $stop < $kept ) {
+			return $cut;
 		}
 
-		return substr( $text, 0, $scheme );
+		return substr( $cut, 0, $scheme );
 	}
 
 	/**
@@ -370,12 +458,27 @@ final class Logger {
 	 */
 	private function mask( string $text ): string {
 		$text = $this->strip_controls( $text );
-		$text = $this->relative_paths( $text );
-		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*://)[^\s/?\#@]++@#i', '$1***@', $text );
+		// JSON-escaped slashes ("https:\/\/..", "Zm9v\/Y2Vk..") are read as "/", so
+		// URL, path and base64 rules see the real text. "\\" pairs stay as they are.
+		// Until the path rule has run, an escaped slash carries a marker byte
+		// (\x01; strip_controls() leaves none in the text): a path may start at
+		// an escaped slash whatever is in front of it ("file:\/\/\/home\/..",
+		// "src\/home\/alice\/x"), as on the raw text before the slashes were read.
+		$text = strtr(
+			$text,
+			array(
+				'\\\\' => '\\\\',
+				'\\/'  => "\x01/",
+			)
+		);
+		// URL userinfo before paths: the path rule may take the "//" of an escaped URL.
+		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*:\x01?/\x01?/)[^\s/?\#@]++@#i', '$1***@', $text );
+		$text = $this->mask_escaped_runs( $text );
+		$text = str_replace( "\x01", '', $this->relative_paths( $text ) );
 		$text = $this->redact_sql_literals( $text );
 		$text = $this->redact_query_secrets( $text );
 
-		$text = $this->replace( '/\b(Bearer|Basic)\s+[^\s,;"\']+/i', '$1 ***', $text );
+		$text = $this->redact_auth_schemes( $text, false );
 		$text = $this->redact_key_values( $text );
 
 		$patterns = array(
@@ -384,20 +487,113 @@ final class Logger {
 			'/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i'    => '***@***',
 			'/\b(?:\d{1,3}\.){3}\d{1,3}\b/'               => '***',
 			'/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i' => '***',
-			'/\b[0-9a-f]{32,}\b/i'                        => '***',
 		);
 		foreach ( $patterns as $pattern => $replacement ) {
 			$text = $this->replace( $pattern, $replacement, $text );
 		}
+		$text = $this->redact_auth_schemes( $text, true );
 
-		// Base64-like runs of 32+ that contain a digit. Possessive match, digit
-		// check in the callback: one pass, no look-ahead rescans.
+		// Base64-like runs of 32+ bytes that contain a digit. A run may hold
+		// JSON escapes (\/ and \\) and single inner separators ! " ' | ~ $ ^ ` % \
+		// between base64 characters, so a key split by one of them is masked
+		// as a whole instead of leaving a part shorter than 32 behind.
+		// Possessive match, length and digit check in the callback: one pass.
+		// Runs before the hex rule, so a hex key split by a separator is one run.
+		// A PHP class name is kept for diagnosis: three or more parts split by
+		// "\" (or "\\"), each made of capitalised words (a capital, then
+		// lower case letters) and at most four digits at the end, e.g.
+		// WenPai\ChinaYes\Module\Updater2. A key has no "\", and a random run
+		// almost never has this shape in every part. A part of 32+ bytes with
+		// a digit is still masked.
 		$masked = preg_replace_callback(
-			'#(?<![\w\\\\/.-])[A-Za-z0-9+/_-]{32,}+={0,2}#',
+			'#(?<![\w\\\\/.-])(?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?:[!"\'|~$^`%\\\\](?:[A-Za-z0-9+/_-]|\\\\[\\\\/])++(?!:))*+={0,2}#',
+			static function ( array $m ): string {
+				return self::is_key_run( $m[0] ) ? '***' : $m[0];
+			},
+			$text
+		);
+		$text   = is_string( $masked ) ? $masked : $text;
+		$text   = $this->replace( '/\b[0-9a-f]{32,}\b/i', '***', $text );
+
+		// A plain run right after a masked hex key ("<hex>/<base64>"), as
+		// when the hex rule came first.
+		$masked = preg_replace_callback(
+			'#(?<=\*\*\*)[A-Za-z0-9+/_-]{32,}+={0,2}#',
 			static function ( array $m ): string {
 				return false === strpbrk( $m[0], '0123456789' ) ? $m[0] : '***';
 			},
 			$text
+		);
+
+		return is_string( $masked ) ? $masked : $text;
+	}
+
+	/**
+	 * Bearer / Basic credentials become "Bearer ***".
+	 *
+	 * Scheme words in a row ("X-Cardbearer Bearer <token>", "basic Basic
+	 * <creds>") are kept and the value after the last one is masked. A scheme
+	 * glued to a word in front ("dirBearer <token>") is masked too when the
+	 * value looks like a credential (a digit, one of + / = _ . -, a capital
+	 * after the first character, or 8 hex letters in front, as in a cut-off
+	 * "deadbeefca"), so "flagbearer of" and "NonBasic users" keep their words.
+	 *
+	 * A free-standing scheme runs before the key=value rule ($glued false),
+	 * a glued one after the query, URL and e-mail rules ($glued true): those
+	 * rules then see the text as they did when only a free-standing scheme
+	 * was masked, and a glued scheme masks what they left.
+	 *
+	 * @param string $text  Text.
+	 * @param bool   $glued Pass for glued scheme words.
+	 */
+	private function redact_auth_schemes( string $text, bool $glued ): string {
+		$masked = preg_replace_callback(
+			'/([A-Za-z0-9]?)((?:Bearer|Basic)(?:\s++(?:Bearer|Basic)(?=\s))*+)\s++((?:(?!(?:Bearer|Basic)\s)[^\s,;"\'])*+)/i',
+			static function ( array $m ) use ( $text, $glued ): string {
+				$at = $m[2][1];
+				// Only the last scheme word counts: "xbearer Bearer <value>" is
+				// not glued. The character in front may be the end of the match
+				// before ("Basic Q0ZBearer <value>").
+				$is_glued = $at > 0 && 1 === preg_match( '/[A-Za-z0-9]/', $text[ $at - 1 ] ) && strlen( $m[2][0] ) === strcspn( $m[2][0], " \t\n\r\v\f" );
+				$value    = $m[3][0];
+				// An empty value still matches, so a run of scheme words with
+				// nothing after it is passed over once, not retried from each
+				// word ("Bearer Bearer ... " stays linear).
+				if ( $is_glued !== $glued || '' === $value ) {
+					return $m[0][0];
+				}
+				$keys = '/((?<![a-z0-9])(?:[a-z_]*key|[a-z_]*token|password|passwd|pwd|secret|credential|authorization|auth)(?:[=:]|%3D|%3A))/i';
+				if ( $glued ) {
+					// Keys are masked by now ("xBearer token=***").
+					if ( 1 === preg_match( $keys, $value ) || 1 !== preg_match( '/[0-9+\/=_.-]|.[A-Z]|^[a-f]{8}/', $value ) ) {
+						return $m[0][0];
+					}
+					return $m[1][0] . $m[2][0] . ' ***';
+				}
+				// A query string in the value ("Bearer abc?x=1", "Bearer ?x=1")
+				// is left to the query rule, which drops it whole up to a space
+				// or "#".
+				$q = strpos( $value, '?' );
+				if ( false !== $q && false === strpos( $value, '#', $q ) && 1 === preg_match( '/\G\?[^\s?\#=&]++=/', $text, $qm, 0, $m[3][1] + $q ) ) {
+					return 0 === $q ? $m[0][0] : $m[1][0] . $m[2][0] . ' ***' . substr( $value, $q );
+				}
+				// Keys in the value ("Bearer token= <value>", "Bearer x&token=y")
+				// are kept and only the text between them is masked: the
+				// key=value rule then masks what follows the last key too.
+				$parts = preg_split( $keys, $value, -1, PREG_SPLIT_DELIM_CAPTURE );
+				if ( is_array( $parts ) && count( $parts ) > 1 ) {
+					$out = '';
+					foreach ( $parts as $i => $part ) {
+						$out .= ( 1 === $i % 2 || '' === $part ) ? $part : '***';
+					}
+					return $out === $value ? $m[0][0] : $m[1][0] . $m[2][0] . ' ' . $out;
+				}
+				return $m[1][0] . $m[2][0] . ' ***';
+			},
+			$text,
+			-1,
+			$found,
+			PREG_OFFSET_CAPTURE
 		);
 
 		return is_string( $masked ) ? $masked : $text;
@@ -433,6 +629,109 @@ final class Logger {
 	}
 
 	/**
+	 * Whether a base64-like run is masked: 32+ bytes with a digit, unless it
+	 * is a PHP class name (see mask()) whose parts are all shorter than 32
+	 * bytes or have no digit.
+	 *
+	 * @param string $run Run matched by the base64-like rule.
+	 */
+	private static function is_key_run( string $run ): bool {
+		if ( strlen( $run ) < 32 || false === strpbrk( $run, '0123456789' ) ) {
+			return false;
+		}
+		if ( 1 !== preg_match( '/^\\\\?+(?:(?:[A-Z][a-z]++)++[0-9]{0,4}+\\\\{1,2}+){2,}+(?:[A-Z][a-z]++)++[0-9]{0,4}+$/D', $run ) ) {
+			return true;
+		}
+		// A part of 32+ bytes with a digit is a key on its own (masked
+		// without the class name rule too): no exception then.
+		foreach ( preg_split( '/\\\\++/', $run ) as $part ) {
+			if ( strlen( $part ) >= 32 && false !== strpbrk( $part, '0123456789' ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Length of $run without a URL scheme at its end ("<key>\/x/https"
+	 * before "://"): the scheme stays for the URL rules, as when the "\" of
+	 * the escaped slash ended the run.
+	 *
+	 * @param string $run  Base64-like run.
+	 * @param string $next Text right after the run.
+	 */
+	private static function run_without_scheme( string $run, string $next ): int {
+		if ( 0 === strncmp( $next, '://', 3 ) && 1 === preg_match( '#^(.*/)[a-z][a-z0-9+.-]*+$#isD', $run, $m ) ) {
+			return strlen( $m[1] );
+		}
+		return strlen( $run );
+	}
+
+	/**
+	 * Mask base64-like runs that hold an escaped slash ("\x01/" in mask())
+	 * before the path rule could split them ("Zm9v\/Y2Vk..\/Zm9v"). A run
+	 * that starts with an escaped slash is left to the path rule, as a
+	 * "/..." run is without escapes. Same alphabet, separators and
+	 * decision as the base64-like rule in mask(), so the run is masked as
+	 * it is without escapes. Possessive, one pass: linear.
+	 *
+	 * @param string $text Text with escaped slashes marked.
+	 */
+	private function mask_escaped_runs( string $text ): string {
+		if ( false === strpos( $text, "\x01" ) ) {
+			return $text;
+		}
+		// Paths as the path rule would see them now. A run that one of them
+		// crosses into or out of is left to the path rule, so nothing it
+		// masked on the raw text is shown ("x/Q0Z&<key>\/", "<key>\/a，b/").
+		$paths = array();
+		if ( preg_match_all( self::UNIX_PATH, $text, $pm, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $pm[0] as $p ) {
+				$paths[] = array( $p[1], $p[1] + strlen( $p[0] ) );
+			}
+		}
+		$next   = 0;
+		$masked = preg_replace_callback(
+			'#(?<![\w\\\\/.\x01-])(?!/)(?:[A-Za-z0-9+/_-]|\\\\\\\\|\x01/)++#',
+			static function ( array $m ) use ( $paths, &$next, $text ): string {
+				$run   = $m[0][0];
+				$start = $m[0][1];
+				// A word after the last escaped slash ("<key>\/Basic <token>",
+				// "<key>\/token=x", "<key>\//home/Basic") stays for the scheme
+				// and key=value rules. A run before "@" is left to the e-mail
+				// rule, "=" after a run to the query and key=value rules.
+				$run = substr( $run, 0, self::run_without_scheme( $run, (string) substr( $text, $start + strlen( $run ), 3 ) ) );
+				if ( 1 === preg_match( '#^(.*)\x01/[A-Za-z_/]*+$#s', $run, $w ) ) {
+					$run = $w[1];
+				}
+				if ( '' === $run || "\x01" === $run[0] || false === strpos( $run, "\x01" ) || '@' === substr( $text, $start + strlen( $m[0][0] ), 1 ) ) {
+					return $m[0][0];
+				}
+				$end   = $start + strlen( $run );
+				$count = count( $paths );
+				while ( $next < $count && $paths[ $next ][1] <= $start ) {
+					++$next;
+				}
+				for ( $i = $next; $i < $count && $paths[ $i ][0] < $end; $i++ ) {
+					if ( $paths[ $i ][0] < $start || $paths[ $i ][1] > $end ) {
+						return $m[0][0];
+					}
+				}
+				if ( ! self::is_key_run( str_replace( "\x01", '', $run ) ) ) {
+					return $m[0][0];
+				}
+				return '***' . substr( $m[0][0], strlen( $run ) );
+			},
+			$text,
+			-1,
+			$runs,
+			PREG_OFFSET_CAPTURE
+		);
+
+		return is_string( $masked ) ? $masked : $text;
+	}
+
+	/**
 	 * Plugin paths become relative; other absolute paths keep the file name.
 	 *
 	 * @param string $text Text without control characters.
@@ -447,19 +746,22 @@ final class Logger {
 
 		// Directories after a Windows drive letter or a UNC server / share prefix.
 		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
+		// The \x01 of an escaped slash (see mask()) is a separator, as the "\" was.
 		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
-		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/]++)[\\\\/](?:[^\s\\\\/:*?"\'<>|]++(?: ++[^\s\\\\/:*?"\'<>|]++)*+[\\\\/])*+#', '[path]/', $text );
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/\x01]++)[\\\\/\x01](?:[^\s\\\\/:*?"\'<>|\x01]++(?: ++[^\s\\\\/:*?"\'<>|\x01]++)*+[\\\\/\x01])*+#', '[path]/', $text );
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
 		// The first directory is one word (/home/, /chroot/, /u01/); deeper
-		// directories may contain spaces (/home/alice smith/x/). Prose such as
+		// directories may contain spaces, commas and any non-ASCII text
+		// (/home/alice smith/x/, /home/张 三，李四/site). Prose such as
 		// "see /docs for ... and/or" is not a path: no "/" right after "docs".
+		// Prose with a "/" after a word ("use /api/v1 then foo bar/baz") is
+		// masked like a path: a user directory cannot be told from it, so
+		// more masking, no leak.
+		// A file or phar URL with an empty host (file:///home/..,
+		// phar:///home/..) is followed by a local path.
 		// Possessive throughout and the input is capped: linear.
-		return $this->replace(
-			'#(?<![\w.:/\]])/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#',
-			'[path]/',
-			$text
-		);
+		return $this->replace( self::UNIX_PATH, '[path]/', $text );
 	}
 
 	/**
@@ -472,7 +774,105 @@ final class Logger {
 			return $text;
 		}
 
-		return $this->replace( '/"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'/s', "'***'", $text );
+		return $this->mask_quoted( $text );
+	}
+
+	/**
+	 * Quoted literals ('...' or "...") become '***'.
+	 *
+	 * Two readings of the quotes are masked together (the union of their
+	 * byte ranges):
+	 * - plain: each ' or " closes at the next one of its kind;
+	 * - contractions: a ' between a letter and an English contraction ending
+	 *   (s, t, re, ve, ll, d, m, then a word end: doesn't, it's) is an
+	 *   apostrophe, so 'it's here' is one literal.
+	 * Then a quote left outside every masked range (one that never pairs up)
+	 * masks the rest of the text from the start of its word. More masking,
+	 * no leak: the text after doesn't may be masked as well.
+	 *
+	 * Linear: one match per literal in each reading, then one merge pass.
+	 *
+	 * @param string $text Text.
+	 */
+	private function mask_quoted( string $text ): string {
+		$apostrophe = '(?<=[A-Za-z])\'(?=(?i:s|t|re|ve|ll|d|m)\b)';
+		$plain      = '\'(?:[^\'\\\\]++|\\\\.)*+\'|\'';
+		$contracted = '(?!' . $apostrophe . ')\'(?:[^\'\\\\]++|\\\\.|' . $apostrophe . ')*+\'|(?!' . $apostrophe . ')\'';
+		$first      = $this->quoted_spans( $text, array( $plain ) );
+		$second     = $this->quoted_spans( $text, array( $contracted, $plain ) );
+
+		// Both lists run left to right: merge them by start in one pass.
+		$spans = array();
+		for ( $i = 0, $j = 0, $n1 = count( $first ), $n2 = count( $second ); $i < $n1 || $j < $n2; ) {
+			$spans[] = ( $j >= $n2 || ( $i < $n1 && $first[ $i ][0] <= $second[ $j ][0] ) ) ? $first[ $i++ ] : $second[ $j++ ];
+		}
+
+		$out = '';
+		$end = 0;
+		foreach ( $spans as $span ) {
+			if ( $span[0] < $end ) {
+				// Overlaps the masked range before it: extend that range.
+				$end = max( $end, $span[1] );
+				continue;
+			}
+			$gap = substr( $text, $end, $span[0] - $end );
+			if ( false !== strpbrk( $gap, '\'"' ) ) {
+				break;
+			}
+			$out .= ( 0 === $end ? '' : "'***'" ) . $gap;
+			$end  = $span[1];
+		}
+		if ( 0 !== $end ) {
+			$out .= "'***'";
+		}
+
+		$rest  = substr( $text, $end );
+		$quote = strcspn( $rest, '\'"' );
+		if ( $quote < strlen( $rest ) ) {
+			// A quote that never pairs up: mask from the start of its word
+			// ("hunter2pass'" after 'O'Brien' AND p=') to the end.
+			$word = $quote - strcspn( strrev( substr( $rest, 0, $quote ) ), " \t\n\r\v\f" );
+			return $out . substr( $rest, 0, $word ) . "'***";
+		}
+
+		return $out . $rest;
+	}
+
+	/**
+	 * Byte ranges [start, end) of quoted literals, left to right.
+	 *
+	 * One match per literal. A quote that never closes matches alone and
+	 * changes the state: no later " can close either; for ' the next reading
+	 * in $single is used, and after the last one no later ' can close.
+	 *
+	 * @param string   $text   Text.
+	 * @param string[] $single Patterns for a ' literal, each ending in |' (an unclosed quote).
+	 * @return array<int, array{0: int, 1: int}>
+	 */
+	private function quoted_spans( string $text, array $single ): array {
+		$double = '"(?:[^"\\\\]++|\\\\.)*+"|"';
+		$state  = 0;
+		$offset = 0;
+		$spans  = array();
+		while ( null !== $double || isset( $single[ $state ] ) ) {
+			$pattern = '/' . implode( '|', array_filter( array( $double, $single[ $state ] ?? null ) ) ) . '/s';
+			if ( 1 !== preg_match( $pattern, $text, $m, PREG_OFFSET_CAPTURE, $offset ) ) {
+				break;
+			}
+			$found = $m[0][0];
+			if ( 1 === strlen( $found ) ) {
+				if ( '"' === $found ) {
+					$double = null;
+				} else {
+					++$state;
+				}
+				continue;
+			}
+			$spans[] = array( $m[0][1], $m[0][1] + strlen( $found ) );
+			$offset  = $m[0][1] + strlen( $found );
+		}
+
+		return $spans;
 	}
 
 	/**
