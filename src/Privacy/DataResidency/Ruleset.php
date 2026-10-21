@@ -403,6 +403,7 @@ final class Ruleset {
 	 * @since 4.0.0
 	 *
 	 * @param mixed $value Decoded JSON value.
+	 * @return string Canonical bytes, or '' when $value cannot be encoded.
 	 */
 	public static function canonicalize( $value ): string {
 		$sorted = self::sort_keys( $value );
@@ -410,7 +411,15 @@ final class Ruleset {
 		if ( defined( 'JSON_THROW_ON_ERROR' ) ) {
 			$flags |= JSON_THROW_ON_ERROR;
 		}
-		$encoded = json_encode( $sorted, $flags ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- canonical bytes must not go through wp_json_encode filters.
+		try {
+			$encoded = json_encode( $sorted, $flags ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- canonical bytes must not go through wp_json_encode filters.
+		} catch ( \JsonException $e ) {
+			// Not encodable as canonical JSON (INF/NaN such as a decoded 1e999,
+			// malformed UTF-8, nesting deeper than 512). Such a payload cannot
+			// carry a valid signature; '' makes verification fail closed.
+			unset( $e );
+			return '';
+		}
 		return is_string( $encoded ) ? $encoded : '';
 	}
 
@@ -518,7 +527,9 @@ final class Ruleset {
 		}
 
 		$message = self::canonicalize( $payload );
-		if ( '' === $message || SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk ) ) {
+		if ( '' === $message
+			|| SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk )
+			|| SODIUM_CRYPTO_SIGN_BYTES !== strlen( $sig ) ) {
 			return false;
 		}
 

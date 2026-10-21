@@ -146,9 +146,10 @@ class ElementHideTest extends TestCase {
 
 		$stale               = $this->document();
 		$stale['fetched_at'] = gmdate( 'Y-m-d\\TH:i:s\\Z', time() - ( 73 * HOUR_IN_SECONDS ) );
-		AdminStore::$transients[ ElementHideModule::TRANSIENT_KEY ] = $stale;
+		AdminStore::$transients[ $module->cache_key() ] = $stale;
 
 		$this->assertNull( $module->refresh() );
+		$this->assertArrayNotHasKey( $module->cache_key(), AdminStore::$transients );
 		$this->assertNull( $module->cached_document() );
 		$this->assertSame( array(), $module->active_rules() );
 	}

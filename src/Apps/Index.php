@@ -29,11 +29,27 @@ final class Index {
 	public const PRODUCTION_URL = 'https://apps.wpcy.com/index.json';
 
 	/**
-	 * Transient that holds the last verified apps list.
+	 * Base name of the transient that holds the last verified apps list.
+	 *
+	 * The live name is cache_key(): this base plus CacheKey::VERSION and the
+	 * verifier's trust fingerprint. A transient under the bare base name is a
+	 * cache from an older release; it is never read and is deleted on the
+	 * next successful store and on uninstall.
 	 *
 	 * @since 4.0.0
 	 */
 	public const TRANSIENT_KEY = 'wpcy_apps_index';
+
+	/**
+	 * Transient that remembers the last refresh failure (unreachable / invalid).
+	 *
+	 * Holds only a status string, never apps. Lets index_status() report a
+	 * failure on later requests that are served from the unexpired cache,
+	 * because a failed refresh does not write the cache. Deleted on success.
+	 *
+	 * @since 4.0.0
+	 */
+	public const STATUS_TRANSIENT_KEY = 'wpcy_apps_index_status';
 
 	/**
 	 * Cache TTL in seconds (24h).
@@ -144,12 +160,30 @@ final class Index {
 		if ( ! function_exists( 'get_transient' ) ) {
 			return array();
 		}
-		$stored = get_transient( self::TRANSIENT_KEY );
-		return $this->sanitize_cached( $stored );
+		$stored = get_transient( $this->cache_key() );
+		$apps   = $this->sanitize_cached( $stored );
+		$failed = get_transient( self::STATUS_TRANSIENT_KEY );
+		if ( array() !== $apps && in_array( $failed, array( 'unreachable', 'invalid' ), true ) ) {
+			$this->index_status = (string) $failed;
+		}
+		return $apps;
+	}
+
+	/**
+	 * Transient name of the verified apps cache for this verifier's keys.
+	 *
+	 * @since 4.0.0
+	 */
+	public function cache_key(): string {
+		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
 	}
 
 	/**
 	 * Fetch, verify, replace the cache. Index-level failure keeps the previous cache.
+	 *
+	 * A failure never writes the cache: the previous apps are returned while
+	 * their transient is unexpired and then expire on the original TTL. The
+	 * failure status is kept in STATUS_TRANSIENT_KEY for later requests.
 	 *
 	 * Unreachable source (WP_Error, non-2xx, empty) or invalid JSON also sets a
 	 * NEGATIVE_TTL negative cache; until it expires the source is not contacted.
@@ -161,6 +195,17 @@ final class Index {
 	 * @return list<array<string, mixed>>
 	 */
 	public function refresh(): array {
+		$apps = $this->fetch_index();
+		$this->remember_status();
+		return $apps;
+	}
+
+	/**
+	 * One refresh attempt; sets index_status.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function fetch_index(): array {
 		$previous = $this->cached();
 		if ( '' === $this->source ) {
 			$this->index_status = 'unconfigured';
@@ -176,7 +221,6 @@ final class Index {
 		$raw = $this->read_source();
 		if ( '' === $raw ) {
 			$this->index_status = 'unreachable';
-			$this->store( $previous );
 			$this->remember_failure();
 			return $previous;
 		}
@@ -184,7 +228,6 @@ final class Index {
 		$decoded = json_decode( $raw, true );
 		if ( ! is_array( $decoded ) || $this->is_list( $decoded ) ) {
 			$this->index_status = 'invalid';
-			$this->store( $previous );
 			$this->remember_failure();
 			return $previous;
 		}
@@ -197,16 +240,20 @@ final class Index {
 		// that is re-signed (for example after a key rotation) is picked up
 		// on the next request. Cost: a source serving a badly signed index
 		// is fetched on every refresh().
+		//
+		// The previous cache is returned but not re-stored: a failed
+		// signature must not extend the lifetime of content verified
+		// earlier, so it expires on its original TTL unless a correctly
+		// signed index replaces it.
 		if ( ! $this->verifier->verify( $decoded ) ) {
 			$this->logger->log(
 				'warning',
-				'Apps index signature invalid; keeping previous cache.',
+				'Apps index signature invalid; keeping previous cache until it expires.',
 				array(
 					'code' => 'wpcy_apps_signature_invalid',
 				)
 			);
 			$this->index_status = 'invalid';
-			$this->store( $previous );
 			return $previous;
 		}
 
@@ -368,16 +415,34 @@ final class Index {
 	 * @param list<array<string, mixed>> $apps Apps.
 	 */
 	private function store( array $apps ): void {
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::TRANSIENT_KEY );
+		}
 		if ( function_exists( 'set_transient' ) ) {
 			$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : self::TTL;
 			set_transient(
-				self::TRANSIENT_KEY,
+				$this->cache_key(),
 				array(
 					'apps'         => $apps,
 					'index_status' => $this->index_status,
 				),
 				$ttl
 			);
+		}
+	}
+
+	/**
+	 * Keep a failure status for later requests, or drop it after a success.
+	 */
+	private function remember_status(): void {
+		if ( in_array( $this->index_status, array( 'unreachable', 'invalid' ), true ) ) {
+			if ( function_exists( 'set_transient' ) ) {
+				set_transient( self::STATUS_TRANSIENT_KEY, $this->index_status, self::TTL );
+			}
+			return;
+		}
+		if ( 'ok' === $this->index_status && function_exists( 'delete_transient' ) ) {
+			delete_transient( self::STATUS_TRANSIENT_KEY );
 		}
 	}
 

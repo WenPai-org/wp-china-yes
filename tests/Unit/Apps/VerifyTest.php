@@ -79,7 +79,7 @@ class VerifyTest extends TestCase {
 		}
 		$this->assertSame( array( 'motusnap', 'noteboard', 'paidtool' ), $ids );
 		$this->assertSame( 'ok', $index->index_status() );
-		$stored = AppsStore::$transients[ Index::TRANSIENT_KEY ];
+		$stored = AppsStore::$transients[ $index->cache_key() ];
 		$this->assertSame( $apps, $stored['apps'] );
 		$this->assertSame( 'ok', $stored['index_status'] );
 	}
@@ -88,16 +88,16 @@ class VerifyTest extends TestCase {
 	 * Index-level signature failure discards the document and keeps the previous cache.
 	 */
 	public function test_invalid_index_keeps_previous_cache() {
-		$previous                                      = array(
+		$previous = array(
 			array(
 				'id' => 'cached-app',
 			),
 		);
-		AppsStore::$transients[ Index::TRANSIENT_KEY ] = $previous;
+		$logger   = new Logger( 'debug' );
+		$index    = $this->index_from( 'index.invalid-signature.json', $logger );
 
-		$logger = new Logger( 'debug' );
-		$index  = $this->index_from( 'index.invalid-signature.json', $logger );
-		$apps   = $index->refresh();
+		AppsStore::$transients[ $index->cache_key() ] = $previous;
+		$apps = $index->refresh();
 
 		$this->assertSame( $previous, $apps );
 		$codes = array();
