@@ -19,6 +19,7 @@ use WenPai\ChinaYes\Apps\Index;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Apps\Registry;
 use WenPai\ChinaYes\Rest\AppsController;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -368,7 +369,7 @@ class DataIsolationTest extends TestCase {
 	 */
 	private function controller( $store = null, $entitlements = null ): AppsController {
 		$path     = dirname( __DIR__, 2 ) . '/fixtures/apps/index.valid.json';
-		$index    = new Index( new ManifestVerifier(), $path, null, null, '4.0.0' );
+		$index    = new Index( LegacyFixtureKey::verifier(), $path, null, null, '4.0.0' );
 		$registry = new Registry( $index );
 		$store    = $store instanceof DataStore ? $store : new DataStore();
 		$ents     = $entitlements instanceof EntitlementsClient ? $entitlements : new ActiveEntitlements();

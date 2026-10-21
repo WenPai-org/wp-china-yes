@@ -197,16 +197,20 @@ final class Index {
 		// that is re-signed (for example after a key rotation) is picked up
 		// on the next request. Cost: a source serving a badly signed index
 		// is fetched on every refresh().
+		//
+		// The previous cache is returned but not re-stored: a failed
+		// signature must not extend the lifetime of content verified
+		// earlier, so it expires on its original TTL unless a correctly
+		// signed index replaces it.
 		if ( ! $this->verifier->verify( $decoded ) ) {
 			$this->logger->log(
 				'warning',
-				'Apps index signature invalid; keeping previous cache.',
+				'Apps index signature invalid; keeping previous cache until it expires.',
 				array(
 					'code' => 'wpcy_apps_signature_invalid',
 				)
 			);
 			$this->index_status = 'invalid';
-			$this->store( $previous );
 			return $previous;
 		}
 

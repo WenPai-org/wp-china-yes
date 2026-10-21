@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 
 /**
@@ -143,7 +144,7 @@ class ProtectedHostsTest extends TestCase {
 		file_put_contents( $tmp, json_encode( $decoded ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.WP.AlternativeFunctions.json_encode_json_encode -- temp tampered payload.
 
 		try {
-			$ruleset = new Ruleset( $tmp );
+			$ruleset = new Ruleset( $tmp, LegacyFixtureKey::public_key(), true, LegacyFixtureKey::keys_by_kid() );
 			$this->assertFalse( $ruleset->verified() );
 			$this->assertTrue( $ruleset->is_protected( 'wenpai.net' ) );
 			$this->assertTrue( $ruleset->is_protected( 'api.wenpai.net' ) );

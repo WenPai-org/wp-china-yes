@@ -18,6 +18,7 @@ use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Rest\AnnouncementsController;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -91,7 +92,8 @@ class AnnouncementsTest extends TestCase {
 					return file_get_contents( dirname( __DIR__, 2 ) . '/fixtures/announcements/sample.json' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture.
 				}
 				return '';
-			}
+			},
+			LegacyFixtureKey::verifier()
 		);
 
 		$first = $module->refresh();
@@ -407,6 +409,6 @@ class AnnouncementsTest extends TestCase {
 	 * Module pointed at the sample fixture.
 	 */
 	private function module_from_fixture(): AnnouncementsModule {
-		return new AnnouncementsModule( new Repository(), $this->fixture() );
+		return new AnnouncementsModule( new Repository(), $this->fixture(), null, LegacyFixtureKey::verifier() );
 	}
 }

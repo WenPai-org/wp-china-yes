@@ -14,8 +14,8 @@ use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Apps\Bridge;
 use WenPai\ChinaYes\Apps\CachedEntitlements;
 use WenPai\ChinaYes\Apps\EntitlementsClient;
-use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Apps\Registry;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 
 require_once __DIR__ . '/wp-apps-stubs.php';
 
@@ -475,7 +475,7 @@ class BridgeContractTest extends TestCase {
 		$raw = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture.
 		$doc = json_decode( (string) $raw, true );
 		$this->assertIsArray( $doc );
-		$this->assertTrue( ( new ManifestVerifier() )->verify( $doc ) );
+		$this->assertTrue( LegacyFixtureKey::verifier()->verify( $doc ) );
 		$this->assertSame( 'mock-app', $doc['id'] );
 	}
 

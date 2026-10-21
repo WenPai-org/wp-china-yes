@@ -1,6 +1,6 @@
 # mock-app
 
-TEST ONLY fixture for the apps bridge. Signed with the TEST ONLY key whose public half is `tests/fixtures/keys/wpcy-test-ed25519.pub`; the private half is not in this repository.
+TEST ONLY fixture for the apps bridge. Signed with the TEST ONLY key whose public half is `tests/fixtures/keys/wpcy-test-ed25519.pub`; the private half is not in this repository. Production code does not trust this key; tests inject it via `tests/Unit/Support/LegacyFixtureKey.php`.
 
 | 文件 | 用途 |
 |------|------|

@@ -12,8 +12,8 @@ namespace WenPai\ChinaYes\Tests\Unit\Apps;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Apps\Index;
-use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Apps\Registry;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 
 require_once __DIR__ . '/wp-apps-stubs.php';
 
@@ -177,7 +177,7 @@ class IndexNegativeCacheTest extends TestCase {
 	 * Index pointed at the HTTPS source.
 	 */
 	private function index(): Index {
-		return new Index( new ManifestVerifier(), self::SOURCE, null, null, '4.0.0' );
+		return new Index( LegacyFixtureKey::verifier(), self::SOURCE, null, null, '4.0.0' );
 	}
 
 	/**

@@ -17,30 +17,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Loads the built-in ruleset JSON, verifies Ed25519, and matches hosts.
  *
- * TEST ONLY public key (M0). One test key, two kid values
- * (wpcy-ruleset-2026, wpcy-apps-2026). Production keys are not in this repository.
+ * Fail closed: the document is used only when it verifies against a public
+ * key configured for its kid (or passed to the constructor for a document
+ * without a kid). Otherwise only the built-in L0 hosts apply. No private key
+ * is part of this repository.
  */
 final class Ruleset {
 
 	/**
-	 * TEST ONLY Ed25519 public key (Base64). Not a production key.
+	 * Production Ed25519 public keys (Base64) by kid.
 	 *
-	 * One test key for kid values wpcy-ruleset-2026 and wpcy-apps-2026.
-	 * Production keys are generated and kept outside this repository.
-	 *
-	 * @since 4.0.0
-	 */
-	public const TEST_PUBLIC_KEY = 'qwZGapsafpxFs2zFK4RZ+HHDEuZeP9ImXvi6T+YkMpQ=';
-
-	/**
-	 * TEST ONLY public keys by kid. Same key for both kids until production keys exist.
+	 * Placeholders: no production public key is configured yet, so a signed
+	 * ruleset is rejected (built-in L0 hosts only) until one is set here.
+	 * Only public keys belong in this map.
 	 *
 	 * @since 4.0.0
 	 * @var array<string, string>
 	 */
-	private const KEYS_BY_KID = array(
-		'wpcy-ruleset-2026' => self::TEST_PUBLIC_KEY,
-		'wpcy-apps-2026'    => self::TEST_PUBLIC_KEY,
+	public const PRODUCTION_KEYS_BY_KID = array(
+		'wpcy-ruleset-2026' => '',
+		'wpcy-apps-2026'    => '',
 	);
 
 	/**
@@ -143,18 +139,17 @@ final class Ruleset {
 	 * @since 4.0.0
 	 *
 	 * @param string|null                $path        JSON path. Null uses the shipped baseline.
-	 * @param string|null                $public_key  Base64 public key. Null uses the test key.
+	 * @param string|null                $public_key  Base64 public key for a document without a kid.
+	 *                                                Null: none, so such a document is rejected.
 	 * @param bool                       $verify      When false, load JSON without Ed25519 (test-only).
-	 * @param array<string, string>|null $keys_by_kid Kid to Base64 public key map. Null uses the built-in map.
+	 * @param array<string, string>|null $keys_by_kid Kid to Base64 public key map. Null uses PRODUCTION_KEYS_BY_KID.
 	 */
 	public function __construct( $path = null, $public_key = null, bool $verify = true, ?array $keys_by_kid = null ) {
 		$this->path              = is_string( $path ) && '' !== $path
 			? $path
 			: dirname( __DIR__ ) . '/rulesets/baseline.json';
-		$this->public_key        = is_string( $public_key ) && '' !== $public_key
-			? $public_key
-			: self::TEST_PUBLIC_KEY;
-		$this->keys_by_kid       = is_array( $keys_by_kid ) ? $keys_by_kid : self::KEYS_BY_KID;
+		$this->public_key        = is_string( $public_key ) ? $public_key : '';
+		$this->keys_by_kid       = is_array( $keys_by_kid ) ? $keys_by_kid : self::PRODUCTION_KEYS_BY_KID;
 		$this->require_signature = $verify;
 		$this->load();
 	}
@@ -518,7 +513,9 @@ final class Ruleset {
 		}
 
 		$message = self::canonicalize( $payload );
-		if ( '' === $message || SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk ) ) {
+		if ( '' === $message
+			|| SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk )
+			|| SODIUM_CRYPTO_SIGN_BYTES !== strlen( $sig ) ) {
 			return false;
 		}
 
@@ -531,7 +528,7 @@ final class Ruleset {
 	 * @since 4.0.0
 	 *
 	 * @param array<string, mixed> $payload Document without signature.
-	 * @return string Base64 public key, or empty when kid is unknown.
+	 * @return string Base64 public key, or empty (verification fails) when none is configured.
 	 */
 	private function resolve_public_key( array $payload ): string {
 		if ( ! isset( $payload['kid'] ) || ! is_string( $payload['kid'] ) || '' === $payload['kid'] ) {

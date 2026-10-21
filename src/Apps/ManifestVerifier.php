@@ -17,17 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Canonical JSON (spec §1.3) plus sodium_crypto_sign_verify_detached.
  *
- * TEST ONLY public key until M3. Production private keys are not in this repository.
+ * Fail closed: a payload is accepted only when it verifies against a public
+ * key that was configured for its kid (or passed to the constructor for
+ * payloads without a kid). An empty key never verifies. No private key is
+ * part of this repository.
  */
 final class ManifestVerifier {
-
-	/**
-	 * TEST ONLY Ed25519 public key (Base64). Public half is tests/fixtures/keys/wpcy-test-ed25519.pub;
-	 * the private half is not in this repository.
-	 *
-	 * @since 4.0.0
-	 */
-	public const TEST_PUBLIC_KEY = 'qwZGapsafpxFs2zFK4RZ+HHDEuZeP9ImXvi6T+YkMpQ=';
 
 	/**
 	 * Allowed origin host suffixes. HTTPS required.
@@ -41,14 +36,18 @@ final class ManifestVerifier {
 	);
 
 	/**
-	 * TEST ONLY keys by kid. Same key until production keys exist.
+	 * Production Ed25519 public keys (Base64) by kid.
+	 *
+	 * Placeholders: no production public key is configured yet, so every
+	 * signed payload is rejected until one is set here. Only public keys
+	 * belong in this map.
 	 *
 	 * @since 4.0.0
 	 * @var array<string, string>
 	 */
-	private const KEYS_BY_KID = array(
-		'wpcy-apps-2026'    => self::TEST_PUBLIC_KEY,
-		'wpcy-ruleset-2026' => self::TEST_PUBLIC_KEY,
+	public const PRODUCTION_KEYS_BY_KID = array(
+		'wpcy-apps-2026'    => '',
+		'wpcy-ruleset-2026' => '',
 	);
 
 	/**
@@ -70,14 +69,13 @@ final class ManifestVerifier {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param string|null                $public_key  Base64 public key. Null uses the TEST ONLY key.
-	 * @param array<string, string>|null $keys_by_kid Kid to Base64 public key map. Null uses the built-in map.
+	 * @param string|null                $public_key  Base64 public key for payloads without a kid.
+	 *                                                Null: none, so payloads without a kid are rejected.
+	 * @param array<string, string>|null $keys_by_kid Kid to Base64 public key map. Null uses PRODUCTION_KEYS_BY_KID.
 	 */
 	public function __construct( $public_key = null, ?array $keys_by_kid = null ) {
-		$this->public_key  = is_string( $public_key ) && '' !== $public_key
-			? $public_key
-			: self::TEST_PUBLIC_KEY;
-		$this->keys_by_kid = is_array( $keys_by_kid ) ? $keys_by_kid : self::KEYS_BY_KID;
+		$this->public_key  = is_string( $public_key ) ? $public_key : '';
+		$this->keys_by_kid = is_array( $keys_by_kid ) ? $keys_by_kid : self::PRODUCTION_KEYS_BY_KID;
 	}
 
 	/**
@@ -127,7 +125,9 @@ final class ManifestVerifier {
 		}
 
 		$message = self::canonicalize( $payload );
-		if ( '' === $message || SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk ) ) {
+		if ( '' === $message
+			|| SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $pk )
+			|| SODIUM_CRYPTO_SIGN_BYTES !== strlen( $sig ) ) {
 			return false;
 		}
 
@@ -223,7 +223,7 @@ final class ManifestVerifier {
 	 * Public key for this payload: kid map when `kid` is present, else constructor key.
 	 *
 	 * @param array<string, mixed> $payload Document without signature.
-	 * @return string Base64 public key, or empty when kid is unknown.
+	 * @return string Base64 public key, or empty (verification fails) when none is configured.
 	 */
 	private function resolve_public_key( array $payload ): string {
 		if ( ! isset( $payload['kid'] ) || ! is_string( $payload['kid'] ) || '' === $payload['kid'] ) {
