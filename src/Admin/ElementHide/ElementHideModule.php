@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\ElementHide;
 
+use WenPai\ChinaYes\Apps\CacheKey;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\ConditionalModule;
@@ -41,7 +42,12 @@ final class ElementHideModule implements ConditionalModule {
 	public const PRODUCTION_URL = 'https://wpcy.com/rulesets/element-hide.json';
 
 	/**
-	 * Transient holding the last verified rules document.
+	 * Base name of the transient holding the last verified rules document.
+	 *
+	 * The live name is cache_key(): this base plus CacheKey::VERSION and the
+	 * verifier's trust fingerprint. A transient under the bare base name is a
+	 * cache from an older release; it is never read and is deleted on the
+	 * next successful store and on uninstall.
 	 *
 	 * @since 4.0.0
 	 */
@@ -439,6 +445,15 @@ final class ElementHideModule implements ConditionalModule {
 	}
 
 	/**
+	 * Transient name of the cached document for this verifier's keys.
+	 *
+	 * @since 4.0.0
+	 */
+	public function cache_key(): string {
+		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
+	}
+
+	/**
 	 * Last stored document that is still within 72h, or null.
 	 *
 	 * @since 4.0.0
@@ -449,7 +464,7 @@ final class ElementHideModule implements ConditionalModule {
 		if ( ! function_exists( 'get_transient' ) ) {
 			return null;
 		}
-		$stored = get_transient( self::TRANSIENT_KEY );
+		$stored = get_transient( $this->cache_key() );
 		$clean  = $this->sanitize_document( $stored );
 		if ( ! is_array( $clean ) ) {
 			return null;
@@ -809,8 +824,11 @@ final class ElementHideModule implements ConditionalModule {
 	 */
 	private function store( array $document ): void {
 		$document['fetched_at'] = gmdate( 'Y-m-d\\TH:i:s\\Z' );
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::TRANSIENT_KEY );
+		}
 		if ( function_exists( 'set_transient' ) ) {
-			set_transient( self::TRANSIENT_KEY, $document, self::TTL );
+			set_transient( $this->cache_key(), $document, self::TTL );
 		}
 	}
 
@@ -853,7 +871,7 @@ final class ElementHideModule implements ConditionalModule {
 	 */
 	private function clear_cache(): void {
 		if ( function_exists( 'delete_transient' ) ) {
-			delete_transient( self::TRANSIENT_KEY );
+			delete_transient( $this->cache_key() );
 		}
 	}
 
