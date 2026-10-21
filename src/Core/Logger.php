@@ -315,7 +315,9 @@ final class Logger {
 	 * at whitespace, ASCII separators, or any non-ASCII character, so Chinese
 	 * text, NBSP / U+3000 separated words and compact JSON keep their text.
 	 * The drop never splits a UTF-8 character: the run is ASCII only.
-	 * A cut inside a 1200-byte run of token bytes keeps nothing.
+	 * A cut inside a 1200-byte run of token bytes keeps nothing. An
+	 * unfinished query parameter name or URL userinfo at the end goes too
+	 * (drop_open_query(), drop_open_userinfo()).
 	 *
 	 * @param string $text   Raw text longer than EXCEPTION_MESSAGE_SCAN_MAX.
 	 * @param bool   $use_mb Use mb_strcut().
@@ -345,7 +347,42 @@ final class Logger {
 			$cut = substr( $cut, 0, strlen( $cut ) - strspn( strrev( $cut ), self::CUT_TOKEN_BYTES ) );
 		}
 
-		return rtrim( $this->drop_open_userinfo( $cut, $text ), " \t\n\r\v\f" );
+		return rtrim( $this->drop_open_userinfo( $this->drop_open_query( $cut, $text ), $text ), " \t\n\r\v\f" );
+	}
+
+	/**
+	 * Drop an unfinished query parameter name at the end of the raw cut.
+	 *
+	 * The query rule needs "?name=": "#?name(=value\"..." cut (or dropped
+	 * back by the run-join rounds above) before the "=" would keep
+	 * "?name(" in clear. Decided on the raw text, as for the userinfo: when
+	 * the name run that starts at the last "?" of the cut (bytes the rule
+	 * reads in a name: not whitespace, "?", "#", "=", "&") goes on past the
+	 * cut and ends at "=", everything from that "?" on is dropped. Only a
+	 * cut that ends inside such a name reads on, with one strcspn() over
+	 * the rest of the raw text: linear.
+	 *
+	 * @param string $cut  Raw text after the cut.
+	 * @param string $text Raw text before the cut ($cut is its prefix).
+	 */
+	private function drop_open_query( string $cut, string $text ): string {
+		$query = strrpos( $cut, '?' );
+		if ( false === $query ) {
+			return $cut;
+		}
+
+		$stops = " \t\n\r\v\f?#=&";
+		$kept  = strlen( $cut ) - $query - 1;
+		if ( 0 === $kept || strcspn( $cut, $stops, $query + 1 ) < $kept ) {
+			return $cut;
+		}
+
+		$name = $kept + strcspn( $text, $stops, strlen( $cut ) );
+		if ( '=' !== substr( $text, $query + 1 + $name, 1 ) ) {
+			return $cut;
+		}
+
+		return substr( $cut, 0, $query );
 	}
 
 	/**

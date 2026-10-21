@@ -1373,6 +1373,36 @@ class LoggerExceptionContextTest extends TestCase {
 	}
 
 	/**
+	 * Review-169-b588ed3: a 1200-byte cut that ends inside "?name" before its
+	 * "=" (also after the run-join rounds dropped "=value\"...") drops the
+	 * name from the "?" on: "#?name(=value\"..." kept "#?name(" from
+	 * 61a5b39 on, where e423f4b hid it. Neither the name nor the value is
+	 * shown wherever the cut falls.
+	 */
+	public function test_cut_inside_a_query_name_drops_it() {
+		$this->log_exception( str_repeat( 'ab', 585 ) . '#?Ab1cdef(=Vv7secretval"beef1234 tail' . str_repeat( ' z', 200 ) );
+		$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+		$this->assertStringContainsString( '[RuntimeException: ***#…', $line );
+
+		foreach ( array( '#?Ab1cdef(=', '#?Ab1cdef!=', '?Ab1cdef(=' ) as $query ) {
+			foreach ( array( '!', '"', "'" ) as $join ) {
+				for ( $prefix = 1160; $prefix <= 1215; $prefix++ ) {
+					$message = substr( str_repeat( 'ab', 640 ), 0, $prefix ) . $query . 'Vv7secretval' . $join . 'beef1234 tail' . str_repeat( ' z', 200 );
+					$this->log_exception( $message );
+					$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+					$this->assertStringNotContainsString( 'Ab1cdef', $line, $query . $join . ' after ' . $prefix );
+					$this->assertStringNotContainsString( 'Vv7secretval', $line, $query . $join . ' after ' . $prefix );
+				}
+			}
+		}
+
+		// Only the open name goes: the text in front of it stays.
+		$this->log_exception( str_repeat( '错', 390 ) . '#?Ab1cdef(=Vv7secretval"beef1234 tail' . str_repeat( ' z', 200 ) );
+		$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+		$this->assertStringContainsString( '[RuntimeException: ' . str_repeat( '错', 100 ) . '…', $line );
+	}
+
+	/**
 	 * Log one RuntimeException with $message through Logger::error().
 	 *
 	 * @param string $message Exception message.
