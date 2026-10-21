@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\Announcements;
 
+use WenPai\ChinaYes\Apps\CacheKey;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
@@ -33,7 +34,12 @@ final class AnnouncementsModule implements Module {
 	public const PRODUCTION_URL = 'https://wpcy.com/wp-json/wpcy/v1/announcements';
 
 	/**
-	 * Transient holding the last successful document.
+	 * Base name of the transient holding the last successful document.
+	 *
+	 * The live name is cache_key(): this base plus CacheKey::VERSION and the
+	 * verifier's trust fingerprint. A transient under the bare base name is a
+	 * cache from an older release; it is never read and is deleted on the
+	 * next successful store and on uninstall.
 	 *
 	 * @since 4.0.0
 	 */
@@ -302,6 +308,15 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
+	 * Transient name of the cached document for this verifier's keys.
+	 *
+	 * @since 4.0.0
+	 */
+	public function cache_key(): string {
+		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
+	}
+
+	/**
 	 * Last stored document, or null.
 	 *
 	 * @since 4.0.0
@@ -312,7 +327,7 @@ final class AnnouncementsModule implements Module {
 		if ( ! function_exists( 'get_transient' ) ) {
 			return null;
 		}
-		$stored = get_transient( self::TRANSIENT_KEY );
+		$stored = get_transient( $this->cache_key() );
 		$clean  = $this->sanitize_document( $stored );
 		return is_array( $clean ) ? $clean : null;
 	}
@@ -502,9 +517,12 @@ final class AnnouncementsModule implements Module {
 	 * @param array{generated_at: string, items: list<array<string, string>>} $document Document.
 	 */
 	private function store( array $document ): void {
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::TRANSIENT_KEY );
+		}
 		if ( function_exists( 'set_transient' ) ) {
 			$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : self::TTL;
-			set_transient( self::TRANSIENT_KEY, $document, $ttl );
+			set_transient( $this->cache_key(), $document, $ttl );
 		}
 	}
 

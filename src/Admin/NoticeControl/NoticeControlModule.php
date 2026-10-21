@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\NoticeControl;
 
+use WenPai\ChinaYes\Apps\CacheKey;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\ConditionalModule;
@@ -41,7 +42,12 @@ final class NoticeControlModule implements ConditionalModule {
 	public const PRODUCTION_URL = '';
 
 	/**
-	 * Transient holding the last successful rules document.
+	 * Base name of the transient holding the last successful rules document.
+	 *
+	 * The live name is cache_key(): this base plus CacheKey::VERSION and the
+	 * verifier's trust fingerprint. A transient under the bare base name is a
+	 * cache from an older release; it is never read and is deleted on the
+	 * next successful store and on uninstall.
 	 *
 	 * @since 4.0.0
 	 */
@@ -465,6 +471,15 @@ final class NoticeControlModule implements ConditionalModule {
 	}
 
 	/**
+	 * Transient name of the cached document for this verifier's keys.
+	 *
+	 * @since 4.0.0
+	 */
+	public function cache_key(): string {
+		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
+	}
+
+	/**
 	 * Last stored document, or null.
 	 *
 	 * @since 4.0.0
@@ -475,7 +490,7 @@ final class NoticeControlModule implements ConditionalModule {
 		if ( ! function_exists( 'get_transient' ) ) {
 			return null;
 		}
-		$stored = get_transient( self::TRANSIENT_KEY );
+		$stored = get_transient( $this->cache_key() );
 		$clean  = $this->sanitize_document( $stored );
 		return is_array( $clean ) ? $clean : null;
 	}
@@ -669,9 +684,12 @@ final class NoticeControlModule implements ConditionalModule {
 	 * @param array{rules_version: int, issued_at: string, rules: list<array{id: string, plugin: string, hook: string, class: string}>} $document Document.
 	 */
 	private function store( array $document ): void {
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::TRANSIENT_KEY );
+		}
 		if ( function_exists( 'set_transient' ) ) {
 			$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : self::TTL;
-			set_transient( self::TRANSIENT_KEY, $document, $ttl );
+			set_transient( $this->cache_key(), $document, $ttl );
 		}
 	}
 

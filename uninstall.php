@@ -1,7 +1,9 @@
 <?php
 /**
  * Uninstall: drop provider options and transients, first-run wizard state,
- * dismissed announcements, and the apps index negative cache.
+ * dismissed announcements, the apps index negative cache and status, and the
+ * caches of signature-verified documents (apps index, element hide, notice
+ * control, announcements).
  * Does not touch wp_china_yes.
  *
  * @package WenPai\ChinaYes
@@ -16,6 +18,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
+}
+
+// The plugin is not loaded during uninstall. Its autoloader is only needed to
+// compute the versioned cache names in wpcy_uninstall_signed_caches().
+$wpcy_autoload = __DIR__ . '/vendor/autoload.php';
+if ( is_readable( $wpcy_autoload ) ) {
+	require_once $wpcy_autoload;
 }
 
 /**
@@ -77,10 +86,46 @@ function wpcy_uninstall_apps_index_negative(): void {
 	delete_transient( 'wpcy_apps_index_negative' );
 }
 
+/**
+ * Delete caches of signature-verified documents for the current blog.
+ *
+ * Base names are the TRANSIENT_KEY constants of Index, ElementHideModule,
+ * NoticeControlModule and AnnouncementsModule. A transient under a bare base
+ * name is a cache from an older release. The live names
+ * (`<base>_<CacheKey::VERSION>_<trust fingerprint>`) are computed with the
+ * plugin's classes when the autoloader is present; caches under any other
+ * fingerprint are never read and expire on their TTL.
+ *
+ * @since 4.0.0
+ *
+ * @return void
+ */
+function wpcy_uninstall_signed_caches(): void {
+	$bases = array(
+		'wpcy_apps_index',
+		'wpcy_element_hide_rules',
+		'wpcy_notice_rules',
+		'wpcy_announcements',
+	);
+	foreach ( $bases as $base ) {
+		delete_transient( $base );
+	}
+	delete_transient( 'wpcy_apps_index_status' );
+
+	if ( ! class_exists( 'WenPai\\ChinaYes\\Apps\\CacheKey' ) || ! class_exists( 'WenPai\\ChinaYes\\Apps\\ManifestVerifier' ) ) {
+		return;
+	}
+	$verifier = new \WenPai\ChinaYes\Apps\ManifestVerifier();
+	foreach ( $bases as $base ) {
+		delete_transient( \WenPai\ChinaYes\Apps\CacheKey::for( $base, $verifier ) );
+	}
+}
+
 wpcy_uninstall_providers();
 wpcy_uninstall_onboarding();
 wpcy_uninstall_announcements_dismissed();
 wpcy_uninstall_apps_index_negative();
+wpcy_uninstall_signed_caches();
 
 if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'get_sites' ) ) {
 	$wpcy_sites = get_sites(
@@ -95,6 +140,7 @@ if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'ge
 		wpcy_uninstall_onboarding();
 		wpcy_uninstall_announcements_dismissed();
 		wpcy_uninstall_apps_index_negative();
+		wpcy_uninstall_signed_caches();
 		restore_current_blog();
 	}
 }
