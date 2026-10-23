@@ -255,9 +255,9 @@ test.describe( 'overview', () => {
 		await expect( page.getByText( '更新与安装包' ).first() ).toBeVisible();
 		await expect( page.getByText( '已接通' ).first() ).toBeVisible();
 		await expect( page.getByText( '运行诊断' ) ).toBeVisible();
-		// M-MOTU-1: MotuCloud stays 未启用 until a mirrored base is configured,
-		// and Windfonts needs binding, so a default domestic site is 3/5.
-		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/5' );
+		// OV-10 n/4: MotuCloud is outside the core four; Windfonts needs binding,
+		// so a default domestic site is 3/4.
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/4' );
 		await expect( page.locator( '.hero-collapse' ) ).toHaveCount( 0 );
 	} );
 
@@ -273,7 +273,9 @@ test.describe( 'overview', () => {
 		);
 	} );
 
-	test( '国内正常：MotuCloud 已配置时 4/5', async ( { page } ) => {
+	test( '国内正常：MotuCloud 已配置仍不进 OV-10 分母（保持 3/4）', async ( {
+		page,
+	} ) => {
 		await mockOverview( page, {
 			settings: {
 				profile: 'domestic',
@@ -301,7 +303,9 @@ test.describe( 'overview', () => {
 			},
 		} );
 		await openAdminPage( page, 'wpcy' );
-		await expect( page.locator( '.hero-a-n' ) ).toContainText( '4/5' );
+		// D-02: MotuCloud is not one of the OV-10 core four.
+		await expect( page.locator( '.hero-a-n' ) ).toContainText( '3/4' );
+		await expect( page.getByText( '图标与图片' ) ).toHaveCount( 0 );
 	} );
 
 	test( '跨境：下一步绑定本站，主按钮唯一', async ( { page } ) => {

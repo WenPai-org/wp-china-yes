@@ -172,19 +172,19 @@ test.describe( 'onboarding WZ-04 same scene (O1 B1–B3)', () => {
 			page.getByRole( 'heading', { name: '一切就绪' } )
 		).toBeVisible();
 
-		// B2: 已调整 — 0 项 — 按「{场景}」预设 + 当前已是「{场景}」，没有改动。
+		// B2 / D-06: 已调整 — 0 项 — 当前已是「{场景}」，没有改动。（同场景单行说明）
 		const count = page.locator( '[data-testid="wpcy-wz-count"]' );
 		await expect( count ).toHaveText( '0 项' );
-		const card = page.locator( 'article', { has: count } );
-		const label = ( await card.locator( '.d' ).first().innerText() ).match(
-			/按「(.+)」预设/
-		);
+		const same = page.locator( '[data-testid="wpcy-wz-same"]' );
+		const sameText = await same.innerText();
+		const label = sameText.match( /当前已是「(.+)」，没有改动。/ );
 		expect( label ).not.toBeNull();
-		await expect(
-			page.locator( '[data-testid="wpcy-wz-same"]' )
-		).toHaveText( `当前已是「${ label[ 1 ] }」，没有改动。` );
-		// No 「更新」 summary card anywhere on step 5.
-		const step5 = page.locator( '.wpcy-grid-3' );
+		await expect( same ).toHaveText(
+			`当前已是「${ label[ 1 ] }」，没有改动。`
+		);
+		// No 「更新」 summary card; two-card grid fills content (no empty third col).
+		const step5 = page.locator( '.wizard-done .wpcy-grid-2' );
+		await expect( step5 ).toHaveCount( 1 );
 		await expect( step5 ).not.toContainText( '更新' );
 		await expect( step5.locator( 'article' ) ).toHaveCount( 2 );
 
