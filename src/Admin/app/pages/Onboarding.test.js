@@ -422,7 +422,7 @@ describe( 'WZ-04', () => {
 			same: container.querySelector( '[data-testid="wpcy-wz-same"]' ),
 			text: container.textContent,
 			cards: Array.from(
-				container.querySelectorAll( '.wpcy-grid-3 > article .k' )
+				container.querySelectorAll( '.wizard-done article.stat-a .k' )
 			).map( ( el ) => el.textContent.trim() ),
 		};
 		await unmount();
@@ -454,7 +454,8 @@ describe( 'WZ-04', () => {
 		const out = await summaryFor( 'domestic' );
 		expect( out.count ).toBe( '0 项' );
 		expect( out.same.textContent ).toBe( '当前已是「国内站」，没有改动。' );
-		expect( out.text ).toContain( '按「国内站」预设' );
+		// D-06: same-scene keeps a single description line (no 按预设).
+		expect( out.text ).not.toContain( '按「国内站」预设' );
 		// Nothing changed: no 「更新」 summary card on step 5.
 		expect( out.cards ).toEqual( [ '已调整', '服务' ] );
 		// One PUT /settings {profile} from step 1, nothing extra.

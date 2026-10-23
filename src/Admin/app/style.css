@@ -1815,6 +1815,55 @@ a.scope:hover {
 	margin-top: 28px;
 }
 
+/* D-06: WZ-04 complete step — tighter group, restrained digits, no empty third column */
+.wizard-done {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.wizard-done .wpcy-grid-2,
+.wizard-done .wpcy-grid-3 {
+	gap: 16px;
+	align-items: stretch;
+}
+
+.wizard-done .stat-a {
+	padding: 18px 20px;
+}
+
+.wizard-done .stat-a .v {
+	font-size: 22px;
+	line-height: 28px;
+	margin-top: 8px;
+	font-weight: 600;
+}
+
+.wizard-done .stat-a .d {
+	margin-top: 4px;
+}
+
+.wizard-done .stat-a .d-same {
+	white-space: nowrap;
+}
+
+.wizard-done .actions {
+	margin-top: 0;
+}
+
+.wizard:has(.wizard-done) {
+	padding-top: 36px;
+	padding-bottom: 48px;
+}
+
+.wizard:has(.wizard-done) .lede {
+	margin-bottom: 16px;
+}
+
+.wizard:has(.wizard-done) h1 {
+	margin-bottom: 4px;
+}
+
 /* --- 响应式 --- */
 @media (max-width: 1100px) {
 
