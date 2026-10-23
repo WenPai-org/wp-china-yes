@@ -6,7 +6,8 @@
 import apiFetch from '@wordpress/api-fetch';
 import { dispatch } from '@wordpress/data';
 import { STORE_NAME } from '../store';
-import { sceneDefaults } from '../ui/profiles';
+import { applyScene } from '../test-utils/scene';
+import BASE38 from '../test-utils/settings-3.8-defaults.json';
 import Onboarding, { BINDING_POLL_MS } from './Onboarding';
 import {
 	act,
@@ -401,42 +402,64 @@ describe( 'WZ-03 step 4 states', () => {
 } );
 
 describe( 'WZ-04', () => {
-	it( 'count follows what each scene preset changed', async () => {
-		routes[ 'PUT /wpcy/v1/settings' ] = ( req ) => {
-			const def = sceneDefaults( req.data.profile );
-			return Promise.resolve( {
-				profile: req.data.profile,
-				connectivity: {
-					wordpress_org: def.wordpress_org,
-					public_assets: def.public_assets,
-					avatar: def.avatar,
-					heartbeat: def.heartbeat,
-					dashboard_feeds: def.dashboard_feeds,
-					icon_photos: def.icon_photos,
-				},
-			} );
+	async function mountFrom( doc ) {
+		await inAct( () =>
+			dispatch( STORE_NAME ).hydrate( {
+				settings: doc,
+				siteContext: { active_plugins: [] },
+			} )
+		);
+		return render( <Onboarding /> );
+	}
+
+	async function summaryFor( scene ) {
+		const { container, unmount } = await mountFrom( BASE38 );
+		await goToBindStep( container, scene );
+		await click( buttonsByText( container, '暂不，稍后再说' )[ 0 ] );
+		const out = {
+			count: container.querySelector( '[data-testid="wpcy-wz-count"]' )
+				.textContent,
+			same: container.querySelector( '[data-testid="wpcy-wz-same"]' ),
+			text: container.textContent,
+			cards: Array.from(
+				container.querySelectorAll( '.wpcy-grid-3 > article .k' )
+			).map( ( el ) => el.textContent.trim() ),
 		};
+		await unmount();
+		return out;
+	}
+
+	beforeEach( () => {
+		routes[ 'PUT /wpcy/v1/settings' ] = ( req ) =>
+			Promise.resolve( applyScene( BASE38, req.data.profile ) );
+	} );
+
+	it( 'count is the before/after diff of the settings document', async () => {
 		const counts = {};
-		for ( const scene of [
-			'domestic',
-			'crossborder',
-			'inbound',
-			'mixed',
-		] ) {
-			const { container, unmount } = await mount();
-			await goToBindStep( container, scene );
-			await click( buttonsByText( container, '暂不，稍后再说' )[ 0 ] );
-			counts[ scene ] = container.querySelector(
-				'[data-testid="wpcy-wz-count"]'
-			).textContent;
-			expect( container.textContent ).toContain( '稍后可在服务页绑定' );
-			await unmount();
+		for ( const scene of [ 'crossborder', 'inbound', 'mixed' ] ) {
+			const out = await summaryFor( scene );
+			counts[ scene ] = out.count;
+			expect( out.same ).toBeNull();
+			expect( out.text ).toContain( '稍后可在服务页绑定' );
+			expect( out.cards ).toEqual( [ '更新', '已调整', '服务' ] );
 		}
 		expect( counts ).toEqual( {
-			domestic: '8 项',
 			crossborder: '9 项',
 			inbound: '7 项',
-			mixed: '10 项',
+			mixed: '8 项',
 		} );
+	} );
+
+	it( 'same scene: 0 项 and 当前已是「…」，没有改动。', async () => {
+		const out = await summaryFor( 'domestic' );
+		expect( out.count ).toBe( '0 项' );
+		expect( out.same.textContent ).toBe( '当前已是「国内站」，没有改动。' );
+		expect( out.text ).toContain( '按「国内站」预设' );
+		// Nothing changed: no 「更新」 summary card on step 5.
+		expect( out.cards ).toEqual( [ '已调整', '服务' ] );
+		// One PUT /settings {profile} from step 1, nothing extra.
+		expect( calls.filter( ( req ) => req.method === 'PUT' ) ).toHaveLength(
+			1
+		);
 	} );
 } );
