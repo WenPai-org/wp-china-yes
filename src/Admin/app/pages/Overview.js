@@ -285,7 +285,6 @@ function OverviewBody( {
 		degraded,
 		inbound,
 		cross,
-		freshInstall,
 		checkedAt: routeRows[ 0 ]?.checked_at || svcRows[ 0 ]?.checked_at,
 	} );
 
@@ -660,7 +659,6 @@ function heroAnchor( {
 	degraded,
 	inbound,
 	cross,
-	freshInstall,
 	checkedAt,
 } ) {
 	const dots = ( svcRows || [] ).map( ( row ) => ( {
@@ -694,8 +692,9 @@ function heroAnchor( {
 			__( '已回退', 'wp-china-yes' ) +
 			' · ' +
 			__( '功能不中断', 'wp-china-yes' );
-	} else if ( on === 0 || freshInstall ) {
-		sub = __( '已经开始为你接通，数字稍后就有。', 'wp-china-yes' );
+	} else if ( on === 0 ) {
+		/* Distinct from hero title (freshInstall) to avoid duplicate copy. */
+		sub = __( '数字稍后就有。', 'wp-china-yes' );
 	} else if ( inbound ) {
 		sub = sprintf(
 			/* translators: %d: count */
