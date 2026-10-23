@@ -204,6 +204,14 @@ final class Logger {
 	private const EXCEPTION_MESSAGE_SCAN_MAX = 4 * self::EXCEPTION_MESSAGE_MAX;
 
 	/**
+	 * Cap for drop_open_query() / drop_open_userinfo() reading past the raw cut.
+	 *
+	 * Past this many bytes without a terminator, treat the open run as a match
+	 * and drop it (more masking, no leak). Linear and bounded.
+	 */
+	private const DROP_OPEN_SCAN_MAX = 4096;
+
+	/**
 	 * Bytes that may belong to one token at the raw cut: printable ASCII
 	 * except whitespace and the separators , ; " ' { } [ ] ( ) < > ! ?
 	 *
@@ -230,7 +238,7 @@ final class Logger {
 	 * Unix directories, see relative_paths(). An escaped slash still marked
 	 * with \x01 (see mask()) may start a path whatever is in front of it.
 	 */
-	private const UNIX_PATH = '#(?:(?<![\w.:/\]])|(?<=file://|phar://|FILE://|PHAR://))/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#';
+	private const UNIX_PATH = '#(?:(?<![\w.:/\]])|(?<=(?i:file://|phar://)))/(?:[^\s/:\'"()<>\[\]]++/)++(?:[^\s/:\'"()<>\[\]]++(?: ++[^\s/:\'"()<>\[\]]++)*+/)*+#';
 
 	/**
 	 * Error_log suffix for context['exception']: " [Class: message @ file:line]".
@@ -357,10 +365,10 @@ final class Logger {
 	 * back by the run-join rounds above) before the "=" would keep
 	 * "?name(" in clear. Decided on the raw text, as for the userinfo: when
 	 * the name run that starts at the last "?" of the cut (bytes the rule
-	 * reads in a name: not whitespace, "?", "#", "=", "&") goes on past the
-	 * cut and ends at "=", everything from that "?" on is dropped. Only a
-	 * cut that ends inside such a name reads on, with one strcspn() over
-	 * the rest of the raw text: linear.
+	 * reads in a name: not whitespace, "?", "#", "=", "&", ":", "@") goes on
+	 * past the cut and ends at "=", ":", or "@", everything from that "?" on
+	 * is dropped. Reading past the cut is capped at DROP_OPEN_SCAN_MAX; past
+	 * the cap with no terminator the open name is dropped. Linear.
 	 *
 	 * @param string $cut  Raw text after the cut.
 	 * @param string $text Raw text before the cut ($cut is its prefix).
@@ -371,14 +379,26 @@ final class Logger {
 			return $cut;
 		}
 
-		$stops = " \t\n\r\v\f?#=&";
+		// Name stops match the query rule; "=" / ":" / "@" end the name
+		// ("#?name(=...", "#?name(:...", "#?name(@...").
+		$stops = " \t\n\r\v\f?#=&:@";
 		$kept  = strlen( $cut ) - $query - 1;
 		if ( 0 === $kept || strcspn( $cut, $stops, $query + 1 ) < $kept ) {
 			return $cut;
 		}
 
-		$name = $kept + strcspn( $text, $stops, strlen( $cut ) );
-		if ( '=' !== substr( $text, $query + 1 + $name, 1 ) ) {
+		$rest_off = strlen( $cut );
+		$limit    = min( strlen( $text ), $rest_off + self::DROP_OPEN_SCAN_MAX );
+		$window   = substr( $text, $rest_off, $limit - $rest_off );
+		$extra    = strcspn( $window, $stops );
+		$name     = $kept + $extra;
+		$term_at  = $query + 1 + $name;
+		if ( $extra >= strlen( $window ) ) {
+			// No terminator in the window: drop only when the cap stopped us.
+			return $limit < strlen( $text ) ? substr( $cut, 0, $query ) : $cut;
+		}
+		$term = $text[ $term_at ];
+		if ( false === strpos( '=:@', $term ) ) {
 			return $cut;
 		}
 
@@ -428,10 +448,20 @@ final class Logger {
 			return $cut;
 		}
 
-		$kept = strlen( $cut ) - $scheme - 3;
-		$rest = substr( $text, $scheme + 3 );
-		$stop = strcspn( $rest, " \t\n\r\v\f/?#@" );
-		if ( $stop >= strlen( $rest ) || '@' !== $rest[ $stop ] || $stop < $kept ) {
+		$kept     = strlen( $cut ) - $scheme - 3;
+		$rest_off = $scheme + 3;
+		$limit    = min( strlen( $text ), $rest_off + self::DROP_OPEN_SCAN_MAX );
+		$rest     = substr( $text, $rest_off, $limit - $rest_off );
+		$stop     = strcspn( $rest, " \t\n\r\v\f/?#@" );
+		if ( $stop >= strlen( $rest ) ) {
+			// No terminator in the scanned window.
+			if ( $limit < strlen( $text ) && $stop >= $kept ) {
+				// Hit the cap while still inside the run: drop.
+				return substr( $cut, 0, $scheme );
+			}
+			return $cut;
+		}
+		if ( '@' !== $rest[ $stop ] || $stop < $kept ) {
 			return $cut;
 		}
 
@@ -458,6 +488,9 @@ final class Logger {
 	 */
 	private function mask( string $text ): string {
 		$text = $this->strip_controls( $text );
+		// SQL literals before \/ marking: a JSON \/ inside "..." must not look
+		// like a closed string (\x01/ is an ordinary pair of bytes to the quote reader).
+		$text = $this->redact_sql_literals( $text );
 		// JSON-escaped slashes ("https:\/\/..", "Zm9v\/Y2Vk..") are read as "/", so
 		// URL, path and base64 rules see the real text. "\\" pairs stay as they are.
 		// Until the path rule has run, an escaped slash carries a marker byte
@@ -473,9 +506,10 @@ final class Logger {
 		);
 		// URL userinfo before paths: the path rule may take the "//" of an escaped URL.
 		$text = $this->replace( '#\b([a-z][a-z0-9+.-]*:\x01?/\x01?/)[^\s/?\#@]++@#i', '$1***@', $text );
+		// file://localhost/... and phar://localhost/... are local paths (empty host).
+		$text = $this->replace( '#\b((?i:file|phar):)(\x01?/\x01?/)localhost(?=/)#', '$1$2', $text );
 		$text = $this->mask_escaped_runs( $text );
 		$text = str_replace( "\x01", '', $this->relative_paths( $text ) );
-		$text = $this->redact_sql_literals( $text );
 		$text = $this->redact_query_secrets( $text );
 
 		$text = $this->redact_auth_schemes( $text, false );
@@ -483,7 +517,7 @@ final class Logger {
 
 		$patterns = array(
 			'#(\bhttps?://[^\s?\#]+)\?[^\s\#]*#i'         => '$1',
-			'#\?[^\s?\#=&]+=[^\s\#]*#'                    => '',
+			'#\?[^\s?\#=&:@]*+[=:@][^\s\#]*#'             => '',
 			'/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i'    => '***@***',
 			'/\b(?:\d{1,3}\.){3}\d{1,3}\b/'               => '***',
 			'/\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i' => '***',
@@ -747,8 +781,10 @@ final class Logger {
 		// Directories after a Windows drive letter or a UNC server / share prefix.
 		// A directory may contain spaces and parentheses (C:\Program Files (x86)\).
 		// The \x01 of an escaped slash (see mask()) is a separator, as the "\" was.
+		// JSON-escaped paths double each "\", so separators may be one or two "\" and a
+		// UNC prefix may be two or four; both are accepted (more masking, no leak).
 		// Possessive throughout and the input is capped at EXCEPTION_MESSAGE_SCAN_MAX: linear.
-		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|\\\\\\\\[^\s\\\\/\x01]++)[\\\\/\x01](?:[^\s\\\\/:*?"\'<>|\x01]++(?: ++[^\s\\\\/:*?"\'<>|\x01]++)*+[\\\\/\x01])*+#', '[path]/', $text );
+		$text = $this->replace( '#(?<!\w)(?:[A-Za-z]:|(?:\\\\){2,4}[^\s\\\\/\x01]++)[\\\\/\x01]++(?:[^\s\\\\/:*?"\'<>|\x01]++(?: ++[^\s\\\\/:*?"\'<>|\x01]++)*+[\\\\/\x01]++)*+#', '[path]/', $text );
 
 		// Unix directories. A URL path is preceded by its host, so it is left alone.
 		// The first directory is one word (/home/, /chroot/, /u01/); deeper
@@ -841,20 +877,25 @@ final class Logger {
 	/**
 	 * Byte ranges [start, end) of quoted literals, left to right.
 	 *
-	 * One match per literal. A quote that never closes matches alone and
-	 * changes the state: no later " can close either; for ' the next reading
-	 * in $single is used, and after the last one no later ' can close.
+	 * One match per literal. An unclosed " masks from the first " (word start)
+	 * to the end. An unclosed ' advances the reading in $single; after the last
+	 * reading no later ' can close.
 	 *
 	 * @param string   $text   Text.
 	 * @param string[] $single Patterns for a ' literal, each ending in |' (an unclosed quote).
 	 * @return array<int, array{0: int, 1: int}>
 	 */
 	private function quoted_spans( string $text, array $single ): array {
-		$double = '"(?:[^"\\\\]++|\\\\.)*+"|"';
+		// Only \\ and \" are escapes inside "..."; \/ is not (SQL, not JSON), so a
+		// \/ inside a "..." keeps the quote open and an unclosed " can still hide
+		// secrets that a false close would leave in clear (review-169 samples).
+		$double = '"(?:[^"\\\\]++|\\\\["\\\\])*+"|"';
 		$state  = 0;
 		$offset = 0;
 		$spans  = array();
-		while ( null !== $double || isset( $single[ $state ] ) ) {
+		// Prefer while (true): unclosed " breaks without nulling $double, which
+		// would make `null !== $double` always-true for phpstan.
+		while ( true ) {
 			$pattern = '/' . implode( '|', array_filter( array( $double, $single[ $state ] ?? null ) ) ) . '/s';
 			if ( 1 !== preg_match( $pattern, $text, $m, PREG_OFFSET_CAPTURE, $offset ) ) {
 				break;
@@ -862,10 +903,18 @@ final class Logger {
 			$found = $m[0][0];
 			if ( 1 === strlen( $found ) ) {
 				if ( '"' === $found ) {
-					$double = null;
-				} else {
-					++$state;
+					// Unclosed ": mask from the first " of the text (word start) to the end.
+					$first = strpos( $text, '"' );
+					if ( false === $first ) {
+						$first = $m[0][1];
+					}
+					$word = $first - strcspn( strrev( substr( $text, 0, $first ) ), " \t\n\r\v\f" );
+					// Drop earlier closed spans: an unclosed " wins over them
+					// (more masking, no leak of text between the first " and here).
+					$spans = array( array( $word, strlen( $text ) ) );
+					break;
 				}
+				++$state;
 				continue;
 			}
 			$spans[] = array( $m[0][1], $m[0][1] + strlen( $found ) );
