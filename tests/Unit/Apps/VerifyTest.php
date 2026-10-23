@@ -16,6 +16,7 @@ use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Apps\Registry;
 use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 
 require_once __DIR__ . '/wp-apps-stubs.php';
 
@@ -35,11 +36,11 @@ class VerifyTest extends TestCase {
 	}
 
 	/**
-	 * Valid motusnap fixture verifies with the TEST ONLY public key.
+	 * Valid motusnap fixture verifies in test mode (fixture key injected).
 	 */
 	public function test_valid_manifest_verifies() {
 		$doc = $this->load_json( 'motusnap.valid.json' );
-		$this->assertTrue( ( new ManifestVerifier() )->verify( $doc ) );
+		$this->assertTrue( LegacyFixtureKey::verifier()->verify( $doc ) );
 	}
 
 	/**
@@ -47,7 +48,7 @@ class VerifyTest extends TestCase {
 	 */
 	public function test_invalid_manifest_signature_fails() {
 		$doc = $this->load_json( 'motusnap.invalid-signature.json' );
-		$this->assertFalse( ( new ManifestVerifier() )->verify( $doc ) );
+		$this->assertFalse( LegacyFixtureKey::verifier()->verify( $doc ) );
 	}
 
 	/**
@@ -185,7 +186,7 @@ class VerifyTest extends TestCase {
 		$this->assertFileExists( $path );
 		$line = (string) file( $path )[0];
 		$this->assertStringContainsString( 'TEST ONLY', $line );
-		$this->assertSame( ManifestVerifier::TEST_PUBLIC_KEY, Ruleset::TEST_PUBLIC_KEY );
+		$this->assertSame( 44, strlen( LegacyFixtureKey::public_key() ) );
 	}
 
 	/**
@@ -211,6 +212,6 @@ class VerifyTest extends TestCase {
 	 */
 	private function index_from( string $name, $logger = null ): Index {
 		$path = dirname( __DIR__, 2 ) . '/fixtures/apps/' . $name;
-		return new Index( new ManifestVerifier(), $path, null, $logger, '4.0.0' );
+		return new Index( LegacyFixtureKey::verifier(), $path, null, $logger, '4.0.0' );
 	}
 }

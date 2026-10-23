@@ -92,6 +92,6 @@ class SignRulesetScriptTest extends TestCase {
 		$this->assertSame( 99, $ruleset->version() );
 
 		$shipped = new Ruleset( $this->tmp );
-		$this->assertFalse( $shipped->verified(), 'Throwaway test key must not match the shipped TEST ONLY public key.' );
+		$this->assertFalse( $shipped->verified(), 'Default (production) key map must not trust the throwaway test key.' );
 	}
 }

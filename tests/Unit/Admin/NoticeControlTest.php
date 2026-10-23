@@ -15,6 +15,7 @@ use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
+use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 
 require_once __DIR__ . '/wp-admin-stubs.php';
 
@@ -388,6 +389,6 @@ class NoticeControlTest extends TestCase {
 	 * Module pointed at the sample fixture.
 	 */
 	private function module_from_fixture(): NoticeControlModule {
-		return new NoticeControlModule( new Repository(), $this->fixture() );
+		return new NoticeControlModule( new Repository(), $this->fixture(), null, null, LegacyFixtureKey::verifier() );
 	}
 }
