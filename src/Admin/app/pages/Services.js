@@ -18,6 +18,7 @@ import {
 	Pill,
 	Scope,
 	Sec,
+	Spin,
 } from '@wenpai/wpcy-admin-ui';
 import Prov from '../ui/Prov';
 import { Tile } from '../ui/Card';
@@ -469,7 +470,7 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 					extra={ <Pill>{ __( '绑定中', 'wp-china-yes' ) }</Pill> }
 				/>
 				<p className="big">
-					<span className="spin" />
+					<Spin />
 					{ __( '等待验证', 'wp-china-yes' ) }
 				</p>
 				<p className="meta">

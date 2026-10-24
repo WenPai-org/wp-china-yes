@@ -3,8 +3,6 @@
  * subsite read-only and network-admin views (CO-06).
  */
 
-/* eslint-disable jsx-a11y/label-has-associated-control -- prototype choice/opt labels wrap radio + nested copy */
-
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useRef, useState } from '@wordpress/element';
@@ -19,11 +17,20 @@ import {
 } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import {
+	Choice,
+	ChoiceCards,
+	Field,
+	Hint,
 	LoadError,
 	Notice,
+	Opt,
+	Opts,
 	Pill,
 	Saved as UiSaved,
 	Scope,
+	Seg,
+	SegItem,
+	SimpleRow,
 	Toggle,
 } from '@wenpai/wpcy-admin-ui';
 import Btn from '../ui/Btn';
@@ -266,24 +273,20 @@ export default function Connect() {
 		<div className="mode">
 			<Icon name="sliders" size={ 16 } />
 			{ __( '显示', 'wp-china-yes' ) }{ ' ' }
-			<span className="seg">
-				<button
-					type="button"
-					className={ view === 'simple' ? 'on' : '' }
-					aria-pressed={ view === 'simple' }
+			<Seg>
+				<SegItem
+					active={ view === 'simple' }
 					onClick={ () => setViewPersist( 'simple' ) }
 				>
 					{ __( '简单', 'wp-china-yes' ) }
-				</button>
-				<button
-					type="button"
-					className={ view === 'advanced' ? 'on' : '' }
-					aria-pressed={ view === 'advanced' }
+				</SegItem>
+				<SegItem
+					active={ view === 'advanced' }
 					onClick={ () => setViewPersist( 'advanced' ) }
 				>
 					{ __( '高级', 'wp-china-yes' ) }
-				</button>
-			</span>
+				</SegItem>
+			</Seg>
 		</div>
 	);
 
@@ -610,16 +613,20 @@ function SceneCard( {
 				card="scene"
 				onRetry={ onRetry }
 			/>
-			<div className="choice-cards cols-2">
+			<ChoiceCards cols={ 2 }>
 				{ cards.map( ( card ) => (
-					<label
+					<Choice
 						key={ card.id }
 						htmlFor={ 'wpcy-profile-' + card.id }
-						className={
-							'choice' +
-							( profile === card.id ? ' is-on' : '' ) +
-							( disabled ? ' is-disabled' : '' )
+						selected={ profile === card.id }
+						title={ card.title }
+						description={ card.desc }
+						recommended={
+							plain && suggestion === card.id
+								? __( '推荐', 'wp-china-yes' )
+								: null
 						}
+						className={ disabled ? 'is-disabled' : '' }
 					>
 						<input
 							id={ 'wpcy-profile-' + card.id }
@@ -629,20 +636,9 @@ function SceneCard( {
 							disabled={ disabled }
 							onChange={ () => onPick( card.id ) }
 						/>
-						<span>
-							<div className="t">
-								{ card.title }
-								{ plain && suggestion === card.id ? (
-									<span className="rec">
-										{ __( '推荐', 'wp-china-yes' ) }
-									</span>
-								) : null }
-							</div>
-							<div className="d">{ card.desc }</div>
-						</span>
-					</label>
+					</Choice>
 				) ) }
-			</div>
+			</ChoiceCards>
 			{ plain ? (
 				<div className="scene-assert">
 					<Notice
@@ -682,12 +678,12 @@ function SceneCard( {
 			) : null }
 			<Saved text={ statusText( savedFlash, 'profile' ) } />
 			{ plain ? (
-				<p className="hint wpcy-wizard-entry">
+				<Hint className="wpcy-wizard-entry">
 					{ __( '拿不准？', 'wp-china-yes' ) }
 					<a href={ adminPageUrl( PAGES.onboarding ) }>
 						{ __( '跑一次 30 秒设置向导', 'wp-china-yes' ) }
 					</a>
-				</p>
+				</Hint>
 			) : null }
 		</section>
 	);
@@ -1078,31 +1074,28 @@ function AdminCard( {
 
 function SimpleRowWrap( { icon, ok, title, help, children } ) {
 	return (
-		<div className="simple-row">
-			<div className={ 'tile' + ( ok ? ' ok' : '' ) }>
-				<Icon name={ icon } size={ 18 } />
-			</div>
-			<div>
-				<div className="t">{ title }</div>
-				<div className="d">{ help }</div>
-			</div>
-			<div className="r">{ children }</div>
-		</div>
+		<SimpleRow
+			tile={
+				<div className={ 'tile' + ( ok ? ' ok' : '' ) }>
+					<Icon name={ icon } size={ 18 } />
+				</div>
+			}
+			title={ title }
+			desc={ help }
+			right={ children }
+		/>
 	);
 }
 
 function FieldRow( { icon, title, help, children } ) {
 	return (
-		<div className="field">
-			<div>
-				<div className="field-label">
-					<Icon name={ icon } size={ 18 } />
-					{ title }
-				</div>
-				<div className="field-help">{ help }</div>
-			</div>
-			<div className="field-ctl">{ children }</div>
-		</div>
+		<Field
+			icon={ <Icon name={ icon } size={ 18 } /> }
+			title={ title }
+			help={ help }
+		>
+			{ children }
+		</Field>
 	);
 }
 
@@ -1153,8 +1146,15 @@ function AdvancedConn( {
 					'wp-china-yes'
 				) }
 			>
-				<div className="opts">
-					<label className="opt" htmlFor="wpcy-org-auto">
+				<Opts>
+					<Opt
+						htmlFor="wpcy-org-auto"
+						title={ __( '国内镜像', 'wp-china-yes' ) }
+						description={ __(
+							'优先国内镜像，不可用时回原始上游 · 国内站默认',
+							'wp-china-yes'
+						) }
+					>
 						<input
 							id="wpcy-org-auto"
 							type="radio"
@@ -1168,19 +1168,15 @@ function AdvancedConn( {
 								)
 							}
 						/>
-						<span>
-							<span className="t">
-								{ __( '国内镜像', 'wp-china-yes' ) }
-							</span>
-							<div className="d">
-								{ __(
-									'优先国内镜像，不可用时回原始上游 · 国内站默认',
-									'wp-china-yes'
-								) }
-							</div>
-						</span>
-					</label>
-					<label className="opt" htmlFor="wpcy-org-off">
+					</Opt>
+					<Opt
+						htmlFor="wpcy-org-off"
+						title={ __( '直连 WordPress.org', 'wp-china-yes' ) }
+						description={ __(
+							'不经过镜像 · 跨境站默认',
+							'wp-china-yes'
+						) }
+					>
 						<input
 							id="wpcy-org-off"
 							type="radio"
@@ -1194,19 +1190,8 @@ function AdvancedConn( {
 								)
 							}
 						/>
-						<span>
-							<span className="t">
-								{ __( '直连 WordPress.org', 'wp-china-yes' ) }
-							</span>
-							<div className="d">
-								{ __(
-									'不经过镜像 · 跨境站默认',
-									'wp-china-yes'
-								) }
-							</div>
-						</span>
-					</label>
-				</div>
+					</Opt>
+				</Opts>
 				<Saved text={ statusText( savedFlash, 'org' ) } />
 			</FieldRow>
 			<FieldRow
@@ -1217,18 +1202,16 @@ function AdvancedConn( {
 					'wp-china-yes'
 				) }
 			>
-				<div className="seg">
+				<Seg>
 					{ [
 						[ 'both', __( '后台与前台', 'wp-china-yes' ) ],
 						[ 'admin', __( '仅后台', 'wp-china-yes' ) ],
 						[ 'frontend', __( '仅前台', 'wp-china-yes' ) ],
 						[ 'off', __( '关闭', 'wp-china-yes' ) ],
 					].map( ( [ value, label ] ) => (
-						<button
+						<SegItem
 							key={ value }
-							type="button"
-							className={ scope === value ? 'on' : '' }
-							aria-pressed={ scope === value }
+							active={ scope === value }
 							disabled={ disabled }
 							onClick={ () =>
 								save(
@@ -1245,9 +1228,9 @@ function AdvancedConn( {
 							}
 						>
 							{ label }
-						</button>
+						</SegItem>
 					) ) }
-				</div>
+				</Seg>
 				<div className="chk wpcy-chk-gap">
 					{ FIVE.map( ( item ) => (
 						<label key={ item } htmlFor={ 'wpcy-asset-' + item }>
@@ -1351,12 +1334,13 @@ function AvatarField( {
 	];
 	return (
 		<FieldRow icon="user" title={ title } help={ help }>
-			<div className="opts">
+			<Opts>
 				{ options.map( ( [ val, suffix, t, d ] ) => (
-					<label
+					<Opt
 						key={ val }
-						className="opt"
 						htmlFor={ name + suffix }
+						title={ t }
+						description={ d }
 					>
 						<input
 							id={ name + suffix }
@@ -1366,13 +1350,9 @@ function AvatarField( {
 							disabled={ disabled }
 							onChange={ () => onChange( val ) }
 						/>
-						<span>
-							<span className="t">{ t }</span>
-							<div className="d">{ d }</div>
-						</span>
-					</label>
+					</Opt>
 				) ) }
-			</div>
+			</Opts>
 			<Saved text={ saved } />
 			{ custom ? (
 				<div className="customized">
