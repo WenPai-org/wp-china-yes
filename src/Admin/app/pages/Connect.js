@@ -19,7 +19,6 @@ import {
 } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import {
-	Btn,
 	LoadError,
 	Notice,
 	Pill,
@@ -27,6 +26,7 @@ import {
 	Scope,
 	Toggle,
 } from '@wenpai/wpcy-admin-ui';
+import Btn from '../ui/Btn';
 import Icon from '../ui/icons';
 import { Skel } from '../ui/Skeleton';
 import {

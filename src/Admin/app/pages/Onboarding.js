@@ -11,7 +11,8 @@ import apiFetch from '@wordpress/api-fetch';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
-import { Btn, CardHead, Notice, Pill, Tile } from '@wenpai/wpcy-admin-ui';
+import { CardHead, Notice, Pill, Tile } from '@wenpai/wpcy-admin-ui';
+import Btn from '../ui/Btn';
 import Icon from '../ui/icons';
 import { profileLabel, sceneCards } from '../ui/profiles';
 import {
