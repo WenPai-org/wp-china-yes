@@ -426,3 +426,31 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 .wpcy-app .wpcy-field__reveal { flex: none; height: var(--wpcy-size-control); min-width: 4.5rem; }
 .wpcy-app .field-ctl-row .wpcy-field__secret { max-width: none; }
 .wpcy-app .field-ctl-row input[type="password"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+
+/* Track D / E08 — repeater via Card composition (ban EndpointCard) */
+.wpcy-app .wpcy-repeater { display: grid; gap: var(--wpcy-space-4, 16px); min-width: 0; }
+.wpcy-app .wpcy-repeater__rows { display: grid; gap: var(--wpcy-space-4, 16px); }
+.wpcy-app .wpcy-repeater__row {
+  display: grid;
+  gap: var(--wpcy-space-3, 12px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.wpcy-app .wpcy-repeater__legend { padding: 0; margin: 0 0 6px; color: var(--wpcy-ink-2, #646970); font-size: var(--wpcy-text-meta, 12px); }
+.wpcy-app .wpcy-repeater__fields { display: grid; gap: var(--wpcy-space-3, 12px); }
+.wpcy-app .wpcy-repeater__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wpcy-space-2, 8px);
+  justify-content: flex-end;
+  padding-top: var(--wpcy-space-3, 12px);
+  border-top: 1px solid var(--wpcy-line-soft, #e0e0e0);
+}
+.wpcy-app .wpcy-repeater__toolbar { margin: 0; }
+.wpcy-app .wpcy-repeater__card.card { /* Card composition — no EndpointCard family */ }
+@media (max-width: 960px) {
+  .wpcy-app .wpcy-repeater__row-actions { justify-content: stretch; }
+  .wpcy-app .wpcy-repeater__row-actions .btn { flex: 1 1 auto; }
+}
