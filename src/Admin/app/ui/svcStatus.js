@@ -250,15 +250,12 @@ export function buildSvcRows( {
 	const orgOn = wordpressOrgEnabled( settings );
 	const assetsOn = publicAssetsEnabled( settings );
 	const avatarOn = avatarEnabled( settings );
-	const motuOn = iconPhotosEnabled( settings );
 	const org = groupAggregate( targets, ROUTE_GROUPS[ 0 ].hosts );
 	const pub = groupAggregate( targets, ROUTE_GROUPS[ 1 ].hosts );
 	const ava = groupAggregate( targets, ROUTE_GROUPS[ 3 ].hosts );
-	const motu = groupAggregate( targets, ROUTE_GROUPS[ 4 ].hosts );
 	const wenpai = providerName( providers, 'wordpress_org', 'WenPai.org' );
 	const admincdn = providerName( providers, 'public_assets', 'adminCDN' );
 	const cravatar = providerName( providers, 'cravatar', 'Cravatar' );
-	const motucloud = providerName( providers, 'icon_photos', 'MotuCloud' );
 
 	const rows = [];
 
@@ -292,15 +289,7 @@ export function buildSvcRows( {
 			provider: cravatar,
 		} )
 	);
-	rows.push(
-		motuRow( {
-			recovery,
-			enabled: motuOn,
-			adminOnly: settings?.connectivity?.icon_photos?.enabled === 'admin',
-			agg: motu,
-			provider: motucloud,
-		} )
-	);
+	/* OV-10 core four — MotuCloud / icon_photos not in matrix (D-02). */
 	rows.push( fontRow( { recovery, bound, settings } ) );
 
 	return rows;
@@ -460,48 +449,6 @@ function avatarRow( { recovery, enabled, domestic, agg, provider } ) {
 		provider,
 		okLine,
 		tooltip: name,
-	} );
-}
-
-function motuRow( { recovery, enabled, adminOnly, agg, provider } ) {
-	const name = __( '图标与图片', 'wp-china-yes' );
-	const extra = adminOnly ? __( '只在后台', 'wp-china-yes' ) : '';
-	if ( recovery ) {
-		return matrixRow( {
-			key: 'paused',
-			dot: 'paused',
-			icon: 'image',
-			name,
-			extra,
-			provider,
-			word: __( '未接管', 'wp-china-yes' ),
-			status: 'paused',
-			agg,
-			tooltip: name,
-		} );
-	}
-	if ( ! enabled ) {
-		return matrixRow( {
-			key: 'off',
-			dot: 'off',
-			icon: 'image',
-			name,
-			extra,
-			provider,
-			word: __( '未启用', 'wp-china-yes' ),
-			status: 'off',
-			line: __( '经 MotuCloud 接通', 'wp-china-yes' ),
-			tooltip: name + ' · ' + __( '未启用', 'wp-china-yes' ),
-		} );
-	}
-	return fromAgg( {
-		icon: 'image',
-		name,
-		extra,
-		agg,
-		provider,
-		okLine: __( '经 MotuCloud 接通', 'wp-china-yes' ),
-		tooltip: extra ? name + ' · ' + extra : name,
 	} );
 }
 

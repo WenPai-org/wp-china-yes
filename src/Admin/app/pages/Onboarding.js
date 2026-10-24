@@ -4,7 +4,7 @@
 
 /* eslint-disable jsx-a11y/label-has-associated-control -- prototype choice cards wrap radio + nested copy */
 
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useRef, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -74,6 +74,11 @@ export default function Onboarding() {
 	const [ saving, setSaving ] = useState( false );
 	const [ saveError, setSaveError ] = useState( '' );
 	const [ locked, setLocked ] = useState( false );
+	// WZ-04: settings document as it was before the scene was applied, so
+	// the summary counts what the PUT actually changed. Taken on every step-1
+	// 「继续」: after going back and picking another scene, the count is
+	// relative to the previous save, not to the document the wizard opened with.
+	const [ before, setBefore ] = useState( null );
 	const [ binding, setBinding ] = useState( {
 		status: 'unbound',
 		site_hash: null,
@@ -151,6 +156,7 @@ export default function Onboarding() {
 		setSaving( true );
 		setSaveError( '' );
 		setLocked( false );
+		setBefore( settings );
 		Promise.resolve( patchSettings( { profile } ) ).then( ( result ) => {
 			setSaving( false );
 			if ( result?.ok ) {
@@ -203,7 +209,7 @@ export default function Onboarding() {
 			} );
 	};
 
-	const summary = resourceSummary( settings );
+	const summary = resourceSummary( before, settings );
 
 	return (
 		<PageShell showTabs={ false }>
@@ -485,74 +491,116 @@ export default function Onboarding() {
 								'wp-china-yes'
 							) }
 						</p>
-						<div className="wpcy-grid-3">
-							<article className="card stat-a">
-								<div className="k">
-									<Icon name="globe" size={ 16 } />
-									{ __( '更新', 'wp-china-yes' ) }
-								</div>
-								<div className="v">
-									{ ( settings.connectivity?.wordpress_org ||
-										'auto' ) === 'off'
-										? __( '直连', 'wp-china-yes' )
-										: __( '国内镜像', 'wp-china-yes' ) }
-								</div>
-								<div className="d">WordPress.org</div>
-							</article>
-							<article className="card stat-a">
-								<div className="k">
-									<Icon name="bolt" size={ 16 } />
-									{ __( '已调整', 'wp-china-yes' ) }
-								</div>
-								<div className="v" data-testid="wpcy-wz-count">
-									{ sprintf(
-										/* translators: %d: number of settings the scene preset changed */
-										__( '%d 项', 'wp-china-yes' ),
-										summary.count
-									) }
-								</div>
-								<div className="d">
-									{ sprintf(
-										/* translators: %s: scene */
-										__( '按「%s」预设', 'wp-china-yes' ),
-										profileLabel( current )
-									) }
-								</div>
-							</article>
-							<article className="card stat-a">
-								<div className="k">
-									<Icon name="link" size={ 16 } />
-									{ __( '服务', 'wp-china-yes' ) }
-								</div>
-								<div className="v">
-									{ bound
-										? __( '已绑定', 'wp-china-yes' )
-										: __( '未绑定', 'wp-china-yes' ) }
-								</div>
-								<div className="d">
-									{ bound
-										? sprintf(
-												/* translators: %s: masked site hash */
+						<div className="wizard-done">
+							<div
+								className={
+									summary.same ? 'wpcy-grid-2' : 'wpcy-grid-3'
+								}
+							>
+								{ /* WZ-04 same scene: nothing changed, so no 「更新」 card. */ }
+								{ summary.same ? null : (
+									<article className="card stat-a">
+										<div className="k">
+											<Icon name="globe" size={ 16 } />
+											{ __( '更新', 'wp-china-yes' ) }
+										</div>
+										<div className="v">
+											{ ( settings.connectivity
+												?.wordpress_org || 'auto' ) ===
+											'off'
+												? __( '直连', 'wp-china-yes' )
+												: __(
+														'国内镜像',
+														'wp-china-yes'
+												  ) }
+										</div>
+										<div className="d">WordPress.org</div>
+									</article>
+								) }
+								<article className="card stat-a">
+									<div className="k">
+										<Icon name="bolt" size={ 16 } />
+										{ __( '已调整', 'wp-china-yes' ) }
+									</div>
+									<div
+										className="v"
+										data-testid="wpcy-wz-count"
+									>
+										{ sprintf(
+											/* translators: %d: number of settings the scene preset changed */
+											_n(
+												'%d 项',
+												'%d 项',
+												summary.count,
+												'wp-china-yes'
+											),
+											summary.count
+										) }
+									</div>
+									{ summary.same ? (
+										<div
+											className="d d-same"
+											data-testid="wpcy-wz-same"
+										>
+											{ sprintf(
+												/* translators: %s: scene */
 												__(
-													'站点标识 %s',
+													'当前已是「%s」，没有改动。',
 													'wp-china-yes'
 												),
-												maskHash( binding.site_hash )
-										  )
-										: __(
-												'稍后可在服务页绑定',
-												'wp-china-yes'
-										  ) }
-								</div>
-							</article>
-						</div>
-						<div className="actions">
-							<Btn
-								variant="primary"
-								href={ adminPageUrl( PAGES.overview ) }
-							>
-								{ __( '进入概览', 'wp-china-yes' ) }
-							</Btn>
+												profileLabel( current )
+											) }
+										</div>
+									) : (
+										<div className="d">
+											{ sprintf(
+												/* translators: %s: scene */
+												__(
+													'按「%s」预设',
+													'wp-china-yes'
+												),
+												profileLabel( current )
+											) }
+										</div>
+									) }
+								</article>
+								<article className="card stat-a">
+									<div className="k">
+										<Icon name="link" size={ 16 } />
+										{ __( '服务', 'wp-china-yes' ) }
+									</div>
+									<div className="v">
+										{ bound
+											? __( '已绑定', 'wp-china-yes' )
+											: __( '未绑定', 'wp-china-yes' ) }
+									</div>
+									<div className="d">
+										{ bound
+											? sprintf(
+													/* translators: %s: masked site hash */
+													__(
+														'站点标识 %s',
+														'wp-china-yes'
+													),
+													maskHash(
+														binding.site_hash
+													)
+											  )
+											: __(
+													'稍后可在服务页绑定',
+													'wp-china-yes'
+											  ) }
+									</div>
+								</article>
+							</div>
+							<div className="actions">
+								<Btn
+									variant="primary"
+									href={ adminPageUrl( PAGES.overview ) }
+								>
+									{ __( '进入概览', 'wp-china-yes' ) }
+								</Btn>
+							</div>
 						</div>
 					</>
 				) : null }

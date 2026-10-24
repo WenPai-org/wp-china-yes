@@ -234,15 +234,105 @@ export function presetChanges( settings ) {
 }
 
 /**
- * WZ-04 summary card: how many items the chosen scene preset changed.
- *
- * @param {Object} settings Settings document returned by PUT /settings.
- * @return {{count:number,admin:boolean}} Count, and whether public assets are admin-only.
+ * Public-asset items a missing `public_assets.items` stands for
+ * (Config\Schema::PUBLIC_ASSETS).
  */
-export function resourceSummary( settings ) {
-	const scope = settings?.connectivity?.public_assets?.scope || 'both';
+const DEFAULT_ITEMS = [
+	'google_fonts',
+	'google_ajax',
+	'cdnjs',
+	'jsdelivr',
+	'emoji',
+];
+
+/**
+ * Normalized per-field values of a settings document, keyed like
+ * presetChanges(). Missing values read as their defaults, so a field that only
+ * goes from absent to its explicit default is not a change.
+ *
+ * public_assets.<item> is the scope the item is live under ('off' when the
+ * item is not listed or the scope is 'off'), so a scope change counts once per
+ * affected item. Avatar compares the admin value of a split object.
+ *
+ * @param {Object}   settings Settings document.
+ * @param {string[]} items    Item keys to read.
+ * @return {Object<string,string>} Field key → normalized value.
+ */
+function presetFields( settings, items ) {
+	const conn = settings?.connectivity || {};
+	const out = { wordpress_org: conn.wordpress_org || 'auto' };
+	const scope = conn.public_assets?.scope || 'both';
+	const listed = Array.isArray( conn.public_assets?.items )
+		? conn.public_assets.items
+		: DEFAULT_ITEMS;
+	items.forEach( ( item ) => {
+		out[ 'public_assets.' + item ] =
+			scope !== 'off' && listed.indexOf( item ) !== -1 ? scope : 'off';
+	} );
+	const avatar = conn.avatar || 'off';
+	out.avatar = typeof avatar === 'string' ? avatar : avatar.admin || 'off';
+	out.heartbeat = conn.heartbeat || 'off';
+	out.dashboard_feeds = conn.dashboard_feeds || 'allow';
+	out.icon_photos = conn.icon_photos?.enabled || 'off';
+	return out;
+}
+
+/**
+ * Item keys named by any of the documents (the defaults when one omits them).
+ *
+ * @param {Object[]} docs Settings documents.
+ * @return {string[]} Items, first-seen order.
+ */
+function itemUnion( docs ) {
+	const seen = [];
+	docs.forEach( ( doc ) => {
+		const items = doc?.connectivity?.public_assets?.items;
+		( Array.isArray( items ) ? items : DEFAULT_ITEMS ).forEach(
+			( item ) => {
+				if ( seen.indexOf( item ) === -1 ) {
+					seen.push( item );
+				}
+			}
+		);
+	} );
+	return seen;
+}
+
+/**
+ * WZ-04: the fields that actually changed between the settings document
+ * before the scene was applied and the one the server returned after it.
+ * Same field grouping as presetChanges(); each key counts at most once.
+ *
+ * @param {Object} before Settings document before PUT /settings {profile}.
+ * @param {Object} after  Settings document returned by the PUT.
+ * @return {string[]} Changed field keys.
+ */
+export function presetDiff( before, after ) {
+	const items = itemUnion( [ before, after ] );
+	const from = presetFields( before, items );
+	const to = presetFields( after, items );
+	return Object.keys( to ).filter( ( key ) => from[ key ] !== to[ key ] );
+}
+
+/**
+ * WZ-04 summary card: how many fields the chosen scene preset changed.
+ *
+ * @param {Object} before Settings document before the scene was applied.
+ * @param {Object} after  Settings document returned by PUT /settings.
+ * @return {{count:number,keys:string[],same:boolean,admin:boolean}} Count,
+ *         changed keys, whether the scene was already current, and whether
+ *         public assets are admin-only.
+ */
+export function resourceSummary( before, after ) {
+	const base = before || after;
+	const scope = after?.connectivity?.public_assets?.scope || 'both';
+	const keys = presetDiff( base, after );
+	const from = base?.profile || 'domestic';
+	const to = after?.profile || 'domestic';
 	return {
-		count: presetChanges( settings ).length,
+		count: keys.length,
+		keys,
+		same: from === to && keys.length === 0,
 		admin: scope === 'admin',
 	};
 }

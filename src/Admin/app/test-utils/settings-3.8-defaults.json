@@ -1,0 +1,23 @@
+{
+	"_fixture": {
+		"note": "Settings document a 3.8 site on stock 3.8 defaults has after the 4.0 migration (Migration\\Mappers over Config\\Defaults): store=wenpai -> wordpress_org auto; admincdn=[admin] -> public_assets.items [] (admin static rewrite dropped); cravatar=cn -> cravatar_cn; profile domestic, not confirmed."
+	},
+	"schema_version": 1,
+	"profile": "domestic",
+	"profile_confirmed_at": null,
+	"connectivity": {
+		"wordpress_org": "auto",
+		"public_assets": { "items": [], "scope": "both" },
+		"avatar": "cravatar_cn",
+		"heartbeat": "off",
+		"dashboard_feeds": "allow",
+		"admin_locale_follow": true,
+		"icon_photos": {
+			"enabled": "off",
+			"mirrored_base": "",
+			"native_api_base": ""
+		}
+	},
+	"modules": { "notice_control": true, "windfonts": false },
+	"recovery_mode": false
+}

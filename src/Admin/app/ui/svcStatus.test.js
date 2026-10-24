@@ -82,13 +82,13 @@ describe( 'buildSvcRows', () => {
 			providers: {},
 			recovery: false,
 		} );
-		const font = rows[ 4 ];
+		const font = rows[ 3 ];
 		expect( font.word ).toBe( '未启用' );
 		expect( font.line ).toContain( '绑定本站后可用' );
 		expect( font.action ).toBe( 'enable-services' );
 	} );
 
-	it( 'motu stays 未启用 when bases are empty', () => {
+	it( 'OV-10 core matrix has four rows without MotuCloud', () => {
 		const rows = buildSvcRows( {
 			targets: OK,
 			settings: settings(),
@@ -96,41 +96,16 @@ describe( 'buildSvcRows', () => {
 			providers: {},
 			recovery: false,
 		} );
-		expect( rows[ 3 ].name ).toBe( '图标与图片' );
-		expect( rows[ 3 ].word ).toBe( '未启用' );
-		expect( rows[ 3 ].status ).toBe( 'off' );
-	} );
-
-	it( 'motu follows probe when enabled with a base', () => {
-		const rows = buildSvcRows( {
-			targets: [
-				...OK,
-				{
-					target: 'motucloud',
-					result: 'ok',
-					latency_ms: 20,
-					checked_at: '2026-09-06T04:00:00Z',
-				},
-			],
-			settings: settings( {
-				connectivity: {
-					wordpress_org: 'auto',
-					public_assets: { items: [ 'google_fonts' ] },
-					avatar: 'cravatar_cn',
-					icon_photos: {
-						enabled: 'on',
-						mirrored_base: 'https://motu.example/m',
-						native_api_base: '',
-					},
-				},
-			} ),
-			binding: { status: 'unbound' },
-			providers: {},
-			recovery: false,
-		} );
-		expect( rows[ 3 ].word ).toBe( '已接通' );
-		expect( rows[ 3 ].line ).toBe( '经 MotuCloud 接通' );
-		expect( rows[ 3 ].tone ).toBe( 'ok' );
+		expect( rows ).toHaveLength( 4 );
+		expect( rows.map( ( row ) => row.name ) ).toEqual( [
+			'更新与安装包',
+			'公共库加速',
+			'头像',
+			'中文字体',
+		] );
+		expect( rows.some( ( row ) => row.name === '图标与图片' ) ).toBe(
+			false
+		);
 	} );
 
 	it( 'bound fonts follow modules.windfonts', () => {
@@ -140,7 +115,7 @@ describe( 'buildSvcRows', () => {
 			binding: { status: 'bound' },
 			providers: {},
 			recovery: false,
-		} )[ 4 ];
+		} )[ 3 ];
 		expect( off.word ).toBe( '未启用' );
 		expect( off.line ).toBe( '未启用' );
 		expect( off.action ).toBe( 'enable-connect' );
@@ -151,7 +126,7 @@ describe( 'buildSvcRows', () => {
 			binding: { status: 'bound' },
 			providers: {},
 			recovery: false,
-		} )[ 4 ];
+		} )[ 3 ];
 		expect( on.word ).toBe( '已接通' );
 		expect( on.line ).toBe( '经 Windfonts 接通' );
 		expect( on.tone ).toBe( 'ok' );

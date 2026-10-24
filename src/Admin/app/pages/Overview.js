@@ -679,7 +679,7 @@ function heroAnchor( {
 		);
 	}
 	const on = svcRows.filter( ( r ) => r.status === 'on' ).length;
-	const total = 5;
+	const total = svcRows.length || 4;
 	let sub = '';
 	const off = svcRows.find( ( r ) => r.status === 'off' );
 	const fallback = svcRows.find(
@@ -692,6 +692,9 @@ function heroAnchor( {
 			__( '已回退', 'wp-china-yes' ) +
 			' · ' +
 			__( '功能不中断', 'wp-china-yes' );
+	} else if ( on === 0 ) {
+		/* Distinct from hero title (freshInstall) to avoid duplicate copy. */
+		sub = __( '数字稍后就有。', 'wp-china-yes' );
 	} else if ( inbound ) {
 		sub = sprintf(
 			/* translators: %d: count */
