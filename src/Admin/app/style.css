@@ -57,14 +57,14 @@
 .wpcy-wrap {
 	max-width: 1120px;
 	margin: 0 auto;
-	padding: 0 32px;
+	padding: 0 var(--wpcy-space-8);
 }
 
 .wpcy-head {
 	display: flex;
 	align-items: center;
 	height: 56px;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 }
 
 .wpcy-brand {
@@ -72,7 +72,7 @@
 	align-items: center;
 	gap: 10px;
 	color: var(--wpcy-ink);
-	margin-right: 20px;
+	margin-right: var(--wpcy-space-5);
 }
 
 .wpcy-brand:hover {
@@ -82,7 +82,7 @@
 .wpcy-mark {
 	width: 28px;
 	height: 28px;
-	border-radius: 8px;
+	border-radius: var(--wpcy-radius-md);
 	background: var(--wpcy-accent);
 	color: #fff;
 	display: grid;
@@ -106,7 +106,7 @@
 	margin-left: auto;
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--wpcy-space-1);
 	color: var(--wpcy-ink-2);
 }
 
@@ -123,12 +123,12 @@
 }
 
 .wpcy-snackbar-slot {
-	margin: 0 0 16px;
+	margin: 0 0 var(--wpcy-space-4);
 }
 
 .wpcy-tabs {
 	display: flex;
-	gap: 4px;
+	gap: var(--wpcy-space-1);
 	align-self: stretch;
 }
 
@@ -147,7 +147,7 @@
 .wpcy-tab svg {
 	width: 18px;
 	height: 18px;
-	margin-right: 8px;
+	margin-right: var(--wpcy-space-2);
 }
 
 .wpcy-tab:hover {
@@ -160,14 +160,14 @@
 }
 
 .wpcy-main {
-	padding: 32px 32px 48px;
+	padding: var(--wpcy-space-8) var(--wpcy-space-8) var(--wpcy-space-12);
 }
 
 .wpcy-page-head {
 	display: flex;
 	align-items: flex-end;
 	justify-content: space-between;
-	margin-bottom: 24px;
+	margin-bottom: var(--wpcy-space-6);
 }
 
 .wpcy-h1 {
@@ -184,31 +184,31 @@
 }
 
 .wpcy-stack > * + * {
-	margin-top: 20px;
+	margin-top: var(--wpcy-space-5);
 }
 
 .wpcy-grid-2 {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 	align-items: start;
 }
 
 .wpcy-grid-3 {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 	align-items: stretch;
 }
 
 .foot {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: var(--wpcy-space-4);
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
-	margin-top: 28px;
+	margin-top: var(--wpcy-space-7);
 	padding-top: 18px;
 	border-top: 1px solid var(--wpcy-line);
 }
@@ -224,7 +224,7 @@
 .foot .r {
 	margin-left: auto;
 	display: flex;
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .foot .r a {
@@ -259,13 +259,13 @@
 	border: 1px solid #e5e5e5;
 	border-radius: var(--wpcy-radius);
 	box-shadow: none;
-	padding: 24px 28px;
+	padding: var(--wpcy-space-6) var(--wpcy-space-7);
 	display: flex;
 	flex-direction: column;
 }
 
 .card.tight {
-	padding: 24px 28px 16px;
+	padding: var(--wpcy-space-6) var(--wpcy-space-7) var(--wpcy-space-4);
 }
 
 .card-head {
@@ -282,7 +282,7 @@
 .tile {
 	width: 36px;
 	height: 36px;
-	border-radius: 10px;
+	border-radius: var(--wpcy-radius-lg);
 	display: grid;
 	place-items: center;
 	flex: none;
@@ -351,8 +351,8 @@
 .card-foot {
 	display: flex;
 	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 20px;
+	gap: var(--wpcy-space-2);
+	margin-top: var(--wpcy-space-5);
 	padding-top: 18px;
 	border-top: 1px solid var(--wpcy-line-soft);
 }
@@ -374,11 +374,11 @@
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
-	margin: 4px 0 0;
+	margin: var(--wpcy-space-1) 0 0;
 }
 
 .sec {
-	margin-top: 36px;
+	margin-top: var(--wpcy-space-9);
 }
 
 .sec-h {
@@ -432,8 +432,8 @@
 	align-items: center;
 	gap: 6px;
 	height: 24px;
-	padding: 0 10px 0 8px;
-	border-radius: 12px;
+	padding: 0 10px 0 var(--wpcy-space-2);
+	border-radius: var(--wpcy-radius);
 	font-size: 13px;
 	font-weight: 500;
 	background: var(--wpcy-mute-soft);
@@ -481,7 +481,7 @@
 	align-items: center;
 	height: 24px;
 	padding: 0 10px;
-	border-radius: 12px;
+	border-radius: var(--wpcy-radius);
 	font-size: 13px;
 	color: var(--wpcy-ink-2);
 	background: var(--wpcy-mute-soft);
@@ -496,8 +496,8 @@ a.scope:hover {
 	display: inline-flex;
 	align-items: center;
 	height: 20px;
-	padding: 0 8px;
-	border-radius: 10px;
+	padding: 0 var(--wpcy-space-2);
+	border-radius: var(--wpcy-radius-lg);
 	background: var(--wpcy-line-soft);
 	color: var(--wpcy-ink-2);
 	font-size: 12px;
@@ -509,8 +509,8 @@ a.scope:hover {
 	display: flex;
 	gap: 10px;
 	align-items: flex-start;
-	padding: 12px 16px;
-	border-radius: 10px;
+	padding: var(--wpcy-space-3) var(--wpcy-space-4);
+	border-radius: var(--wpcy-radius-lg);
 	font-size: 13px;
 	line-height: 20px;
 }
@@ -542,7 +542,7 @@ a.scope:hover {
 
 .notice.warn.act {
 	align-items: center;
-	padding: 12px 16px;
+	padding: var(--wpcy-space-3) var(--wpcy-space-4);
 	font-size: 14px;
 	color: var(--wpcy-ink);
 }
@@ -561,8 +561,8 @@ a.scope:hover {
 	justify-content: center;
 	gap: 6px;
 	height: 36px;
-	padding: 0 16px;
-	border-radius: 6px;
+	padding: 0 var(--wpcy-space-4);
+	border-radius: var(--wpcy-radius-sm);
 	font: inherit;
 	font-weight: 500;
 	cursor: pointer;
@@ -637,11 +637,11 @@ a.scope:hover {
 
 .hero-collapse {
 	position: absolute;
-	top: 16px;
-	right: 20px;
+	top: var(--wpcy-space-4);
+	right: var(--wpcy-space-5);
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--wpcy-space-1);
 	height: 28px;
 	padding: 0 10px;
 	border: 0;
@@ -649,7 +649,7 @@ a.scope:hover {
 	color: var(--wpcy-ink-3);
 	font: inherit;
 	font-size: 12px;
-	border-radius: 6px;
+	border-radius: var(--wpcy-radius-sm);
 	cursor: pointer;
 }
 
@@ -670,7 +670,7 @@ a.scope:hover {
 	align-items: center;
 	gap: 14px;
 	height: 56px;
-	padding: 0 20px 0 24px;
+	padding: 0 var(--wpcy-space-5) 0 var(--wpcy-space-6);
 	border: 0;
 	background: transparent;
 	font: inherit;
@@ -699,7 +699,7 @@ a.scope:hover {
 	margin-left: auto;
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--wpcy-space-1);
 	color: var(--wpcy-accent);
 	font-size: 12px;
 	font-weight: 500;
@@ -728,20 +728,20 @@ a.scope:hover {
 	grid-template-columns: minmax(0, 1fr) 280px;
 	gap: 40px;
 	align-items: center;
-	padding: 32px 36px 36px;
+	padding: var(--wpcy-space-8) var(--wpcy-space-9) var(--wpcy-space-9);
 }
 
 .hero-body-v6 {
 	grid-template-columns: minmax(0, 1fr) 420px;
 	gap: 40px;
 	align-items: start;
-	padding: 32px 36px 32px;
+	padding: var(--wpcy-space-8) var(--wpcy-space-9) var(--wpcy-space-8);
 }
 
 .hero-l .eyebrow {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	font-size: 12px;
 	line-height: 18px;
 	letter-spacing: 0;
@@ -755,14 +755,14 @@ a.scope:hover {
 	line-height: 38px;
 	font-weight: 600;
 	letter-spacing: -0.015em;
-	margin: 10px 0 12px;
+	margin: 10px 0 var(--wpcy-space-3);
 }
 
 .hero-l p {
 	color: var(--wpcy-ink-2);
 	font-size: 15px;
 	line-height: 24px;
-	margin: 0 0 24px;
+	margin: 0 0 var(--wpcy-space-6);
 	max-width: 46ch;
 }
 
@@ -773,7 +773,7 @@ a.scope:hover {
 
 .hero-svc {
 	border-left: 1px solid var(--wpcy-line-soft);
-	padding-left: 36px;
+	padding-left: var(--wpcy-space-9);
 	align-self: stretch;
 }
 
@@ -796,7 +796,7 @@ a.scope:hover {
 	grid-template-columns: 36px minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 14px;
-	padding: 12px 0;
+	padding: var(--wpcy-space-3) 0;
 	border-top: 1px solid var(--wpcy-line-soft);
 }
 
@@ -806,13 +806,13 @@ a.scope:hover {
 }
 
 .svc-stack li:last-child {
-	padding-bottom: 4px;
+	padding-bottom: var(--wpcy-space-1);
 }
 
 .svc-stack .tile {
 	width: 36px;
 	height: 36px;
-	border-radius: 10px;
+	border-radius: var(--wpcy-radius-lg);
 }
 
 .svc-stack .tile svg {
@@ -826,13 +826,13 @@ a.scope:hover {
 	font-weight: 500;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 }
 
 .svc-stack .n .scope {
 	height: 20px;
 	font-size: 12px;
-	padding: 0 8px;
+	padding: 0 var(--wpcy-space-2);
 }
 
 .svc-stack .p {
@@ -847,12 +847,12 @@ a.scope:hover {
 .svc-stack .svc-r {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 }
 
 .svc-stack .svc-r .btn-ghost {
 	height: 28px;
-	padding: 0 8px;
+	padding: 0 var(--wpcy-space-2);
 	font-size: 13px;
 }
 
@@ -867,13 +867,13 @@ a.scope:hover {
 }
 
 .stat-a {
-	padding: 24px 28px;
+	padding: var(--wpcy-space-6) var(--wpcy-space-7);
 }
 
 .stat-a .k {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	color: var(--wpcy-ink-2);
 	font-weight: 500;
 	font-size: 14px;
@@ -917,9 +917,9 @@ a.scope:hover {
 	font-weight: 600;
 	color: #007017;
 	background: var(--wpcy-ok-soft);
-	padding: 1px 8px;
-	border-radius: 10px;
-	margin-left: 8px;
+	padding: 1px var(--wpcy-space-2);
+	border-radius: var(--wpcy-radius-lg);
+	margin-left: var(--wpcy-space-2);
 	vertical-align: 6px;
 	letter-spacing: 0;
 }
@@ -954,14 +954,14 @@ a.scope:hover {
 	display: grid;
 	grid-template-columns: 14px minmax(0, 1fr) auto auto;
 	align-items: center;
-	gap: 16px;
+	gap: var(--wpcy-space-4);
 	padding: 14px 0;
 	border-top: 1px solid var(--wpcy-line-soft);
 }
 
 .routes li:first-child {
 	border-top: 0;
-	padding-top: 4px;
+	padding-top: var(--wpcy-space-1);
 }
 
 .rdot {
@@ -987,7 +987,7 @@ a.scope:hover {
 	font-size: 14px;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 }
 
 .routes .d {
@@ -1030,11 +1030,11 @@ a.scope:hover {
 
 .tl li {
 	position: relative;
-	padding: 0 0 20px 26px;
+	padding: 0 0 var(--wpcy-space-5) 26px;
 }
 
 .tl li:last-child {
-	padding-bottom: 4px;
+	padding-bottom: var(--wpcy-space-1);
 }
 
 .tl li::before {
@@ -1083,7 +1083,7 @@ a.scope:hover {
 .grid2-w {
 	display: grid;
 	grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .next {
@@ -1093,7 +1093,7 @@ a.scope:hover {
 	background: var(--wpcy-accent-soft);
 	border: 1px solid #d9e0fb;
 	border-radius: var(--wpcy-radius);
-	padding: 16px 22px;
+	padding: var(--wpcy-space-4) 22px;
 }
 
 .next .tile {
@@ -1122,7 +1122,7 @@ a.scope:hover {
 	grid-template-columns: 300px minmax(0, 1fr);
 	gap: 40px;
 	align-items: start;
-	padding: 32px 36px;
+	padding: var(--wpcy-space-8) var(--wpcy-space-9);
 	border-radius: var(--wpcy-radius);
 	border: 1px solid #e3e6f5;
 	background: linear-gradient(135deg, #f4f6fe 0%, #f7f8fa 60%, #fafafa 100%);
@@ -1133,7 +1133,7 @@ a.scope:hover {
 	line-height: 18px;
 	font-weight: 500;
 	color: var(--wpcy-accent);
-	margin-bottom: 8px;
+	margin-bottom: var(--wpcy-space-2);
 }
 
 .eco-l h2 {
@@ -1148,7 +1148,7 @@ a.scope:hover {
 	font-size: 14px;
 	line-height: 22px;
 	color: var(--wpcy-ink-2);
-	margin: 0 0 16px;
+	margin: 0 0 var(--wpcy-space-4);
 }
 
 .eco-l .btn-ghost {
@@ -1159,12 +1159,12 @@ a.scope:hover {
 .eco-r {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
-	gap: 28px;
+	gap: var(--wpcy-space-7);
 }
 
 .eco.cols-5 .eco-r {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 24px 28px;
+	gap: var(--wpcy-space-6) var(--wpcy-space-7);
 }
 
 .eco.cols-5 .eco-b p {
@@ -1174,7 +1174,7 @@ a.scope:hover {
 .eco-bn {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	font-size: 15px;
 	line-height: 22px;
 	font-weight: 600;
@@ -1190,14 +1190,14 @@ a.scope:hover {
 	font-size: 13px;
 	line-height: 20px;
 	color: var(--wpcy-ink-3);
-	margin: 8px 0 10px;
+	margin: var(--wpcy-space-2) 0 10px;
 	min-height: 60px;
 }
 
 .eco-b a {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var(--wpcy-space-1);
 	font-size: 13px;
 	color: var(--wpcy-ink-2);
 }
@@ -1215,11 +1215,11 @@ a.scope:hover {
 .section-title {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	font-size: 16px;
 	line-height: 24px;
 	font-weight: 600;
-	margin: 0 0 4px;
+	margin: 0 0 var(--wpcy-space-1);
 }
 
 .section-title svg {
@@ -1240,7 +1240,7 @@ a.scope:hover {
 .field {
 	display: grid;
 	grid-template-columns: 280px minmax(0, 1fr);
-	gap: 28px;
+	gap: var(--wpcy-space-7);
 	padding: 22px 0;
 	border-top: 1px solid var(--wpcy-line-soft);
 }
@@ -1253,7 +1253,7 @@ a.scope:hover {
 .field-label {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	font-weight: 500;
 	font-size: 14px;
 }
@@ -1276,7 +1276,7 @@ a.scope:hover {
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
-	margin-top: 8px;
+	margin-top: var(--wpcy-space-2);
 }
 
 .saved {
@@ -1298,7 +1298,7 @@ a.scope:hover {
 }
 
 .opt input {
-	margin: 4px 0 0;
+	margin: var(--wpcy-space-1) 0 0;
 	width: 16px;
 	height: 16px;
 	accent-color: var(--wpcy-accent);
@@ -1318,15 +1318,15 @@ a.scope:hover {
 .choice-cards {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .choice {
 	border: 1px solid var(--wpcy-line);
-	border-radius: 10px;
-	padding: 16px 18px;
+	border-radius: var(--wpcy-radius-lg);
+	padding: var(--wpcy-space-4) 18px;
 	display: flex;
-	gap: 12px;
+	gap: var(--wpcy-space-3);
 	align-items: flex-start;
 	cursor: pointer;
 	background: #fff;
@@ -1357,13 +1357,13 @@ a.scope:hover {
 .seg {
 	display: inline-flex;
 	border: 1px solid #c3c4c7;
-	border-radius: 6px;
+	border-radius: var(--wpcy-radius-sm);
 	overflow: hidden;
 }
 
 .seg span,
 .seg a {
-	padding: 0 12px;
+	padding: 0 var(--wpcy-space-3);
 	height: 32px;
 	display: inline-flex;
 	align-items: center;
@@ -1394,7 +1394,7 @@ a.scope:hover {
 .toggle i {
 	width: 36px;
 	height: 20px;
-	border-radius: 10px;
+	border-radius: var(--wpcy-radius-lg);
 	background: #c3c4c7;
 	position: relative;
 	flex: none;
@@ -1431,7 +1431,7 @@ a.scope:hover {
 .chk label {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 }
 
 .chk input {
@@ -1463,14 +1463,14 @@ a.scope:hover {
 .simple-row {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: var(--wpcy-space-4);
 	padding: 18px 0;
 	border-top: 1px solid var(--wpcy-line-soft);
 }
 
 .simple-row:first-of-type {
 	border-top: 0;
-	padding-top: 8px;
+	padding-top: var(--wpcy-space-2);
 }
 
 .simple-row .tile {
@@ -1557,7 +1557,7 @@ a.scope:hover {
 .apps {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .app {
@@ -1576,7 +1576,7 @@ a.scope:hover {
 
 .app .t {
 	font-weight: 600;
-	margin-top: 12px;
+	margin-top: var(--wpcy-space-3);
 	font-size: 15px;
 }
 
@@ -1589,7 +1589,7 @@ a.scope:hover {
 .prov-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .prov-card {
@@ -1641,14 +1641,14 @@ a.scope:hover {
 	font-size: 14px;
 	line-height: 22px;
 	color: var(--wpcy-ink-2);
-	margin: 10px 0 16px;
+	margin: 10px 0 var(--wpcy-space-4);
 }
 
 .prov-f {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--wpcy-space-3);
 	margin-top: auto;
 	padding-top: 14px;
 	border-top: 1px solid var(--wpcy-line-soft);
@@ -1656,12 +1656,12 @@ a.scope:hover {
 
 .empty {
 	text-align: center;
-	padding: 32px 16px;
+	padding: var(--wpcy-space-8) var(--wpcy-space-4);
 	color: var(--wpcy-ink-2);
 }
 
 .empty .tile {
-	margin: 0 auto 12px;
+	margin: 0 auto var(--wpcy-space-3);
 }
 
 .empty p {
@@ -1686,7 +1686,6 @@ a.scope:hover {
 }
 
 @keyframes wpcy-spin {
-
 	to {
 		transform: rotate(360deg);
 	}
@@ -1704,12 +1703,12 @@ a.scope:hover {
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
-	padding: 0 0 12px;
+	padding: 0 0 var(--wpcy-space-3);
 	border-bottom: 1px solid var(--wpcy-line-soft);
 }
 
 .tbl td {
-	padding: 12px 0;
+	padding: var(--wpcy-space-3) 0;
 	border-bottom: 1px solid var(--wpcy-line-soft);
 	vertical-align: middle;
 }
@@ -1738,20 +1737,20 @@ a.scope:hover {
 .wizard {
 	max-width: 680px;
 	margin: 0 auto;
-	padding: 44px 24px 64px;
+	padding: 44px var(--wpcy-space-6) 64px;
 }
 
 .steps {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	margin-bottom: 36px;
+	gap: var(--wpcy-space-2);
+	margin-bottom: var(--wpcy-space-9);
 }
 
 .steps .st {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
@@ -1800,7 +1799,7 @@ a.scope:hover {
 
 .wizard .lede {
 	color: var(--wpcy-ink-2);
-	margin: 0 0 24px;
+	margin: 0 0 var(--wpcy-space-6);
 	font-size: 14px;
 }
 
@@ -1811,36 +1810,36 @@ a.scope:hover {
 .wizard .actions {
 	display: flex;
 	align-items: center;
-	gap: 16px;
-	margin-top: 28px;
+	gap: var(--wpcy-space-4);
+	margin-top: var(--wpcy-space-7);
 }
 
 /* D-06: WZ-04 complete step — tighter group, restrained digits, no empty third column */
 .wizard-done {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: var(--wpcy-space-5);
 }
 
 .wizard-done .wpcy-grid-2,
 .wizard-done .wpcy-grid-3 {
-	gap: 16px;
+	gap: var(--wpcy-space-4);
 	align-items: stretch;
 }
 
 .wizard-done .stat-a {
-	padding: 18px 20px;
+	padding: 18px var(--wpcy-space-5);
 }
 
 .wizard-done .stat-a .v {
 	font-size: 22px;
 	line-height: 28px;
-	margin-top: 8px;
+	margin-top: var(--wpcy-space-2);
 	font-weight: 600;
 }
 
 .wizard-done .stat-a .d {
-	margin-top: 4px;
+	margin-top: var(--wpcy-space-1);
 }
 
 .wizard-done .stat-a .d-same {
@@ -1852,21 +1851,20 @@ a.scope:hover {
 }
 
 .wizard:has(.wizard-done) {
-	padding-top: 36px;
-	padding-bottom: 48px;
+	padding-top: var(--wpcy-space-9);
+	padding-bottom: var(--wpcy-space-12);
 }
 
 .wizard:has(.wizard-done) .lede {
-	margin-bottom: 16px;
+	margin-bottom: var(--wpcy-space-4);
 }
 
 .wizard:has(.wizard-done) h1 {
-	margin-bottom: 4px;
+	margin-bottom: var(--wpcy-space-1);
 }
 
 /* --- 响应式 --- */
 @media (max-width: 1100px) {
-
 	.wpcy-grid-2 {
 		grid-template-columns: 1fr;
 	}
@@ -1877,7 +1875,7 @@ a.scope:hover {
 
 	.field {
 		grid-template-columns: 1fr;
-		gap: 8px;
+		gap: var(--wpcy-space-2);
 	}
 
 	.choice-cards {
@@ -1900,7 +1898,7 @@ a.scope:hover {
 		border-left: 0;
 		padding-left: 0;
 		border-top: 1px solid var(--wpcy-line-soft);
-		padding-top: 16px;
+		padding-top: var(--wpcy-space-4);
 	}
 
 	.grid2-w {
@@ -1922,14 +1920,14 @@ a.scope:hover {
 
 	.hero-body-v7 {
 		grid-template-columns: 1fr;
-		gap: 24px;
+		gap: var(--wpcy-space-6);
 	}
 
 	.hero-a {
 		border-left: 0;
 		padding-left: 0;
 		border-top: 1px solid var(--wpcy-line-soft);
-		padding-top: 20px;
+		padding-top: var(--wpcy-space-5);
 	}
 
 	.choice-cards.cols-2 {
@@ -1940,9 +1938,9 @@ a.scope:hover {
 /* --- v7 概览（hero 锚点 + 核心服务矩阵 + 来自文派署名栏） --- */
 .hero-body-v7 {
 	grid-template-columns: minmax(0, 1fr) 300px;
-	gap: 48px;
+	gap: var(--wpcy-space-12);
 	align-items: stretch;
-	padding: 36px 40px;
+	padding: var(--wpcy-space-9) 40px;
 }
 
 .hero-a {
@@ -2062,17 +2060,17 @@ a.scope:hover {
 
 .svc-mx li:first-child {
 	border-top: 0;
-	padding-top: 4px;
+	padding-top: var(--wpcy-space-1);
 }
 
 .svc-mx li:last-child {
-	padding-bottom: 4px;
+	padding-bottom: var(--wpcy-space-1);
 }
 
 .svc-r1 {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: var(--wpcy-space-3);
 }
 
 .svc-mx .rdot {
@@ -2110,7 +2108,7 @@ a.scope:hover {
 .svc-mx .svc-n {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	min-width: 0;
 }
 
@@ -2148,7 +2146,7 @@ a.scope:hover {
 }
 
 .svc-mx .d {
-	margin: 4px 0 0 20px;
+	margin: var(--wpcy-space-1) 0 0 var(--wpcy-space-5);
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
@@ -2188,7 +2186,7 @@ a.scope:hover {
 }
 
 .evx li:last-child {
-	padding-bottom: 4px;
+	padding-bottom: var(--wpcy-space-1);
 }
 
 .evx .et {
@@ -2206,7 +2204,7 @@ a.scope:hover {
 
 .eco7 {
 	margin-top: 44px;
-	padding: 26px 32px 24px;
+	padding: 26px var(--wpcy-space-8) var(--wpcy-space-6);
 	border-radius: var(--wpcy-radius);
 	border: 1px solid var(--wpcy-line);
 	background: #f6f7f7;
@@ -2223,13 +2221,13 @@ a.scope:hover {
 .eco7-head {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: var(--wpcy-space-3);
 }
 
 .eco7-mark {
 	width: 30px;
 	height: 30px;
-	border-radius: 8px;
+	border-radius: var(--wpcy-radius-md);
 	background: var(--wpcy-accent-soft);
 	color: var(--wpcy-accent);
 	display: grid;
@@ -2261,9 +2259,9 @@ a.scope:hover {
 .eco7-brands {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: 16px 20px;
+	gap: var(--wpcy-space-4) var(--wpcy-space-5);
 	margin-top: 18px;
-	padding: 16px 0;
+	padding: var(--wpcy-space-4) 0;
 	border-top: 1px solid var(--wpcy-line-soft);
 	border-bottom: 1px solid var(--wpcy-line-soft);
 }
@@ -2308,7 +2306,7 @@ a.scope:hover {
 .eco7-links {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px 20px;
+	gap: var(--wpcy-space-1) var(--wpcy-space-5);
 	padding-top: 13px;
 	font-size: 13px;
 	line-height: 20px;
@@ -2335,8 +2333,8 @@ a.scope:hover {
 	top: 10px;
 	right: 10px;
 	height: 20px;
-	padding: 0 8px;
-	border-radius: 10px;
+	padding: 0 var(--wpcy-space-2);
+	border-radius: var(--wpcy-radius-lg);
 	background: var(--wpcy-accent-soft);
 	color: var(--wpcy-accent);
 	font-size: 11px;
@@ -2347,11 +2345,11 @@ a.scope:hover {
 .scene-assert {
 	display: grid;
 	gap: 10px;
-	margin-top: 12px;
+	margin-top: var(--wpcy-space-3);
 }
 
 .customized {
-	margin-top: 8px;
+	margin-top: var(--wpcy-space-2);
 	font-size: 12px;
 	line-height: 18px;
 	color: #9a7208;
@@ -2369,13 +2367,13 @@ a.scope:hover {
 .detect-line {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wpcy-space-2);
 	font-size: 13px;
 	line-height: 20px;
 	color: var(--wpcy-ink-2);
 	background: var(--wpcy-mute-soft);
-	border-radius: 8px;
-	padding: 8px 12px;
+	border-radius: var(--wpcy-radius-md);
+	padding: var(--wpcy-space-2) var(--wpcy-space-3);
 	margin-bottom: 14px;
 }
 
@@ -2393,10 +2391,10 @@ a.scope:hover {
 
 .tag-rec {
 	display: inline-flex;
-	margin-left: 8px;
+	margin-left: var(--wpcy-space-2);
 	height: 20px;
-	padding: 0 8px;
-	border-radius: 10px;
+	padding: 0 var(--wpcy-space-2);
+	border-radius: var(--wpcy-radius-lg);
 	background: var(--wpcy-accent-soft);
 	color: var(--wpcy-accent);
 	font-size: 12px;
@@ -2429,7 +2427,7 @@ a.scope:hover {
 }
 
 .seg button {
-	padding: 0 12px;
+	padding: 0 var(--wpcy-space-3);
 	height: 32px;
 	display: inline-flex;
 	align-items: center;
@@ -2471,7 +2469,7 @@ button.app {
 .card .big {
 	font-size: 18px;
 	font-weight: 600;
-	margin: 8px 0 4px;
+	margin: var(--wpcy-space-2) 0 var(--wpcy-space-1);
 }
 
 .card .meta {
@@ -2483,8 +2481,8 @@ button.app {
 /* Cover @wordpress/components Button / Modal chrome; !important only here. */
 .wpcy-app .btn.components-button {
 	height: 36px;
-	padding: 0 16px;
-	border-radius: 6px;
+	padding: 0 var(--wpcy-space-4);
+	border-radius: var(--wpcy-radius-sm);
 	font-size: 14px;
 	font-weight: 500;
 	line-height: 22px;
@@ -2529,23 +2527,26 @@ button.app {
 
 /* stylelint-disable-next-line selector-class-pattern -- WP Modal class. */
 .wpcy-app .components-modal__frame {
-	border-radius: 12px !important;
+	border-radius: var(--wpcy-radius) !important;
 	box-shadow: none !important;
 	border: 1px solid #e5e5e5 !important;
 }
 
 /* Skeleton placeholders (SH-05). */
 .skel {
-	background:
- linear-gradient(90deg, var(--wpcy-line-soft) 0%, #e8e8ea 50%, var(--wpcy-line-soft) 100%);
+	background: linear-gradient(
+		90deg,
+		var(--wpcy-line-soft) 0%,
+		#e8e8ea 50%,
+		var(--wpcy-line-soft) 100%
+	);
 	background-size: 200% 100%;
 	animation: wpcy-skel 1.2s ease-in-out infinite;
-	border-radius: 6px;
+	border-radius: var(--wpcy-radius-sm);
 	min-height: 12px;
 }
 
 @keyframes wpcy-skel {
-
 	0% {
 		background-position: 100% 0;
 	}
@@ -2557,13 +2558,13 @@ button.app {
 
 .skel-line {
 	height: 12px;
-	margin: 8px 0;
+	margin: var(--wpcy-space-2) 0;
 }
 
 .skel-title {
 	height: 20px;
 	width: 40%;
-	margin-bottom: 12px;
+	margin-bottom: var(--wpcy-space-3);
 }
 
 .skel-block {
@@ -2596,13 +2597,13 @@ button.app {
 }
 
 .wpcy-wizard-entry {
-	margin: 12px 0 0;
+	margin: var(--wpcy-space-3) 0 0;
 	color: var(--wpcy-ink-3);
 	font-size: 12px;
 }
 
 .wpcy-chk-gap {
-	margin-top: 12px;
+	margin-top: var(--wpcy-space-3);
 }
 
 .simple-row .r .notice {
@@ -2612,26 +2613,26 @@ button.app {
 .wpcy-modal-foot {
 	display: flex;
 	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 16px;
+	gap: var(--wpcy-space-2);
+	margin-top: var(--wpcy-space-4);
 }
 
 /* stylelint-disable-next-line selector-class-pattern -- WP Modal class. */
 .components-modal__frame.wpcy-switch-modal {
 	width: 480px;
 	max-width: calc(100% - 32px);
-	border-radius: 12px;
+	border-radius: var(--wpcy-radius);
 	box-shadow: none;
 	border: 1px solid #e5e5e5;
 }
 
 .wpcy-switch-modal p {
-	margin: 0 0 12px;
+	margin: 0 0 var(--wpcy-space-3);
 	color: var(--wpcy-ink-2);
 }
 
 .wizard .wizard-alert {
-	margin-top: 16px;
+	margin-top: var(--wpcy-space-4);
 }
 
 .wpcy-step-wrap {
@@ -2643,7 +2644,7 @@ button.app {
 }
 
 .wizard .wizard-lock {
-	margin: 16px 0 0;
+	margin: var(--wpcy-space-4) 0 0;
 	color: var(--wpcy-ink-2);
 }
 
