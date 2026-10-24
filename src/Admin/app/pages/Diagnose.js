@@ -10,7 +10,8 @@ import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
-import { Btn, CardHead, Notice, Pill, Sec } from '@wenpai/wpcy-admin-ui';
+import { CardHead, Notice, Pill, Sec } from '@wenpai/wpcy-admin-ui';
+import Btn from '../ui/Btn';
 import Card from '../ui/Card';
 import Empty from '../ui/Empty';
 import EventsSimple from '../ui/EventsSimple';
@@ -221,6 +222,7 @@ export default function Diagnose() {
 						<Btn
 							variant="ghost"
 							disabled={ slice.running }
+							isBusy={ slice.running }
 							onClick={ () => runDiagnostics() }
 						>
 							{ slice.running
@@ -347,6 +349,7 @@ export default function Diagnose() {
 						<Btn
 							variant="ghost"
 							disabled={ probing }
+							isBusy={ probing }
 							onClick={ runProbe }
 						>
 							{ probeActionLabel( probing, slice.clientProbe ) }
