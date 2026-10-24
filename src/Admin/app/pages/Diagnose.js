@@ -10,11 +10,8 @@ import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
-import Btn from '../ui/Btn';
-import Pill from '../ui/Pill';
-import Notice from '../ui/Notice';
-import Sec from '../ui/Sec';
-import Card, { CardHead } from '../ui/Card';
+import { Btn, CardHead, Notice, Pill, Sec } from '@wenpai/wpcy-admin-ui';
+import Card from '../ui/Card';
 import Empty from '../ui/Empty';
 import EventsSimple from '../ui/EventsSimple';
 import { eventTime, formatInt, relTime } from '../ui/relTime';
@@ -266,7 +263,7 @@ export default function Diagnose() {
 													</span>
 												</td>
 												<td>
-													<Pill tone={ pill.tone }>
+													<Pill state={ pill.tone }>
 														{ pill.word }
 													</Pill>
 												</td>
@@ -296,7 +293,7 @@ export default function Diagnose() {
 													</div>
 												</td>
 												<td>
-													<Pill tone={ pill.tone }>
+													<Pill state={ pill.tone }>
 														{ pill.word }
 													</Pill>
 												</td>
@@ -500,7 +497,7 @@ function ProbeTable( { probe, serverMs, error } ) {
 								</div>
 							</td>
 							<td>
-								<Pill tone={ ttfb > 1000 ? 'warn' : 'ok' }>
+								<Pill state={ ttfb > 1000 ? 'warn' : 'ok' }>
 									{ ttfb > 1000
 										? __( '偏慢', 'wp-china-yes' )
 										: __( '正常', 'wp-china-yes' ) }
@@ -639,7 +636,7 @@ function MigrationCard( { migration } ) {
 							) }
 						</div>
 					</div>
-					<Pill tone="ok" className="r">
+					<Pill state="ok" className="r">
 						{ __( '成功', 'wp-china-yes' ) }
 					</Pill>
 				</div>

@@ -18,9 +18,16 @@ import {
 	STORE_NAME,
 } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
-import { LoadError, Notice, Pill, Scope, Toggle } from '@wenpai/wpcy-admin-ui';
+import {
+	Btn,
+	LoadError,
+	Notice,
+	Pill,
+	Saved as UiSaved,
+	Scope,
+	Toggle,
+} from '@wenpai/wpcy-admin-ui';
 import Icon from '../ui/icons';
-import Btn from '../ui/Btn';
 import { Skel } from '../ui/Skeleton';
 import {
 	customizedKeys,
@@ -503,11 +510,7 @@ function statusText( status, key ) {
  * @param {string} props.text Current status text ('' when idle).
  */
 function Saved( { text } ) {
-	return (
-		<span className="saved" role="status">
-			{ text }
-		</span>
-	);
+	return <UiSaved role="status">{ text }</UiSaved>;
 }
 
 /**

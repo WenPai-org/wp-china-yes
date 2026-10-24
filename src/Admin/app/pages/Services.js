@@ -10,14 +10,18 @@ import { useSelect } from '@wordpress/data';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import Icon from '../ui/icons';
-import Btn from '../ui/Btn';
-import Pill from '../ui/Pill';
+import {
+	Btn,
+	CardFoot,
+	CardHead,
+	Notice,
+	Pill,
+	Scope,
+	Sec,
+} from '@wenpai/wpcy-admin-ui';
 import Prov from '../ui/Prov';
-import Scope from '../ui/Scope';
-import Notice from '../ui/Notice';
+import { Tile } from '../ui/Card';
 import Empty from '../ui/Empty';
-import { CardHead, CardFoot, Tile } from '../ui/Card';
-import Sec from '../ui/Sec';
 import {
 	IFRAME_REFERRERPOLICY,
 	IFRAME_SANDBOX,
@@ -510,7 +514,7 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 						</>
 					}
 					extra={
-						<Pill tone="ok">
+						<Pill state="ok">
 							{ __( '已绑定', 'wp-china-yes' ) }
 						</Pill>
 					}
@@ -746,7 +750,7 @@ function Catalog( { woo, profile, windfontsOn } ) {
 									</div>
 									<div className="d">{ item.desc }</div>
 								</div>
-								<Pill tone={ enabled ? 'ok' : '' }>
+								<Pill state={ enabled ? 'ok' : '' }>
 									{ enabled
 										? __( '已启用', 'wp-china-yes' )
 										: __( '未购买', 'wp-china-yes' ) }
