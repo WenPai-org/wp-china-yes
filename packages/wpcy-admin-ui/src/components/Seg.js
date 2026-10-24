@@ -53,7 +53,12 @@ export function SegItem({
 				children
 			);
 		}
-		return createElement('a', { ...rest, className: classes, href }, children);
+		const linkProps = { ...rest, className: classes, href };
+		// Nav links: active + href → aria-current=page (kit mode_switch / subnav parity).
+		if (active && linkProps['aria-current'] == null) {
+			linkProps['aria-current'] = 'page';
+		}
+		return createElement('a', linkProps, children);
 	}
 	return createElement(
 		'button',

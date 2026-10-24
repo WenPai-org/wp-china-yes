@@ -26,7 +26,7 @@
 |----|-----|------|
 | SHELL | 01–13 | `PageShell`（tabs/`pageTitle`/`pageLede`/`pageAside`/`notices`/`footerLeft`/`footerLinks`/`wizard`；默认 pageHead→notices；`.mode` 不双包；label 可为 ReactNode）；CSS：顶栏/品牌/Tab/wrap/页头/帮助链/页脚/栅格/节头 `Sec`/mode/向导/Snackbar 槽 |
 | CARD | 01–12 | `Card`/`CardHead`/`CardFoot`/`Tile`/`Pill`/`Next`/`Notice`/`Empty`/`Saved`/`Scope`/`SimpleRow`/`SectionTitle` |
-| CTRL | 01–05 (+06 companion)；12；16；17 | `Btn`；`Seg`/`SegItem`；`Toggle`；`Choice`/`ChoiceCards`；`Field`/`Hint`/`Opts`/`Opt`；`Spin`；`StatusDot`；`LoadError` |
+| CTRL | 01–05 (+06 companion)；12；16；17；Subnav (D-24) | `Btn`；`Seg`/`SegItem`；`Subnav`（compose Seg；`nav.wpcy-subnav`）；`Toggle`；`Choice`/`ChoiceCards`；`Field`/`Hint`/`Opts`/`Opt`；`Spin`；`StatusDot`；`LoadError` |
 | P2-charts | StatArea / Area | `StatArea`；`Area`（surface API）；另导出 helper `areaPath`（路径计算，非 surface） |
 
 **未抽**：CARD-13/14/21 kit-later；CARD-15–20 **仅叶子自留（不抽）**；SHELL-14/15/16 **不抽**；CTRL-07+（chk-grid 等）；产品仓 import 变薄 / CARD-06 核验另 PR。
@@ -43,11 +43,18 @@ import '@wenpai/wpcy-admin-ui/p2-charts.css';
 import {
   PageShell, Btn, Card, CardHead, CardFoot, Tile,
   Pill, Notice, Empty, Next, Scope, Sec, Saved, SimpleRow, SectionTitle,
-  Toggle, Seg, SegItem, Field, Hint, Choice, ChoiceCards,
+  Toggle, Seg, SegItem, Subnav, Field, Hint, Choice, ChoiceCards,
   Spin, StatusDot, LoadError,
   StatArea, Area, areaPath,
 } from '@wenpai/wpcy-admin-ui';
 
+
+// Track A / D-24 — in-tab secondary nav (Shell tabs stay ≤4):
+// <Subnav current="geo" label="模块" items={[
+//   { id: 'overview', label: '总览', href: '?section=overview' },
+//   { id: 'geo', label: 'GEO', href: '?section=geo' },
+// ]} />
+// Active link: .on + aria-current="page". Legacy admin.php/hash redirects = plugin-owned (kit Track A′).
 // 根节点必须带 .wpcy-app（PageShell 已挂）；短类 (.card/.btn/…) 仅在其下生效。
 // P2-charts: surface API 为 StatArea + Area；areaPath 为可选 helper（路径计算）。
 // Consumers must import `./p2-charts.css` (or `@wenpai/wpcy-admin-ui/p2-charts.css`,
@@ -68,3 +75,18 @@ GPL-2.0-or-later（与 WordPress / 叶子插件一致）。
 ## Tokens
 
 `src/tokens.css` is **generated** from wenpai-admin-ui `tokens/tokens.json` via `python3 scripts/build-tokens.py --target wpcy` (copy `css/wpcy-tokens.css`). Do not hand-edit production values. Accent must be `#3858e9` (never stub `#2271b1`).
+
+## SecretInput (Track B / E09)
+
+Password + show/hide under `.wpcy-app` (`.wpcy-field__secret` / `.wpcy-field__reveal`). Compose inside `Field`:
+
+```js
+import { Field, SecretInput } from '@wenpai/wpcy-admin-ui';
+
+<Field label="API 密钥">
+  <SecretInput name="endpoints[deepseek][api_key]" saved />
+</Field>
+```
+
+Empty leave / clear / nested storage sanitize live in the PHP kit (`wenpai-admin-ui`); this is UX parity only. No `SecretCard` family.
+

@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 
 function cx(...parts) {
 	return parts.filter(Boolean).join(' ');
@@ -88,7 +88,74 @@ export function Opt({
 	);
 }
 
+
+/**
+ * Secret control — password + show/hide (P2b Field extension · Track B / E09).
+ * Mirrors kit wenpai-field__secret / wenpai-field__reveal. Never put a
+ * saved plaintext into value from the caller; empty leave / clear stay server-side.
+ *
+ * Nested option names (endpoints[provider][api_key]) are the caller's name
+ * string; this component only handles the reveal UX.
+ *
+ * @param {object} props
+ * @param {string} [props.id]
+ * @param {string} [props.name]
+ * @param {string} [props.value] — usually ''
+ * @param {boolean} [props.saved] — marks data-wenpai-saved when a value exists server-side
+ * @param {string} [props.showLabel='显示']
+ * @param {string} [props.hideLabel='隐藏']
+ * @param {string} [props.className]
+ */
+export function SecretInput({
+	id,
+	name,
+	value = '',
+	saved = false,
+	showLabel = '显示',
+	hideLabel = '隐藏',
+	className = '',
+	disabled = false,
+	onChange,
+	...rest
+}) {
+	const [revealed, setRevealed] = useState(false);
+	const inputId = id || undefined;
+	const data = { 'data-wenpai-secret': name || id || '' };
+	if (saved) data['data-wenpai-saved'] = '';
+	return createElement(
+		'span',
+		{ className: cx('wpcy-field__secret', className) },
+		createElement('input', {
+			...rest,
+			...data,
+			id: inputId,
+			name,
+			type: revealed ? 'text' : 'password',
+			value,
+			disabled,
+			onChange,
+			autoComplete: 'new-password',
+			spellCheck: false,
+		}),
+		createElement(
+			'button',
+			{
+				type: 'button',
+				className: 'btn btn-ghost wpcy-field__reveal',
+				'data-wenpai-reveal': '',
+				'aria-pressed': revealed ? 'true' : 'false',
+				'aria-controls': inputId,
+				'aria-label': revealed ? hideLabel : showLabel,
+				disabled,
+				onClick: () => setRevealed((v) => !v),
+			},
+			revealed ? hideLabel : showLabel
+		)
+	);
+}
+
 Field.Hint = Hint;
 Field.Opts = Opts;
 Field.Opt = Opt;
+Field.Secret = SecretInput;
 export default Field;
