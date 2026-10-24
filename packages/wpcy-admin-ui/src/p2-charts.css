@@ -1,0 +1,98 @@
+/* P2-charts — StatArea + Area under .wpcy-app
+ * Freeze: P2-charts-freeze-2026-10-24 §4. No Chart.js. Area only.
+ * Delta uses --wpcy-ok-ink (not hard-coded #007017).
+ */
+
+.wpcy-app .is-busy { pointer-events: none; } /* pair with aria-busy + Spin / 「正在…」 */
+
+.wpcy-app .card.stat-a,
+.wpcy-app .stat-a {
+	/* pad inherits .card (space-6 / space-7 ≈ 24×28) */
+}
+
+.wpcy-app .stat-a .k {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--wpcy-ink-2);
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.wpcy-app .stat-a .k svg {
+	width: 18px;
+	height: 18px;
+	max-width: 18px;
+	max-height: 18px;
+	color: var(--wpcy-ink-3);
+}
+
+.wpcy-app .stat-a .v {
+	font-size: 32px;
+	line-height: 40px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	margin-top: 14px;
+	font-variant-numeric: tabular-nums;
+}
+
+.wpcy-app .stat-a .v small {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--wpcy-ink-3);
+	margin-inline-start: 6px;
+	letter-spacing: 0;
+}
+
+.wpcy-app .stat-a .d {
+	color: var(--wpcy-ink-3);
+	font-size: 13px;
+	margin-top: 2px;
+	line-height: 20px;
+}
+
+.wpcy-app .stat-a .delta {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--wpcy-ok-ink);
+	background: var(--wpcy-ok-soft);
+	padding: 1px 8px;
+	border-radius: 10px;
+	margin-inline-start: 8px;
+	vertical-align: 6px;
+	letter-spacing: 0;
+}
+
+.wpcy-app .stat-a .delta svg {
+	width: 12px;
+	height: 12px;
+	max-width: 12px;
+	max-height: 12px;
+}
+
+.wpcy-app .stat-a .area {
+	width: 100%;
+	height: 44px;
+	margin-top: 18px;
+	display: block;
+	max-width: none;
+	max-height: none;
+}
+
+.wpcy-app .stat-a .v.none {
+	color: var(--wpcy-ink-3);
+	font-weight: 500;
+	font-size: 20px;
+}
+
+.wpcy-app .stat-a .stat-a-busy {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+	color: var(--wpcy-ink-3);
+	font-size: 13px;
+}

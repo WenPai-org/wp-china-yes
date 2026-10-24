@@ -9,7 +9,10 @@
  * EXTRACT CTRL P2c (2026-10-24): CTRL-12 Spin, CTRL-16 StatusDot, CTRL-17 LoadError.
  * Builds on SHELL/CARD P2 + CTRL P2b. PageShell API gaps (2026-10-24): pageHead→notices
  * by default, pageAside no double `.mode`, footerLeft, footerLinks.label ReactNode.
- * Out of scope: SHELL-14/15/16; CARD-15..20; CARD-06 verify.
+ * P2-charts: surface API is StatArea + Area (SVG sparkline; no Chart.js).
+ * Helper also exported: areaPath (path math only; not a surface component).
+ * CSS: consumers must import '@wenpai/wpcy-admin-ui/p2-charts.css' (or an entry that includes it).
+ * Out of scope: SHELL-14/15/16; CARD-15..20; StatStrip; bar/line/donut; CARD-06 verify.
  */
 
 export const PACKAGE_NAME = '@wenpai/wpcy-admin-ui';
@@ -39,3 +42,5 @@ export { Choice, ChoiceCards } from './components/Choice.js';
 export { Spin } from './components/Spin.js';
 export { StatusDot } from './components/StatusDot.js';
 export { LoadError, ANNOUNCE_WINDOW_MS } from './components/LoadError.js';
+export { StatArea } from './components/StatArea.js';
+export { Area, areaPath } from './components/Area.js'; /* areaPath: helper; Q4 surfaces remain StatArea + Area */

@@ -15,13 +15,13 @@ import {
 	Next,
 	Notice,
 	Sec,
+	StatArea,
 } from '@wenpai/wpcy-admin-ui';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
 import Hero, { HeroAnchor } from '../ui/Hero';
-import StatArea from '../ui/StatArea';
 import Eco from '../ui/Eco';
 import Skeleton from '../ui/Skeleton';
 import SvcMatrix from '../ui/SvcMatrix';
@@ -872,10 +872,11 @@ function StatsGrid( { stats, domestic, inbound, freshInstall } ) {
 				const bytes = card.bytesKey
 					? sumSeries( split14( series[ card.bytesKey ] ).last )
 					: 0;
+				const delta = empty ? null : deltaPct( lastSum, prevSum );
 				return (
 					<StatArea
 						key={ card.label }
-						icon={ card.icon }
+						icon={ <Icon name={ card.icon } size={ 18 } /> }
 						label={ card.label }
 						value={
 							empty
@@ -883,7 +884,14 @@ function StatsGrid( { stats, domestic, inbound, freshInstall } ) {
 								: formatInt( lastSum )
 						}
 						unit={ empty ? '' : __( '次', 'wp-china-yes' ) }
-						delta={ empty ? null : deltaPct( lastSum, prevSum ) }
+						delta={
+							delta ? (
+								<>
+									<Icon name="up" size={ 12 } />
+									{ delta }
+								</>
+							) : null
+						}
 						desc={ empty ? card.when : card.desc( bytes ) }
 						points={ empty ? [] : points }
 						empty={ empty }

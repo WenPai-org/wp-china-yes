@@ -27,6 +27,7 @@
 | SHELL | 01–13 | `PageShell`（tabs/`pageTitle`/`pageLede`/`pageAside`/`notices`/`footerLeft`/`footerLinks`/`wizard`；默认 pageHead→notices；`.mode` 不双包；label 可为 ReactNode）；CSS：顶栏/品牌/Tab/wrap/页头/帮助链/页脚/栅格/节头 `Sec`/mode/向导/Snackbar 槽 |
 | CARD | 01–12 | `Card`/`CardHead`/`CardFoot`/`Tile`/`Pill`/`Next`/`Notice`/`Empty`/`Saved`/`Scope`/`SimpleRow`/`SectionTitle` |
 | CTRL | 01–05 (+06 companion)；12；16；17 | `Btn`；`Seg`/`SegItem`；`Toggle`；`Choice`/`ChoiceCards`；`Field`/`Hint`/`Opts`/`Opt`；`Spin`；`StatusDot`；`LoadError` |
+| P2-charts | StatArea / Area | `StatArea`；`Area`（surface API）；另导出 helper `areaPath`（路径计算，非 surface） |
 
 **未抽**：CARD-13/14/21 kit-later；CARD-15–20 **仅叶子自留（不抽）**；SHELL-14/15/16 **不抽**；CTRL-07+（chk-grid 等）；产品仓 import 变薄 / CARD-06 核验另 PR。
 
@@ -37,14 +38,20 @@
 ```js
 import '@wenpai/wpcy-admin-ui/tokens.css';
 import '@wenpai/wpcy-admin-ui/p2a-surfaces.css';
+// P2-charts (StatArea / Area): required — package does not auto-bundle this CSS.
+import '@wenpai/wpcy-admin-ui/p2-charts.css';
 import {
   PageShell, Btn, Card, CardHead, CardFoot, Tile,
   Pill, Notice, Empty, Next, Scope, Sec, Saved, SimpleRow, SectionTitle,
   Toggle, Seg, SegItem, Field, Hint, Choice, ChoiceCards,
   Spin, StatusDot, LoadError,
+  StatArea, Area, areaPath,
 } from '@wenpai/wpcy-admin-ui';
 
 // 根节点必须带 .wpcy-app（PageShell 已挂）；短类 (.card/.btn/…) 仅在其下生效。
+// P2-charts: surface API 为 StatArea + Area；areaPath 为可选 helper（路径计算）。
+// Consumers must import `./p2-charts.css` (or `@wenpai/wpcy-admin-ui/p2-charts.css`,
+// or another package CSS entry that includes it) whenever using StatArea / Area.
 ```
 
 Accent 必须为 `#3858e9`（见 `tokens.css`）。禁止 stub `#2271b1`。  
