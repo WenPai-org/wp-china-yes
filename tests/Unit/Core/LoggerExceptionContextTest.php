@@ -1402,6 +1402,109 @@ class LoggerExceptionContextTest extends TestCase {
 		$this->assertStringContainsString( '[RuntimeException: ' . str_repeat( '错', 100 ) . '…', $line );
 	}
 
+
+	/**
+	 * Logger follow-ups: file://localhost and mixed-case File:/// hide the path.
+	 */
+	public function test_file_url_localhost_and_mixed_case_hide_the_path() {
+		$cases = array(
+			'open file://localhost/home/alice smith/wp-config.php failed' => 'open file://[path]/wp-config.php failed',
+			'open File:///home/alice smith/wp-config.php failed' => 'open File://[path]/wp-config.php failed',
+			'open fIlE:///home/alice/x.php failed' => 'open fIlE://[path]/x.php failed',
+			'include phar://localhost/home/alice/site/x.phar/a.php' => 'include phar://[path]/a.php',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$logged = $this->logged();
+			$this->assertStringContainsString( $expected, $logged, $message );
+		}
+		$logged = $this->logged();
+		$this->assertStringNotContainsString( 'alice', $logged );
+		$this->assertStringNotContainsString( 'smith', $logged );
+		$this->assertStringNotContainsString( 'localhost', $logged );
+	}
+
+	/**
+	 * Logger follow-ups: JSON-escaped Windows / UNC paths with spaces hide the user.
+	 */
+	public function test_json_escaped_windows_and_unc_paths_with_spaces_are_hidden() {
+		$cases = array(
+			'{"path":"C:\\\\Users\\\\Alice Smith\\\\Documents\\\\secret.txt"}' => '[path]/secret.txt',
+			'{"path":"\\\\\\\\server\\\\share name\\\\alice smith\\\\secret.txt"}' => '[path]/secret.txt',
+			'{"path":"C:\\\/Users\\\/Alice Smith\\\/Documents\\\/secret.txt"}' => '[path]/secret.txt',
+			'{"path":"\\\\\\\\server\\\/share name\\\/alice smith\\\/secret.txt"}' => '[path]/secret.txt',
+		);
+		foreach ( $cases as $message => $expected ) {
+			$this->log_exception( $message );
+			$logged = $this->logged();
+			$this->assertStringContainsString( $expected, $logged, $message );
+		}
+		$logged = $this->logged();
+		foreach ( array( 'Alice', 'alice', 'Smith', 'smith', 'share name', 'Users', 'Documents', 'server' ) as $leak ) {
+			$this->assertStringNotContainsString( $leak, $logged );
+		}
+	}
+
+	/**
+	 * Logger follow-ups: untruncated "#?name(:" / "#?name(@" hide name and value.
+	 */
+	public function test_query_name_with_colon_or_at_separator_is_hidden() {
+		$cases = array(
+			'#?Ab1cdef(:Vv7secretval"beef1234' => array( 'Ab1cdef', 'Vv7secretval' ),
+			'#?Ab1cdef(@Vv7secretval"beef1234' => array( 'Ab1cdef', 'Vv7secretval' ),
+			'?token(:hunter2pass'              => array( 'token', 'hunter2pass' ),
+			'?token(@hunter2pass'              => array( 'token', 'hunter2pass' ),
+		);
+		foreach ( $cases as $message => $secrets ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			foreach ( $secrets as $secret ) {
+				$this->assertStringNotContainsString( $secret, $line, $message );
+			}
+		}
+	}
+
+	/**
+	 * Logger follow-ups: review-169-reply-b588ed3 unclosed SQL literal samples.
+	 */
+	public function test_unclosed_sql_literal_samples_hide_markers() {
+		$samples = array(
+			'IN : Updater2Q0ZUpdater2https://?Q1Z|)Cd{"k":"pw=SELECT \/ FROM https://\Q2Z\'',
+			'SELECT  FROM ?Q0Z"}Q1Z~\/"}Q2Z，{"k":"Updater2==',
+		);
+		foreach ( $samples as $message ) {
+			$this->log_exception( $message );
+			$line = (string) strrchr( "\n" . rtrim( $this->logged() ), "\n" );
+			foreach ( array( 'Q0Z', 'Q1Z', 'Q2Z' ) as $marker ) {
+				$this->assertStringNotContainsString( $marker, $line, $message );
+			}
+		}
+	}
+
+	/**
+	 * Logger follow-ups: drop_open_* forward read is capped (~4KB).
+	 */
+	public function test_drop_open_forward_read_is_capped() {
+		$scrub = new \ReflectionMethod( Logger::class, 'scrub' );
+		$scrub->setAccessible( true );
+		$logger = new Logger();
+
+		// Cut ends inside "?name"; terminator "=" sits just past the 4KB cap.
+		$prefix  = str_repeat( 'ab', 600 );
+		$open    = '#?Ab1cdef';
+		$gap     = str_repeat( 'x', 5000 );
+		$message = $prefix . $open . $gap . '=Vv7secretval"beef' . str_repeat( ' z', 200 );
+		$out     = $scrub->invoke( $logger, $message );
+		$this->assertStringNotContainsString( 'Ab1cdef', $out );
+		$this->assertStringNotContainsString( 'Vv7secretval', $out );
+
+		// Userinfo: cut ends inside user; "@host" past the cap → drop.
+		$message = str_repeat( 'ab', 600 ) . 'https://bob' . str_repeat( 'x', 5000 ) . ':pw@host.example/x' . str_repeat( ' z', 200 );
+		$out     = $scrub->invoke( $logger, $message );
+		$this->assertStringNotContainsString( 'bob', $out );
+		$this->assertStringNotContainsString( ':pw@', $out );
+	}
+
 	/**
 	 * Log one RuntimeException with $message through Logger::error().
 	 *
