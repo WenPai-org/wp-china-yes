@@ -18,13 +18,9 @@ import {
 	STORE_NAME,
 } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
+import { LoadError, Notice, Pill, Scope, Toggle } from '@wenpai/wpcy-admin-ui';
 import Icon from '../ui/icons';
 import Btn from '../ui/Btn';
-import Pill from '../ui/Pill';
-import Scope from '../ui/Scope';
-import Toggle from '../ui/Toggle';
-import Notice from '../ui/Notice';
-import LoadError from '../ui/LoadError';
 import { Skel } from '../ui/Skeleton';
 import {
 	customizedKeys,
@@ -325,7 +321,7 @@ export default function Connect() {
 		body = (
 			<div className="wpcy-stack">
 				{ networkLocked ? (
-					<Notice tone="info">
+					<Notice tone="info" wrap={ false }>
 						{ __(
 							'这些设置由网络管理员统一设定。需要本站单独调整时，请联系网络管理员在网络后台开放「允许子站覆盖」。',
 							'wp-china-yes'
@@ -436,7 +432,9 @@ function SwitchModal( { target, customs, busy, onConfirm, onClose } ) {
 				) }
 			</p>
 			{ customs.length ? (
-				<Notice tone="warn">{ customsSentence( customs ) }</Notice>
+				<Notice tone="warn" wrap={ false }>
+					{ customsSentence( customs ) }
+				</Notice>
 			) : null }
 			<div className="wpcy-modal-foot">
 				<Btn variant="secondary" disabled={ busy } onClick={ onClose }>
@@ -470,7 +468,8 @@ function CardAlert( { cardError, card, onRetry } ) {
 	return (
 		<Notice
 			tone="bad"
-			icon="warn"
+			icon={ <Icon name="warn" size={ 18 } /> }
+			wrap={ false }
 			role="alert"
 			className="card-alert"
 			action={
@@ -644,6 +643,7 @@ function SceneCard( {
 			{ plain ? (
 				<div className="scene-assert">
 					<Notice
+						wrap={ false }
 						tone="info"
 						action={
 							suggestion ? (
@@ -671,7 +671,7 @@ function SceneCard( {
 							: null }
 					</Notice>
 					{ customs.length ? (
-						<Notice tone="warn">
+						<Notice tone="warn" wrap={ false }>
 							{ customsSentence( customs ) }
 						</Notice>
 					) : null }
@@ -838,7 +838,7 @@ function SimpleAccel( {
 					'wp-china-yes'
 				) }
 			>
-				<Pill tone="ok">
+				<Pill state="ok">
 					{ orgOn
 						? __( '国内镜像', 'wp-china-yes' )
 						: __( '直连 WordPress.org', 'wp-china-yes' ) }
