@@ -11,7 +11,6 @@ import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import Icon from '../ui/icons';
 import {
-	Btn,
 	CardFoot,
 	CardHead,
 	Notice,
@@ -20,6 +19,7 @@ import {
 	Sec,
 	Spin,
 } from '@wenpai/wpcy-admin-ui';
+import Btn from '../ui/Btn';
 import Prov from '../ui/Prov';
 import { Tile } from '../ui/Card';
 import Empty from '../ui/Empty';
@@ -419,7 +419,12 @@ export default function Services() {
 						) }
 					</p>
 					<p className="wpcy-card-actions">
-						<Btn variant="danger" onClick={ onUnbind }>
+						<Btn
+							variant="danger"
+							onClick={ onUnbind }
+							disabled={ busy }
+							isBusy={ busy }
+						>
 							{ __( '解除绑定', 'wp-china-yes' ) }
 						</Btn>
 						<Btn
@@ -484,6 +489,7 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 						variant="secondary"
 						onClick={ onCancel }
 						disabled={ busy }
+						isBusy={ busy }
 					>
 						{ __( '取消', 'wp-china-yes' ) }
 					</Btn>
@@ -531,6 +537,7 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 						variant="secondary"
 						onClick={ onUnbind }
 						disabled={ busy }
+						isBusy={ busy }
 					>
 						{ __( '解除绑定', 'wp-china-yes' ) }
 					</Btn>
@@ -564,7 +571,12 @@ function BindingCard( { binding, busy, onBind, onCancel, onUnbind } ) {
 					{ __( '了解文派服务', 'wp-china-yes' ) }{ ' ' }
 					<Icon name="arrow" size={ 16 } />
 				</Btn>
-				<Btn variant="primary" onClick={ onBind } disabled={ busy }>
+				<Btn
+					variant="primary"
+					onClick={ onBind }
+					disabled={ busy }
+					isBusy={ busy }
+				>
 					{ __( '绑定本站', 'wp-china-yes' ) }
 				</Btn>
 			</CardFoot>
