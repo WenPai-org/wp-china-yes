@@ -43,6 +43,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run tokens:check
       - run: npm run lint:js
       - run: npm run format:check
       - run: npm run test:unit

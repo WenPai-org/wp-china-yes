@@ -24,3 +24,7 @@ package.json
 *.xml.dist
 *.neon
 *.neon.dist
+
+# Pinned kit tokens.json — keep machine-source formatting; do not prettier-rewrite
+src/Admin/app/design-tokens/tokens.json
+src/Admin/app/tokens.css
