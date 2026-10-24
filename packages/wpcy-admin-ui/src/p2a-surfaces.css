@@ -274,6 +274,16 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 .wpcy-app .mode .seg a,
 .wpcy-app .mode .seg button { height: 30px; font-size: var(--wpcy-text-meta); }
 
+/* D-24 / Track A: in-tab secondary nav (compose Seg; no third family) */
+.wpcy-app .wpcy-subnav { display: block; margin: 0 0 var(--wpcy-space-4); max-width: 100%; }
+.wpcy-app .wpcy-subnav .seg { max-width: 100%; }
+@media (max-width: 960px) {
+  .wpcy-app .wpcy-subnav { overflow-x: auto; }
+  .wpcy-app .wpcy-subnav .seg { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
+  .wpcy-app .wpcy-subnav .seg a,
+  .wpcy-app .wpcy-subnav .seg button { white-space: nowrap; flex: none; }
+}
+
 /* Q2: track-off / track-locked + is-locked; focus ring on track */
 .wpcy-app .toggle { display: inline-flex; align-items: center; gap: 10px; font-size: var(--wpcy-text-body); line-height: var(--wpcy-leading-meta); color: var(--wpcy-ink); appearance: none; background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; cursor: pointer; font-family: inherit; }
 .wpcy-app .toggle i { display: inline-block; width: 36px; height: 20px; border-radius: var(--wpcy-radius-lg); background: var(--wpcy-track-off); position: relative; flex: none; transition: background var(--wpcy-motion-base) var(--wpcy-motion-ease); }
@@ -404,3 +414,11 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 	.wpcy-page-head { flex-wrap: wrap; align-items: flex-start; }
 	.wpcy-page-head > * { min-width: 0; max-width: 100%; }
 }
+
+/* --- Track B / E09 secret reveal (P2b Field extension; mirrors kit) --- */
+.wpcy-app .wpcy-field__secret { display: flex; align-items: center; gap: var(--wpcy-space-2); flex: 1 1 auto; min-width: 0; max-width: var(--wpcy-size-control-max); }
+.wpcy-app .wpcy-field__secret input[type="password"],
+.wpcy-app .wpcy-field__secret input[type="text"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+.wpcy-app .wpcy-field__reveal { flex: none; height: var(--wpcy-size-control); min-width: 4.5rem; }
+.wpcy-app .field-ctl-row .wpcy-field__secret { max-width: none; }
+.wpcy-app .field-ctl-row input[type="password"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
