@@ -1,6 +1,10 @@
 /**
  * Design tokens from prototypes/e/e.css :root, scoped to .wpcy-app (SH-08).
  *
+ * Space / radius ladder aligned with wenpai-admin-ui kit (`--wenpai-*`)
+ * dual-stack ADR (linuxjoy docs/design/wenpai-admin-ui/ADR-dual-stack-…):
+ * transitional dual prefix — values must match kit wenpai-tokens.css.
+ *
  * @package WenPai\ChinaYes
  */
 
@@ -23,18 +27,35 @@
 	--wpcy-bad-soft: #fbe9ea;
 	--wpcy-mute: #646970;
 	--wpcy-mute-soft: #f0f0f1;
+
+	/* Spacing ladder ≡ --wenpai-space-* (kit-ui-034) */
+	--wpcy-space-1: 4px;
+	--wpcy-space-2: 8px;
+	--wpcy-space-3: 12px;
+	--wpcy-space-4: 16px;
+	--wpcy-space-5: 20px;
+	--wpcy-space-6: 24px;
+	--wpcy-space-7: 28px;
+	--wpcy-space-8: 32px;
+	--wpcy-space-9: 36px;
+	--wpcy-space-12: 48px;
+
+	/* Radius ≡ --wenpai-radius / -sm|-md|-lg|-xl (kit-ui-034); --wpcy-radius == xl */
+	--wpcy-radius-sm: 6px;
+	--wpcy-radius-md: 8px;
+	--wpcy-radius-lg: 10px;
+	--wpcy-radius-xl: 12px;
 	--wpcy-radius: 12px;
+
 	--wpcy-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-	--wpcy-font:
-		-apple-system,
- "Noto Sans",
- "Helvetica Neue",
- helvetica,
- arial,
-		"PingFang SC",
- "Hiragino Sans GB",
- "Noto Sans CJK SC",
-		"Source Han Sans SC",
- "Microsoft YaHei",
- sans-serif;
+	--wpcy-font: -apple-system, "Noto Sans", "Helvetica Neue", helvetica, arial,
+		"PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+		"Source Han Sans SC", "Microsoft YaHei", sans-serif;
 }
+
+/*
+ * Dual-stack对照 (wenpai ↔ wpcy), values identical:
+ * --wenpai-space-1..9,12  → --wpcy-space-1..9,12
+ * --wenpai-radius-sm|md|lg|xl → --wpcy-radius-sm|md|lg|xl
+ * --wenpai-radius (12px) → --wpcy-radius (= xl)
+ */
