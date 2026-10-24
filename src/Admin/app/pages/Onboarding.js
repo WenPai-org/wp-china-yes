@@ -2,8 +2,6 @@
  * First-run wizard: 5 steps (WZ-01 – WZ-05). Step 3 is the scene pack.
  */
 
-/* eslint-disable jsx-a11y/label-has-associated-control -- prototype choice cards wrap radio + nested copy */
-
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useRef, useState } from '@wordpress/element';
@@ -11,7 +9,15 @@ import apiFetch from '@wordpress/api-fetch';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
-import { CardHead, Notice, Pill, Tile } from '@wenpai/wpcy-admin-ui';
+import {
+	CardHead,
+	Choice,
+	ChoiceCards,
+	Notice,
+	Pill,
+	Spin,
+	Tile,
+} from '@wenpai/wpcy-admin-ui';
 import Btn from '../ui/Btn';
 import Icon from '../ui/icons';
 import { profileLabel, sceneCards } from '../ui/profiles';
@@ -243,15 +249,14 @@ export default function Onboarding() {
 								'wp-china-yes'
 							) }
 						</p>
-						<div className="choice-cards cols-2">
+						<ChoiceCards cols={ 2 }>
 							{ cards.map( ( card ) => (
-								<label
+								<Choice
 									key={ card.id }
 									htmlFor={ 'ob-p-' + card.id }
-									className={
-										'choice' +
-										( profile === card.id ? ' is-on' : '' )
-									}
+									selected={ profile === card.id }
+									title={ card.title }
+									description={ card.desc }
 								>
 									<input
 										id={ 'ob-p-' + card.id }
@@ -260,13 +265,9 @@ export default function Onboarding() {
 										checked={ profile === card.id }
 										onChange={ () => setProfile( card.id ) }
 									/>
-									<span>
-										<div className="t">{ card.title }</div>
-										<div className="d">{ card.desc }</div>
-									</span>
-								</label>
+								</Choice>
 							) ) }
-						</div>
+						</ChoiceCards>
 						{ suggestion ? (
 							<Notice
 								tone="info"
@@ -748,7 +749,7 @@ function BindingWait( { busy, onCancel } ) {
 					extra={ <Pill>{ __( '绑定中', 'wp-china-yes' ) }</Pill> }
 				/>
 				<p className="big">
-					<span className="spin" />
+					<Spin />
 					{ __( '等待验证', 'wp-china-yes' ) }
 				</p>
 				<p className="meta">
