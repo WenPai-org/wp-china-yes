@@ -11,11 +11,9 @@ import apiFetch from '@wordpress/api-fetch';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
+import { CardHead, Notice, Pill, Tile } from '@wenpai/wpcy-admin-ui';
 import Icon from '../ui/icons';
 import Btn from '../ui/Btn';
-import Pill from '../ui/Pill';
-import { CardHead, Tile } from '../ui/Card';
-import Notice from '../ui/Notice';
 import { profileLabel, sceneCards } from '../ui/profiles';
 import {
 	doneRows,
@@ -48,7 +46,13 @@ function stepClass( i, step ) {
 
 function BadAlert( { children } ) {
 	return (
-		<Notice tone="bad" icon="warn" role="alert" className="wizard-alert">
+		<Notice
+			tone="bad"
+			icon={ <Icon name="warn" size={ 18 } /> }
+			wrap={ false }
+			role="alert"
+			className="wizard-alert"
+		>
 			{ children }
 		</Notice>
 	);
@@ -264,7 +268,11 @@ export default function Onboarding() {
 							) ) }
 						</div>
 						{ suggestion ? (
-							<Notice tone="info" className="wizard-alert">
+							<Notice
+								tone="info"
+								wrap={ false }
+								className="wizard-alert"
+							>
 								{ sprintf(
 									/* translators: %s: scene */
 									__(
@@ -334,7 +342,9 @@ export default function Onboarding() {
 							<div className="rows">
 								{ doneRows( current ).map( ( row ) => (
 									<div key={ row.key }>
-										<Tile tone="ok" icon="check" />
+										<Tile tone="ok">
+											<Icon name="check" size={ 20 } />
+										</Tile>
 										<div>
 											<div className="t">{ row.t }</div>
 											<div className="d">{ row.d }</div>
@@ -370,10 +380,12 @@ export default function Onboarding() {
 								{ packRows( current, hasWoo( plugins ) ).map(
 									( row ) => (
 										<div key={ row.id }>
-											<Tile
-												tone="accent"
-												icon={ row.icon }
-											/>
+											<Tile tone="accent">
+												<Icon
+													name={ row.icon }
+													size={ 20 }
+												/>
+											</Tile>
 											<div>
 												<div className="t">
 													{ row.t }
@@ -614,7 +626,9 @@ function BindIntro() {
 		<article className="card">
 			<div className="rows">
 				<div>
-					<Tile tone="accent" icon="grid" />
+					<Tile tone="accent">
+						<Icon name="grid" size={ 20 } />
+					</Tile>
 					<div>
 						<div className="t">
 							{ __( '小工具', 'wp-china-yes' ) }
@@ -628,7 +642,9 @@ function BindIntro() {
 					</div>
 				</div>
 				<div>
-					<Tile tone="accent" icon="link" />
+					<Tile tone="accent">
+						<Icon name="link" size={ 20 } />
+					</Tile>
 					<div>
 						<div className="t">
 							{ __( '文派服务', 'wp-china-yes' ) }
@@ -676,7 +692,11 @@ function BoundState( { siteHash, onContinue } ) {
 			<h1>{ __( '本站已绑定', 'wp-china-yes' ) }</h1>
 			<article className="card">
 				<CardHead
-					tile={ <Tile tone="ok" icon="link" /> }
+					tile={
+						<Tile tone="ok">
+							<Icon name="link" size={ 20 } />
+						</Tile>
+					}
 					title={ __( '本站已绑定', 'wp-china-yes' ) }
 					sub={
 						siteHash
@@ -688,7 +708,7 @@ function BoundState( { siteHash, onContinue } ) {
 							: null
 					}
 					extra={
-						<Pill tone="ok">
+						<Pill state="ok">
 							{ __( '已绑定', 'wp-china-yes' ) }
 						</Pill>
 					}
@@ -715,7 +735,11 @@ function BindingWait( { busy, onCancel } ) {
 		<>
 			<article className="card">
 				<CardHead
-					tile={ <Tile tone="accent" icon="link" /> }
+					tile={
+						<Tile tone="accent">
+							<Icon name="link" size={ 20 } />
+						</Tile>
+					}
 					title={ __( '正在绑定本站', 'wp-china-yes' ) }
 					sub={ __(
 						'等待文派服务器验证，通常几秒内完成',
