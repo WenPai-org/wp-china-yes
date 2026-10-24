@@ -402,18 +402,34 @@ final class AdminModule implements Module {
 			true
 		);
 
-		$style_file = CHINA_YES_PLUGIN_PATH . 'build/style-index.css';
-		if ( ! is_readable( $style_file ) ) {
-			$style_file = CHINA_YES_PLUGIN_PATH . 'build/index.css';
+		$style_index = CHINA_YES_PLUGIN_PATH . 'build/style-index.css';
+		$index_css   = CHINA_YES_PLUGIN_PATH . 'build/index.css';
+		$style_deps  = array( 'wp-components' );
+		if ( in_array( 'wp-commands', $script_deps, true ) ) {
+			$style_deps[] = 'wp-commands';
 		}
-		if ( is_readable( $style_file ) ) {
-			$style_deps = array( 'wp-components' );
-			if ( in_array( 'wp-commands', $script_deps, true ) ) {
-				$style_deps[] = 'wp-commands';
-			}
+
+		// Enqueue both CSS entrypoints when present: style-index holds the main
+		// admin styles; index.css holds webpack-extracted chunks (e.g. p2-charts).
+		if ( is_readable( $style_index ) ) {
 			wp_enqueue_style(
 				self::HANDLE,
-				CHINA_YES_PLUGIN_URL . 'build/' . basename( $style_file ),
+				CHINA_YES_PLUGIN_URL . 'build/style-index.css',
+				$style_deps,
+				$version
+			);
+			if ( is_readable( $index_css ) ) {
+				wp_enqueue_style(
+					self::HANDLE . '-extra',
+					CHINA_YES_PLUGIN_URL . 'build/index.css',
+					array( self::HANDLE ),
+					$version
+				);
+			}
+		} elseif ( is_readable( $index_css ) ) {
+			wp_enqueue_style(
+				self::HANDLE,
+				CHINA_YES_PLUGIN_URL . 'build/index.css',
 				$style_deps,
 				$version
 			);
