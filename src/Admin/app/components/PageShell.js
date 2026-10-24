@@ -1,8 +1,7 @@
 /**
- * Product PageShell: store / routing 注入，展示对齐 @wenpai/wpcy-admin-ui PageShell。
+ * Product PageShell: store / routing 注入，展示走 @wenpai/wpcy-admin-ui PageShell 槽。
  *
- * 本轮复用包壳做顶栏/页脚；页头与 snackbar 仍由产品按原顺序挂到 children
- *（包壳 notices 在 pageHead 前，且 pageAside 会再包一层 .mode，接 Connect 会双包）。
+ * 吃包 API：pageTitle/pageLede/pageAside、notices、footerLeft；页头→snackbar 由包默认顺序保证。
  */
 
 import { __, sprintf } from '@wordpress/i18n';
@@ -108,25 +107,15 @@ export default function PageShell( {
 		</>
 	);
 
-	const pageHead = title ? (
-		<div className="wpcy-page-head">
-			<div>
-				<h1 className="wpcy-h1">{ title }</h1>
-				{ lede ? <p className="wpcy-lede">{ lede }</p> : null }
-			</div>
-			{ actions }
-		</div>
+	const notices = notice ? (
+		<Snackbar onRemove={ () => clearNotice() }>{ notice.message }</Snackbar>
 	) : null;
 
-	const snackbar = notice ? (
-		<div className="wpcy-snackbar-slot">
-			<Snackbar onRemove={ () => clearNotice() }>
-				{ notice.message }
-			</Snackbar>
-		</div>
-	) : null;
-
-	const versionLabel = `${ productName } ${ version } · ${ uptime }`;
+	const footerLeft = (
+		<span>
+			{ productName } { version } · { uptime }
+		</span>
+	);
 
 	const footerLinks = [
 		{
@@ -157,11 +146,13 @@ export default function PageShell( {
 			tabs={ tabs }
 			current={ slug }
 			headRight={ headRight }
-			version={ versionLabel }
+			pageTitle={ title || undefined }
+			pageLede={ lede || undefined }
+			pageAside={ actions || undefined }
+			notices={ notices }
+			footerLeft={ footerLeft }
 			footerLinks={ footerLinks }
 		>
-			{ pageHead }
-			{ snackbar }
 			{ children }
 		</UiPageShell>
 	);

@@ -24,7 +24,7 @@
 
 | 组 | ID | 导出 |
 |----|-----|------|
-| SHELL | 01–13 | `PageShell`（tabs/title/lede/notices/footer/`wizard`）；CSS：顶栏/品牌/Tab/wrap/页头/帮助链/页脚/栅格/节头 `Sec`/mode/向导/Snackbar 槽 |
+| SHELL | 01–13 | `PageShell`（tabs/`pageTitle`/`pageLede`/`pageAside`/`notices`/`footerLeft`/`footerLinks`/`wizard`；默认 pageHead→notices；`.mode` 不双包；label 可为 ReactNode）；CSS：顶栏/品牌/Tab/wrap/页头/帮助链/页脚/栅格/节头 `Sec`/mode/向导/Snackbar 槽 |
 | CARD | 01–12 | `Card`/`CardHead`/`CardFoot`/`Tile`/`Pill`/`Next`/`Notice`/`Empty`/`Saved`/`Scope`/`SimpleRow`/`SectionTitle` |
 | CTRL | 01–05 (+06 companion)；12；16；17 | `Btn`；`Seg`/`SegItem`；`Toggle`；`Choice`/`ChoiceCards`；`Field`/`Hint`/`Opts`/`Opt`；`Spin`；`StatusDot`；`LoadError` |
 

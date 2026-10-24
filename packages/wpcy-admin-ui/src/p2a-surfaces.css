@@ -1,7 +1,8 @@
-/* P2a surfaces for @wenpai/wpcy-admin-ui
+/* P2a + P2b surfaces for @wenpai/wpcy-admin-ui
  * Ported from wenpai-admin-ui css/wenpai-admin.css @ 6672999
  * --wenpai-* → --wpcy-*; chrome .wenpai-* → .wpcy-*; short classes under .wpcy-app
- * Q1: no .btn:active | Q2: no .is-loading | no charts / P2b
+ * Q1: no .btn:active | Q2: no .is-loading | no charts
+ * P2b (Toggle/Seg/Field/Choice + Tile/Empty/Next/Saved/SimpleRow) rules live below
  */
 
 .wpcy-app { font-family: var(--wpcy-font); color: var(--wpcy-ink); -webkit-font-smoothing: antialiased; font-size: var(--wpcy-text-body); line-height: var(--wpcy-leading-body); }
@@ -138,8 +139,11 @@
 .wpcy-app .next { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; background: var(--wpcy-accent-soft); border: 1px solid var(--wpcy-accent-line); border-radius: var(--wpcy-radius-xl); padding: var(--wpcy-space-4) 22px; }
 .wpcy-app .next .tile { width: 32px; height: 32px; background: var(--wpcy-card); color: var(--wpcy-accent); }
 .wpcy-app .next .tile svg { width: 18px; height: 18px; }
-.wpcy-app .next strong { font-weight: 600; }
-.wpcy-app .next .btn { margin-left: auto; }
+.wpcy-app .next > div:first-of-type { flex: 1 1 12em; min-width: 0; }
+.wpcy-app .next strong { font-weight: var(--wpcy-weight-regular); }
+.wpcy-app .next .btn { margin-inline-start: auto; }
+.wpcy-app .next-actions { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wpcy-space-2); flex-shrink: 0; }
+.wpcy-app .next-actions .btn { margin-inline-start: 0; }
 
 .wpcy-app .section-title { display: flex; align-items: center; gap: var(--wpcy-space-2); font-size: var(--wpcy-text-title); line-height: var(--wpcy-leading-title); font-weight: 600; margin: 0 0 var(--wpcy-space-1); }
 .wpcy-app .section-title svg { width: 18px; height: 18px; color: var(--wpcy-ink-3); }
@@ -299,9 +303,10 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 	.wpcy-grid-3 { grid-template-columns: 1fr; }
 }
 
-/* field:960 — field stacks; choice stays on 38/26 clamp */
+/* field:960 — field stacks; kit viewport: choice-cards → 1fr (38/26 clamp kept above) */
 @media (max-width: 960px) {
 	.wpcy-app .field { grid-template-columns: 1fr; gap: var(--wpcy-space-2); }
+	.wpcy-app .choice-cards { grid-template-columns: 1fr; }
 }
 
 
@@ -343,8 +348,10 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 .wpcy-app .wpcy-status-dot.is-danger { background: var(--wpcy-bad); }
 .wpcy-app .wpcy-status-dot.is-neutral { background: var(--wpcy-ink-3); }
 
-/* F2: kit 6672999 ≤782 head wrap + ≤600 min-width (map wenpai→wpcy) */
+/* F2: kit 6672999 ≤782 head wrap + ≤600 min-width (map wenpai→wpcy)
+ * G1: kit ≤782 .choice-cards.cols-2 → 1fr (default .choice-cards already 1fr via ≤960) */
 @media (max-width: 782px) {
+	.wpcy-app .choice-cards.cols-2 { grid-template-columns: 1fr; }
 	.wpcy-head {
 		height: auto;
 		min-height: var(--wpcy-size-head);

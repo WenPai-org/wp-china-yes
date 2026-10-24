@@ -7,8 +7,9 @@
  * Not the PHP kit: that lives in wenpai-admin-ui.
  *
  * EXTRACT CTRL P2c (2026-10-24): CTRL-12 Spin, CTRL-16 StatusDot, CTRL-17 LoadError.
- * Builds on SHELL/CARD P2 + CTRL P2b. Out of scope: SHELL-14/15/16; CARD-15..20;
- * product import thinning / CARD-06 verify.
+ * Builds on SHELL/CARD P2 + CTRL P2b. PageShell API gaps (2026-10-24): pageHead→notices
+ * by default, pageAside no double `.mode`, footerLeft, footerLinks.label ReactNode.
+ * Out of scope: SHELL-14/15/16; CARD-15..20; CARD-06 verify.
  */
 
 export const PACKAGE_NAME = '@wenpai/wpcy-admin-ui';
