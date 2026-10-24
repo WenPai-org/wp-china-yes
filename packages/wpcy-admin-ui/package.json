@@ -1,7 +1,7 @@
 {
   "name": "@wenpai/wpcy-admin-ui",
   "version": "0.0.0",
-  "description": "WenPai / WPCY React admin design-system (dual-stack): tokens + SHELL/CARD/CTRL (PageShell, Card/Tile/Pill/Notice, Toggle/Seg/Field/Choice, Spin/StatusDot/LoadError, \u2026)",
+  "description": "WenPai / WPCY React admin design-system (dual-stack): tokens + SHELL/CARD/CTRL (PageShell, Card/Tile/Pill/Notice, Toggle/Seg/Field/Choice, Spin/StatusDot/LoadError, …), StatArea/Area …",
   "license": "GPL-2.0-or-later",
   "private": true,
   "type": "module",
@@ -10,7 +10,8 @@
   "exports": {
     ".": "./src/index.js",
     "./tokens.css": "./src/tokens.css",
-    "./p2a-surfaces.css": "./src/p2a-surfaces.css"
+    "./p2a-surfaces.css": "./src/p2a-surfaces.css",
+    "./p2-charts.css": "./src/p2-charts.css"
   },
   "files": [
     "src",

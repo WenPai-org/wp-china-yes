@@ -10,6 +10,7 @@ import Commands from './commands';
 import Overview from './pages/Overview';
 import { getPageSlug, PAGES } from './routing';
 import './style.css';
+import '@wenpai/wpcy-admin-ui/p2-charts.css';
 
 const Connect = lazy( () => import( './pages/Connect' ) );
 const Services = lazy( () => import( './pages/Services' ) );
