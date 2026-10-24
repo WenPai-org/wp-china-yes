@@ -1,54 +1,33 @@
 /**
- * Button: WP Button keyboard, .btn* appearance.
- *
+ * Thin adapter: package Btn; strip product `isBusy` → disabled + aria-busy.
+ * Call sites still pass WordPress-components-style `isBusy`; package Btn
+ * would forward it to the DOM and React warns (Connect/Onboarding jest).
  */
 
-import { Button } from '@wordpress/components';
-
-const VARIANT_CLASS = {
-	primary: 'btn-primary',
-	secondary: 'btn-secondary',
-	ghost: 'btn-ghost',
-	danger: 'btn-danger',
-};
+import { createElement } from '@wordpress/element';
+import { Btn as UiBtn } from '@wenpai/wpcy-admin-ui';
 
 /**
- * @param {Object}                                 props
- * @param {'primary'|'secondary'|'ghost'|'danger'} [props.variant]
- * @param {string}                                 [props.href]
- * @param {string}                                 [props.className]
- * @param {boolean}                                [props.disabled]
- * @param {Function}                               [props.onClick]
- * @param {string}                                 [props.type]
- * @param {import('react').ReactNode}              props.children
+ * @param {Object}                    props
+ * @param {boolean}                   [props.isBusy]
+ * @param {boolean}                   [props.disabled]
+ * @param {import('react').ReactNode} [props.children]
  */
 export default function Btn( {
-	variant = 'secondary',
-	href,
-	className = '',
-	disabled,
-	onClick,
-	type = 'button',
+	isBusy = false,
+	disabled = false,
 	children,
 	...rest
 } ) {
-	const cls = [
-		'btn',
-		VARIANT_CLASS[ variant ] || 'btn-secondary',
-		className,
-	]
-		.filter( Boolean )
-		.join( ' ' );
-	return (
-		<Button
-			className={ cls }
-			href={ href }
-			disabled={ disabled }
-			onClick={ onClick }
-			type={ href ? undefined : type }
-			{ ...rest }
-		>
-			{ children }
-		</Button>
+	return createElement(
+		UiBtn,
+		{
+			...rest,
+			disabled: Boolean( disabled || isBusy ),
+			'aria-busy': isBusy ? 'true' : undefined,
+		},
+		children
 	);
 }
+
+export { Btn };

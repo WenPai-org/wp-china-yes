@@ -7,6 +7,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 import {
+	Btn,
 	Card,
 	CardHead,
 	Empty,
@@ -19,7 +20,6 @@ import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
-import Btn from '../ui/Btn';
 import Hero, { HeroAnchor } from '../ui/Hero';
 import StatArea from '../ui/StatArea';
 import Eco from '../ui/Eco';

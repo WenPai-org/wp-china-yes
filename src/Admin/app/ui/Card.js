@@ -1,72 +1,36 @@
 /**
- * Card, CardHead, CardFoot, Tile — prototype E surfaces.
- *
+ * Thin adapter: package Card family; Tile still accepts product string `icon`.
+ * Card defaults `as="article"` to match prior product markup.
  */
 
+import { createElement } from '@wordpress/element';
+import {
+	Card as UiCard,
+	CardHead,
+	CardFoot,
+	Tile as UiTile,
+} from '@wenpai/wpcy-admin-ui';
 import Icon from './icons';
 
 /**
  * @param {Object}                    props
  * @param {string}                    [props.tone]
- * @param {string}                    [props.icon]
- * @param {import('react').ReactNode} props.children
+ * @param {string}                    [props.icon]      String name → product Icon.
+ * @param {import('react').ReactNode} [props.children]
  * @param {string}                    [props.className]
  */
-export function Tile( { tone = '', icon, children, className = '' } ) {
-	const cls = [ 'tile', tone, className ].filter( Boolean ).join( ' ' );
-	return (
-		<div className={ cls }>
-			{ icon ? <Icon name={ icon } size={ 20 } /> : children }
-		</div>
-	);
-}
-
-/**
- * @param {Object}                    props
- * @param {import('react').ReactNode} [props.tile]
- * @param {import('react').ReactNode} [props.title]
- * @param {import('react').ReactNode} [props.sub]
- * @param {import('react').ReactNode} [props.extra]
- * @param {import('react').ReactNode} props.children
- */
-export function CardHead( { tile, title, sub, extra, children } ) {
-	return (
-		<div className="card-head">
-			{ tile }
-			{ title || sub ? (
-				<div>
-					{ title ? <h2 className="card-title">{ title }</h2> : null }
-					{ sub ? <p className="card-sub">{ sub }</p> : null }
-				</div>
-			) : null }
-			{ extra }
-			{ children }
-		</div>
-	);
-}
-
-/**
- * @param {Object}                    props
- * @param {string}                    [props.className]
- * @param {import('react').ReactNode} props.children
- */
-export function CardFoot( { className = '', children } ) {
-	return (
-		<div
-			className={ [ 'card-foot', className ]
-				.filter( Boolean )
-				.join( ' ' ) }
-		>
-			{ children }
-		</div>
-	);
+export function Tile( { tone = '', icon, children, className = '', ...rest } ) {
+	const content = icon
+		? createElement( Icon, { name: icon, size: 20 } )
+		: children;
+	return createElement( UiTile, { ...rest, tone, className }, content );
 }
 
 /**
  * @param {Object}                    props
  * @param {boolean}                   [props.tight]
  * @param {string}                    [props.className]
- * @param {string}                    [props.as]
+ * @param {string}                    [props.as='article']
  * @param {import('react').ReactNode} props.children
  */
 export default function Card( {
@@ -74,10 +38,9 @@ export default function Card( {
 	className = '',
 	as = 'article',
 	children,
+	...rest
 } ) {
-	const Tag = as;
-	const cls = [ 'card', tight ? 'tight' : '', className ]
-		.filter( Boolean )
-		.join( ' ' );
-	return <Tag className={ cls }>{ children }</Tag>;
+	return createElement( UiCard, { ...rest, tight, className, as }, children );
 }
+
+export { Card, CardHead, CardFoot };

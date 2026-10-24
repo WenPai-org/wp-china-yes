@@ -1,37 +1,18 @@
 /**
- * Notice: info / warn / warn.act / bad (red, CO-01 save failure).
- *
+ * Thin adapter: package Notice; default wrap=false (no .wpcy-notice-wrap)
+ * to match prior product layout. `tone` is already a package alias for `level`.
  */
 
-import Icon from './icons';
+import { createElement } from '@wordpress/element';
+import { Notice as UiNotice } from '@wenpai/wpcy-admin-ui';
 
 /**
  * @param {Object}                    props
- * @param {'info'|'warn'|'bad'}       [props.tone]
- * @param {string}                    [props.role]      alert / status for live regions.
- * @param {boolean}                   [props.act]
- * @param {string}                    [props.icon]
- * @param {import('react').ReactNode} [props.action]
- * @param {string}                    [props.className]
- * @param {import('react').ReactNode} props.children
+ * @param {boolean}                   [props.wrap=false]
+ * @param {import('react').ReactNode} [props.children]
  */
-export default function Notice( {
-	tone = 'info',
-	act = false,
-	icon = 'info',
-	action,
-	className = '',
-	role,
-	children,
-} ) {
-	const cls = [ 'notice', tone, act ? 'act' : '', className ]
-		.filter( Boolean )
-		.join( ' ' );
-	return (
-		<div className={ cls } role={ role }>
-			<Icon name={ icon } size={ 18 } />
-			<span>{ children }</span>
-			{ action }
-		</div>
-	);
+export default function Notice( { wrap = false, ...rest } ) {
+	return createElement( UiNotice, { ...rest, wrap } );
 }
+
+export { Notice };
