@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@remixicon/react": "^4.9.0",
+    "@wenpai/wpcy-admin-ui": "github:WenPai-org/wpcy-admin-ui#557e26f",
     "@wordpress/api-fetch": "^7.54.0",
     "@wordpress/commands": "^1.54.0",
     "@wordpress/components": "^40.0.0",

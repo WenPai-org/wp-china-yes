@@ -6,21 +6,24 @@
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
+import {
+	Card,
+	CardHead,
+	Empty,
+	LoadError,
+	Next,
+	Notice,
+	Sec,
+} from '@wenpai/wpcy-admin-ui';
 import PageShell from '../components/PageShell';
 import { STORE_NAME } from '../store';
 import { adminPageUrl, PAGES } from '../routing';
 import Icon from '../ui/icons';
 import Btn from '../ui/Btn';
 import Hero, { HeroAnchor } from '../ui/Hero';
-import Notice from '../ui/Notice';
-import Next from '../ui/Next';
-import Sec from '../ui/Sec';
-import Card, { CardHead } from '../ui/Card';
 import StatArea from '../ui/StatArea';
 import Eco from '../ui/Eco';
-import Empty from '../ui/Empty';
 import Skeleton from '../ui/Skeleton';
-import LoadError from '../ui/LoadError';
 import SvcMatrix from '../ui/SvcMatrix';
 import EventsSimple from '../ui/EventsSimple';
 import {
@@ -294,7 +297,8 @@ function OverviewBody( {
 				<Notice
 					tone="warn"
 					act
-					icon="shield"
+					wrap={ false }
+					icon={ <Icon name="shield" size={ 18 } /> }
 					action={
 						<Btn
 							variant="secondary"
@@ -330,47 +334,51 @@ function OverviewBody( {
 			/>
 
 			{ needConfirm ? (
-				<Next
-					icon="map"
-					action={
-						<Btn
-							variant="primary"
-							href={ adminPageUrl( PAGES.connect ) }
-						>
-							{ __( '确认你的站点场景', 'wp-china-yes' ) }
-						</Btn>
-					}
-				>
-					<strong>
-						{ __( '确认你的站点场景。', 'wp-china-yes' ) }
-					</strong>{ ' ' }
-					{ __(
-						'从 3.8 升级的站点先按「国内站」运行；如果服务器或访客在海外，选对场景后加速只作用于该作用的地方。',
-						'wp-china-yes'
-					) }
-				</Next>
+				<div style={ { marginTop: 16 } }>
+					<Next
+						icon={ <Icon name="map" size={ 20 } /> }
+						action={
+							<Btn
+								variant="primary"
+								href={ adminPageUrl( PAGES.connect ) }
+							>
+								{ __( '确认你的站点场景', 'wp-china-yes' ) }
+							</Btn>
+						}
+					>
+						<strong>
+							{ __( '确认你的站点场景。', 'wp-china-yes' ) }
+						</strong>{ ' ' }
+						{ __(
+							'从 3.8 升级的站点先按「国内站」运行；如果服务器或访客在海外，选对场景后加速只作用于该作用的地方。',
+							'wp-china-yes'
+						) }
+					</Next>
+				</div>
 			) : null }
 
 			{ showBindNext ? (
-				<Next
-					icon="link"
-					action={
-						<Btn
-							variant="primary"
-							href={ adminPageUrl( PAGES.services ) }
-						>
-							{ __( '绑定本站', 'wp-china-yes' ) }
-						</Btn>
-					}
-				>
-					<strong>
-						{ __( '下一步：绑定本站。', 'wp-china-yes' ) }
-					</strong>{ ' ' }
-					{ __(
-						'绑定后可使用文派服务与小工具，数据保存在本站，随时可解除。',
-						'wp-china-yes'
-					) }
-				</Next>
+				<div style={ { marginTop: 16 } }>
+					<Next
+						icon={ <Icon name="link" size={ 20 } /> }
+						action={
+							<Btn
+								variant="primary"
+								href={ adminPageUrl( PAGES.services ) }
+							>
+								{ __( '绑定本站', 'wp-china-yes' ) }
+							</Btn>
+						}
+					>
+						<strong>
+							{ __( '下一步：绑定本站。', 'wp-china-yes' ) }
+						</strong>{ ' ' }
+						{ __(
+							'绑定后可使用文派服务与小工具，数据保存在本站，随时可解除。',
+							'wp-china-yes'
+						) }
+					</Next>
+				</div>
 			) : null }
 
 			{ bindingError ? (
@@ -391,6 +399,7 @@ function OverviewBody( {
 				<Notice
 					tone="warn"
 					act
+					wrap={ false }
 					action={
 						<Btn
 							variant="secondary"
@@ -894,7 +903,7 @@ function SvcCard( { rows, error, onRetry, degraded, recovery } ) {
 		sub += ' · ' + __( '只检查不接管', 'wp-china-yes' );
 	}
 	return (
-		<Card tight>
+		<Card tight as="article">
 			<CardHead
 				title={ __( '核心服务', 'wp-china-yes' ) }
 				sub={ sub }
@@ -919,7 +928,7 @@ function SvcCard( { rows, error, onRetry, degraded, recovery } ) {
 function EventsCard( { events, error, onRetry } ) {
 	if ( error ) {
 		return (
-			<Card tight>
+			<Card tight as="article">
 				<CardHead
 					title={ __( '最近动态', 'wp-china-yes' ) }
 					sub={ __( '线路切换与自动处理', 'wp-china-yes' ) }
@@ -944,7 +953,7 @@ function EventsCard( { events, error, onRetry } ) {
 		text: ev.detail ? ev.title + '，' + ev.detail : ev.title,
 	} ) );
 	return (
-		<Card tight>
+		<Card tight as="article">
 			<CardHead
 				title={ __( '最近动态', 'wp-china-yes' ) }
 				sub={ __( '线路切换与自动处理', 'wp-china-yes' ) }
@@ -958,7 +967,7 @@ function EventsCard( { events, error, onRetry } ) {
 				<EventsSimple items={ items } />
 			) : (
 				<Empty
-					icon="clock"
+					icon={ <Icon name="clock" size={ 20 } /> }
 					why={ __(
 						'还没有动态。线路切换、更新检查等会记录在这里。',
 						'wp-china-yes'
