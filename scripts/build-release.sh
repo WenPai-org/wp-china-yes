@@ -41,6 +41,7 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'AGENTS.md' \
   --exclude '.grok-context/' \
   --exclude 'vendor/' \
+  --exclude 'packages/' \
   --exclude 'node_modules/' \
   --exclude 'src/Admin/app/' \
   --exclude 'webpack.config.js' \
@@ -79,8 +80,8 @@ if ! printf '%s\n' "$CONTENTS" | grep -q '^wp-china-yes/build/index.js$'; then
 	echo "release archive missing wp-china-yes/build/index.js" >&2
 	exit 1
 fi
-if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/\.git(/|$)|/tests/|/docs/|/src/Admin/app/)'; then
-	echo "release archive contains excluded paths (.git, tests/, docs/, or src/Admin/app/)" >&2
+if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/\.git(/|$)|/tests/|/docs/|/src/Admin/app/|/packages/)'; then
+	echo "release archive contains excluded paths (.git, tests/, docs/, src/Admin/app/, or packages/)" >&2
 	exit 1
 fi
 if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
