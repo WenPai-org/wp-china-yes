@@ -1,7 +1,7 @@
 /* P2a + P2b surfaces for @wenpai/wpcy-admin-ui
  * Ported from wenpai-admin-ui css/wenpai-admin.css @ 6672999
  * --wenpai-* → --wpcy-*; chrome .wenpai-* → .wpcy-*; short classes under .wpcy-app
- * Q1: no .btn:active | Q2: no .is-loading | no charts
+ * Q1: no .btn:active | Q2: no .is-loading (busy = .is-busy + aria-busy, Track C/E10) | no charts
  * P2b (Toggle/Seg/Field/Choice + Tile/Empty/Next/Saved/SimpleRow) rules live below
  */
 
@@ -207,6 +207,10 @@ main.wizard { max-width: 680px; margin: 0 auto; padding: 44px var(--wpcy-space-6
 .wpcy-app .field-ctl-row input[type="url"],
 .wpcy-app .field-ctl-row input[type="search"],
 .wpcy-app .field-ctl-row input[type="email"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+/* Track C / E10: busy control — never .btn.is-loading */
+.wpcy-app .btn.is-busy,
+.wpcy-app .is-busy { pointer-events: none; }
+
 .wpcy-app .field-ctl-row .btn { flex: none; height: var(--wpcy-size-control); }
 
 .wpcy-app .opts { display: grid; gap: 10px; }

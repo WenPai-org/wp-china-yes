@@ -12,6 +12,7 @@
  * P2-charts: surface API is StatArea + Area (SVG sparkline; no Chart.js).
  * Track A / D-24: Subnav composes Seg (nav.wpcy-subnav + aria-current); no third family.
  * Track B / E09: SecretInput (Field.Secret) — password reveal UX; nested name is caller-owned.
+ * Track C: Btn busy=.is-busy; Field.Email / Field.Url / Field.Action (E06/E10 parity).
  * Helper also exported: areaPath (path math only; not a surface component).
  * CSS: consumers must import '@wenpai/wpcy-admin-ui/p2-charts.css' (or an entry that includes it).
  * Out of scope: SHELL-14/15/16; CARD-15..20; StatStrip; bar/line/donut; CARD-06 verify.
@@ -40,7 +41,7 @@ export { SectionTitle } from './components/SectionTitle.js';
 export { Toggle } from './components/Toggle.js';
 export { Seg, SegItem } from './components/Seg.js';
 export { Subnav } from './components/Subnav.js';
-export { Field, Hint, Opts, Opt, SecretInput } from './components/Field.js';
+export { Field, Hint, Opts, Opt, SecretInput, EmailInput, UrlInput, FieldAction } from './components/Field.js';
 export { Choice, ChoiceCards } from './components/Choice.js';
 export { Spin } from './components/Spin.js';
 export { StatusDot } from './components/StatusDot.js';
