@@ -51,10 +51,10 @@ export function Field({
 /**
  * Hint under a control — `.hint` / `.hint.is-bad` (CTRL-05).
  */
-export function Hint({ bad = false, className = '', children, ...rest }) {
+export function Hint({ bad = false, ok = false, className = '', children, ...rest }) {
 	return createElement(
 		'div',
-		{ ...rest, className: cx('hint', bad && 'is-bad', className) },
+		{ ...rest, className: cx('hint', bad && 'is-bad', ok && 'is-ok', className) },
 		children
 	);
 }

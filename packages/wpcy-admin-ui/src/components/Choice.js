@@ -6,7 +6,7 @@ function cx(...parts) {
 
 /**
  * Choice card grid — `.choice-cards` / `.cols-2` (CTRL-04).
- * Default three columns; `cols={2}` → `.cols-2`. Whole card is the hit target.
+ * Columns use kit 38rem/26rem auto-fit clamp (P2b Q1); not fixed 3-col + 960 collapse.
  *
  * @param {object} props
  * @param {2|3} [props.cols=3]
@@ -23,22 +23,28 @@ export function ChoiceCards({ cols = 3, className = '', children, ...rest }) {
 }
 
 /**
- * One choice card — `<label class="choice">` with optional radio + title/desc.
- * Re-clicking an already-selected card should be ignored by the consumer.
+ * One choice card — `<label class="choice">`.
+ * Contract classes (P2b Q3): `.is-on` / `.is-locked` / `.is-soon`.
+ * `disabled` maps to `.is-locked` (gate). Prefer explicit `locked` / `soon`.
+ * Leaf `.rec` badge retained (dual-stack documented).
  *
  * @param {object} props
  * @param {boolean} [props.selected]
- * @param {boolean} [props.disabled]
+ * @param {boolean} [props.disabled] — → `.is-locked`
+ * @param {boolean} [props.locked] — → `.is-locked`
+ * @param {boolean} [props.soon] — → `.is-soon`
  * @param {import('react').ReactNode} [props.title]
  * @param {import('react').ReactNode} [props.description]
- * @param {import('react').ReactNode} [props.recommended] — `.rec` badge content (omit if unused)
+ * @param {import('react').ReactNode} [props.recommended]
  * @param {string} [props.htmlFor]
  * @param {string} [props.className]
- * @param {import('react').ReactNode} [props.children] — e.g. the <input type="radio">
+ * @param {import('react').ReactNode} [props.children]
  */
 export function Choice({
 	selected = false,
 	disabled = false,
+	locked = false,
+	soon = false,
 	title,
 	description,
 	recommended = null,
@@ -47,6 +53,7 @@ export function Choice({
 	children,
 	...rest
 }) {
+	const isLocked = locked || disabled;
 	const body =
 		title != null || description != null || recommended != null
 			? createElement(
@@ -76,7 +83,8 @@ export function Choice({
 			className: cx(
 				'choice',
 				selected && 'is-on',
-				disabled && 'is-disabled',
+				isLocked && 'is-locked',
+				soon && 'is-soon',
 				className
 			),
 		},
