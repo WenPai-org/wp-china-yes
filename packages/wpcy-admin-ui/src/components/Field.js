@@ -154,8 +154,49 @@ export function SecretInput({
 	);
 }
 
+/**
+ * Email control — type=email (Track C′ parity with kit Settings email field).
+ * Sanitize / is_email live in the PHP kit; this is UX parity only.
+ */
+export function EmailInput({ className = '', ...rest }) {
+	return createElement('input', {
+		...rest,
+		type: 'email',
+		autoComplete: rest.autoComplete ?? 'email',
+		className: cx(className),
+	});
+}
+
+/**
+ * URL control — type=url (Track C′ parity with kit Settings url field).
+ * esc_url_raw http/https live in the PHP kit; this is UX parity only.
+ */
+export function UrlInput({ className = '', ...rest }) {
+	return createElement('input', {
+		...rest,
+		type: 'url',
+		autoComplete: rest.autoComplete ?? 'url',
+		className: cx(className),
+	});
+}
+
+/**
+ * Field-side action / busy row — `.field-ctl-row` + Btn busy (Track C / E10).
+ * Caller wires onClick / form post; kit owns admin-post Action envelope.
+ */
+export function FieldAction({ className = '', children, ...rest }) {
+	return createElement(
+		'div',
+		{ ...rest, className: cx('field-ctl-row', className) },
+		children
+	);
+}
+
 Field.Hint = Hint;
 Field.Opts = Opts;
 Field.Opt = Opt;
 Field.Secret = SecretInput;
+Field.Email = EmailInput;
+Field.Url = UrlInput;
+Field.Action = FieldAction;
 export default Field;

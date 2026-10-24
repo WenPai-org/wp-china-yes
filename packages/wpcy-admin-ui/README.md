@@ -90,3 +90,22 @@ import { Field, SecretInput } from '@wenpai/wpcy-admin-ui';
 
 Empty leave / clear / nested storage sanitize live in the PHP kit (`wenpai-admin-ui`); this is UX parity only. No `SecretCard` family.
 
+## Btn busy + Field email/url (Track C / E10)
+
+Busy controls use `.is-busy` + `aria-busy` — **never** `.btn.is-loading`:
+
+```js
+import { Btn, Field, EmailInput, UrlInput, FieldAction } from '@wenpai/wpcy-admin-ui';
+
+<Btn busy busyLabel="正在测试">测试连接</Btn>
+
+<Field label="通知邮箱"><EmailInput name="notify_email" /></Field>
+<Field label="Webhook">
+  <FieldAction>
+    <UrlInput name="webhook_url" />
+    <Btn busy={testing}>测试连接</Btn>
+  </FieldAction>
+</Field>
+```
+
+Admin-post Action envelope / sanitize live in the PHP kit (`Wenpai_Admin_Action`). Instant toggle UX: disable control + `aria-busy` while the Action request is in flight.

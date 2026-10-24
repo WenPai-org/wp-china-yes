@@ -4,13 +4,14 @@ const VARIANTS = new Set(['primary', 'secondary', 'ghost', 'danger']);
 
 /**
  * Dual-stack button — shared classes `.btn` / `.btn-*` under `.wpcy-app`.
- * No `:active` contract color (Q1). No `.is-loading` in P2a (Q2).
+ * No `:active` contract color (Q1). Busy = `.is-busy` + aria-busy (Track C / E10); never `.btn.is-loading`.
  *
  * @param {object} props
  * @param {'primary'|'secondary'|'ghost'|'danger'} [props.variant='secondary']
  * @param {string} [props.href] — render <a> when set
  * @param {boolean} [props.disabled]
  * @param {boolean} [props.needApply] — data-wenpai-need-apply (kit attr name kept)
+ * @param {boolean} [props.busy] — `.is-busy` + aria-busy (E10; never `.is-loading`)
  * @param {string} [props.busyLabel] — data-wenpai-busy
  * @param {string} [props.className]
  * @param {import('react').ReactNode} [props.children]
@@ -23,6 +24,7 @@ export const Btn = forwardRef(function Btn(props, ref) {
 		type = 'button',
 		disabled = false,
 		needApply = false,
+		busy = false,
 		busyLabel,
 		className = '',
 		children,
@@ -31,12 +33,13 @@ export const Btn = forwardRef(function Btn(props, ref) {
 	} = props;
 
 	const v = VARIANTS.has(variant) ? variant : 'secondary';
-	const classes = ['btn', `btn-${v}`, className].filter(Boolean).join(' ');
+	const classes = ['btn', `btn-${v}`, busy && 'is-busy', className].filter(Boolean).join(' ');
 	const content = children ?? label ?? null;
 
 	const dataAttrs = {};
 	if (needApply) dataAttrs['data-wenpai-need-apply'] = '';
 	if (busyLabel) dataAttrs['data-wenpai-busy'] = busyLabel;
+	if (busy) dataAttrs['aria-busy'] = 'true';
 
 	if (href != null && href !== '') {
 		if (disabled) {
@@ -78,7 +81,7 @@ export const Btn = forwardRef(function Btn(props, ref) {
 			ref,
 			type: type === 'submit' ? 'submit' : 'button',
 			className: classes,
-			disabled: disabled || undefined,
+			disabled: disabled || busy || undefined,
 		},
 		content
 	);
