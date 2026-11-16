@@ -201,7 +201,7 @@ export default function Services() {
 					typeof body?.fetched_at === 'string' ? body.fetched_at : '',
 			} );
 			setCatalogState( 'ready' );
-		} catch ( error ) {
+		} catch {
 			setCatalogState( 'error' );
 		}
 	}
@@ -702,11 +702,14 @@ function UnlockList() {
 
 function Catalog( { woo, profile, windfontsOn, catalog, catalogState } ) {
 	const items = ( catalog?.items || [] ).slice();
-	const recommendWeixiaoduo = woo && items.some( ( i ) => i.vendor === 'weixiaoduo' );
+	const recommendWeixiaoduo =
+		woo && items.some( ( i ) => i.vendor === 'weixiaoduo' );
 	const mixed = new Set( items.map( ( i ) => i.vendor || '' ) ).size > 1;
 	const sorted = items.sort( ( a, b ) => {
 		if ( recommendWeixiaoduo ) {
-			return ( b.vendor === 'weixiaoduo' ) - ( a.vendor === 'weixiaoduo' );
+			return (
+				( b.vendor === 'weixiaoduo' ) - ( a.vendor === 'weixiaoduo' )
+			);
 		}
 		return ( b.vendor === 'wenpai' ) - ( a.vendor === 'wenpai' );
 	} );
@@ -720,6 +723,7 @@ function Catalog( { woo, profile, windfontsOn, catalog, catalogState } ) {
 					: __( '当前场景', 'wp-china-yes' )
 		  );
 
+	const catalogEmpty = catalogStateEmpty( catalogState );
 	return (
 		<section className="sec">
 			<Sec
@@ -749,86 +753,109 @@ function Catalog( { woo, profile, windfontsOn, catalog, catalogState } ) {
 						</span>
 					) : null }
 				</div>
-				{ catalogState === 'loading' || catalogState === 'idle' ? (
-					<Empty
-						icon="grid"
-						why={ __( '正在读取服务目录…', 'wp-china-yes' ) }
-					/>
-				) : catalogState === 'error' ? (
-					<Empty
-						icon="grid"
-						why={ __(
-							'服务目录读取失败，请稍后重试。',
-							'wp-china-yes'
-						) }
-					/>
-				) : sorted.length === 0 ? (
-					<Empty
-						icon="grid"
-						why={ __(
-							'暂无可用服务，请稍后再来查看。',
-							'wp-china-yes'
-						) }
-					/>
-				) : (
-					<div className="rows svc">
-						{ sorted.map( ( item ) => {
-							const rec =
-								mixed &&
-								( ( recommendWeixiaoduo &&
-									item.vendor === 'weixiaoduo' ) ||
-									( ! recommendWeixiaoduo &&
-										item.vendor === 'wenpai' ) );
-							const enabled =
-								item.id === 'windfonts' && windfontsOn;
-							const pill = catalogPill( item, enabled );
-							const prov =
-								item.provider_label || item.provider || '';
-							const action = item.action || '';
-							return (
-								<div key={ item.id }>
-									<div>
-										<div className="t">
-											{ item.name }
-											{ prov ? <Prov>{ prov }</Prov> : null }
-											{ rec ? (
-												<span className="tag-rec">
-													{ __( '推荐', 'wp-china-yes' ) }
-												</span>
-											) : null }
+				{ catalogEmpty ??
+					( sorted.length === 0 ? (
+						<Empty
+							icon="grid"
+							why={ __(
+								'暂无可用服务，请稍后再来查看。',
+								'wp-china-yes'
+							) }
+						/>
+					) : (
+						<div className="rows svc">
+							{ sorted.map( ( item ) => {
+								const rec =
+									mixed &&
+									( ( recommendWeixiaoduo &&
+										item.vendor === 'weixiaoduo' ) ||
+										( ! recommendWeixiaoduo &&
+											item.vendor === 'wenpai' ) );
+								const enabled =
+									item.id === 'windfonts' && windfontsOn;
+								const pill = catalogPill( item, enabled );
+								const prov =
+									item.provider_label || item.provider || '';
+								const action = item.action || '';
+								return (
+									<div key={ item.id }>
+										<div>
+											<div className="t">
+												{ item.name }
+												{ prov ? (
+													<Prov>{ prov }</Prov>
+												) : null }
+												{ rec ? (
+													<span className="tag-rec">
+														{ __(
+															'推荐',
+															'wp-china-yes'
+														) }
+													</span>
+												) : null }
+											</div>
+											<div className="d">
+												{ item.desc }
+											</div>
 										</div>
-										<div className="d">{ item.desc }</div>
+										<Pill state={ pill.state }>
+											{ pill.text }
+										</Pill>
+										<span className="r">
+											{ action === 'settings' ? (
+												<Btn
+													variant="ghost"
+													href="admin.php?page=wpcy-connect"
+												>
+													{ __(
+														'设置',
+														'wp-china-yes'
+													) }
+												</Btn>
+											) : (
+												<Btn
+													variant="ghost"
+													href={ goUrl(
+														item.service || item.id
+													) }
+													target="_blank"
+													rel="noopener noreferrer"
+												>
+													{ __(
+														'了解 →',
+														'wp-china-yes'
+													) }
+												</Btn>
+											) }
+										</span>
 									</div>
-									<Pill state={ pill.state }>{ pill.text }</Pill>
-									<span className="r">
-										{ action === 'settings' ? (
-											<Btn
-												variant="ghost"
-												href="admin.php?page=wpcy-connect"
-											>
-												{ __( '设置', 'wp-china-yes' ) }
-											</Btn>
-										) : (
-											<Btn
-												variant="ghost"
-												href={ goUrl(
-													item.service || item.id
-												) }
-												target="_blank"
-												rel="noopener noreferrer"
-											>
-												{ __( '了解 →', 'wp-china-yes' ) }
-											</Btn>
-										) }
-									</span>
-								</div>
-							);
-						} ) }
-					</div>
-				) }
+								);
+							} ) }
+						</div>
+					) ) }
 			</article>
 		</section>
 	);
+}
+
+function catalogStateEmpty( state ) {
+	if ( state === 'loading' || state === 'idle' ) {
+		return (
+			<Empty
+				icon="grid"
+				why={ __( '正在读取服务目录…', 'wp-china-yes' ) }
+			/>
+		);
+	}
+	if ( state === 'error' ) {
+		return (
+			<Empty
+				icon="grid"
+				why={ __( '服务目录读取失败，请稍后重试。', 'wp-china-yes' ) }
+			/>
+		);
+	}
+	return null;
 }
 
 function catalogPill( item, enabled ) {
