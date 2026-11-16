@@ -41,13 +41,13 @@ class TrustAnchorTest extends TestCase {
 	 */
 	public function fixture_signed_documents(): array {
 		return array(
-			'apps index, no kid'          => array( 'apps/index.valid.json' ),
-			'manifest motusnap, no kid'   => array( 'apps/motusnap.valid.json' ),
-			'manifest paidtool, no kid'   => array( 'apps/paidtool.valid.json' ),
-			'mock-app manifest, no kid'   => array( 'mock-app/manifest.json' ),
-			'element hide, apps kid'      => array( 'element-hide/sample.json' ),
-			'notice rules, apps kid'      => array( 'notice-rules/sample.json' ),
-			'announcements, apps kid'     => array( 'announcements/sample.json' ),
+			'apps index, no kid'        => array( 'apps/index.valid.json' ),
+			'manifest motusnap, no kid' => array( 'apps/motusnap.valid.json' ),
+			'manifest paidtool, no kid' => array( 'apps/paidtool.valid.json' ),
+			'mock-app manifest, no kid' => array( 'mock-app/manifest.json' ),
+			'element hide, apps kid'    => array( 'element-hide/sample.json' ),
+			'notice rules, apps kid'    => array( 'notice-rules/sample.json' ),
+			'announcements, apps kid'   => array( 'announcements/sample.json' ),
 		);
 	}
 
