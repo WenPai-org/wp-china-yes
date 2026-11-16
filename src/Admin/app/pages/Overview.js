@@ -868,7 +868,7 @@ function StatsGrid( { stats, domestic, inbound, freshInstall } ) {
 						0
 					)
 				);
-				const empty = Boolean( freshInstall );
+				const empty = Boolean( freshInstall ) || lastSum === 0;
 				const bytes = card.bytesKey
 					? sumSeries( split14( series[ card.bytesKey ] ).last )
 					: 0;
