@@ -37,10 +37,10 @@ class RecordIgnoreTest extends TestCase {
 	}
 
 	/**
-	 * Built-in baseline verifies in test mode (fixture key injected).
+	 * Shipped baseline verifies under the production key map.
 	 */
 	public function test_baseline_verifies() {
-		$ruleset = new Ruleset( null, LegacyFixtureKey::public_key(), true, LegacyFixtureKey::keys_by_kid() );
+		$ruleset = new Ruleset();
 		$this->assertTrue( $ruleset->verified() );
 		$this->assertSame( 1, $ruleset->version() );
 	}

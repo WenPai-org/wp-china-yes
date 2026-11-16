@@ -48,7 +48,6 @@ class TrustAnchorTest extends TestCase {
 			'element hide, apps kid'      => array( 'element-hide/sample.json' ),
 			'notice rules, apps kid'      => array( 'notice-rules/sample.json' ),
 			'announcements, apps kid'     => array( 'announcements/sample.json' ),
-			'ruleset baseline, rules kid' => array( '../../src/Privacy/rulesets/baseline.json' ),
 		);
 	}
 
@@ -75,19 +74,21 @@ class TrustAnchorTest extends TestCase {
 	}
 
 	/**
-	 * Production key map is placeholders only: every known kid is unset.
+	 * Production key map holds a valid Base64 Ed25519 public key for every known kid.
 	 */
-	public function test_production_keys_are_unconfigured_placeholders() {
+	public function test_production_keys_are_configured() {
 		$this->assertSame( TestKeys::KIDS, array_keys( array_intersect_key( array_flip( TestKeys::KIDS ), ManifestVerifier::PRODUCTION_KEYS_BY_KID ) ) );
 		foreach ( ManifestVerifier::PRODUCTION_KEYS_BY_KID as $kid => $key ) {
-			$this->assertSame( '', $key, $kid );
+			$this->assertNotSame( '', $key, $kid );
+			$raw = sodium_base642bin( $key, SODIUM_BASE64_VARIANT_ORIGINAL );
+			$this->assertSame( SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES, strlen( $raw ), $kid );
 		}
 	}
 
 	/**
-	 * No production key configured: a correct signature by any key is rejected.
+	 * Production map trusts only the production keys: a correct signature by the throwaway test key is rejected.
 	 */
-	public function test_no_production_key_rejects_any_signature() {
+	public function test_untrusted_key_rejects_any_signature() {
 		$doc = array(
 			'id'      => 'probe',
 			'version' => '1.0.0',
