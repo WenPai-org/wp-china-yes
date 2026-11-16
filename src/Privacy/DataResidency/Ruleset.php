@@ -27,16 +27,16 @@ final class Ruleset {
 	/**
 	 * Production Ed25519 public keys (Base64) by kid.
 	 *
-	 * Placeholders: no production public key is configured yet, so a signed
-	 * ruleset is rejected (built-in L0 hosts only) until one is set here.
+	 * Production keys generated 2026-11-16 on feicode-prod
+	 * (/root/license-server-keys/signing/); private halves never leave that host.
 	 * Only public keys belong in this map.
 	 *
 	 * @since 4.0.0
 	 * @var array<string, string>
 	 */
 	public const PRODUCTION_KEYS_BY_KID = array(
-		'wpcy-ruleset-2026' => '',
-		'wpcy-apps-2026'    => '',
+		'wpcy-ruleset-2026' => 'mrSvbfa+Xf9Qk5iVn2NHdCIj/502zg+Xv3QyVhDni9E=',
+		'wpcy-apps-2026'    => 'RtcAc1WqnsMWmhnRx+aBAa89nFqaNytT1bBJkzN6w5U=',
 	);
 
 	/**

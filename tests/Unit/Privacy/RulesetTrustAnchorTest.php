@@ -14,7 +14,6 @@ use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Privacy\DataResidency\Ruleset;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
-use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
 use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 
 require_once dirname( __DIR__ ) . '/Config/wp-option-stubs.php';
@@ -60,22 +59,25 @@ class RulesetTrustAnchorTest extends TestCase {
 	}
 
 	/**
-	 * Non-test mode: the shipped baseline (test-key signature) is rejected; only built-in L0 applies.
+	 * Non-test mode: the shipped baseline carries a production signature and verifies.
 	 */
-	public function test_production_ruleset_rejects_test_key_baseline() {
+	public function test_production_ruleset_accepts_signed_baseline() {
 		$ruleset = new Ruleset();
-		$this->assertFalse( $ruleset->verified() );
-		$this->assertSame( 'builtin', $ruleset->protected_source() );
+		$this->assertTrue( $ruleset->verified() );
+		$this->assertSame( 'builtin+signed', $ruleset->protected_source() );
 		$this->assertSame( array(), $ruleset->noise_hosts() );
-		$this->assertNull( $ruleset->match( 'https://rest.akismet.com/1.1/comment-check' ) );
+		$rule = $ruleset->match( 'https://rest.akismet.com/1.1/comment-check' );
+		$this->assertIsArray( $rule );
+		$this->assertSame( 'record', $rule['action'] );
 		$this->assertTrue( $ruleset->is_protected( 'api.wenpai.net' ) );
 	}
 
 	/**
-	 * Test mode: the same baseline verifies once the test key is injected.
+	 * Test mode: a test-key signature verifies once the test key is injected.
 	 */
 	public function test_test_mode_accepts_test_key_baseline() {
-		$ruleset = new Ruleset( null, LegacyFixtureKey::public_key(), true, LegacyFixtureKey::keys_by_kid() );
+		$path    = $this->write_signed_baseline( 'wpcy-ruleset-2026' );
+		$ruleset = new Ruleset( $path, TestKeys::public_key(), true, TestKeys::keys_by_kid() );
 		$this->assertTrue( $ruleset->verified() );
 		$rule = $ruleset->match( 'https://rest.akismet.com/1.1/comment-check' );
 		$this->assertIsArray( $rule );
@@ -83,19 +85,24 @@ class RulesetTrustAnchorTest extends TestCase {
 	}
 
 	/**
-	 * Production key map is placeholders only.
+	 * Production key map holds a valid Base64 Ed25519 public key for every known kid.
 	 */
-	public function test_production_ruleset_keys_are_unconfigured_placeholders() {
-		$this->assertNotSame( array(), Ruleset::PRODUCTION_KEYS_BY_KID );
+	public function test_production_ruleset_keys_are_configured() {
+		$this->assertEqualsCanonicalizing(
+			TestKeys::KIDS,
+			array_keys( Ruleset::PRODUCTION_KEYS_BY_KID )
+		);
 		foreach ( Ruleset::PRODUCTION_KEYS_BY_KID as $kid => $key ) {
-			$this->assertSame( '', $key, $kid );
+			$this->assertNotSame( '', $key, $kid );
+			$raw = sodium_base642bin( $key, SODIUM_BASE64_VARIANT_ORIGINAL );
+			$this->assertSame( SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES, strlen( $raw ), $kid );
 		}
 	}
 
 	/**
-	 * No production key configured: a ruleset correctly signed by any key is rejected.
+	 * Production map trusts only the production keys: a ruleset signed by the throwaway test key is rejected.
 	 */
-	public function test_no_production_key_rejects_any_signed_ruleset() {
+	public function test_untrusted_key_rejects_signed_ruleset() {
 		foreach ( array( 'wpcy-ruleset-2026', 'wpcy-apps-2026', '' ) as $kid ) {
 			$path = $this->write_signed_baseline( $kid );
 			$this->assertFalse( ( new Ruleset( $path ) )->verified(), 'kid=' . $kid );
@@ -116,16 +123,16 @@ class RulesetTrustAnchorTest extends TestCase {
 	}
 
 	/**
-	 * Caller: data residency with the default ruleset passes requests through, records nothing, does not crash.
+	 * Caller: data residency with the default ruleset applies the signed baseline rule.
 	 */
-	public function test_residency_with_production_ruleset_applies_no_unverified_rule() {
+	public function test_residency_with_signed_ruleset_records_matching_host() {
 		$url    = 'https://rest.akismet.com/1.1/comment-check';
 		$module = new DataResidencyModule();
 		$this->assertFalse( $module->filter_pre_http_request( false, array(), $url ) );
-		$this->assertArrayNotHasKey( 'rest.akismet.com', $module->log() );
+		$this->assertArrayHasKey( 'rest.akismet.com', $module->log() );
 		$this->assertSame( array(), $GLOBALS['wpcy_privacy_remote_urls'] );
 
-		$test_mode = new DataResidencyModule( new Ruleset( null, LegacyFixtureKey::public_key(), true, LegacyFixtureKey::keys_by_kid() ) );
+		$test_mode = new DataResidencyModule( new Ruleset( null, TestKeys::public_key(), true, TestKeys::keys_by_kid() ) );
 		$this->assertFalse( $test_mode->filter_pre_http_request( false, array(), $url ) );
 		$this->assertArrayHasKey( 'rest.akismet.com', $test_mode->log() );
 	}

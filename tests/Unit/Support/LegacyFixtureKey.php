@@ -3,9 +3,9 @@
  * Public key that signed the committed fixtures, for test mode only.
  *
  * The signed fixtures under tests/fixtures (apps, mock-app, element-hide,
- * notice-rules, announcements) and the shipped ruleset baseline carry
- * precomputed signatures made with the TEST ONLY key whose public half is
- * tests/fixtures/keys/wpcy-test-ed25519.pub. Production code does not trust
+ * notice-rules, announcements) carry precomputed signatures made with the
+ * TEST ONLY key whose public half is tests/fixtures/keys/wpcy-test-ed25519.pub.
+ * The shipped ruleset baseline is signed by the production key instead. Production code does not trust
  * that key: src/ has no copy of it and no switch that loads it. A test opts in
  * by passing these values to the verifier or ruleset constructor.
  *
