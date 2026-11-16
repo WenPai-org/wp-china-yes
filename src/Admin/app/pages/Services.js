@@ -758,7 +758,7 @@ function Catalog( { woo, profile, windfontsOn, catalog, catalogState } ) {
 						<Empty
 							icon="grid"
 							why={ __(
-								'暂无可用服务，请稍后再来查看。',
+								'暂无服务条目，请稍后再来查看。',
 								'wp-china-yes'
 							) }
 						/>
