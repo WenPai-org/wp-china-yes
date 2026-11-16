@@ -164,10 +164,10 @@ final class CatalogModule implements Module {
 	public function snapshot(): array {
 		$payload = $this->payload();
 		return array(
-			'catalog_version' => isset( $payload['catalog_version'] ) && is_string( $payload['catalog_version'] ) ? $payload['catalog_version'] : '',
-			'items'           => isset( $payload['items'] ) && is_array( $payload['items'] ) ? $payload['items'] : array(),
+			'catalog_version' => $payload['catalog_version'],
+			'items'           => $payload['items'],
 			'stale'           => $this->using_stale(),
-			'fetched_at'      => isset( $payload['fetched_at'] ) && is_string( $payload['fetched_at'] ) ? $payload['fetched_at'] : '',
+			'fetched_at'      => $payload['fetched_at'],
 		);
 	}
 
@@ -236,8 +236,8 @@ final class CatalogModule implements Module {
 		}
 
 		$payload = array(
-			'catalog_version' => isset( $result['catalog_version'] ) ? $result['catalog_version'] : '',
-			'items'           => isset( $result['items'] ) && is_array( $result['items'] ) ? $result['items'] : array(),
+			'catalog_version' => $result['catalog_version'],
+			'items'           => $result['items'],
 			'fetched_at'      => gmdate( 'Y-m-d\TH:i:s\Z' ),
 		);
 		call_user_func( $this->set_transient, self::TRANSIENT_FRESH, $payload, self::TTL_FRESH );
