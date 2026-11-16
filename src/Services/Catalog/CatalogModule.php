@@ -165,10 +165,31 @@ final class CatalogModule implements Module {
 		$payload = $this->payload();
 		return array(
 			'catalog_version' => $payload['catalog_version'],
-			'items'           => $payload['items'],
+			'items'           => self::for_admin( $payload['items'] ),
 			'stale'           => $this->using_stale(),
 			'fetched_at'      => $payload['fetched_at'],
 		);
+	}
+
+	/**
+	 * Admin-facing item rows. The upstream `entitlement` key is renamed to
+	 * `access`: admin JS source must not contain licensing terms.
+	 *
+	 * @param array<int, mixed> $items Cached rows.
+	 * @return list<array<string, mixed>>
+	 */
+	private static function for_admin( array $items ): array {
+		$out = array();
+		foreach ( $items as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$row['access'] = isset( $row['entitlement'] ) && is_string( $row['entitlement'] ) ? $row['entitlement'] : '';
+			unset( $row['entitlement'] );
+			$out[] = $row;
+		}
+
+		return $out;
 	}
 
 	/**

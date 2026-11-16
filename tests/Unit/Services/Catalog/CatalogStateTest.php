@@ -55,9 +55,9 @@ class CatalogStateTest extends TestCase {
 		$this->assertFalse( $snap['stale'] );
 		$this->assertNotEmpty( $snap['items'] );
 		$this->assertSame( 'windfonts', $snap['items'][0]['id'] );
-		$this->assertSame( 'included', $snap['items'][0]['entitlement'] );
+		$this->assertSame( 'included', $snap['items'][0]['access'] );
 		$this->assertSame( 'motusnap', $snap['items'][1]['id'] );
-		$this->assertSame( 'active', $snap['items'][1]['entitlement'] );
+		$this->assertSame( 'active', $snap['items'][1]['access'] );
 		$this->assertSame( 100, $snap['items'][1]['quota']['limit'] );
 	}
 

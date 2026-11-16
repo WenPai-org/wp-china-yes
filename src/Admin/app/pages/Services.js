@@ -865,9 +865,9 @@ function catalogPill( item, enabled ) {
 	if ( item.id === 'windfonts' ) {
 		return { state: '', text: __( '未启用', 'wp-china-yes' ) };
 	}
-	const entitlement = item.entitlement || '';
+	const access = item.access || '';
 	const quota = item.quota;
-	if ( entitlement === 'active' ) {
+	if ( access === 'active' ) {
 		if (
 			quota &&
 			typeof quota.used === 'number' &&
@@ -885,10 +885,10 @@ function catalogPill( item, enabled ) {
 		}
 		return { state: 'ok', text: __( '已开通', 'wp-china-yes' ) };
 	}
-	if ( entitlement === 'exhausted' ) {
+	if ( access === 'exhausted' ) {
 		return { state: 'warn', text: __( '额度已用完', 'wp-china-yes' ) };
 	}
-	if ( entitlement === 'included' ) {
+	if ( access === 'included' ) {
 		return { state: '', text: __( '未启用', 'wp-china-yes' ) };
 	}
 	return { state: '', text: __( '未开通', 'wp-china-yes' ) };
