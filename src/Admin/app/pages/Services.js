@@ -33,6 +33,7 @@ import {
 const HOST_ORIGIN = snapshotHostOrigin();
 const BINDING_PATH = '/wpcy/v1/binding';
 const APPS_PATH = '/wpcy/v1/apps';
+const CATALOG_PATH = '/wpcy/v1/catalog';
 const GO_PREFIX = 'https://wpcy.com/go/';
 const QUOTA = 'entitl' + 'ement';
 
@@ -85,38 +86,6 @@ function hasWoo( plugins ) {
 	);
 }
 
-/**
- * Static catalog until the server-side list API is ready.
- * TODO: replace STATIC_CATALOG with GET /wpcy/v1/catalog (server-issued,
- * auto-updated). Filter here only as a temporary stand-in.
- */
-const STATIC_CATALOG = [
-	{
-		id: 'windfonts',
-		name: __( 'Windfonts 中文字体', 'wp-china-yes' ),
-		prov: 'Windfonts',
-		desc: __( '前台中文字体替换', 'wp-china-yes' ),
-		vendor: 'wenpai',
-		woo: false,
-	},
-	{
-		id: 'wechat-pay',
-		name: __( '微信支付 for WooCommerce', 'wp-china-yes' ),
-		prov: __( '薇晓朵', 'wp-china-yes' ),
-		desc: __( '让中国买家在你的海外店用微信付款', 'wp-china-yes' ),
-		vendor: 'weixiaoduo',
-		woo: true,
-	},
-	{
-		id: 'order-notice',
-		name: __( '订单微信通知', 'wp-china-yes' ),
-		prov: __( '薇晓朵', 'wp-china-yes' ),
-		desc: __( '新订单、退款实时推送到微信', 'wp-china-yes' ),
-		vendor: 'weixiaoduo',
-		woo: true,
-	},
-];
-
 export default function Services() {
 	const { plugins, profile } = useSelect( ( select ) => {
 		const store = select( STORE_NAME );
@@ -138,6 +107,13 @@ export default function Services() {
 	const [ appsUnavailable, setAppsUnavailable ] = useState( false );
 	const [ openApp, setOpenApp ] = useState( null );
 	const [ offerApp, setOfferApp ] = useState( null );
+	const [ catalog, setCatalog ] = useState( {
+		items: [],
+		catalog_version: '',
+		stale: false,
+		fetched_at: '',
+	} );
+	const [ catalogState, setCatalogState ] = useState( 'idle' );
 	const pollRef = useRef( 0 );
 	const bound = binding.status === 'bound';
 	const woo = hasWoo( plugins );
@@ -188,6 +164,7 @@ export default function Services() {
 			} );
 		} );
 		refreshApps();
+		refreshCatalog();
 		return stopPoll;
 	}, [] );
 
@@ -201,12 +178,33 @@ export default function Services() {
 				.then( ( next ) => {
 					if ( next && next.status === 'bound' ) {
 						stopPoll();
+						refreshCatalog();
 					}
 				} )
 				.catch( () => undefined );
 		}, 3000 );
 		return stopPoll;
 	}, [ binding.status ] );
+
+	async function refreshCatalog() {
+		setCatalogState( 'loading' );
+		try {
+			const body = await apiFetch( { path: CATALOG_PATH } );
+			setCatalog( {
+				items: Array.isArray( body?.items ) ? body.items : [],
+				catalog_version:
+					typeof body?.catalog_version === 'string'
+						? body.catalog_version
+						: '',
+				stale: Boolean( body?.stale ),
+				fetched_at:
+					typeof body?.fetched_at === 'string' ? body.fetched_at : '',
+			} );
+			setCatalogState( 'ready' );
+		} catch {
+			setCatalogState( 'error' );
+		}
+	}
 
 	async function onBind() {
 		setBusy( true );
@@ -394,6 +392,8 @@ export default function Services() {
 					windfontsOn={ Boolean(
 						window.wpcyAdmin?.settings?.modules?.windfonts
 					) }
+					catalog={ catalog }
+					catalogState={ catalogState }
 				/>
 			) : null }
 
@@ -700,9 +700,12 @@ function UnlockList() {
 	);
 }
 
-function Catalog( { woo, profile, windfontsOn } ) {
-	const recommendWeixiaoduo = woo;
-	const sorted = STATIC_CATALOG.slice().sort( ( a, b ) => {
+function Catalog( { woo, profile, windfontsOn, catalog, catalogState } ) {
+	const items = ( catalog?.items || [] ).slice();
+	const recommendWeixiaoduo =
+		woo && items.some( ( i ) => i.vendor === 'weixiaoduo' );
+	const mixed = new Set( items.map( ( i ) => i.vendor || '' ) ).size > 1;
+	const sorted = items.sort( ( a, b ) => {
 		if ( recommendWeixiaoduo ) {
 			return (
 				( b.vendor === 'weixiaoduo' ) - ( a.vendor === 'weixiaoduo' )
@@ -720,6 +723,7 @@ function Catalog( { woo, profile, windfontsOn } ) {
 					: __( '当前场景', 'wp-china-yes' )
 		  );
 
+	const catalogEmpty = catalogStateEmpty( catalogState );
 	return (
 		<section className="sec">
 			<Sec
@@ -740,60 +744,154 @@ function Catalog( { woo, profile, windfontsOn } ) {
 								: __( '文派服务', 'wp-china-yes' ) }
 						</b>
 					</span>
+					{ catalog?.stale ? (
+						<span className="d">
+							{ __(
+								'（目录为缓存副本，服务端暂不可达）',
+								'wp-china-yes'
+							) }
+						</span>
+					) : null }
 				</div>
-				<div className="rows svc">
-					{ sorted.map( ( item ) => {
-						const rec =
-							( recommendWeixiaoduo &&
-								item.vendor === 'weixiaoduo' ) ||
-							( ! recommendWeixiaoduo &&
-								item.vendor === 'wenpai' );
-						const enabled = item.id === 'windfonts' && windfontsOn;
-						return (
-							<div key={ item.id }>
-								<div>
-									<div className="t">
-										{ item.name }
-										<Prov>{ item.prov }</Prov>
-										{ rec ? (
-											<span className="tag-rec">
-												{ __( '推荐', 'wp-china-yes' ) }
-											</span>
-										) : null }
+				{ catalogEmpty ??
+					( sorted.length === 0 ? (
+						<Empty
+							icon="grid"
+							why={ __(
+								'暂无服务条目，请稍后再来查看。',
+								'wp-china-yes'
+							) }
+						/>
+					) : (
+						<div className="rows svc">
+							{ sorted.map( ( item ) => {
+								const rec =
+									mixed &&
+									( ( recommendWeixiaoduo &&
+										item.vendor === 'weixiaoduo' ) ||
+										( ! recommendWeixiaoduo &&
+											item.vendor === 'wenpai' ) );
+								const enabled =
+									item.id === 'windfonts' && windfontsOn;
+								const pill = catalogPill( item, enabled );
+								const prov =
+									item.provider_label || item.provider || '';
+								const action = item.action || '';
+								return (
+									<div key={ item.id }>
+										<div>
+											<div className="t">
+												{ item.name }
+												{ prov ? (
+													<Prov>{ prov }</Prov>
+												) : null }
+												{ rec ? (
+													<span className="tag-rec">
+														{ __(
+															'推荐',
+															'wp-china-yes'
+														) }
+													</span>
+												) : null }
+											</div>
+											<div className="d">
+												{ item.desc }
+											</div>
+										</div>
+										<Pill state={ pill.state }>
+											{ pill.text }
+										</Pill>
+										<span className="r">
+											{ action === 'settings' ? (
+												<Btn
+													variant="ghost"
+													href="admin.php?page=wpcy-connect"
+												>
+													{ __(
+														'设置',
+														'wp-china-yes'
+													) }
+												</Btn>
+											) : (
+												<Btn
+													variant="ghost"
+													href={ goUrl(
+														item.service || item.id
+													) }
+													target="_blank"
+													rel="noopener noreferrer"
+												>
+													{ __(
+														'了解 →',
+														'wp-china-yes'
+													) }
+												</Btn>
+											) }
+										</span>
 									</div>
-									<div className="d">{ item.desc }</div>
-								</div>
-								<Pill state={ enabled ? 'ok' : '' }>
-									{ enabled
-										? __( '已启用', 'wp-china-yes' )
-										: __( '未购买', 'wp-china-yes' ) }
-								</Pill>
-								<span className="r">
-									{ enabled ? (
-										<Btn
-											variant="ghost"
-											href="admin.php?page=wpcy-connect"
-										>
-											{ __( '设置', 'wp-china-yes' ) }
-										</Btn>
-									) : (
-										<Btn
-											variant="ghost"
-											href={ goUrl( item.id ) }
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											{ __( '了解 →', 'wp-china-yes' ) }
-										</Btn>
-									) }
-								</span>
-							</div>
-						);
-					} ) }
-				</div>
+								);
+							} ) }
+						</div>
+					) ) }
 			</article>
 		</section>
 	);
+}
+
+function catalogStateEmpty( state ) {
+	if ( state === 'loading' || state === 'idle' ) {
+		return (
+			<Empty
+				icon="grid"
+				why={ __( '正在读取服务目录…', 'wp-china-yes' ) }
+			/>
+		);
+	}
+	if ( state === 'error' ) {
+		return (
+			<Empty
+				icon="grid"
+				why={ __( '服务目录读取失败，请稍后重试。', 'wp-china-yes' ) }
+			/>
+		);
+	}
+	return null;
+}
+
+function catalogPill( item, enabled ) {
+	if ( enabled ) {
+		return { state: 'ok', text: __( '已启用', 'wp-china-yes' ) };
+	}
+	if ( item.id === 'windfonts' ) {
+		return { state: '', text: __( '未启用', 'wp-china-yes' ) };
+	}
+	const access = item.access || '';
+	const quota = item.quota;
+	if ( access === 'active' ) {
+		if (
+			quota &&
+			typeof quota.used === 'number' &&
+			typeof quota.limit === 'number'
+		) {
+			return {
+				state: 'ok',
+				text: sprintf(
+					/* translators: 1: used, 2: limit */
+					__( '已开通 · 本月 %1$d/%2$d', 'wp-china-yes' ),
+					quota.used,
+					quota.limit
+				),
+			};
+		}
+		return { state: 'ok', text: __( '已开通', 'wp-china-yes' ) };
+	}
+	if ( access === 'exhausted' ) {
+		return { state: 'warn', text: __( '额度已用完', 'wp-china-yes' ) };
+	}
+	if ( access === 'included' ) {
+		return { state: '', text: __( '未启用', 'wp-china-yes' ) };
+	}
+	return { state: '', text: __( '未开通', 'wp-china-yes' ) };
 }
 
 function AppsGrid( { apps, onOpen } ) {

@@ -38,6 +38,7 @@ use WenPai\ChinaYes\Privacy\DataResidency\DataResidencyModule;
 use WenPai\ChinaYes\Privacy\SiteBlocklist\SiteBlocklistModule;
 use WenPai\ChinaYes\Providers\UpdateBridge;
 use WenPai\ChinaYes\Rest\RestModule;
+use WenPai\ChinaYes\Services\Catalog\CatalogModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
 use WenPai\ChinaYes\Stats\Counters;
@@ -239,6 +240,7 @@ final class Plugin {
 		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( $entitlements );
+		$registry->add( new CatalogModule( $config, $logger ) );
 		$registry->add( new NoticeControlModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_notice_rules_source', '' ) : '' ), null, $logger ) );
 		$registry->add( new AnnouncementsModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', '' ) : '' ) ) );
 		$registry->add( new ElementHideModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_element_hide_source', '' ) : '' ), null, $logger ) );
