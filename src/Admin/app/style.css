@@ -16,6 +16,12 @@
 /* 文派叶子 4.0 · 方向 E */
 
 /* --- 基础 --- */
+.wpcy-app h1, .wpcy-app h2, .wpcy-app h3, .wpcy-app h4, .wpcy-app h5, .wpcy-app h6,
+.wpcy-app strong,
+.wpcy-app b {
+	font-weight: 400;
+}
+
 .wpcy-app a {
 	text-decoration: none;
 }
@@ -98,7 +104,7 @@
 
 .wpcy-name {
 	font-size: 17px;
-	font-weight: 600;
+	font-weight: 400;
 	letter-spacing: 0.01em;
 }
 
@@ -138,7 +144,7 @@
 	height: 100%;
 	padding: 0 14px;
 	color: var(--wpcy-ink-2);
-	font-weight: 500;
+	font-weight: 400;
 	border-bottom: 2px solid transparent;
 	margin-bottom: -1px;
 	font-size: 14px;
@@ -173,7 +179,7 @@
 .wpcy-h1 {
 	font-size: 24px;
 	line-height: 32px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0;
 }
 
@@ -318,7 +324,7 @@
 .card-title {
 	font-size: 16px;
 	line-height: 24px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0;
 }
 
@@ -365,7 +371,7 @@
 .big {
 	font-size: 24px;
 	line-height: 32px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0;
 	letter-spacing: -0.01em;
 }
@@ -391,7 +397,7 @@
 .sec-h h2 {
 	font-size: 16px;
 	line-height: 24px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0;
 }
 
@@ -412,7 +418,7 @@
 	line-height: 18px;
 	letter-spacing: 0;
 	text-transform: none;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-ink-2);
 }
 
@@ -435,7 +441,7 @@
 	padding: 0 10px 0 var(--wpcy-space-2);
 	border-radius: var(--wpcy-radius);
 	font-size: 13px;
-	font-weight: 500;
+	font-weight: 400;
 	background: var(--wpcy-mute-soft);
 	color: var(--wpcy-ink-2);
 	white-space: nowrap;
@@ -501,7 +507,7 @@ a.scope:hover {
 	background: var(--wpcy-line-soft);
 	color: var(--wpcy-ink-2);
 	font-size: 12px;
-	font-weight: 500;
+	font-weight: 400;
 	white-space: nowrap;
 }
 
@@ -552,7 +558,7 @@ a.scope:hover {
 }
 
 .notice.warn.act b {
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .btn {
@@ -564,7 +570,7 @@ a.scope:hover {
 	padding: 0 var(--wpcy-space-4);
 	border-radius: var(--wpcy-radius-sm);
 	font: inherit;
-	font-weight: 500;
+	font-weight: 400;
 	cursor: pointer;
 	border: 1px solid transparent;
 	white-space: nowrap;
@@ -702,7 +708,7 @@ a.scope:hover {
 	gap: var(--wpcy-space-1);
 	color: var(--wpcy-accent);
 	font-size: 12px;
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .hero-bar-more svg {
@@ -747,13 +753,13 @@ a.scope:hover {
 	letter-spacing: 0;
 	text-transform: none;
 	color: var(--wpcy-ink-3);
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .hero-l h1 {
 	font-size: 28px;
 	line-height: 38px;
-	font-weight: 600;
+	font-weight: 400;
 	letter-spacing: -0.015em;
 	margin: 10px 0 var(--wpcy-space-3);
 }
@@ -780,7 +786,7 @@ a.scope:hover {
 .hero-svc-h {
 	font-size: 13px;
 	line-height: 20px;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-ink-3);
 	margin: 2px 0 6px;
 }
@@ -823,7 +829,7 @@ a.scope:hover {
 .svc-stack .n {
 	font-size: 14px;
 	line-height: 22px;
-	font-weight: 500;
+	font-weight: 400;
 	display: flex;
 	align-items: center;
 	gap: var(--wpcy-space-2);
@@ -906,7 +912,7 @@ a.scope:hover {
 }
 
 .routes .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 	display: flex;
 	align-items: center;
@@ -986,14 +992,14 @@ a.scope:hover {
 	line-height: 18px;
 	letter-spacing: 0;
 	text-transform: none;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-ink-3);
 	font-variant-numeric: tabular-nums;
 	margin-bottom: 2px;
 }
 
 .tl .e {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1032,7 +1038,7 @@ a.scope:hover {
 }
 
 .next strong {
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .next .btn {
@@ -1054,7 +1060,7 @@ a.scope:hover {
 .eco-l .eyebrow {
 	font-size: 12px;
 	line-height: 18px;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-accent);
 	margin-bottom: var(--wpcy-space-2);
 }
@@ -1062,7 +1068,7 @@ a.scope:hover {
 .eco-l h2 {
 	font-size: 20px;
 	line-height: 28px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0 0 10px;
 	letter-spacing: -0.01em;
 }
@@ -1100,7 +1106,7 @@ a.scope:hover {
 	gap: var(--wpcy-space-2);
 	font-size: 15px;
 	line-height: 22px;
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .eco-bn svg {
@@ -1141,7 +1147,7 @@ a.scope:hover {
 	gap: var(--wpcy-space-2);
 	font-size: 16px;
 	line-height: 24px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0 0 var(--wpcy-space-1);
 }
 
@@ -1152,7 +1158,7 @@ a.scope:hover {
 }
 
 .section-title .pill {
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .section-desc {
@@ -1177,7 +1183,7 @@ a.scope:hover {
 	display: flex;
 	align-items: center;
 	gap: var(--wpcy-space-2);
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1228,7 +1234,7 @@ a.scope:hover {
 }
 
 .opt .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1266,7 +1272,7 @@ a.scope:hover {
 }
 
 .choice .t {
-	font-weight: 600;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1304,7 +1310,7 @@ a.scope:hover {
 .seg a.on {
 	background: var(--wpcy-accent-soft);
 	color: var(--wpcy-accent);
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .toggle {
@@ -1402,7 +1408,7 @@ a.scope:hover {
 }
 
 .simple-row .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1434,7 +1440,7 @@ a.scope:hover {
 }
 
 .rows .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1498,7 +1504,7 @@ a.scope:hover {
 }
 
 .app .t {
-	font-weight: 600;
+	font-weight: 400;
 	margin-top: var(--wpcy-space-3);
 	font-size: 15px;
 }
@@ -1553,7 +1559,7 @@ a.scope:hover {
 }
 
 .prov-h b {
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .prov-h .pill {
@@ -1622,7 +1628,7 @@ a.scope:hover {
 
 .tbl th {
 	text-align: left;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-ink-3);
 	font-size: 13px;
 	line-height: 20px;
@@ -1646,7 +1652,7 @@ a.scope:hover {
 }
 
 .tbl .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 }
 
@@ -1687,7 +1693,7 @@ a.scope:hover {
 	place-items: center;
 	background: var(--wpcy-line);
 	color: var(--wpcy-ink-2);
-	font-weight: 600;
+	font-weight: 400;
 	font-size: 13px;
 	line-height: 20px;
 }
@@ -1699,7 +1705,7 @@ a.scope:hover {
 
 .steps .st.cur {
 	color: var(--wpcy-ink);
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .steps .st.done .n {
@@ -1716,7 +1722,7 @@ a.scope:hover {
 .wizard h1 {
 	font-size: 26px;
 	line-height: 34px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0 0 6px;
 }
 
@@ -1758,7 +1764,7 @@ a.scope:hover {
 	font-size: 22px;
 	line-height: 28px;
 	margin-top: var(--wpcy-space-2);
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .wizard-done .stat-a .d {
@@ -1877,7 +1883,7 @@ a.scope:hover {
 .hero-a-n {
 	font-size: 34px;
 	line-height: 40px;
-	font-weight: 600;
+	font-weight: 400;
 	letter-spacing: -0.02em;
 	font-variant-numeric: tabular-nums;
 }
@@ -1894,7 +1900,7 @@ a.scope:hover {
 .hero-a-label {
 	font-size: 14px;
 	line-height: 22px;
-	font-weight: 500;
+	font-weight: 400;
 	margin-top: 2px;
 }
 
@@ -2036,7 +2042,7 @@ a.scope:hover {
 }
 
 .svc-mx .svc-n .t {
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 14px;
 	line-height: 22px;
 }
@@ -2136,7 +2142,7 @@ a.scope:hover {
 .eco7 .eyebrow {
 	font-size: 12px;
 	line-height: 18px;
-	font-weight: 500;
+	font-weight: 400;
 	color: var(--wpcy-ink-3);
 	margin-bottom: 2px;
 }
@@ -2166,7 +2172,7 @@ a.scope:hover {
 .eco7-head h2 {
 	font-size: 16px;
 	line-height: 24px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: 0;
 	letter-spacing: -0.01em;
 }
@@ -2204,7 +2210,7 @@ a.scope:hover {
 .eco7-lg b {
 	font-size: 14px;
 	line-height: 20px;
-	font-weight: 600;
+	font-weight: 400;
 	color: var(--wpcy-ink);
 	letter-spacing: 0.01em;
 }
@@ -2262,7 +2268,7 @@ a.scope:hover {
 	color: var(--wpcy-accent);
 	font-size: 11px;
 	line-height: 20px;
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .scene-assert {
@@ -2309,7 +2315,7 @@ a.scope:hover {
 
 .detect-line b {
 	color: var(--wpcy-ink);
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .tag-rec {
@@ -2322,7 +2328,7 @@ a.scope:hover {
 	color: var(--wpcy-accent);
 	font-size: 12px;
 	line-height: 20px;
-	font-weight: 500;
+	font-weight: 400;
 	vertical-align: 2px;
 }
 
@@ -2370,7 +2376,7 @@ a.scope:hover {
 .seg button.on {
 	background: var(--wpcy-accent-soft);
 	color: var(--wpcy-accent);
-	font-weight: 500;
+	font-weight: 400;
 }
 
 .mode .seg button {
@@ -2391,7 +2397,7 @@ button.app {
 
 .card .big {
 	font-size: 18px;
-	font-weight: 600;
+	font-weight: 400;
 	margin: var(--wpcy-space-2) 0 var(--wpcy-space-1);
 }
 
@@ -2407,7 +2413,7 @@ button.app {
 	padding: 0 var(--wpcy-space-4);
 	border-radius: var(--wpcy-radius-sm);
 	font-size: 14px;
-	font-weight: 500;
+	font-weight: 400;
 	line-height: 22px;
 	box-shadow: none !important;
 	text-decoration: none;
