@@ -138,14 +138,14 @@ final class RecoveryPage {
 .wpcy-rec .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:24px 28px}
 .wpcy-rec .card-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .wpcy-rec .tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:#fbf3dc;color:#9a7208}
-.wpcy-rec .card-title{font-size:16px;line-height:24px;font-weight:600;margin:0}
+.wpcy-rec .card-title{font-size:16px;line-height:24px;font-weight:400;margin:0}
 .wpcy-rec .card-sub{color:#646970;font-size:13px;line-height:20px;margin:0}
 .wpcy-rec .rows>div{display:flex;align-items:flex-start;gap:14px;padding:18px 0;border-top:1px solid #f0f0f1}
 .wpcy-rec .rows>div:first-child{border-top:0;padding-top:0}
-.wpcy-rec .t{font-weight:500;font-size:14px}
+.wpcy-rec .t{font-weight:400;font-size:14px}
 .wpcy-rec .d{color:#646970;font-size:13px;line-height:20px;margin-top:2px;max-width:46ch}
 .wpcy-rec .r{margin-left:auto;margin-top:2px}
-.wpcy-rec .btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:6px;font:inherit;font-weight:500;cursor:pointer;border:1px solid transparent;white-space:nowrap;font-size:14px;text-decoration:none}
+.wpcy-rec .btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:6px;font:inherit;font-weight:400;cursor:pointer;border:1px solid transparent;white-space:nowrap;font-size:14px;text-decoration:none}
 .wpcy-rec .btn-secondary{background:#fff;color:#1e1e1e;border-color:#c3c4c7}
 .wpcy-rec .btn-danger{background:#fff;color:#d63638;border-color:#d63638}
 .wpcy-rec .btn-ghost{background:transparent;color:#3858e9;border:0;padding:0;height:auto}
