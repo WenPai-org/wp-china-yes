@@ -1450,7 +1450,7 @@ a.scope:hover {
 
 .rows.svc > div {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 88px 80px;
+	grid-template-columns: minmax(0, 1fr) auto 80px;
 	align-items: center;
 }
 

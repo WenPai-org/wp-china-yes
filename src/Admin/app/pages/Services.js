@@ -852,6 +852,7 @@ function catalogStateEmpty( state ) {
 			<Empty
 				icon="grid"
 				why={ __( '服务目录读取失败，请稍后重试。', 'wp-china-yes' ) }
+				when={ __( '服务端恢复后会自动重新读取。', 'wp-china-yes' ) }
 			/>
 		);
 	}
