@@ -109,3 +109,26 @@ import { Btn, Field, EmailInput, UrlInput, FieldAction } from '@wenpai/wpcy-admi
 ```
 
 Admin-post Action envelope / sanitize live in the PHP kit (`Wenpai_Admin_Action`). Instant toggle UX: disable control + `aria-busy` while the Action request is in flight.
+
+## Repeater / Card fold rows (Track D / E08)
+
+Repeater and collection-row surfaces use existing **Field** + **Card** exports. Fold / endpoint-like rows are **Card composition only** — never an `EndpointCard` (or ModuleCard / StrategyCard) component.
+
+```jsx
+import { Repeater, Field, Card } from '@wenpai/wpcy-admin-ui';
+import '@wenpai/wpcy-admin-ui/p2a-surfaces.css';
+
+<Repeater
+  value={rows}
+  onChange={setRows}
+  maxRows={5}
+  renderRow={(row, i, { update }) => (
+    <>
+      <Field label="名称"><input value={row.name||''} onChange={e=>update({name:e.target.value})} /></Field>
+      <Field label="URL"><Field.Url value={row.url||''} onChange={e=>update({url:e.target.value})} /></Field>
+    </>
+  )}
+/>
+```
+
+Sanitize, empty-row drop, and option persistence live in the PHP kit (`wenpai-admin-ui` Settings `repeater` / thin `Wenpai_Admin_Collection`). Tokens: `--wpcy-*`.
