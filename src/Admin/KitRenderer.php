@@ -628,11 +628,16 @@ final class KitRenderer {
 				'title'  => __( '全套白标', 'wp-china-yes' ),
 				'desc'   => __( '一次配置，统一覆盖全站文派插件的品牌名、帮助/反馈/文档链与作者。', 'wp-china-yes' ),
 				'active' => $wl['enabled'],
-				'pill'   => $wl['locked'] ? __( '常量锁定', 'wp-china-yes' ) : ( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ) ),
-				'metric' => $wl['enabled']
-					? ( '' !== $wl['brand_name'] ? sprintf( /* translators: %s: brand name */ __( '当前品牌：%s', 'wp-china-yes' ), $wl['brand_name'] ) : __( '已启用白标过滤', 'wp-china-yes' ) )
-					: __( '面向建站与客户交付场景', 'wp-china-yes' ),
+				'pill'   => ! $wl['entitled']
+					? __( '需授权', 'wp-china-yes' )
+					: ( $wl['locked'] ? __( '常量锁定', 'wp-china-yes' ) : ( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ) ) ),
+				'metric' => ! $wl['entitled']
+					? __( '付费能力 · 需开通 Agency / OEM 授权', 'wp-china-yes' )
+					: ( $wl['enabled']
+						? ( '' !== $wl['brand_name'] ? sprintf( /* translators: %s: brand name */ __( '当前品牌：%s', 'wp-china-yes' ), $wl['brand_name'] ) : __( '已启用白标过滤', 'wp-china-yes' ) )
+						: __( '已获得授权，点击配置即可生效', 'wp-china-yes' ) ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) ),
+				'btn'    => ! $wl['entitled'] ? __( '了解与开通', 'wp-china-yes' ) : __( '配置', 'wp-china-yes' ),
 			),
 		);
 
@@ -656,7 +661,7 @@ final class KitRenderer {
 			echo '<span class="wpcy-core-card__metric">' . esc_html( $mod['metric'] ) . '</span>';
 			$btn_html = \Wenpai_Admin_UI::button_html(
 				array(
-					'label'   => __( '配置', 'wp-china-yes' ),
+					'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
 					'href'    => $mod['url'],
 					'variant' => 'secondary',
 					'size'    => 'sm',
@@ -747,7 +752,8 @@ final class KitRenderer {
 		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
 		$scope     = isset( $settings['public_assets']['scope'] ) ? (string) $settings['public_assets']['scope'] : 'both';
 		$wl        = WhiteLabel::resolve( $settings );
-		$wl_locked = $locked || $wl['locked'];
+		$entitled  = ! empty( $wl['entitled'] );
+		$wl_locked = $locked || $wl['locked'] || ! $entitled;
 
 		$actions = \Wenpai_Admin_UI::button_html(
 			array(
@@ -765,6 +771,18 @@ final class KitRenderer {
 					'form'    => 'wpcy-settings-form',
 				)
 			);
+		} elseif ( ! $entitled ) {
+			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '开通白标授权', 'wp-china-yes' ),
+					'href'    => 'https://wpcy.com/go/oem',
+					'variant' => 'primary',
+					'attrs'   => array(
+						'target' => '_blank',
+						'rel'    => 'noopener noreferrer',
+					),
+				)
+			);
 		}
 
 		\Wenpai_Admin_Shell::page_head(
@@ -774,7 +792,47 @@ final class KitRenderer {
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="feature-whitelabel">';
-		if ( $wl['locked'] ) {
+		if ( ! $entitled ) {
+			\Wenpai_Admin_UI::card_open(
+				array(
+					'title' => __( '需要 Agency / OEM 白标授权', 'wp-china-yes' ),
+					'sub'   => __( '全套白标会将文派叶子及全站文派独立插件统一转为你的自有品牌，属于商业交付付费能力；支持 72 小时离线缓存容灾。', 'wp-china-yes' ),
+					'tile'  => false,
+				)
+			);
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => 'sparkle',
+					'title'        => __( '尚未检测到有效的白标授权', 'wp-china-yes' ),
+					'desc'         => __( '开通授权后绑定本站即可自动解锁下方全部配置项，无需另装 Pro 插件包。', 'wp-china-yes' ),
+					'pill'         => array(
+						'text'  => __( '未授权', 'wp-china-yes' ),
+						'state' => 'mute',
+					),
+					'control_html' => \Wenpai_Admin_UI::button_html(
+						array(
+							'label'   => __( '绑定本站同步授权', 'wp-china-yes' ),
+							'type'    => 'button',
+							'variant' => 'secondary',
+							'size'    => 'sm',
+							'attrs'   => array( 'data-wpcy-action' => 'bind' ),
+						)
+					) . ' ' . \Wenpai_Admin_UI::button_html(
+						array(
+							'label'   => __( '前往开通授权', 'wp-china-yes' ),
+							'href'    => 'https://wpcy.com/go/oem',
+							'variant' => 'primary',
+							'size'    => 'sm',
+							'attrs'   => array(
+								'target' => '_blank',
+								'rel'    => 'noopener noreferrer',
+							),
+						)
+					),
+				)
+			);
+			\Wenpai_Admin_UI::card_close();
+		} elseif ( $wl['locked'] ) {
 			\Wenpai_Admin_UI::notice(
 				array(
 					'tone' => 'info',
@@ -796,7 +854,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '品牌与外链覆盖', 'wp-china-yes' ),
+				'title' => $entitled ? __( '品牌与外链覆盖', 'wp-china-yes' ) : __( '可定制项预览（授权后解锁）', 'wp-china-yes' ),
 				'sub'   => __( '不修改插件文件头、文本域与 Update URI；留空字段自动保持各插件默认值。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
@@ -810,7 +868,7 @@ final class KitRenderer {
 				'control_html' => self::switch_control( 'wl_enabled', $wl['enabled'], $wl_locked, array( 'data-wpcy-wl-toggle' => '1' ) ),
 			)
 		);
-		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( $wl['enabled'] ? '' : ' hidden' ) . '>';
+		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( ( $wl['enabled'] || ! $entitled ) ? '' : ' hidden' ) . '>';
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
 		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名', 'wp-china-yes' ), __( '替换全站文派插件顶栏品牌名与插件列表作者（左侧功能名不变）。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：我的建站品牌', 'wp-china-yes' ), 64, $wl_locked );
 		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏「帮助」链接；留空保持默认。', 'wp-china-yes' ), $wl['help_url'], 'https://example.com/help', 300, $wl_locked );

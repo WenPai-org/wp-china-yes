@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Admin;
 
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -143,6 +144,59 @@ final class WhiteLabel {
 	}
 
 	/**
+	 * Paid entitlement service slugs that unlock suite-wide white-label.
+	 *
+	 * @var list<string>
+	 */
+	private const ENTITLEMENT_SLUGS = array( 'oem', 'whitelabel' );
+
+	/**
+	 * Entitlement statuses considered active.
+	 *
+	 * @var list<string>
+	 */
+	private const ACTIVE_STATUSES = array( 'active', 'ok', 'granted' );
+
+	/**
+	 * Whether this site holds an active paid white-label entitlement (or constant lock).
+	 *
+	 * Reads the 1h fresh / 72h stale `EntitlementsModule` cache so transient network blips
+	 * never revert a licensed client site back to default branding.
+	 */
+	public static function is_entitled(): bool {
+		if ( defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' ) ) {
+			return true;
+		}
+		if ( function_exists( 'apply_filters' ) && (bool) apply_filters( 'wpcy_whitelabel_entitled', false ) ) {
+			return true;
+		}
+		if ( ! function_exists( 'get_transient' ) ) {
+			return false;
+		}
+
+		$items = get_transient( EntitlementsModule::TRANSIENT_FRESH );
+		if ( ! is_array( $items ) ) {
+			$items = get_transient( EntitlementsModule::TRANSIENT_STALE );
+		}
+		if ( ! is_array( $items ) ) {
+			return false;
+		}
+
+		foreach ( $items as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$service = isset( $row['service'] ) && is_string( $row['service'] ) ? strtolower( trim( $row['service'] ) ) : '';
+			$status  = isset( $row['status'] ) && is_string( $row['status'] ) ? strtolower( trim( $row['status'] ) ) : '';
+			if ( in_array( $service, self::ENTITLEMENT_SLUGS, true ) && in_array( $status, self::ACTIVE_STATUSES, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Resolve effective white-label state from settings snapshot and optional PHP constants.
 	 *
 	 * Supported wp-config.php constants:
@@ -156,15 +210,16 @@ final class WhiteLabel {
 	 * - WPCY_WHITELABEL_HIDE_LINKS   (bool)   Hide uninstalled extension promos & default WenPai links.
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
-	 * @return array{enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, logo_url: string, hide_logo: bool, hide_links: bool}
+	 * @return array{entitled: bool, enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, logo_url: string, hide_logo: bool, hide_links: bool}
 	 */
 	public static function resolve( array $settings ): array {
 		$raw = isset( $settings['admin']['whitelabel'] ) && is_array( $settings['admin']['whitelabel'] )
 			? $settings['admin']['whitelabel']
 			: array();
 
-		$locked  = defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' );
-		$enabled = $locked || ! empty( $raw['enabled'] );
+		$entitled = self::is_entitled();
+		$locked   = defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' );
+		$enabled  = $entitled && ( $locked || ! empty( $raw['enabled'] ) );
 
 		$brand_name   = self::resolve_string( $raw, 'brand_name', 'WPCY_WHITELABEL_NAME' );
 		$help_url     = self::resolve_string( $raw, 'help_url', 'WPCY_WHITELABEL_HELP_URL' );
@@ -185,6 +240,7 @@ final class WhiteLabel {
 		}
 
 		return array(
+			'entitled'     => $entitled,
 			'enabled'      => $enabled,
 			'locked'       => $locked,
 			'brand_name'   => $brand_name,
