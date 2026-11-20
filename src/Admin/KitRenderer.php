@@ -577,7 +577,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '服务', 'wp-china-yes' ),
-			__( '每项服务自带基础加速能力，同时支持与对应文派独立插件联动接管高级自定义功能。', 'wp-china-yes' ),
+			__( '文派叶子作为生态底座提供基础连接；每项服务均设有专属配置页，并与对应文派独立插件联动接管高级功能。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '绑定本站', 'wp-china-yes' ),
@@ -587,35 +587,59 @@ final class KitRenderer {
 			)
 		);
 
-		echo '<div class="wenpai-grid-3" data-wpcy-screen="services">';
-		foreach ( $catalog as $id => $spec ) {
-			$plugin_state = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
-			$meta_text    = $plugin_state['active']
-				? sprintf( /* translators: %s: companion plugin name */ __( '已联动：%s', 'wp-china-yes' ), $spec['plugin_name'] )
-				: $spec['meta'];
-			$detail_url   = self::page_url( 'wpcy-services', false, array( 'service' => $id ) );
+		$groups = array(
+			'core'       => array(
+				'title' => __( '核心云服务与静态加速', 'wp-china-yes' ),
+				'desc'  => __( '由 WenPai.org、adminCDN、Cravatar、Windfonts、MotuCloud 与文派智储提供底层节点支撑。', 'wp-china-yes' ),
+			),
+			'governance' => array(
+				'title' => __( 'AI 智能、政策合规与站点治理', 'wp-china-yes' ),
+				'desc'  => __( '涵盖 AI 网关 (WPMind)、网站备案合规 (WPICP)、别名简繁本地化与后台通知减噪。', 'wp-china-yes' ),
+			),
+		);
 
-			\Wenpai_Admin_UI::card_open(
+		echo '<div class="wenpai-stack" data-wpcy-screen="services">';
+		foreach ( $groups as $group_key => $group_meta ) {
+			\Wenpai_Admin_UI::section_title(
 				array(
-					'title' => $spec['title'],
-					'icon'  => $spec['icon'],
+					'title' => $group_meta['title'],
+					'desc'  => $group_meta['desc'],
 				)
 			);
-			echo '<p class="meta">' . esc_html( $spec['desc'] ) . '</p>';
-			\Wenpai_Admin_UI::card_foot(
-				array(
-					'start'   => true,
-					'meta'    => $meta_text,
-					'actions' => array(
-						array(
-							'label'   => $plugin_state['active'] ? __( '已接管 · 配置', 'wp-china-yes' ) : __( '配置与联动', 'wp-china-yes' ),
-							'href'    => $detail_url,
-							'variant' => 'secondary',
+			echo '<div class="wenpai-grid-3">';
+			foreach ( $catalog as $id => $spec ) {
+				if ( ( $spec['group'] ?? 'core' ) !== $group_key ) {
+					continue;
+				}
+				$plugin_state = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
+				$meta_text    = $plugin_state['active']
+					? sprintf( /* translators: %s: companion plugin name */ __( '已接管：%s', 'wp-china-yes' ), $spec['plugin_name'] )
+					: $spec['meta'];
+				$detail_url   = self::page_url( 'wpcy-services', false, array( 'service' => $id ) );
+
+				\Wenpai_Admin_UI::card_open(
+					array(
+						'title' => $spec['title'],
+						'icon'  => $spec['icon'],
+					)
+				);
+				echo '<p class="meta">' . esc_html( $spec['desc'] ) . '</p>';
+				\Wenpai_Admin_UI::card_foot(
+					array(
+						'start'   => true,
+						'meta'    => $meta_text,
+						'actions' => array(
+							array(
+								'label'   => $plugin_state['active'] ? __( '已接管 · 配置', 'wp-china-yes' ) : __( '设置与联动', 'wp-china-yes' ),
+								'href'    => $detail_url,
+								'variant' => 'secondary',
+							),
 						),
-					),
-				)
-			);
-			\Wenpai_Admin_UI::card_close();
+					)
+				);
+				\Wenpai_Admin_UI::card_close();
+			}
+			echo '</div>';
 		}
 		echo '</div>';
 	}
@@ -627,77 +651,122 @@ final class KitRenderer {
 	 */
 	private static function service_catalog(): array {
 		return array(
-			'wporg'     => array(
-				'title'         => __( 'WP.org 国内镜像', 'wp-china-yes' ),
+			'wporg'      => array(
+				'group'         => 'core',
+				'title'         => __( 'WP.org 镜像与云桥更新', 'wp-china-yes' ),
 				'icon'          => 'cloud',
-				'desc'          => __( '核心、主题、插件更新与简体中文翻译包自动走国内镜像，上游异常自动回退。', 'wp-china-yes' ),
-				'meta'          => __( '基础免费 · 可联动文派智储', 'wp-china-yes' ),
-				'plugin_name'   => __( '文派智储 (WPSSS)', 'wp-china-yes' ),
-				'plugin_slug'   => 'wpsss',
-				'plugin_file'   => 'wpsss/wpsss.php',
-				'plugin_admin'  => 'options-general.php?page=wpsss',
-				'plugin_pitch'  => __( '将本站媒体库与静态资源自动卸载至阿里云 OSS / 腾讯云 COS / S3 对象存储，与叶子镜像加速形成完整静态加速闭环。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子负责 WordPress.org 官方源与对照图加速，文派智储接管本站自产媒体与静态资源上云。', 'wp-china-yes' ),
+				'desc'          => __( '核心、主题、插件更新与翻译包走 WenPai.org 国内镜像，含 ts/ps.wenpai.net 图标截图代理。', 'wp-china-yes' ),
+				'meta'          => __( 'WenPai.org · 联动 WPBridge', 'wp-china-yes' ),
+				'plugin_name'   => __( '文派云桥 (WPBridge)', 'wp-china-yes' ),
+				'plugin_slug'   => 'wpbridge',
+				'plugin_file'   => 'wpbridge/wpbridge.php',
+				'plugin_admin'  => 'admin.php?page=wpbridge',
+				'plugin_pitch'  => __( '安装文派云桥 (WPBridge) 可在后台直接检索并一键安装文派生态目录中的全部插件与主题，管理自定义更新源。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子负责官方源底层镜像与回退，生态目录检索与自定义更新通道已由文派云桥 (WPBridge) 联动接管。', 'wp-china-yes' ),
 			),
-			'cravatar'  => array(
+			'admincdn'   => array(
+				'group'         => 'core',
+				'title'         => __( '公共前端库与核心静态', 'wp-china-yes' ),
+				'icon'          => 'flash',
+				'desc'          => __( '由 adminCDN 提供 Google Fonts、AJAX、CDNJS、jsDelivr、Emoji 及 WP 核心静态资源加速。', 'wp-china-yes' ),
+				'meta'          => __( 'adminCDN · 联动 WPStatic', 'wp-china-yes' ),
+				'plugin_name'   => __( '萌芽静态加速 (WPStatic)', 'wp-china-yes' ),
+				'plugin_slug'   => 'wpstatic',
+				'plugin_file'   => 'wpstatic/wpstatic.php',
+				'plugin_admin'  => 'options-general.php?page=wpstatic',
+				'plugin_pitch'  => __( '安装 WPStatic（及文派表情 WPEmoji）可将 wp-admin / wp-includes 核心 CSS/JS 按版本钉死至 wpstatic.admincdn.com，并精细管理公共库白名单。', 'wp-china-yes' ),
+				'takeover_desc' => __( 'adminCDN 公共前端库与 WordPress 核心静态资源钉死策略已由 WPStatic 联动接管。', 'wp-china-yes' ),
+			),
+			'cravatar'   => array(
+				'group'         => 'core',
 				'title'         => __( 'Cravatar 公共头像', 'wp-china-yes' ),
 				'icon'          => 'image',
-				'desc'          => __( 'Gravatar 的中国替代服务，支持按地区选择国内或国际线路，彻底解决头像空白。', 'wp-china-yes' ),
-				'meta'          => __( '基础免费 · 可联动文派头像', 'wp-china-yes' ),
+				'desc'          => __( 'Gravatar 的中国替代服务，支持中国线路与国际线路，彻底解决评论与后台头像空白。', 'wp-china-yes' ),
+				'meta'          => __( 'Cravatar · 联动 WPAvatar', 'wp-china-yes' ),
 				'plugin_name'   => __( '文派头像 (WPAvatar)', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpavatar',
 				'plugin_file'   => 'wpavatar/wpavatar.php',
 				'plugin_admin'  => 'options-general.php?page=wpavatar',
 				'plugin_pitch'  => __( '安装文派头像 (WPAvatar) 可解锁用户本地上传头像、中文首字生成头像、SVG 默认头像与本地头像缓存预热等高级自定义功能。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子提供底层 Cravatar 节点路由与连通性巡检，高级头像生成与缓存策略已由文派头像 (WPAvatar) 联动接管。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子提供底层 Cravatar 节点路由与巡检，高级头像生成与缓存策略已由文派头像 (WPAvatar) 联动接管。', 'wp-china-yes' ),
 			),
-			'windfonts' => array(
+			'windfonts'  => array(
+				'group'         => 'core',
 				'title'         => __( 'Windfonts 中文字体', 'wp-china-yes' ),
 				'icon'          => 'feather',
-				'desc'          => __( '免费商用中文字体按需子集化分发，降低首屏体积，无需自建托管。', 'wp-china-yes' ),
-				'meta'          => __( '云桥服务 · 可联动文风字体', 'wp-china-yes' ),
-				'plugin_name'   => __( '文风字体 (WPFonts)', 'wp-china-yes' ),
+				'desc'          => __( '面向中文网页的云端 WOFF2 动态子集字体服务，大幅降低中文字体首屏体积。', 'wp-china-yes' ),
+				'meta'          => __( 'Windfonts · 联动 WPFonts', 'wp-china-yes' ),
+				'plugin_name'   => __( '文派字库 (WPFonts)', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpfonts',
 				'plugin_file'   => 'wpfonts/wpfonts.php',
 				'plugin_admin'  => 'admin.php?page=wpfonts',
-				'plugin_pitch'  => __( '安装文风字体 (WPFonts) 可浏览完整免费商用字库、按标题/正文/代码块 CSS 选择器精细绑定字体，并集成古腾堡编辑器字体面板。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子提供云桥站点授权与 CDN 节点测速，字体选择与排版规则已由文风字体 (WPFonts) 联动接管。', 'wp-china-yes' ),
+				'plugin_pitch'  => __( '安装文派字库 (WPFonts) 可浏览完整免费商用字库、按标题/正文/代码块 CSS 选择器精细绑定字体，并集成古腾堡编辑器字体库。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子提供云桥授权与节点测速，字体选择与排版规则已由文派字库 (WPFonts) 联动接管。', 'wp-china-yes' ),
 			),
-			'assets'    => array(
-				'title'         => __( '公共前端库加速', 'wp-china-yes' ),
-				'icon'          => 'flash',
-				'desc'          => __( 'Google Fonts、CDNJS、jsDelivr 与 Emoji 静态资源自动切换至更快国内节点。', 'wp-china-yes' ),
-				'meta'          => __( '基础免费 · 可联动文派心思', 'wp-china-yes' ),
+			'motucloud'  => array(
+				'group'         => 'core',
+				'title'         => __( '图标与免版权图库', 'wp-china-yes' ),
+				'icon'          => 'sparkle',
+				'desc'          => __( '由 MotuCloud（墨图云集）提供 WordPress 核心图标接口与媒体库免版权图片检索国内镜像。', 'wp-china-yes' ),
+				'meta'          => __( 'MotuCloud · 联动 WPIcon/WPPhoto', 'wp-china-yes' ),
+				'plugin_name'   => __( '墨图云集 (WPIcon / WPPhoto)', 'wp-china-yes' ),
+				'plugin_slug'   => 'motucloud',
+				'plugin_file'   => 'motucloud/motucloud.php',
+				'plugin_admin'  => 'admin.php?page=motucloud',
+				'plugin_pitch'  => __( '安装墨图云集插件（WPIcon / WPPhoto 整合包）可在古腾堡编辑器与媒体库中直接浏览、检索并插入墨图爱可 SVG 图标与免版权高清图片。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子负责 MotuCloud 镜像通道，编辑器图标选择器与免版权图库已由墨图云集插件联动接管。', 'wp-china-yes' ),
+			),
+			'storage'    => array(
+				'group'         => 'core',
+				'title'         => __( '对象存储与媒体分流', 'wp-china-yes' ),
+				'icon'          => 'server',
+				'desc'          => __( '将站点媒体库与自产静态文件卸载至阿里云 OSS、腾讯云 COS、华为云 OBS 或 S3 兼容存储。', 'wp-china-yes' ),
+				'meta'          => __( '媒体上云 · 联动 WPSSS', 'wp-china-yes' ),
+				'plugin_name'   => __( '文派智储 (WPSSS)', 'wp-china-yes' ),
+				'plugin_slug'   => 'wpsss',
+				'plugin_file'   => 'wpsss/wpsss.php',
+				'plugin_admin'  => 'options-general.php?page=wpsss',
+				'plugin_pitch'  => __( '安装文派智储 (WPSSS) 可一键配置国内外主流对象存储桶、自定义 CDN 域名、媒体同步队列与体检工具。', 'wp-china-yes' ),
+				'takeover_desc' => __( '本站媒体库对象存储卸载与 CDN 域名改写已由文派智储 (WPSSS) 联动接管。', 'wp-china-yes' ),
+			),
+			'ai'         => array(
+				'group'         => 'governance',
+				'title'         => __( 'AI 智能与 GEO 优化', 'wp-china-yes' ),
+				'icon'          => 'sparkle',
+				'desc'          => __( '为 WordPress 接入 DeepSeek、通义千问、OpenAI、Claude 等多模型 AI 网关与生成式引擎优化 (GEO)。', 'wp-china-yes' ),
+				'meta'          => __( 'AI 能力 · 联动 WPMind', 'wp-china-yes' ),
 				'plugin_name'   => __( '文派心思 (WPMind)', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpmind',
 				'plugin_file'   => 'wpmind/wpmind.php',
 				'plugin_admin'  => 'admin.php?page=wpmind',
-				'plugin_pitch'  => __( '安装文派心思 (WPMind) 可在前端加速基础上，为站点接入多模型 AI 路由、GEO 优化与智能内容工作流。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子保障前后台静态库与出站连通性，AI 服务商路由与智能模块已由文派心思 (WPMind) 联动接管。', 'wp-china-yes' ),
+				'plugin_pitch'  => __( '安装文派心思 (WPMind) 可启用多服务商 AI 故障自动切换路由、GEO 结构化数据优化、AI 辅助写作与用量统计面板。', 'wp-china-yes' ),
+				'takeover_desc' => __( '多模型 AI 服务商路由、GEO 优化与智能工作流已由文派心思 (WPMind) 联动接管。', 'wp-china-yes' ),
 			),
-			'noise'     => array(
-				'title'         => __( '后台减噪优化', 'wp-china-yes' ),
+			'compliance' => array(
+				'group'         => 'governance',
+				'title'         => __( '政策合规与网站备案', 'wp-china-yes' ),
+				'icon'          => 'info',
+				'desc'          => __( '管理中国大陆站点 ICP 备案号、公安联网备案标识展示，以及海外慢外链与出站请求合规拦截。', 'wp-china-yes' ),
+				'meta'          => __( '政策合规 · 联动 WPICP', 'wp-china-yes' ),
+				'plugin_name'   => __( '文派备案 (WPICP)', 'wp-china-yes' ),
+				'plugin_slug'   => 'wpicp',
+				'plugin_file'   => 'wpicp/wpicp.php',
+				'plugin_admin'  => 'options-general.php?page=wpicp',
+				'plugin_pitch'  => __( '安装文派备案 (WPICP) 可在前台页脚规范展示工信部 ICP 备案号、公安网安备案图标与增值电信许可证，支持备案状态巡检。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子负责底层出站数据驻留与慢外链拦截，前台 ICP / 公安备案合规展示已由文派备案 (WPICP) 联动接管。', 'wp-china-yes' ),
+			),
+			'noise'      => array(
+				'group'         => 'governance',
+				'title'         => __( '后台减噪与本地化治理', 'wp-china-yes' ),
 				'icon'          => 'settings',
-				'desc'          => __( '降低 Heartbeat 轮询频率，屏蔽仪表盘外部慢请求，缩短后台等待时间。', 'wp-china-yes' ),
-				'meta'          => __( '基础免费 · 可联动文派别名', 'wp-china-yes' ),
-				'plugin_name'   => __( '文派别名 (WPSlug)', 'wp-china-yes' ),
+				'desc'          => __( 'Heartbeat 降频、屏蔽仪表盘外部慢请求、后台通知降噪，以及中文别名、简繁转换等本地化增强。', 'wp-china-yes' ),
+				'meta'          => __( '后台治理 · 联动 WPSlug / WPCC', 'wp-china-yes' ),
+				'plugin_name'   => __( '文派素格 (WPSlug) / 文派译词 (WPCC)', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpslug',
 				'plugin_file'   => 'wpslug/wpslug.php',
 				'plugin_admin'  => 'options-general.php?page=wpslug',
-				'plugin_pitch'  => __( '安装文派别名 (WPSlug) 可在后台写作时自动将中文标题转为拼音或英文固定链接别名，支持批量历史转换与词典自定义。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子负责后台减噪与慢请求拦截，文章与分类别名自动转换已由文派别名 (WPSlug) 联动接管。', 'wp-china-yes' ),
-			),
-			'wpbridge'  => array(
-				'title'         => __( '云桥统一连接', 'wp-china-yes' ),
-				'icon'          => 'plug',
-				'desc'          => __( '一次绑定本站即可同步文派生态插件的更新通道与扩展能力，免逐个填密钥。', 'wp-china-yes' ),
-				'meta'          => __( '生态枢纽 · 可联动文派云桥', 'wp-china-yes' ),
-				'plugin_name'   => __( '文派云桥 (WPBridge)', 'wp-china-yes' ),
-				'plugin_slug'   => 'wpbridge',
-				'plugin_file'   => 'wpbridge/wpbridge.php',
-				'plugin_admin'  => 'admin.php?page=wpbridge',
-				'plugin_pitch'  => __( '安装文派云桥 (WPBridge) 可在后台直接浏览、检索并一键安装文派生态目录中的全部独立插件与主题。', 'wp-china-yes' ),
-				'takeover_desc' => __( '文派叶子已与文派云桥共享站点绑定凭证与更新通道，所有文派生态插件更新由云桥统一调度。', 'wp-china-yes' ),
+				'plugin_pitch'  => __( '可按需安装文派素格 (WPSlug，中文标题自动转拼音/英文别名)、文派译词 (WPCC，中文简繁转换与 SEO)、文派评论 (WPComments) 等独立治理插件。', 'wp-china-yes' ),
+				'takeover_desc' => __( '文派叶子负责后台减噪与慢请求拦截，固定链接别名转换已由文派素格 (WPSlug) 联动接管。', 'wp-china-yes' ),
 			),
 		);
 	}
@@ -771,7 +840,8 @@ final class KitRenderer {
 				'variant' => 'ghost',
 			)
 		);
-		if ( 'wpbridge' !== $id && ! $locked ) {
+		$saveable     = in_array( $id, array( 'wporg', 'admincdn', 'cravatar', 'noise' ), true );
+		if ( $saveable && ! $locked ) {
 			$head_actions .= ' ' . \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '保存此项设置', 'wp-china-yes' ),
@@ -791,7 +861,7 @@ final class KitRenderer {
 		if ( 'wporg' !== $id ) {
 			echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
 		}
-		if ( 'assets' !== $id ) {
+		if ( 'admincdn' !== $id ) {
 			echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
 		}
 		if ( 'cravatar' !== $id ) {
@@ -809,7 +879,7 @@ final class KitRenderer {
 		// Card 1: Built-in wpcy settings for this service.
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => sprintf( /* translators: %s: service title */ __( '%s · 基础加速设置', 'wp-china-yes' ), $spec['title'] ),
+				'title' => sprintf( /* translators: %s: service title */ __( '%s · 叶子内置基础设置', 'wp-china-yes' ), $spec['title'] ),
 				'icon'  => $spec['icon'],
 			)
 		);
@@ -852,11 +922,11 @@ final class KitRenderer {
 				$avatar,
 				$locked
 			);
-		} elseif ( 'assets' === $id ) {
+		} elseif ( 'admincdn' === $id ) {
 			echo self::field_row_select(
 				'public_assets_scope',
-				__( '公共前端库加速范围', 'wp-china-yes' ),
-				__( '将 Google Fonts、CDNJS、jsDelivr、Google AJAX 与 WordPress Emoji 静态资源改写至国内高速节点。', 'wp-china-yes' ),
+				__( 'adminCDN 公共前端库加速范围', 'wp-china-yes' ),
+				__( '将 Google Fonts、Google AJAX、CDNJS、jsDelivr 与 WordPress Emoji 改写至 *.admincdn.com 国内高速节点。', 'wp-china-yes' ),
 				array(
 					'both'     => __( '后台与前台同时加速（推荐）', 'wp-china-yes' ),
 					'admin'    => __( '仅加速 WordPress 后台', 'wp-china-yes' ),
@@ -865,6 +935,18 @@ final class KitRenderer {
 				),
 				$scope,
 				$locked
+			);
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'  => 'server',
+					'state' => 'ok',
+					'title' => __( 'WordPress 核心静态库 (wpstatic.admincdn.com)', 'wp-china-yes' ),
+					'desc'  => __( '安装 WPStatic 插件后可将 wp-admin / wp-includes 核心 CSS/JS 按版本号钉死至 adminCDN 边缘节点。', 'wp-china-yes' ),
+					'pill'  => array(
+						'text'  => $plugin_state['active'] ? __( '已钉死加速', 'wp-china-yes' ) : __( '待安装 WPStatic', 'wp-china-yes' ),
+						'state' => $plugin_state['active'] ? 'ok' : 'mute',
+					),
+				)
 			);
 		} elseif ( 'noise' === $id ) {
 			echo self::field_row_checkbox( 'heartbeat', __( '减少后台心跳 (Heartbeat)', 'wp-china-yes' ), __( '仪表盘停止轮询，文章编辑器降频为 60 秒一次，显著降低 CPU 与无效请求。', 'wp-china-yes' ), $heartbeat, $locked );
@@ -878,24 +960,60 @@ final class KitRenderer {
 					'title' => __( 'Windfonts 云端中文子集字体引擎', 'wp-china-yes' ),
 					'desc'  => __( '按页面实际渲染字符动态切分 WOFF2 子集包，中文字体首屏体积从数 MB 降至数十 KB。', 'wp-china-yes' ),
 					'pill'  => array(
-						'text'  => $plugin_state['active'] ? __( '由文风字体接管', 'wp-china-yes' ) : __( '就绪', 'wp-china-yes' ),
+						'text'  => $plugin_state['active'] ? __( '由文派字库接管', 'wp-china-yes' ) : __( '就绪', 'wp-china-yes' ),
 						'state' => 'ok',
+					),
+				)
+			);
+		} elseif ( 'motucloud' === $id ) {
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'  => 'sparkle',
+					'state' => 'ok',
+					'title' => __( 'MotuCloud 墨图云集图标与图库镜像通道', 'wp-china-yes' ),
+					'desc'  => __( '为 WordPress 核心图标接口与媒体库免版权图片搜索提供国内高速镜像（icons.motucloud.com / motucloud.com）。', 'wp-china-yes' ),
+					'pill'  => array(
+						'text'  => $plugin_state['active'] ? __( '已接管', 'wp-china-yes' ) : __( '基础通道就绪', 'wp-china-yes' ),
+						'state' => 'ok',
+					),
+				)
+			);
+		} elseif ( 'storage' === $id ) {
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'  => 'server',
+					'state' => $plugin_state['active'] ? 'ok' : '',
+					'title' => __( '媒体库与自产静态对象存储分流', 'wp-china-yes' ),
+					'desc'  => __( '文派叶子负责官方源与公共前端库加速；本站上传的图片、音视频与附件由文派智储 (WPSSS) 负责同步上云。', 'wp-china-yes' ),
+					'pill'  => array(
+						'text'  => $plugin_state['active'] ? __( '已由文派智储接管', 'wp-china-yes' ) : __( '本地存储', 'wp-china-yes' ),
+						'state' => $plugin_state['active'] ? 'ok' : 'mute',
+					),
+				)
+			);
+		} elseif ( 'ai' === $id ) {
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'  => 'sparkle',
+					'state' => $plugin_state['active'] ? 'ok' : '',
+					'title' => __( '文派 AI 网关与 GEO 引擎底座', 'wp-china-yes' ),
+					'desc'  => __( '文派叶子提供站点身份绑定与出站网络加速；多模型 AI 端点配置、故障自动切换与 GEO 优化由文派心思 (WPMind) 提供。', 'wp-china-yes' ),
+					'pill'  => array(
+						'text'  => $plugin_state['active'] ? __( '已由文派心思接管', 'wp-china-yes' ) : __( '待启用 WPMind', 'wp-china-yes' ),
+						'state' => $plugin_state['active'] ? 'ok' : 'mute',
 					),
 				)
 			);
 		} else {
 			\Wenpai_Admin_UI::row(
 				array(
-					'icon'         => 'plug',
-					'state'        => 'ok',
-					'title'        => __( '文派云桥站点绑定', 'wp-china-yes' ),
-					'desc'         => __( '绑定后自动同步本站已安装的文派生态插件更新源与授权状态。', 'wp-china-yes' ),
-					'control_html' => \Wenpai_Admin_UI::button_html(
-						array(
-							'label'   => __( '立即发起绑定', 'wp-china-yes' ),
-							'variant' => 'primary',
-							'attrs'   => array( 'data-wpcy-action' => 'bind' ),
-						)
+					'icon'  => 'info',
+					'state' => 'ok',
+					'title' => __( '出站数据驻留与慢外链合规防护', 'wp-china-yes' ),
+					'desc'  => __( '自动拦截拖慢后台的不可达海外遥测与外链请求；前台 ICP 备案号与公安联网备案公示由文派备案 (WPICP) 负责。', 'wp-china-yes' ),
+					'pill'  => array(
+						'text'  => __( '防护生效中', 'wp-china-yes' ),
+						'state' => 'ok',
 					),
 				)
 			);
