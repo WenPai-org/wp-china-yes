@@ -355,8 +355,10 @@ final class KitRenderer {
 			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
-			$checked = $profile === $key ? ' checked' : '';
-			echo '<label class="choice"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . $dis_attr . '><span><strong>' . esc_html( $info[0] ) . '</strong><small>' . esc_html( $info[1] ) . '</small></span></label>';
+			$is_on   = $profile === $key;
+			$checked = $is_on ? ' checked' : '';
+			$cls     = $is_on ? 'choice is-on' : 'choice';
+			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . $dis_attr . '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
 		}
 		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
