@@ -1,0 +1,1729 @@
+/* wenpai-admin-ui — extracted from WPSSS 0.9.2 assets/css/e.css
+ * .wenpai-* → .wenpai-*; .wenpai-app → .wenpai-app; leaf console stripped.
+ * RemixIcon pin: 4.8.0 (@iconify/json 2.2.527 / motuicons).
+ * No raw colors here: every color comes from a --wenpai-* token (lint enforces).
+ */
+
+/* Tokens: css/wenpai-tokens.css (generated from tokens/tokens.json). Load it first. */
+
+/* --- 基础 --- */
+
+.wenpai-app { font-family: var(--wenpai-font); color: var(--wenpai-ink); -webkit-font-smoothing: antialiased; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.wenpai-app a { text-decoration: none; }
+.wenpai-app [hidden] { display: none !important; } /* stylelint-disable-line declaration-no-important */
+.wenpai-app h1, .wenpai-app h2, .wenpai-app h3, .wenpai-app h4, .wenpai-app h5, .wenpai-app h6 { color: var(--wenpai-ink); font-weight: var(--wenpai-weight-regular); }
+.wenpai-app strong, .wenpai-app b { font-weight: var(--wenpai-weight-regular); }
+/* 兜底：没写尺寸的内联图标（只有 viewBox）会撑满容器，这里压到 24px。
+   图表和插画不是图标：.wenpai-chart__plot 里的 svg、带 data-wenpai-art 的 svg 不设上限。
+   :where() 不加优先级，本条仍是 (0,1,1)，后面的 .wenpai-mark svg 等照常覆盖。 */
+.wenpai-app svg:where(:not([data-wenpai-art], .wenpai-chart__plot *)) { max-width: 24px; max-height: 24px; }
+.wenpai-ico { display: inline-block; flex: none; vertical-align: -0.2em; }
+.wenpai-app svg.wenpai-ico { max-width: none; max-height: none; }
+/* 裸用兜底尺寸：1em 随父字号缩放；:where 零优先级，任何上下文规则（.tile svg 等）照常覆盖。 */
+.wenpai-app :where(svg.wenpai-ico) { width: 1em; height: 1em; }
+
+/* --- 壳 --- */
+
+.wenpai-top { background: var(--wenpai-card); border-bottom: 1px solid var(--wenpai-line); }
+.wenpai-wrap { max-width: var(--wenpai-size-wrap); margin: 0 auto; padding: 0 var(--wenpai-space-8); }
+.wenpai-head { display: flex; align-items: center; height: var(--wenpai-size-head); gap: var(--wenpai-space-2); }
+.wenpai-brand { display: flex; align-items: center; gap: var(--wenpai-space-2-5); color: var(--wenpai-ink); margin-inline-end: var(--wenpai-space-2); }
+.wenpai-brand:hover { color: var(--wenpai-ink); }
+.wenpai-mark { width: var(--wenpai-size-mark); height: var(--wenpai-size-mark); border-radius: var(--wenpai-radius-md); background: var(--wenpai-accent); color: var(--wenpai-on-accent); display: grid; place-items: center; }
+.wenpai-mark svg { width: 16px; height: 16px; max-width: 16px; max-height: 16px; }
+.wenpai-name { font-size: var(--wenpai-text-brand); font-weight: var(--wenpai-weight-regular); letter-spacing: .01em; }
+.wenpai-head-right { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-1); color: var(--wenpai-ink-2); }
+.wenpai-head-right .btn-ghost { color: var(--wenpai-ink-2); }
+.wenpai-head-right .btn-ghost:hover { color: var(--wenpai-ink); }
+.wenpai-head-right .btn-ghost.is-active { color: var(--wenpai-accent); background: var(--wenpai-accent-soft); }
+.wenpai-head-right a { color: var(--wenpai-ink-2); }
+.wenpai-head-action { position: relative; }
+.wenpai-head-right .wenpai-head-action.is-active { color: var(--wenpai-accent); background: var(--wenpai-accent-soft); }
+.wenpai-tabs { display: flex; gap: var(--wenpai-space-1); align-self: stretch; }
+.wenpai-tab { display: flex; align-items: center; height: 100%; padding: 0 var(--wenpai-space-3-5); color: var(--wenpai-ink-2); font-weight: var(--wenpai-weight-regular); border-bottom: 2px solid transparent; margin-bottom: -1px; font-size: var(--wenpai-text-body); }
+.wenpai-tab svg { width: 18px; height: 18px; margin-inline-end: var(--wenpai-space-1); }
+.wenpai-tab:hover { color: var(--wenpai-ink); }
+.wenpai-tab.is-active { color: var(--wenpai-accent); border-bottom-color: var(--wenpai-accent); }
+.wenpai-tab:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); } /* §17 inset so scrolled tabs keep a full focus ring */
+.wenpai-main { padding: var(--wenpai-space-8) var(--wenpai-space-8) var(--wenpai-space-12); }
+.wenpai-page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--wenpai-space-6); gap: var(--wenpai-space-4); }
+.wenpai-h1 { font-size: var(--wenpai-text-h1); line-height: var(--wenpai-leading-h1); font-weight: var(--wenpai-weight-regular); margin: 0; }
+.wenpai-lede { color: var(--wenpai-ink-2); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); margin: var(--wenpai-space-1-5) 0 0; }
+.wenpai-stack { display: flex; flex-direction: column; gap: var(--wenpai-space-5); }
+.wenpai-stack > form { display: flex; flex-direction: column; gap: var(--wenpai-space-5); }
+/* 子元素自带的纵向 margin 与 flex gap 叠加会造成 36px 混排；栈内统一交给 gap。 */
+.wenpai-stack > .wenpai-subnav { margin-bottom: 0; }
+.wenpai-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wenpai-space-5); align-items: start; }
+.wenpai-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--wenpai-space-5); align-items: stretch; }
+.foot { display: flex; align-items: center; gap: var(--wenpai-space-4); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin-top: var(--wenpai-space-7); padding-top: 18px; border-top: 1px solid var(--wenpai-line); }
+.foot a { color: var(--wenpai-ink-3); }
+.foot a:hover { color: var(--wenpai-accent); }
+.foot .r { margin-inline-start: auto; display: flex; gap: var(--wenpai-space-5); }
+.foot .r a { display: inline-flex; align-items: center; gap: var(--wenpai-space-1-5); color: var(--wenpai-ink-3); }
+.foot .r a:hover { color: var(--wenpai-accent); }
+.foot svg { width: 16px; height: 16px; }
+
+/* --- 卡与表面 --- */
+
+.card { background: var(--wenpai-card); border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius); box-shadow: none; padding: var(--wenpai-space-6) var(--wenpai-space-7); display: flex; flex-direction: column; }
+.card.tight { padding: var(--wenpai-space-6) var(--wenpai-space-7) var(--wenpai-space-4); }
+.card-head { display: flex; align-items: center; gap: var(--wenpai-space-3-5); margin-bottom: 18px; }
+.card.tight .card-head { margin-bottom: var(--wenpai-space-2-5); }
+.tile { width: var(--wenpai-size-tile); height: var(--wenpai-size-tile); border-radius: var(--wenpai-radius-lg); display: grid; place-items: center; flex: none; background: var(--wenpai-mute-soft); color: var(--wenpai-ink-2); }
+.tile svg { width: 20px; height: 20px; }
+.tile.ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); }
+.tile.warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); }
+.tile.bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink); }
+.tile.accent { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
+.card-title { font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); margin: 0; }
+.card-title svg { width: 16px; height: 16px; vertical-align: -3px; margin-inline-end: var(--wenpai-space-1-5); color: var(--wenpai-ink-3); }
+.card-sub { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin: 0; }
+.card-head .pill { margin-inline-start: auto; }
+.card-head .more { margin-inline-start: auto; color: var(--wenpai-accent); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.card-foot { display: flex; justify-content: flex-end; gap: var(--wenpai-space-2); margin-top: var(--wenpai-space-5); padding-top: 18px; border-top: 1px solid var(--wenpai-line-soft); }
+.card-foot.start { justify-content: space-between; align-items: center; }
+.card-foot > span:not(.meta), .card-foot > div:not(.meta) { display: flex; align-items: center; gap: var(--wenpai-space-2); }
+.big { font-size: var(--wenpai-text-h1); line-height: var(--wenpai-leading-h1); font-weight: var(--wenpai-weight-regular); margin: 0; letter-spacing: -.01em; }
+.meta { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin: var(--wenpai-space-1) 0 0; }
+.sec { margin-top: var(--wenpai-space-9); }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 var(--wenpai-space-3-5); }
+.sec-h h2 { font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); margin: 0; }
+.sec-h p { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.sec-h a { font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.sec-h.caps h2 { font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-caption); letter-spacing: 0; text-transform: none; font-weight: var(--wenpai-weight-regular); color: var(--wenpai-ink-2); }
+.sec-r { display: flex; align-items: baseline; gap: var(--wenpai-space-3-5); }
+.sec-r p { margin: 0; }
+
+/* --- 文字与状态 --- */
+
+.pill { display: inline-flex; align-items: center; gap: var(--wenpai-space-1-5); height: 24px; padding: 0 var(--wenpai-space-2-5) 0 var(--wenpai-space-2); border-radius: var(--wenpai-radius-xl); font-size: var(--wenpai-text-meta); font-weight: var(--wenpai-weight-regular); background: var(--wenpai-mute-soft); color: var(--wenpai-ink-2); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--wenpai-mute); }
+.pill.ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); } .pill.ok::before { background: var(--wenpai-ok); }
+.pill.warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); } .pill.warn::before { background: var(--wenpai-warn); }
+.pill.bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink); } .pill.bad::before { background: var(--wenpai-bad); }
+.scope { display: inline-flex; align-items: center; height: 24px; padding: 0 var(--wenpai-space-2-5); border-radius: var(--wenpai-radius-xl); font-size: var(--wenpai-text-meta); color: var(--wenpai-ink-2); background: var(--wenpai-mute-soft); white-space: nowrap; }
+a.scope:hover { color: var(--wenpai-accent); }
+.prov { display: inline-flex; align-items: center; height: 20px; padding: 0 var(--wenpai-space-2); border-radius: var(--wenpai-radius-lg); background: var(--wenpai-line-soft); color: var(--wenpai-ink-2); font-size: var(--wenpai-text-caption); font-weight: var(--wenpai-weight-regular); white-space: nowrap; }
+.wenpai-app .notice { display: flex; gap: var(--wenpai-space-2-5); align-items: flex-start; margin: 0; padding: var(--wenpai-space-3) var(--wenpai-space-4); border: 0; border-radius: var(--wenpai-radius-lg); box-shadow: none; font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-app .notice + .notice { margin-top: var(--wenpai-space-3); }
+.wenpai-stack > .notice { margin: 0; }
+.wenpai-main > .wenpai-notice-wrap { margin: 0 0 var(--wenpai-space-4); }
+.wenpai-app .card > .notice { margin-top: var(--wenpai-space-4); }
+.wenpai-app .card > .notice + .notice { margin-top: var(--wenpai-space-3); }
+.wenpai-app .card > .notice:first-child { margin-top: 0; }
+.wenpai-app .notice.info { background: var(--wenpai-accent-soft); color: var(--wenpai-accent-hover); }
+.wenpai-app .notice.ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); }
+.wenpai-app .notice.warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); }
+.wenpai-app .notice.bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink-strong); }
+.wenpai-app .notice.bad strong { font-weight: var(--wenpai-weight-regular); }
+.wenpai-app .notice svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.wenpai-app .notice span,
+.wenpai-app .notice p { flex: 1; margin: 0; min-width: 0; }
+.wenpai-app .notice .btn { margin-inline-start: auto; flex: none; height: 30px; font-size: var(--wenpai-text-meta); padding: 0 var(--wenpai-space-2-5); }
+.wenpai-app .notice.warn.act { align-items: center; padding: var(--wenpai-space-3) var(--wenpai-space-4); font-size: var(--wenpai-text-body); color: var(--wenpai-ink); }
+.wenpai-app .notice.warn.act svg { color: var(--wenpai-warn-ink); }
+.wenpai-app .notice.warn.act b { font-weight: var(--wenpai-weight-regular); }
+/* Core screens (media library): notice({ native }) or JS notice() puts .wenpai-native on the wrap or the notice. */
+:is(.wenpai-native .notice, .notice.wenpai-native) { display: flex; gap: var(--wenpai-space-2-5); align-items: flex-start; margin: 0; padding: var(--wenpai-space-3) var(--wenpai-space-4); border: 0; border-radius: var(--wenpai-radius-lg); box-shadow: none; font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+:is(.wenpai-native .notice, .notice.wenpai-native).info { background: var(--wenpai-accent-soft); color: var(--wenpai-accent-hover); }
+:is(.wenpai-native .notice, .notice.wenpai-native).ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); }
+:is(.wenpai-native .notice, .notice.wenpai-native).warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); }
+:is(.wenpai-native .notice, .notice.wenpai-native).bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink-strong); }
+:is(.wenpai-native .notice, .notice.wenpai-native) svg { width: 18px; height: 18px; flex: none; margin-top: var(--wenpai-space-0-5); }
+:is(.wenpai-native .notice, .notice.wenpai-native) :is(span, p) { flex: 1; margin: 0; min-width: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--wenpai-space-1-5); height: var(--wenpai-size-control); padding: 0 var(--wenpai-space-4); border-radius: var(--wenpai-radius-sm); font: inherit; font-weight: var(--wenpai-weight-regular); cursor: pointer; border: 1px solid transparent; white-space: nowrap; font-size: var(--wenpai-text-body); appearance: none; -webkit-appearance: none; box-sizing: border-box; }
+.btn-primary { background: var(--wenpai-accent); color: var(--wenpai-on-accent); }
+.btn-primary:hover { background: var(--wenpai-accent-hover); }
+.btn-secondary { background: var(--wenpai-card); color: var(--wenpai-ink); border-color: var(--wenpai-line-strong); }
+.btn-secondary:hover { border-color: var(--wenpai-ink-3); }
+.btn-ghost { background: transparent; color: var(--wenpai-accent); }
+.btn-ghost:hover { background: var(--wenpai-accent-soft); }
+.btn-danger { background: var(--wenpai-card); color: var(--wenpai-bad); border-color: var(--wenpai-bad); }
+.btn-danger:hover { background: var(--wenpai-bad-soft); }
+/* Core a:hover/a:active out-specify .btn-* color; anchor buttons re-assert it. */
+a.btn-primary:is(:hover, :active) { color: var(--wenpai-on-accent); }
+a.btn-secondary:is(:hover, :active) { color: var(--wenpai-ink); }
+a.btn-ghost:is(:hover, :active) { color: var(--wenpai-accent); }
+a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
+.btn-sm { height: var(--wenpai-size-control-sm); padding: 0 var(--wenpai-space-3); font-size: var(--wenpai-text-meta); }
+.btn-sm svg { width: 14px; height: 14px; }
+.btn[disabled],
+.btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); box-shadow: none; }
+.btn svg { width: 16px; height: 16px; }
+.mono { font-family: var(--wenpai-font-mono); }
+
+/* --- 概览 --- */
+
+.next { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; background: var(--wenpai-accent-soft); border: 1px solid var(--wenpai-accent-line); border-radius: var(--wenpai-radius-xl); padding: var(--wenpai-space-4) 22px; }
+.next .tile { width: 32px; height: 32px; background: var(--wenpai-card); color: var(--wenpai-accent); }
+.next .tile svg { width: 18px; height: 18px; }
+.next > div:first-of-type { flex: 1 1 12em; min-width: 0; }
+.next strong { font-weight: var(--wenpai-weight-regular); }
+.next .btn { margin-inline-start: auto; }
+.next-actions { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-2); flex-shrink: 0; }
+.next-actions .btn { margin-inline-start: 0; }
+
+/* --- 设置 --- */
+
+/* Wenpai_Admin_Settings::render_field() output. Sits inside .field-ctl or on its own. */
+.wenpai-field { display: grid; gap: var(--wenpai-space-1-5); min-width: 0; }
+.wenpai-field + .wenpai-field { margin-top: var(--wenpai-space-4); }
+.wenpai-field__label { font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); color: var(--wenpai-ink); font-weight: var(--wenpai-weight-regular); }
+.wenpai-field__desc { margin: var(--wenpai-space-2) 0 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.wenpai-field fieldset { display: grid; gap: var(--wenpai-space-2-5); margin: 0; padding: 0; border: 0; min-width: 0; }
+.wenpai-field fieldset label { display: flex; align-items: center; gap: var(--wenpai-space-2); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.wenpai-field input[type="checkbox"],
+.wenpai-field input[type="radio"] { width: 16px; height: 16px; margin: 0; accent-color: var(--wenpai-accent); flex: none; }
+/* 开关字段：和其他字段一样，标签在上，开关和状态文字在下。 */
+.wenpai-field--toggle { justify-items: start; }
+.wenpai-field__group > legend { padding: 0; margin: 0 0 var(--wenpai-space-1-5); font-size: var(--wenpai-text-body); font-weight: var(--wenpai-weight-regular); }
+.wenpai-field .chk,
+.wenpai-field .opts { display: grid; gap: var(--wenpai-space-2-5); }
+.wenpai-field .chk label,
+.wenpai-field .opts label { display: flex; align-items: center; gap: var(--wenpai-space-2); min-height: 24px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.wenpai-field__state { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.wenpai-field__clear { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink-2); }
+.wenpai-field__secret { display: flex; align-items: center; gap: var(--wenpai-space-2); flex: 1 1 auto; min-width: 0; max-width: var(--wenpai-size-control-max); }
+.wenpai-field__secret input[type="password"],
+.wenpai-field__secret input[type="text"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+.wenpai-field__reveal { flex: none; height: var(--wenpai-size-control); min-width: 4.5rem; }
+.field-ctl-row .wenpai-field__secret { max-width: none; }
+
+.wenpai-field__error { margin: 0; color: var(--wenpai-bad-ink); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.wenpai-matrix th[scope="row"] { color: var(--wenpai-ink); font-size: var(--wenpai-text-body); padding: var(--wenpai-space-3) var(--wenpai-space-4) var(--wenpai-space-3) 0; border-bottom: 1px solid var(--wenpai-line-soft); vertical-align: middle; }
+.wenpai-matrix tr:last-child th[scope="row"] { border-bottom: 0; }
+.wenpai-matrix th .t,
+.wenpai-matrix th .d { display: block; }
+.wenpai-matrix select { width: 100%; }
+.wenpai-control { display: inline-flex; }
+
+/* 开关（0.3 统一写法）：原生 checkbox[role=switch]，没有 JS 也能用。 */
+.wenpai-switch { position: relative; display: inline-flex; align-items: center; gap: var(--wenpai-space-2-5); width: fit-content; min-height: 24px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); }
+/* The invisible checkbox covers track and state text, so clicking 已开启 / 未开启 toggles too; fit-content keeps that box from stretching in column layouts. */
+.wenpai-app .wenpai-switch .wenpai-switch__input { position: absolute; inset: 0; width: 100%; height: 100%; min-inline-size: 36px; min-block-size: 24px; margin: 0; padding: 0; opacity: 0; cursor: pointer; z-index: var(--wenpai-z-raised); }
+.wenpai-switch__track { display: inline-block; width: 36px; height: 20px; border-radius: var(--wenpai-radius-lg); background: var(--wenpai-track-off); position: relative; flex: none; transition: background var(--wenpai-motion-base) var(--wenpai-motion-ease); }
+/* Logical offsets: in RTL the hit area sits on the track and the knob runs right to left. */
+.wenpai-switch__track::after { content: ""; position: absolute; top: var(--wenpai-space-0-5); inset-inline-start: var(--wenpai-space-0-5); width: 16px; height: 16px; border-radius: 50%; background: var(--wenpai-card); transition: inset-inline-start var(--wenpai-motion-base) var(--wenpai-motion-ease); }
+.wenpai-switch__input:checked + .wenpai-switch__track { background: var(--wenpai-accent); }
+.wenpai-switch__input:checked + .wenpai-switch__track::after { inset-inline-start: 18px; }
+/* Screen-reader-only text (e.g. 「（在新标签页打开）」); same as core .screen-reader-text, for pages outside wp-admin too. */
+.wenpai-app .screen-reader-text { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+.wenpai-switch__input:hover:not(:disabled) + .wenpai-switch__track { background: var(--wenpai-control-line-hover); }
+.wenpai-switch__input:checked:hover:not(:disabled) + .wenpai-switch__track { background: var(--wenpai-accent-hover); }
+.wenpai-switch__input:focus-visible + .wenpai-switch__track { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
+.wenpai-switch__input:disabled { cursor: default; }
+.wenpai-switch__input:disabled + .wenpai-switch__track { background: var(--wenpai-track-locked); }
+.wenpai-switch__input:disabled:checked + .wenpai-switch__track { background: var(--wenpai-accent-soft); }
+.wenpai-switch__input:disabled ~ .wenpai-switch__state { color: var(--wenpai-ink-2); }
+.wenpai-switch__on { display: none; }
+.wenpai-switch__input:checked ~ .wenpai-switch__state .wenpai-switch__on { display: inline; }
+.wenpai-switch__input:checked ~ .wenpai-switch__state .wenpai-switch__off { display: none; }
+@media (forced-colors: active) {
+  .wenpai-switch__track { border: 1px solid CanvasText; }
+  .wenpai-switch__track::after { background: CanvasText; }
+  .wenpai-switch__input:checked + .wenpai-switch__track { background: Highlight; }
+}
+
+.section-title { display: flex; align-items: center; gap: var(--wenpai-space-2); font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); margin: 0 0 var(--wenpai-space-1); }
+.section-title svg { width: 18px; height: 18px; color: var(--wenpai-ink-3); }
+.section-title .pill { font-weight: var(--wenpai-weight-regular); }
+.section-desc { color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin: 0 0 var(--wenpai-space-2-5); }
+.choice-group { font-size: var(--wenpai-text-caption); font-weight: var(--wenpai-weight-regular); color: var(--wenpai-ink-3); margin: var(--wenpai-space-4) 0 var(--wenpai-space-2-5); }
+.choice-group:first-of-type { margin-top: var(--wenpai-space-1); }
+.field { display: grid; align-items: start; grid-template-columns: var(--wenpai-size-label-col) minmax(0, 1fr); gap: var(--wenpai-space-7); padding: 22px 0; border-top: 1px solid var(--wenpai-line-soft); }
+.field:first-of-type { border-top: 0; padding-top: var(--wenpai-space-3-5); }
+.field-label { display: flex; align-items: center; gap: var(--wenpai-space-2); font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
+.field-label svg { width: 18px; height: 18px; color: var(--wenpai-ink-3); flex: none; }
+.field-help { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin-top: var(--wenpai-space-0-5); }
+.field-ctl .hint { margin-top: var(--wenpai-space-2); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.field-ctl .hint.is-bad { color: var(--wenpai-bad); }
+.field-ctl .hint.is-ok { color: var(--wenpai-ok-ink); }
+.saved { color: var(--wenpai-ok-ink); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); margin-inline-start: var(--wenpai-space-2-5); }
+.opts { display: grid; gap: var(--wenpai-space-2-5); }
+.opt { display: flex; align-items: flex-start; gap: var(--wenpai-space-2-5); }
+.opt input { margin: var(--wenpai-space-1) 0 0; width: 16px; height: 16px; accent-color: var(--wenpai-accent); }
+.opt .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
+.opt .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+/* Choice cards follow the control column's own width, not the viewport (layout.md §2,
+   settings-0.3.0.md §2): three cards are 3 columns or 1, never 2+1; .cols-2 is 2 or 1.
+   Real wp-admin, menu expanded (design 2026-10-21, WP 7.1.3): control column 706 at 1280,
+   526 at 1100, 450 at 1024, 387 at 961. */
+.choice-cards {
+  --wenpai-choice-gap: var(--wenpai-space-5); /* one source for gap and the column math; wp-admin sets space-4 */
+  --wenpai-choice-3col: 38rem; /* three cards: 3 columns from 38rem (608px) of card-grid width, else 1 */
+  --wenpai-choice-2col: 26rem; /* .cols-2: 2 columns from 26rem (416px), else 1 */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* fallback */
+  grid-template-columns: repeat(auto-fit, minmax(clamp(calc((100% - 2 * var(--wenpai-choice-gap)) / 3 - 0.5px), (var(--wenpai-choice-3col) - 100%) * 9999, 100%), 1fr));
+  gap: var(--wenpai-choice-gap);
+}
+.choice-cards.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(clamp(calc((100% - var(--wenpai-choice-gap)) / 2 - 0.5px), (var(--wenpai-choice-2col) - 100%) * 9999, 100%), 1fr));
+}
+.choice { border: 1px solid var(--wenpai-line); border-radius: var(--wenpai-radius-lg); padding: var(--wenpai-space-4) 18px; display: flex; gap: var(--wenpai-space-3); align-items: flex-start; cursor: pointer; background: var(--wenpai-card); transition: border-color var(--wenpai-motion-fast) var(--wenpai-motion-ease), box-shadow var(--wenpai-motion-fast) var(--wenpai-motion-ease); }
+.choice input { margin: 3px 3px 0 5px; accent-color: var(--wenpai-accent); }
+.choice:hover { border-color: var(--wenpai-line-hover); }
+.choice.is-on { border-color: var(--wenpai-accent); box-shadow: 0 0 0 2px var(--wenpai-accent-soft); }
+.choice:focus-within { border-color: var(--wenpai-accent); box-shadow: 0 0 0 2px var(--wenpai-accent-soft); }
+.choice:has(input:focus-visible) { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
+.choice .t { display: block; font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.choice .d { display: block; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin-top: var(--wenpai-space-0-5); }
+.choice .t .hint { margin-inline-start: var(--wenpai-space-1); color: var(--wenpai-accent); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); white-space: nowrap; }
+.choice.is-locked { opacity: .78; }
+.choice.is-locked:hover { opacity: 1; border-color: var(--wenpai-accent); }
+.seg { display: inline-flex; border: 1px solid var(--wenpai-line-strong); border-radius: var(--wenpai-radius-sm); overflow: hidden; }
+.seg span, .seg a { padding: 0 var(--wenpai-space-3); height: 32px; display: inline-flex; align-items: center; color: var(--wenpai-ink-2); border-inline-start: 1px solid var(--wenpai-line-strong); font-size: var(--wenpai-text-body); }
+.seg span:first-child, .seg a:first-child { border-inline-start: 0; }
+.seg a:hover { color: var(--wenpai-ink); background: var(--wenpai-line-soft); }
+.seg .on, .seg a.on { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); font-weight: var(--wenpai-weight-regular); }
+.wenpai-subnav__badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 var(--wenpai-space-1); margin-inline-start: var(--wenpai-space-1); border-radius: 999px; background: var(--wenpai-bad); color: var(--wenpai-on-accent); font-size: var(--wenpai-text-caption); line-height: 1; }
+.seg a:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); box-shadow: none; }
+/* seg_radio() (D-33): native radios drawn as .seg; the radio is invisible but stays focusable and submitted. */
+.seg--radio { max-inline-size: 100%; overflow-x: auto; overflow-y: hidden; }
+.seg--radio label { position: relative; display: inline-flex; flex: none; margin: 0; cursor: pointer; }
+.seg--radio label > span { white-space: nowrap; }
+.seg.seg--radio input[type="radio"] { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.seg--radio label:first-child > span { border-inline-start: 0; }
+.seg--radio label:hover > span { color: var(--wenpai-ink); background: var(--wenpai-line-soft); }
+.seg--radio input:checked + span { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
+.seg--radio input:focus-visible + span { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); }
+.seg--radio label:has(input:disabled) { cursor: not-allowed; }
+.seg--radio input:disabled + span { color: var(--wenpai-ink-3); background: none; }
+.seg--radio input:checked:disabled + span { background: var(--wenpai-line-soft); }
+/* D-24 / Track A: in-tab secondary nav (.seg chain; Tab≤4 stays on Shell) */
+.wenpai-subnav { display: block; margin: 0 0 var(--wenpai-space-4); max-width: 100%; }
+.wenpai-subnav .seg { max-width: 100%; }
+@media (max-width: 960px) {
+  .wenpai-subnav { overflow-x: auto; }
+  .wenpai-subnav .seg { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
+  .wenpai-subnav .seg a { white-space: nowrap; flex: none; }
+}
+.chk { display: grid; gap: var(--wenpai-space-2-5); }
+.chk label { display: flex; align-items: center; gap: var(--wenpai-space-2); min-height: 24px; } /* The whole row is the target (WCAG 2.5.8). */
+.chk input { width: 16px; height: 16px; accent-color: var(--wenpai-accent); margin: 0; }
+.mode { display: inline-flex; align-items: center; gap: var(--wenpai-space-2-5); color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.mode svg { width: 16px; height: 16px; }
+.mode .seg a { height: 30px; font-size: var(--wenpai-text-meta); }
+.mode .btn-primary { height: 32px; min-height: 32px; padding: 0 var(--wenpai-space-3); font-size: var(--wenpai-text-meta); }
+.simple-row { display: flex; align-items: center; gap: var(--wenpai-space-4); padding: 18px 0; border-top: 1px solid var(--wenpai-line-soft); }
+.simple-row:first-of-type { border-top: 0; padding-top: var(--wenpai-space-2); }
+.simple-row > div:nth-child(2) { min-width: 0; flex: 1; }
+.simple-row .tile { width: var(--wenpai-size-tile); height: var(--wenpai-size-tile); }
+.simple-row .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
+.simple-row .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); max-width: 46ch; }
+.simple-row .r { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-3-5); flex: none; }
+
+.wenpai-app input[type="text"],
+.wenpai-app input[type="password"],
+.wenpai-app input[type="number"],
+.wenpai-app input[type="url"],
+.wenpai-app input[type="search"],
+.wenpai-app input[type="email"],
+.wenpai-app select {
+  width: 100%;
+  max-width: var(--wenpai-size-control-max);
+  height: var(--wenpai-size-control);
+  min-height: var(--wenpai-size-control);
+  max-height: var(--wenpai-size-control);
+  padding: 0 var(--wenpai-space-2-5);
+  line-height: var(--wenpai-leading-meta);
+  border: 1px solid var(--wenpai-control-line);
+  border-radius: var(--wenpai-radius-sm);
+  font: inherit;
+  font-size: var(--wenpai-text-body);
+  color: var(--wenpai-ink);
+  background-color: var(--wenpai-card);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/* 0.6.2: date control per approved compare sheet 5 (36px token, intrinsic width).
+   0.8: time / datetime-local / week share the same 12em rule. */
+.wenpai-app input[type="date"],
+.wenpai-app input[type="time"],
+.wenpai-app input[type="datetime-local"],
+.wenpai-app input[type="week"] {
+  width: 12em;
+  align-self: start;
+  height: var(--wenpai-size-control);
+  min-height: var(--wenpai-size-control);
+  max-height: var(--wenpai-size-control);
+  padding: 0 var(--wenpai-space-3);
+  border: 1px solid var(--wenpai-control-line);
+  border-radius: var(--wenpai-radius-sm);
+  font: inherit;
+  font-size: var(--wenpai-text-body);
+  color: var(--wenpai-ink);
+  background-color: var(--wenpai-card);
+  box-sizing: border-box;
+}
+.wenpai-app select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: var(--wenpai-space-2-5);
+  cursor: pointer;
+  background: var(--wenpai-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23646970'%3E%3Cpath d='M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z'/%3E%3C/svg%3E") no-repeat right 10px center / 16px 16px;
+}
+.wenpai-app .choice input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: radio;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  margin: 3px 3px 0 5px;
+  accent-color: var(--wenpai-accent);
+  flex: none;
+  cursor: pointer;
+}
+.wenpai-app textarea {
+  width: 100%;
+  max-width: var(--wenpai-size-control-max);
+  min-height: 72px;
+  padding: var(--wenpai-space-2) var(--wenpai-space-2-5);
+  line-height: var(--wenpai-leading-body);
+  border: 1px solid var(--wenpai-control-line);
+  border-radius: var(--wenpai-radius-sm);
+  font: inherit;
+  font-size: var(--wenpai-text-body);
+  color: var(--wenpai-ink);
+  background-color: var(--wenpai-card);
+  box-shadow: none;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.wenpai-app details {
+  border-top: 1px solid var(--wenpai-line-soft);
+  padding: var(--wenpai-space-3) 0;
+}
+.wenpai-app details:first-child { border-top: 0; padding-top: 0; }
+.wenpai-app summary {
+  cursor: pointer;
+  font-size: var(--wenpai-text-body);
+  line-height: var(--wenpai-leading-body);
+  list-style: none;
+}
+.wenpai-app summary::-webkit-details-marker { display: none; }
+.wenpai-app details p {
+  margin: var(--wenpai-space-2) 0 0;
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-2);
+}
+
+.empty { text-align: center; padding: var(--wenpai-space-8) var(--wenpai-space-4); color: var(--wenpai-ink-2); }
+.empty .tile { margin: 0 auto var(--wenpai-space-3); }
+.empty p { margin: 0; }
+.empty .meta { font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.choice.is-soon { opacity: 0.55; cursor: default; }
+.choice.is-soon input { pointer-events: none; }
+.field-ctl-row { display: flex; align-items: center; gap: var(--wenpai-space-2); max-width: var(--wenpai-size-control-max); }
+.field-ctl-row input[type="text"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+.field-ctl-row .btn { flex: none; height: var(--wenpai-size-control); }
+.wenpai-actions { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); }
+.wenpai-field__action-form { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); margin: 0; }
+.wenpai-instant { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); margin: 0; }
+.wenpai-notice-wrap { margin: 0 0 var(--wenpai-space-4); }
+.wenpai-notice-wrap.is-gone,
+.notice[data-wenpai-fade].is-gone { opacity: 0; transition: opacity var(--wenpai-motion-fade) var(--wenpai-motion-ease); }
+.wenpai-app form.is-busy,
+.wenpai-app .is-busy { pointer-events: none; } /* No dimming: pair with aria-busy="true" and an in-progress line (.spin + 「正在…」). */
+.simple-row.is-action { cursor: pointer; }
+a.simple-row { color: inherit; }
+/* P-7 「不再提示」 (.btn-ghost) lines its text up with the referral copy above it. */
+.wenpai-referral__dismiss .btn-ghost { margin-inline-start: calc(-1 * var(--wenpai-space-4)); }
+a.simple-row:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: calc(-1 * var(--wenpai-focus-width)); }
+.simple-row.is-action:hover { background: var(--wenpai-line-soft); }
+.simple-row .d.is-url { max-width: none; overflow-wrap: anywhere; word-break: break-all; }
+.field-ctl-row input[type="url"],
+.field-ctl-row input[type="search"],
+.field-ctl-row input[type="email"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+.wenpai-app input[type="file"] {
+  width: 100%;
+  max-width: var(--wenpai-size-control-max);
+  height: auto;
+  min-height: var(--wenpai-size-control);
+  padding: var(--wenpai-space-1-5) 0;
+  font: inherit;
+  font-size: var(--wenpai-text-meta);
+  color: var(--wenpai-ink-2);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+/* Columns follow the control column's own width, not the viewport (settings-0.3.0.md §2):
+   each column at least 8rem, at most 3. The field row is two-column at >=961 and stacks at
+   <=960, so the control column is narrowest at 961 and wider again at 960; a viewport
+   breakpoint would flip the column count the wrong way round there. */
+.chk-grid {
+  --wenpai-chk-min: 8rem;
+  --wenpai-chk-gap: var(--wenpai-space-4);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* fallback without min()/max() */
+  grid-template-columns: repeat(auto-fill, minmax(max(min(100%, var(--wenpai-chk-min)), calc((100% - 2 * var(--wenpai-chk-gap)) / 3)), 1fr));
+  gap: var(--wenpai-space-2) var(--wenpai-chk-gap);
+}
+.chk-grid label { display: flex; align-items: center; gap: var(--wenpai-space-2); min-height: 24px; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.chk-grid input { width: 16px; height: 16px; accent-color: var(--wenpai-accent); margin: 0; flex: none; }
+.rows > div { display: flex; align-items: center; gap: var(--wenpai-space-3-5); padding: var(--wenpai-space-3-5) 0; border-top: 1px solid var(--wenpai-line-soft); }
+.rows > div:first-child { border-top: 0; padding-top: 0; }
+.rows .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
+.rows .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.rows .r { margin-inline-start: auto; }
+.spin {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--wenpai-line);
+  border-top-color: var(--wenpai-accent);
+  vertical-align: -3px;
+  margin-inline-end: var(--wenpai-space-2-5);
+  animation: wenpai-spin var(--wenpai-motion-spin) linear infinite;
+}
+@keyframes wenpai-spin { to { transform: rotate(360deg); } }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font-weight: var(--wenpai-weight-regular); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); padding: 0 0 var(--wenpai-space-3); border-bottom: 1px solid var(--wenpai-line-soft); }
+.tbl td { padding: var(--wenpai-space-3) 0; border-bottom: 1px solid var(--wenpai-line-soft); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl .num { font-variant-numeric: tabular-nums; color: var(--wenpai-ink-2); }
+/* Visible caption (table( caption_visible )); the default caption carries .screen-reader-text. */
+.tbl caption { caption-side: top; text-align: start; color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); padding: 0 0 var(--wenpai-space-2); }
+.tbl .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
+.tbl .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.tbl select { width: auto; max-width: 16rem; }
+
+/* Wide tables: wrap .tbl in .wenpai-table-wrap so narrow screens scroll
+   horizontally instead of breaking the page layout (layout.md §2). */
+.wenpai-table-wrap { overflow-x: auto; }
+
+/* Track 0.4-list — WP_List_Table skin (D-22). Do not restyle pagination semantics. */
+.list-table { margin: 0 0 var(--wenpai-space-6); }
+.list-table .subsubsub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wenpai-space-2);
+  float: none;
+  margin: 0 0 var(--wenpai-space-4);
+  padding: 0;
+  list-style: none;
+}
+.list-table .subsubsub a { color: var(--wenpai-ink-3); text-decoration: none; display: inline-flex; gap: var(--wenpai-space-1-5); align-items: center; padding: var(--wenpai-space-0-5) var(--wenpai-space-2-5); border-radius: var(--wenpai-radius-xl); }
+.list-table .subsubsub a .count { color: inherit; }
+.list-table .subsubsub a.current { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
+.list-table .wp-list-table tr.is-selected td { background: var(--wenpai-accent-soft); }
+.list-table .tablenav-pages { margin-inline-start: auto; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); white-space: nowrap; }
+.list-table .search-box { float: none; margin: 0 0 var(--wenpai-space-4); }
+.list-table .tablenav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  height: auto;
+  margin: 0 0 var(--wenpai-space-3);
+  padding: 0;
+}
+.list-table .tablenav .actions { padding: 0; }
+.list-table .wp-list-table {
+  width: 100%;
+  border: 0;
+  border-collapse: collapse;
+  background: transparent;
+  box-shadow: none;
+}
+.list-table .wp-list-table th {
+  text-align: left;
+  font-weight: var(--wenpai-weight-regular);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  padding: 0 0 var(--wenpai-space-3);
+  border-bottom: 1px solid var(--wenpai-line-soft);
+}
+.list-table .wp-list-table td {
+  padding: var(--wenpai-space-3) 0;
+  border-bottom: 1px solid var(--wenpai-line-soft);
+  vertical-align: middle;
+}
+.list-table .wp-list-table tr:last-child td { border-bottom: 0; }
+.list-table .tablenav-pages { margin: 0; }
+.wizard { max-width: var(--wenpai-size-wizard); margin: 0 auto; padding: var(--wenpai-space-3) 0 var(--wenpai-space-4); }
+.steps { display: flex; align-items: center; gap: var(--wenpai-space-2); margin-bottom: var(--wenpai-space-9); }
+.steps .st { display: flex; align-items: center; gap: var(--wenpai-space-2); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.steps .n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--wenpai-line); color: var(--wenpai-ink-2); font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.steps .st.cur .n { background: var(--wenpai-accent); color: var(--wenpai-on-accent); }
+.steps .st.cur { color: var(--wenpai-ink); font-weight: var(--wenpai-weight-regular); }
+.steps .st.done .n { background: var(--wenpai-ok); color: var(--wenpai-on-accent); }
+.steps .bar { flex: 1; height: 1px; background: var(--wenpai-line); }
+.wizard h1 { font-size: var(--wenpai-text-display); line-height: var(--wenpai-leading-display); font-weight: var(--wenpai-weight-regular); margin: 0 0 var(--wenpai-space-1-5); }
+.wizard .lede { color: var(--wenpai-ink-2); margin: 0 0 var(--wenpai-space-6); font-size: var(--wenpai-text-body); }
+.wizard .choice-cards { grid-template-columns: 1fr; }
+.wizard .field { grid-template-columns: 1fr; gap: var(--wenpai-space-2); }
+.wizard .field-ctl input[type="text"],
+.wizard .field-ctl input[type="password"],
+.wizard .field-ctl input[type="url"],
+.wizard .field-ctl select { max-width: none; }
+.wizard .actions { display: flex; align-items: center; gap: var(--wenpai-space-4); margin-top: var(--wenpai-space-7); }
+.wenpai-gate {
+  margin: var(--wenpai-space-4) 0 0;
+  padding: var(--wenpai-space-3) var(--wenpai-space-3-5);
+  border-radius: var(--wenpai-radius-lg);
+  background: var(--wenpai-line-soft);
+}
+.wenpai-gate label { display: flex; align-items: flex-start; gap: var(--wenpai-space-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink); }
+.wenpai-gate input { width: 16px; height: 16px; margin: var(--wenpai-space-0-5) 0 0; accent-color: var(--wenpai-accent); flex: none; }
+pre.wenpai-code {
+  margin: var(--wenpai-space-3) 0 0;
+  padding: var(--wenpai-space-3) var(--wenpai-space-3-5);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-line-soft);
+  overflow-x: auto;
+}
+pre.wenpai-code code {
+  font-family: var(--wenpai-font-mono);
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  color: var(--wenpai-ink-2);
+  white-space: pre;
+}
+.preview-out {
+  display: block;
+  max-width: var(--wenpai-size-control-max);
+  min-height: var(--wenpai-size-control);
+  padding: var(--wenpai-space-2) var(--wenpai-space-2-5);
+  border-radius: var(--wenpai-radius-sm);
+  background: var(--wenpai-line-soft);
+  font-family: var(--wenpai-font-mono);
+  font-size: var(--wenpai-text-body);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink);
+  box-sizing: border-box;
+}
+.empty .btn { margin-top: var(--wenpai-space-3-5); }
+@media (prefers-reduced-motion: reduce) {
+  .wenpai-notice-wrap.is-gone,
+  .notice[data-wenpai-fade].is-gone { transition: none; opacity: 1; }
+  .wenpai-switch__track, .wenpai-switch__track::after, .choice { transition: none; }
+  .spin { animation: none; border-top-color: var(--wenpai-line); }
+}
+
+/* --- 响应式 --- */
+
+@media (max-width: 782px) {
+  /* Two-card (and any even count) choice grids keep two columns down to here: each card is still >=348px at 783. */
+  .choice-cards.cols-2 { grid-template-columns: 1fr; }
+  /* 改进记录 improvements.html：品牌与帮助/反馈同一行，页签单独第二行；帮助/反馈只留图标。
+   * 0.2.5 在 ≤600 把 .wenpai-head-right 折成整行（三行页眉），WPSlug / 智储都在产品 CSS 里盖掉；0.3 收进 kit。 */
+  .wenpai-head {
+    height: auto;
+    min-height: var(--wenpai-size-head);
+    flex-wrap: wrap;
+    padding: var(--wenpai-space-3) 0 0;
+    row-gap: var(--wenpai-space-2);
+  }
+  .wenpai-brand { order: 1; flex: 0 1 auto; min-width: 0; margin-inline-end: var(--wenpai-space-2); }
+  .wenpai-head-right {
+    order: 2;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    margin-inline-start: auto;
+    justify-content: flex-end;
+  }
+  .wenpai-head-right .wenpai-head-action {
+    width: var(--wenpai-size-control);
+    min-width: var(--wenpai-size-control);
+    padding: 0;
+    gap: 0;
+  }
+  .wenpai-head-right .wenpai-head-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  /* §17: 窄屏页签横向滚动；焦点内描边已在 .wenpai-tab:focus-visible；两端 2px 避免焦点框贴边被裁。 */
+  .wenpai-tabs { order: 3; flex: 1 0 100%; width: 100%; min-width: 0; height: 44px; overflow-x: auto; overflow-y: hidden; padding-inline: var(--wenpai-space-0-5); scrollbar-width: thin; }
+  .wenpai-tab { flex: 0 0 auto; justify-content: center; padding: 0 var(--wenpai-space-2-5); min-width: max-content; }
+  .wenpai-tab svg { margin-inline-end: var(--wenpai-space-1); }
+  .wenpai-page-head { flex-wrap: wrap; align-items: flex-start; }
+}
+
+@media (max-width: 600px) {
+  /* narrow: keep header actions, mode, scope, and confirm text inside the window */
+  .wenpai-app,
+  .wenpai-wrap,
+  .wenpai-main,
+  .wenpai-head,
+  .card,
+  .field,
+  .field-ctl,
+  .wenpai-stack {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .wenpai-app input[type="text"],
+  .wenpai-app input[type="password"],
+  .wenpai-app input[type="number"],
+  .wenpai-app input[type="url"],
+  .wenpai-app input[type="search"],
+  .wenpai-app input[type="email"],
+  .wenpai-app select,
+  .wenpai-app textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+  /* 顶栏结构在 782 已定；这里只防溢出，不再把 .wenpai-head-right 折成整行。 */
+  .wenpai-page-head { flex-wrap: wrap; align-items: flex-start; }
+  .wenpai-page-head > * { min-width: 0; max-width: 100%; }
+  .mode { flex: 1 1 100%; }
+  .simple-row { flex-wrap: wrap; align-items: flex-start; row-gap: var(--wenpai-space-2); }
+  .simple-row .d { max-width: none; }
+  .simple-row .r {
+    margin-inline-start: 52px;
+    flex: 1 1 calc(100% - 52px);
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .simple-row .scope,
+  .simple-row .pill {
+    white-space: normal;
+    height: auto;
+    min-height: 24px;
+    max-width: 100%;
+  }
+  .wenpai-gate label {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .wenpai-gate input { margin-inline-end: var(--wenpai-space-2); }
+  .hint, .wenpai-lede, .section-desc { overflow-wrap: anywhere; }
+
+  .card, .field, .field-ctl, .wenpai-stack, .wenpai-main {
+    overflow: visible;
+  }
+  /* 卡头动作组在窄屏换行，避免按钮行撑破卡片。 */
+  .card-head { flex-wrap: wrap; }
+  .wenpai-actions { flex-wrap: wrap; }
+}
+
+
+/* select popovers on touch: prefer system menulist (see overlay for pointer:coarse). */
+@media (hover: none) and (pointer: coarse) {
+  .wenpai-app select {
+    appearance: menulist;
+    -webkit-appearance: menulist;
+    background-image: none;
+    padding-inline-end: var(--wenpai-space-2-5);
+  }
+}
+
+/* ---- Settings framework 0.3.0: review fixes and §11–§15 ------------------ */
+/* Secret state: 12px dot, ok when a value is saved, mute when empty. */
+.wenpai-field__state { display: flex; align-items: center; gap: var(--wenpai-space-2); }
+.wenpai-field__state::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--wenpai-mute); }
+.wenpai-field__state.is-saved::before { background: var(--wenpai-ok); }
+.wenpai-field__clear:has(input:disabled) { color: var(--wenpai-ink-3); }
+/* Field error: above the description, with an icon. */
+.wenpai-field__error { display: flex; align-items: flex-start; gap: var(--wenpai-space-1-5); }
+.wenpai-field__error svg { flex: none; width: 14px; height: 14px; margin-top: var(--wenpai-space-0-5); color: var(--wenpai-bad); }
+.wenpai-field__empty { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+/* Error summary: one notice, links to each field. */
+.wenpai-error-summary__body { display: flex; flex-direction: column; gap: var(--wenpai-space-1); }
+.wenpai-error-summary__body p { margin: 0; }
+.wenpai-error-links { display: flex; flex-wrap: wrap; gap: var(--wenpai-space-1) var(--wenpai-space-4); margin: 0; padding: 0; list-style: none; }
+.wenpai-error-links a { color: inherit; text-decoration: underline; }
+/* Field action: input + button on row 1, receipt on a full-width row 2 (hand design, 2026-11-19).
+   Grid so the input shrinks beside the button inside control-max (~28rem); flex-wrap alone
+   let the input's higher-specificity `flex: 1 1 auto` fill the line and push the button down.
+   Empty receipts stay display:none. At ≤600px: one column — input, then button, then receipt. */
+.field-ctl-row.wenpai-field__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--wenpai-space-2); max-width: var(--wenpai-size-control-max); }
+.wenpai-field__row > :first-child { min-width: 0; max-width: none; }
+.wenpai-field__row > :first-child input { width: 100%; max-width: none; }
+.field-ctl-row.wenpai-field__row > input { width: 100%; min-width: 0; max-width: none; }
+.wenpai-field__row .btn .spin { margin-inline-start: var(--wenpai-space-1-5); }
+.field-ctl-row.wenpai-field__row > .wenpai-field__result { grid-column: 1 / -1; }
+.wenpai-field__result { display: inline-flex; align-items: center; gap: var(--wenpai-space-1-5); margin: 0; font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); color: var(--wenpai-ink-2); }
+.wenpai-field__result:empty { display: none; }
+@media (max-width: 600px) {
+	.field-ctl-row.wenpai-field__row { grid-template-columns: minmax(0, 1fr); }
+}
+.wenpai-field__result::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--wenpai-mute); }
+.wenpai-field__result.is-ok { color: var(--wenpai-ok-ink); }
+.wenpai-field__result.is-ok::before { background: var(--wenpai-ok); }
+.wenpai-field__result.is-bad { color: var(--wenpai-bad-ink); }
+.wenpai-field__result.is-bad::before { background: var(--wenpai-bad); }
+.wenpai-field__result.is-note { color: var(--wenpai-ink-3); }
+.wenpai-field__result.is-note::before { display: none; }
+/* Disable-style depends_on: dimmed label, reason in ink-3. */
+.wenpai-field.is-disabled .wenpai-field__label,
+.wenpai-field.is-disabled .field-label { color: var(--wenpai-ink-3); }
+.wenpai-app .wenpai-field.is-disabled :is(input, select, textarea):disabled { background: var(--wenpai-mute-soft); color: var(--wenpai-ink-3); cursor: not-allowed; }
+.wenpai-field__reason { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+/* Read-only status: pill + ink-3 note + link. Never an input. */
+.wenpai-field__status { display: flex; flex-direction: column; align-items: flex-start; gap: var(--wenpai-space-1); }
+.wenpai-field__note { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.pill.mute { background: var(--wenpai-mute-soft); color: var(--wenpai-ink-2); }
+.pill.mute::before { background: var(--wenpai-mute); }
+/* Choice card icon. */
+.choice-ico { display: inline-flex; flex: none; width: 20px; height: 20px; color: var(--wenpai-ink-3); }
+.choice-ico svg { width: 20px; height: 20px; }
+.choice.is-on .choice-ico { color: var(--wenpai-accent); }
+/* Two-column row layout inside a card. */
+.wenpai-field--row.field { margin: 0; }
+.wenpai-field--row .field-ctl { display: flex; flex-direction: column; gap: var(--wenpai-space-2); min-width: 0; padding-bottom: var(--wenpai-space-3); }
+.wenpai-field--row .field-label .wenpai-field__label { font-size: inherit; }
+/* Short single-line control (switch, small select): label centred on it. */
+.wenpai-field--row.wenpai-field--center { align-items: center; }
+.wenpai-field--row.wenpai-field--center .field-ctl { padding-bottom: 0; }
+/* Two or more field actions: own row under the control. */
+.wenpai-field__actions { flex-wrap: wrap; }
+/* Matrix row in error. */
+.wenpai-matrix tr.is-invalid th[scope="row"] .t { color: var(--wenpai-bad-ink); }
+@media (max-width: 600px) {
+  /* Matrix stacks: row label on top, select below; column header visually hidden. */
+  .wenpai-matrix thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .wenpai-matrix tr,
+  .wenpai-matrix th[scope="row"],
+  .wenpai-matrix td { display: block; width: 100%; }
+  .wenpai-matrix th[scope="row"] { border-bottom: 0; padding: var(--wenpai-space-3) 0 var(--wenpai-space-1); }
+  .wenpai-matrix td { padding: 0 0 var(--wenpai-space-3); border-bottom: 1px solid var(--wenpai-line-soft); }
+}
+@media (forced-colors: active) {
+  .wenpai-field__state::before,
+  .wenpai-field__result::before { forced-color-adjust: none; border: 1px solid CanvasText; }
+}
+.choice-ico .dashicons { width: 20px; height: 20px; font-size: 20px; }
+
+/* Links in running text are underlined, not told apart by color alone (WCAG 1.4.1):
+   paragraphs, lede, field descriptions and hints, notices, table cells, list items.
+   Navigation, tabs and buttons keep their own styles. */
+.wenpai-app :is(p:not(.subsubsub), li, dd, td, .wenpai-lede, .section-desc, .wenpai-field__desc, .wenpai-field__note, .field-help, .hint, .notice) a:not(.btn):not(.wenpai-tab):not(.wenpai-brand):not(.wenpai-head-action) { text-decoration: underline; text-underline-offset: 2px; }
+.wenpai-app :is(nav, .wenpai-tabs, .seg, .foot) a { text-decoration: none; }
+
+/* ≤1100 (tokens breakpoints.wide): grids only. Field rows stay at field=960; choice
+   cards use container width (38rem / 26rem) plus the ≤960 / ≤782 overrides below.
+   field 与 wide 分列——#41 曾把栅格并进 960，此处拨回。 */
+@media (max-width: 1100px) {
+  .wenpai-grid-2 { grid-template-columns: 1fr; }
+  .wenpai-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ≤960 (tokens breakpoints.field; core admin menu auto-folds here too): field rows
+   stack; three-column choice cards force one column. .cols-2 stays two-column until
+   782. .chk-grid / .choice-cards otherwise pick columns from their own width. */
+@media (max-width: 960px) {
+  .field { grid-template-columns: 1fr; gap: var(--wenpai-space-2); }
+  .wenpai-app .field { --wenpai-size-control-max: none; }
+  .choice-cards { grid-template-columns: 1fr; }
+}
+
+
+/* P2-charts — StatArea + Area (freeze 2026-10-24). Area only; no Chart.js.
+   Delta: --wenpai-ok-ink (not hard-coded hex). Short classes under .wenpai-app. */
+.wenpai-app .stat-a .k {
+  display: flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  color: var(--wenpai-ink-2);
+  font-weight: var(--wenpai-weight-regular);
+  font-size: var(--wenpai-text-body);
+}
+.wenpai-app .stat-a .k svg {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  color: var(--wenpai-ink-3);
+}
+.wenpai-app .stat-a .v {
+  font-size: var(--wenpai-text-stat);
+  line-height: var(--wenpai-leading-stat);
+  font-weight: var(--wenpai-weight-regular);
+  letter-spacing: -0.02em;
+  margin-top: var(--wenpai-space-3);
+  font-variant-numeric: tabular-nums;
+}
+.wenpai-app .stat-a .v small {
+  font-size: var(--wenpai-text-meta);
+  font-weight: var(--wenpai-weight-regular);
+  color: var(--wenpai-ink-3);
+  margin-inline-start: var(--wenpai-space-2);
+  letter-spacing: 0;
+}
+.wenpai-app .stat-a .d {
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+  margin-top: var(--wenpai-space-0-5);
+  line-height: var(--wenpai-leading-meta);
+}
+.wenpai-app .stat-a .delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wenpai-space-0-5);
+  font-size: var(--wenpai-text-meta);
+  font-weight: var(--wenpai-weight-regular);
+  color: var(--wenpai-ok-ink);
+  background: var(--wenpai-ok-soft);
+  padding: 1px var(--wenpai-space-2);
+  border-radius: var(--wenpai-radius-lg);
+  margin-inline-start: var(--wenpai-space-2);
+  vertical-align: 6px;
+  letter-spacing: 0;
+}
+.wenpai-app .stat-a .delta svg {
+  width: 12px;
+  height: 12px;
+  max-width: 12px;
+  max-height: 12px;
+}
+.wenpai-app .stat-a .area {
+  width: 100%;
+  height: 44px;
+  margin-top: var(--wenpai-space-4);
+  display: block;
+  max-width: none;
+  max-height: none;
+}
+.wenpai-app .stat-a .v.none {
+  color: var(--wenpai-ink-3);
+  font-weight: var(--wenpai-weight-regular);
+  font-size: var(--wenpai-text-title);
+}
+.wenpai-app .stat-a .stat-a-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  margin-top: var(--wenpai-space-2-5);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+}
+
+/* Track D / E08 — repeater (fieldset rows; optional Card composition via .wenpai-repeater--cards) */
+.wenpai-repeater { display: grid; gap: var(--wenpai-space-4); min-width: 0; }
+.wenpai-repeater__rows { display: grid; gap: var(--wenpai-space-4); }
+.wenpai-repeater__row {
+  display: grid;
+  gap: var(--wenpai-space-3);
+  margin: 0;
+  padding: var(--wenpai-space-4);
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius);
+  min-width: 0;
+}
+.wenpai-repeater__legend {
+  padding: 0 var(--wenpai-space-2);
+  margin: 0;
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-2);
+  font-weight: var(--wenpai-weight-regular);
+}
+.wenpai-repeater--cards .wenpai-repeater__row.card {
+  /* Card composition only — ban EndpointCard / ModuleCard / StrategyCard */
+  padding: var(--wenpai-space-6) var(--wenpai-space-7) var(--wenpai-space-4);
+  border-color: var(--wenpai-line-card);
+  background: var(--wenpai-card);
+}
+.wenpai-repeater--cards .wenpai-repeater__legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.wenpai-repeater__fields { display: grid; gap: var(--wenpai-space-3); min-width: 0; }
+.wenpai-repeater__field { display: grid; gap: var(--wenpai-space-1-5); min-width: 0; }
+.wenpai-repeater__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wenpai-space-2);
+  justify-content: flex-end;
+  padding-top: var(--wenpai-space-3);
+  border-top: 1px solid var(--wenpai-line-soft);
+}
+.wenpai-repeater__toolbar { margin: 0; }
+.wenpai-collection { display: grid; gap: var(--wenpai-space-4); }
+.wenpai-collection__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--wenpai-space-3); }
+.wenpai-collection__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wenpai-space-3);
+  padding: var(--wenpai-space-4);
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius);
+  background: var(--wenpai-card);
+}
+.wenpai-collection__item .t { flex: 1 1 auto; min-width: 0; }
+.wenpai-collection__delete { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--wenpai-space-2); margin: 0; }
+@media (max-width: 960px) {
+  .wenpai-repeater__row-actions { justify-content: stretch; }
+  .wenpai-repeater__row-actions .btn { flex: 1 1 auto; }
+}
+
+/* Track E / E14 — progressbar (P2x). Ban ProgressCard. Not StatArea. Wizard step connectors stay .steps .bar. */
+.progress-wrap { display: flex; align-items: center; gap: var(--wenpai-space-2); min-width: 0; max-width: var(--wenpai-size-control-max); }
+.progress {
+  flex: 1 1 auto;
+  height: 6px;
+  min-width: 4em;
+  background: var(--wenpai-line-soft);
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  width: 0;
+  max-width: 100%;
+  background: var(--wenpai-accent);
+}
+.progress.warn i { background: var(--wenpai-warn); }
+.progress.bad i { background: var(--wenpai-bad); }
+.progress.is-indeterminate i { width: 32%; background: var(--wenpai-ink-3); }
+.progress-pct {
+  flex: none;
+  min-width: 2.75em;
+  text-align: right;
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  color: var(--wenpai-ink-2);
+  font-weight: var(--wenpai-weight-regular);
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress i { transition: none; }
+}
+
+/* Track E / E18 — Field addon ($ / ¥ / %). Ban InputGroup. */
+.field-addon {
+  display: flex;
+  align-items: center;
+  gap: var(--wenpai-space-1);
+  max-width: var(--wenpai-size-control-max);
+  min-width: 0;
+}
+.field-addon input[type="number"],
+.field-addon input[type="text"] {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+.field-addon-affix {
+  flex: none;
+  color: var(--wenpai-ink-2);
+  font-size: var(--wenpai-text-body);
+  line-height: var(--wenpai-leading-body);
+  font-weight: var(--wenpai-weight-regular);
+}
+.field-ctl-row .field-addon { max-width: none; flex: 1 1 auto; }
+
+/* 0.5: card head right slot (pill / buttons) and flexible title block. */
+.card-head > div { flex: 1; min-width: 0; }
+.card-head .head-actions { margin-inline-start: auto; display: flex; gap: var(--wenpai-space-2); align-items: center; flex: none; }
+.card-head .head-actions .wenpai-list-bar { margin-bottom: 0; }
+@media (max-width: 600px) { .card-head > div.head-actions { flex: 1 1 100%; margin-inline-start: 0; } }
+/* 0.5: async task block (progress + counts + live meta). */
+.wenpai-task { display: grid; gap: var(--wenpai-space-2-5); padding: 18px 0; border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-task:first-of-type { border-top: 0; padding-top: var(--wenpai-space-2); }
+.wenpai-task-bar { height: 8px; border-radius: var(--wenpai-radius-sm); background: var(--wenpai-line-soft); overflow: hidden; }
+.wenpai-task-bar i { display: block; height: 100%; background: var(--wenpai-accent); border-radius: var(--wenpai-radius-sm); transition: width var(--wenpai-motion-base) var(--wenpai-motion-ease); }
+.wenpai-task-bar.is-stopped i { background: var(--wenpai-warn); }
+.wenpai-task-bar.is-bad i { background: var(--wenpai-bad); }
+.wenpai-task-counts { display: flex; gap: var(--wenpai-space-2); flex-wrap: wrap; align-items: center; }
+.wenpai-task-meta { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); margin: 0; }
+/* meta_html: emphasis is ink, not weight (weights stay regular kit-wide). */
+.wenpai-task-meta :is(strong, b) { color: var(--wenpai-ink); font-variant-numeric: tabular-nums; }
+/* 0.5: read-only log list. */
+.wenpai-log { list-style: none; margin: 0; padding: 0; }
+.wenpai-log li { display: grid; grid-template-columns: auto 1fr; gap: var(--wenpai-space-1) var(--wenpai-space-3); padding: var(--wenpai-space-2-5) 0; border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-log li:first-child { border-top: 0; }
+.wenpai-log .n { display: flex; gap: var(--wenpai-space-2); align-items: center; }
+.wenpai-log .when { grid-column: 2; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+.wenpai-log .p { grid-column: 2; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); overflow-wrap: anywhere; }
+.wenpai-log__label { color: var(--wenpai-ink); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+/* Narrow: the detail (paths, hosts) takes the full row under the pill line. */
+@media (max-width: 600px) { .wenpai-log .p { grid-column: 1 / -1; } }
+/* Rows with an aside: label line, then when / detail under it, numbers on the right. */
+.wenpai-log li.has-aside { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.wenpai-log li.has-aside > .n { flex-wrap: wrap; min-width: 0; }
+.wenpai-log li.has-aside > :is(.when, .p) { grid-column: 1; }
+.wenpai-log li.has-aside > .p:empty { display: none; }
+.wenpai-log .wenpai-logo > :is(img, svg) { inline-size: 16px; block-size: 16px; }
+.wenpai-log__aside { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: var(--wenpai-space-3); align-items: center; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 0.5.1: native-screen module (media column, metabox) and wizard contract.
+   Scoped to WP native screens via body classes; never restyles core chrome. */
+.wenpai-native-col { display: grid; gap: var(--wenpai-space-2); justify-items: start; }
+.wenpai-native-col code { font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--wenpai-line-soft); padding: var(--wenpai-space-0-5) var(--wenpai-space-1-5); border-radius: var(--wenpai-radius-sm); }
+.wenpai-native-metabox { display: grid; gap: var(--wenpai-space-3); font-size: var(--wenpai-text-meta); }
+.wenpai-native-metabox .head { display: flex; align-items: center; gap: var(--wenpai-space-2); }
+.wenpai-native-metabox .meta { color: var(--wenpai-ink-3); margin: 0; }
+.wenpai-native-metabox code { background: var(--wenpai-line-soft); padding: var(--wenpai-space-0-5) var(--wenpai-space-1-5); border-radius: var(--wenpai-radius-sm); overflow-wrap: anywhere; }
+.wenpai-native-metabox .actions { display: flex; gap: var(--wenpai-space-2); flex-wrap: wrap; }
+.wenpai-native-metabox .btn { margin-inline-start: calc(var(--wenpai-space-4) * -1); }
+/* Wizard: narrow column, 16px rhythm, stacked fields. */
+.wenpai-wizard { display: grid; gap: var(--wenpai-space-4); max-width: var(--wenpai-size-wizard, 640px); margin: 0 auto; }
+.wenpai-wizard .steps { margin-bottom: 0; }
+.wenpai-wizard .notice { margin: 0; }
+.wenpai-wizard .card-head { margin-bottom: 0; }
+.wenpai-wizard .field { display: grid; grid-template-columns: 1fr; gap: var(--wenpai-space-2); margin-top: var(--wenpai-space-4); padding: var(--wenpai-space-4) 0 0; border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-wizard .choice-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--wenpai-space-3); }
+.wenpai-wizard .card-foot { margin-top: var(--wenpai-space-4); }
+
+/* 0.5.3: native bulk bar (media / list tables) and confirm dialog. */
+.wenpai-native-bulk { display: flex; gap: var(--wenpai-space-2); align-items: center; }
+.wenpai-native-bulk select,
+.wenpai-native-bulk .btn { height: var(--wenpai-size-control); border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-body); flex: none; }
+body.wenpai-ui-page .wenpai-native-bulk select { width: auto; min-width: 10em; max-width: 18em; border: 1px solid var(--wenpai-control-line); background: var(--wenpai-card); padding: 0 var(--wenpai-space-2); }
+.wenpai-native-bulk .meta { margin-inline-start: auto; white-space: nowrap; }
+.wenpai-dialog { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-lg); background: var(--wenpai-card); color: var(--wenpai-ink); box-shadow: var(--wenpai-shadow); padding: var(--wenpai-space-5); max-width: 460px; }
+.wenpai-dialog::backdrop { background: var(--wenpai-ink); opacity: 0.45; }
+.wenpai-dialog h3 { margin: 0 0 var(--wenpai-space-1-5); font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); }
+.wenpai-dialog p { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-dialog .wenpai-gate { margin-top: var(--wenpai-space-3); }
+.wenpai-dialog .card-foot { margin-top: var(--wenpai-space-4); padding-top: var(--wenpai-space-3); }
+.wenpai-dialog.is-danger h3 { color: var(--wenpai-bad-ink); }
+
+/* Track 0.5-fields — date / color / media / group field types (compare sheet 5). */
+.wenpai-color-row { display: inline-flex; gap: var(--wenpai-space-2); align-items: center; }
+.wenpai-color-row input[type="color"] {
+  width: var(--wenpai-size-control);
+  height: var(--wenpai-size-control);
+  border: 1px solid var(--wenpai-control-line);
+  border-radius: var(--wenpai-radius-sm);
+  padding: 3px;
+  background: var(--wenpai-card);
+}
+.wenpai-color-row code { font-size: var(--wenpai-text-meta); color: var(--wenpai-ink-3); }
+.wenpai-media-row { display: flex; flex-wrap: wrap; gap: var(--wenpai-space-3); align-items: center; }
+.wenpai-media-thumb {
+  width: 72px;
+  height: 48px;
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius-sm);
+  background: var(--wenpai-line-soft);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-caption);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex: none;
+}
+.wenpai-media-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.wenpai-media-row input[type="text"] { width: 16em; }
+.wenpai-media-row .wenpai-media-id { width: 7em; }
+fieldset.wenpai-group { border: 0; margin: 0; padding: 0; min-width: 0; }
+fieldset.wenpai-group > legend { padding: 0; margin: 0 0 var(--wenpai-space-2); font-size: var(--wenpai-text-body); font-weight: var(--wenpai-weight-regular); }
+.wenpai-group-body {
+  display: grid;
+  border-inline-start: 2px solid var(--wenpai-line);
+  padding-inline-start: var(--wenpai-space-4);
+}
+
+/* 0.7 — list_bar / row_actions / checkgroup / catalog / suggest / preview / help / pane. */
+.wenpai-list-bar { display: flex; align-items: center; gap: var(--wenpai-space-3); margin-bottom: var(--wenpai-space-3); flex-wrap: wrap; }
+.wenpai-list-bar .wenpai-filter { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); }
+.wenpai-list-bar .wenpai-filter select { max-width: 16em; }
+.wenpai-list-bar__count { margin-inline-start: auto; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); }
+.wenpai-row-actions { display: flex; gap: var(--wenpai-space-2); align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.wenpai-row-actions form { display: inline; margin: 0; }
+.wenpai-row-actions .btn { height: 30px; font-size: var(--wenpai-text-meta); padding: 0 var(--wenpai-space-3); }
+
+.wenpai-checkgroup { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-md); overflow: hidden; }
+.wenpai-checkgroup__head { display: flex; align-items: center; gap: var(--wenpai-space-2); padding: var(--wenpai-space-2) var(--wenpai-space-3); border-bottom: 1px solid var(--wenpai-line-soft); background: var(--wenpai-line-soft); font-size: var(--wenpai-text-meta); color: var(--wenpai-ink-3); }
+.wenpai-checkgroup__acts { margin-inline-start: auto; display: flex; gap: var(--wenpai-space-3); }
+.wenpai-checkgroup__acts button { background: none; border: 0; color: var(--wenpai-accent); font-size: var(--wenpai-text-meta); cursor: pointer; padding: 0; display: inline-flex; align-items: center; min-height: 24px; }
+.wenpai-checkgroup__acts button:hover { text-decoration: underline; }
+.wenpai-checkgroup__list { list-style: none; margin: 0; padding: var(--wenpai-space-1); max-height: 190px; overflow: auto; }
+.wenpai-checkgroup__list li { display: flex; gap: var(--wenpai-space-2); align-items: flex-start; padding: var(--wenpai-space-1-5) var(--wenpai-space-2); border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-body); }
+.wenpai-checkgroup__list li:hover { background: var(--wenpai-line-soft); }
+.wenpai-checkgroup__list .chk { display: flex; gap: var(--wenpai-space-2); align-items: flex-start; flex: 1; min-width: 0; margin: 0; }
+.wenpai-checkgroup__list .chk input { flex: none; margin: 3px 0 0; }
+.wenpai-checkgroup__text { flex: 1; min-width: 0; }
+.wenpai-checkgroup__meta { margin-inline-start: auto; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); flex: none; }
+.wenpai-checkgroup__media { flex: none; display: inline-flex; }
+.wenpai-checkgroup__media > :is(img, svg) { display: block; max-block-size: var(--wenpai-size-logo); max-inline-size: 8rem; inline-size: auto; block-size: auto; object-fit: contain; border-radius: var(--wenpai-radius-sm); }
+.wenpai-checkgroup__list li.has-desc { flex-wrap: wrap; }
+.wenpai-checkgroup__desc { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--wenpai-space-1) var(--wenpai-space-3); padding-inline-start: calc(var(--wenpai-space-4) + var(--wenpai-space-2)); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-checkgroup__desc a { color: var(--wenpai-accent); }
+.wenpai-catalog { display: grid; gap: var(--wenpai-space-2); }
+.wenpai-catalog__tools { display: flex; gap: var(--wenpai-space-2); }
+.wenpai-catalog__tools input[type="search"] { flex: 1; height: var(--wenpai-size-control); border: 1px solid var(--wenpai-control-line); border-radius: var(--wenpai-radius-sm); padding: 0 var(--wenpai-space-3); font-size: var(--wenpai-text-body); background: var(--wenpai-card); color: var(--wenpai-ink); }
+.wenpai-catalog__tools input[type="search"]:focus { border-color: var(--wenpai-control-line-hover); outline: none; box-shadow: var(--wenpai-focus-halo); }
+
+.wenpai-suggest { position: relative; }
+.wenpai-suggest__out { margin-top: var(--wenpai-space-2); border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-sm); background: var(--wenpai-card); font-size: var(--wenpai-text-body); overflow: hidden; }
+.wenpai-suggest__out[hidden] { display: none; }
+.wenpai-suggest__list { list-style: none; margin: 0; padding: var(--wenpai-space-1); }
+.wenpai-suggest__list li { padding: 7px var(--wenpai-space-2-5); border-radius: var(--wenpai-radius-sm); cursor: pointer; display: flex; gap: var(--wenpai-space-2); align-items: baseline; }
+.wenpai-suggest__list li:hover, .wenpai-suggest__list li.is-active { background: var(--wenpai-line-soft); }
+.wenpai-suggest__item { display: flex; gap: var(--wenpai-space-2); align-items: baseline; width: 100%; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: start; cursor: pointer; }
+.wenpai-suggest__meta { margin-inline-start: auto; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); }
+.wenpai-suggest__empty { padding: var(--wenpai-space-2-5) var(--wenpai-space-3); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); margin: 0; }
+
+.wenpai-preview { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-sm); padding: var(--wenpai-space-2-5) var(--wenpai-space-3); font-size: var(--wenpai-text-body); background: var(--wenpai-line-soft); }
+.wenpai-preview.is-ok { background: var(--wenpai-ok-soft); border-color: var(--wenpai-ok); }
+.wenpai-preview.is-bad { background: var(--wenpai-bad-soft); border-color: var(--wenpai-bad); }
+.wenpai-preview--line { border-style: dashed; background: transparent; }
+.wenpai-preview--line.is-ok, .wenpai-preview--line.is-bad { background: transparent; }
+.wenpai-preview__row { display: flex; gap: var(--wenpai-space-3); padding: 3px 0; }
+.wenpai-preview__k { color: var(--wenpai-ink-3); min-width: 5em; flex: none; }
+.wenpai-preview__v { min-width: 0; }
+.wenpai-preview__text { margin: 0; }
+
+.wenpai-help__group { margin-bottom: var(--wenpai-space-5); }
+.wenpai-help__group > h3 { font-size: var(--wenpai-text-body); font-weight: var(--wenpai-weight-regular); color: var(--wenpai-ink-3); margin: 0 0 var(--wenpai-space-1-5); }
+.wenpai-help__step { display: grid; grid-template-columns: 28px 1fr; gap: var(--wenpai-space-3); padding: var(--wenpai-space-2-5) 0; border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-help__step:first-of-type { border-top: 0; }
+.wenpai-help__no { width: 24px; height: 24px; border-radius: 50%; background: var(--wenpai-accent-soft); color: var(--wenpai-accent); display: grid; place-items: center; font-size: var(--wenpai-text-meta); font-weight: var(--wenpai-weight-regular); margin-top: 1px; }
+.wenpai-help__body h4 { margin: 0 0 var(--wenpai-space-0-5); font-size: var(--wenpai-text-body); font-weight: var(--wenpai-weight-regular); }
+.wenpai-help__body p { margin: 0; font-size: var(--wenpai-text-meta); color: var(--wenpai-ink-3); line-height: 1.55; }
+.wenpai-help__links { margin-top: var(--wenpai-space-4); display: flex; gap: var(--wenpai-space-4); flex-wrap: wrap; }
+.wenpai-help__links a { color: var(--wenpai-accent); font-size: var(--wenpai-text-meta); text-decoration: none; }
+.wenpai-help__links a:hover { text-decoration: underline; }
+/* help() group head: optional tile + title + desc; collapsible groups are details (no arrow, D-31). */
+.wenpai-help__head { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--wenpai-space-3-5); align-items: center; margin: 0 0 var(--wenpai-space-1-5); }
+.wenpai-help__head:has(> .tile) { grid-template-columns: auto minmax(0, 1fr); }
+.wenpai-help__head > .tile { grid-row: 1 / span 2; }
+.wenpai-help__head > .tile ~ * { grid-column: 2; }
+.wenpai-help__head > h3 { margin: 0; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); font-weight: var(--wenpai-weight-regular); color: var(--wenpai-ink); }
+.wenpai-help__desc { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-help__head + .wenpai-help__step { border-top: 0; }
+.wenpai-app details.wenpai-help__group { border-top: 0; padding: 0; }
+.wenpai-app .wenpai-help__group > summary.wenpai-help__head { padding: var(--wenpai-space-2) 0; margin: 0; border-radius: var(--wenpai-radius-sm); }
+.wenpai-app .wenpai-help__group > summary.wenpai-help__head:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
+.wenpai-help__group > summary:hover > h3 { color: var(--wenpai-accent); }
+/* Collapsible group: chevron in its own last column (rotation and reduced motion shared with .wenpai-fold). */
+.wenpai-help__group > summary.wenpai-help__head { grid-template-columns: minmax(0, 1fr) auto; }
+.wenpai-help__group > summary.wenpai-help__head:has(> .tile) { grid-template-columns: auto minmax(0, 1fr) auto; }
+.wenpai-help__group > summary.wenpai-help__head:not(:has(> .tile)) > :is(h3, .wenpai-help__desc) { grid-column: 1; }
+.wenpai-help__head > .wenpai-fold__chevron { grid-column: -2 / -1; grid-row: 1 / span 2; }
+.wenpai-app details.wenpai-help__group .wenpai-help__body p { margin: 0; color: var(--wenpai-ink-3); line-height: 1.55; }
+
+.wenpai-pane { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-md); padding: var(--wenpai-space-3) var(--wenpai-space-3-5); margin-top: var(--wenpai-space-3); }
+.wenpai-pane__head { display: flex; align-items: center; gap: var(--wenpai-space-2); margin-bottom: var(--wenpai-space-2); }
+.wenpai-pane__head h4 { margin: 0; font-size: var(--wenpai-text-body); }
+.wenpai-pane__tag { display: none; font-size: var(--wenpai-text-caption); color: var(--wenpai-ink-3); border: 1px solid var(--wenpai-line-card); border-radius: 999px; padding: 1px var(--wenpai-space-2); }
+
+/* 0.8 — entity picker / file upload / tags / schedule / icon / range /
+   copy button / code block / status_list / license_card / dashboard_widget /
+   quick_edit rows. All tokens, logical properties. */
+
+/* entity: picked chip + search input + absolute result dropdown.
+   PHP renders the wrapper as an inline <span>; blockify so children stack. */
+.wenpai-entity { position: relative; display: block; }
+.wenpai-entity__picked {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  margin-bottom: var(--wenpai-space-2);
+  padding-block: var(--wenpai-space-0-5);
+  padding-inline: var(--wenpai-space-3) var(--wenpai-space-1);
+  border-radius: var(--wenpai-radius-xl);
+  background: var(--wenpai-mute-soft);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-2);
+  max-width: 100%;
+}
+.wenpai-entity__picked[hidden] { display: none; }
+.wenpai-entity__picked-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wenpai-entity__picked-meta { color: var(--wenpai-ink-3); flex: none; }
+/* PHP renders the picked meta as .wenpai-entity__meta; keep it tight in the chip. */
+.wenpai-entity__picked .wenpai-entity__meta { margin-inline-start: 0; }
+.wenpai-entity__clear {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--wenpai-accent);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  cursor: pointer;
+}
+.wenpai-entity__clear:hover { text-decoration: underline; }
+.wenpai-entity__out {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + var(--wenpai-space-1));
+  z-index: var(--wenpai-z-popover);
+  margin: 0;
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-card);
+  box-shadow: var(--wenpai-shadow);
+  max-height: 280px;
+  overflow: auto;
+}
+.wenpai-entity__out[hidden] { display: none; }
+.wenpai-entity__list { list-style: none; margin: 0; padding: var(--wenpai-space-1); }
+.wenpai-entity__item {
+  display: flex;
+  gap: var(--wenpai-space-2);
+  align-items: baseline;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 7px var(--wenpai-space-2-5);
+  border-radius: var(--wenpai-radius-sm);
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.wenpai-entity__item:hover,
+.wenpai-entity__item.is-active { background: var(--wenpai-line-soft); }
+.wenpai-entity__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wenpai-entity__meta { margin-inline-start: auto; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); flex: none; }
+.wenpai-entity__empty { padding: var(--wenpai-space-2-5) var(--wenpai-space-3); color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); margin: 0; }
+
+/* file: dashed drop zone + item list with per-item hidden inputs.
+   PHP renders the wrapper/items as inline <span>s; blockify/flex them. */
+.wenpai-file { min-width: 0; display: block; }
+.wenpai-file__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wenpai-space-1-5);
+  padding: var(--wenpai-space-6) var(--wenpai-space-4);
+  border: 1px dashed var(--wenpai-line-strong);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-card);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  cursor: pointer;
+  text-align: center;
+}
+.wenpai-file__drop > svg { width: 22px; height: 22px; flex: none; }
+.wenpai-file__drop:hover,
+.wenpai-file__drop.is-drag { border-color: var(--wenpai-accent); background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
+.wenpai-file__drop:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
+.wenpai-file__list { list-style: none; margin: var(--wenpai-space-2) 0 0; padding: 0; display: grid; gap: var(--wenpai-space-1-5); }
+.wenpai-file__item {
+  display: flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  padding: var(--wenpai-space-1-5) var(--wenpai-space-2-5);
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius-sm);
+  background: var(--wenpai-card);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+}
+.wenpai-file__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--wenpai-ink); }
+.wenpai-file__size { flex: none; color: var(--wenpai-ink-3); font-variant-numeric: tabular-nums; }
+.wenpai-file__state { flex: none; color: var(--wenpai-ink-3); }
+.wenpai-file__item.is-bad .wenpai-file__state { color: var(--wenpai-bad-ink); }
+.wenpai-file__remove {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 0 var(--wenpai-space-1);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  cursor: pointer;
+}
+.wenpai-file__remove:hover { color: var(--wenpai-bad-ink); }
+
+/* tags: chips + borderless trailing input. PHP puts the input and the hidden
+   inputs as siblings of .wenpai-tags__chips inside .wenpai-tags; the chips
+   wrapper is display:contents so everything lines up in one flex row. */
+.wenpai-tags { display: flex; flex-wrap: wrap; gap: var(--wenpai-space-1-5); align-items: center; min-width: 0; }
+.wenpai-tags__chips { display: contents; }
+.wenpai-tags__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wenpai-space-1);
+  padding-block: var(--wenpai-space-0-5);
+  padding-inline: var(--wenpai-space-3) var(--wenpai-space-1);
+  border-radius: var(--wenpai-radius-xl);
+  background: var(--wenpai-mute-soft);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-2);
+  max-width: 100%;
+}
+.wenpai-tags__chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wenpai-tags__chip-x {
+  background: none;
+  border: 0;
+  padding: 0 var(--wenpai-space-0-5);
+  color: var(--wenpai-ink-3);
+  font-size: var(--wenpai-text-meta);
+  line-height: 1;
+  cursor: pointer;
+}
+.wenpai-tags__chip-x:hover { color: var(--wenpai-bad-ink); }
+.wenpai-app .wenpai-tags input.wenpai-tags__input,
+.wenpai-tags input.wenpai-tags__input {
+  flex: 1 1 auto;
+  min-width: 8em;
+  width: auto;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: var(--wenpai-space-1) 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--wenpai-text-body);
+}
+
+/* schedule: next-run meta line under the select. */
+.wenpai-schedule__next {
+  display: block;
+  margin: var(--wenpai-space-1-5) 0 0;
+  color: var(--wenpai-ink-2);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+}
+
+/* icon picker: preview box + pick button + absolute grid panel. */
+.wenpai-icon { position: relative; display: flex; align-items: center; gap: var(--wenpai-space-2); min-width: 0; }
+.wenpai-icon input[type="text"] { flex: 1 1 auto; min-width: 0; }
+.wenpai-icon__preview {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius-sm);
+  display: grid;
+  place-items: center;
+  color: var(--wenpai-ink-3);
+  background: var(--wenpai-card);
+}
+.wenpai-icon__preview.is-empty { background: var(--wenpai-line-soft); }
+.wenpai-icon__preview svg { width: 20px; height: 20px; }
+.wenpai-icon__pick { flex: none; }
+.wenpai-icon__picker {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + var(--wenpai-space-1));
+  z-index: var(--wenpai-z-popover);
+  width: min(340px, 100%);
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-card);
+  box-shadow: var(--wenpai-shadow);
+  padding: var(--wenpai-space-2);
+}
+.wenpai-icon__picker[hidden] { display: none; }
+.wenpai-icon__filter { width: 100%; margin-bottom: var(--wenpai-space-2); }
+.wenpai-icon__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: var(--wenpai-space-1); }
+.wenpai-icon__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wenpai-space-0-5);
+  padding: var(--wenpai-space-1-5) var(--wenpai-space-0-5);
+  border: 1px solid transparent;
+  border-radius: var(--wenpai-radius-sm);
+  background: none;
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  color: var(--wenpai-ink-2);
+  cursor: pointer;
+  overflow: hidden;
+}
+.wenpai-icon__opt svg { width: 20px; height: 20px; flex: none; }
+.wenpai-icon__opt:hover { background: var(--wenpai-line-soft); }
+.wenpai-icon__opt.is-current { background: var(--wenpai-accent-soft); border-color: var(--wenpai-accent); color: var(--wenpai-accent); }
+.wenpai-icon__opt[hidden] { display: none; }
+
+/* range: slider + tabular-nums readout. */
+.wenpai-range { display: flex; align-items: center; gap: var(--wenpai-space-3); max-width: var(--wenpai-size-control-max); min-width: 0; }
+.wenpai-range input[type="range"] { flex: 1 1 auto; width: auto; max-width: none; min-width: 0; }
+.wenpai-range__out {
+  flex: none;
+  min-width: 3em;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  color: var(--wenpai-ink-2);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+}
+
+/* copy button done state. */
+.wenpai-copy.is-done { color: var(--wenpai-ok-ink); }
+/* copy_button( variant => text ): the value itself is the button (token chip). */
+.wenpai-copy--text { display: inline-flex; align-items: center; min-height: 24px; margin: 0; padding: 0 var(--wenpai-space-1-5); border: 0; border-radius: var(--wenpai-radius-sm); background: var(--wenpai-line-soft); color: var(--wenpai-ink-2); font-family: var(--wenpai-font-mono); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); cursor: pointer; overflow-wrap: anywhere; text-align: start; }
+.wenpai-copy--text:hover { color: var(--wenpai-accent); }
+.wenpai-copy--text:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); box-shadow: none; }
+
+/* code block: bar (lang + copy) over scrollable pre. */
+div.wenpai-code {
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-line-soft);
+  overflow: hidden;
+}
+.wenpai-code__bar { display: flex; align-items: center; gap: var(--wenpai-space-2); padding: var(--wenpai-space-1-5) var(--wenpai-space-2-5); }
+.wenpai-code__lang { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-code__bar > :last-child:not(.wenpai-code__lang) { margin-inline-start: auto; }
+div.wenpai-code pre { margin: 0; padding: var(--wenpai-space-3) var(--wenpai-space-4); overflow: auto; font-family: var(--wenpai-font-mono); font-size: var(--wenpai-text-meta); line-height: 1.6; }
+div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta); }
+
+/* code_inline (0.9): one-line value + ghost copy on a single row. */
+.wenpai-code-row { display: inline-flex; align-items: center; gap: var(--wenpai-space-2); max-width: 100%; }
+.wenpai-code-row > .wenpai-code {
+  margin: 0;
+  padding: var(--wenpai-space-1) var(--wenpai-space-2-5);
+  border: 1px solid var(--wenpai-line-soft);
+  border-radius: var(--wenpai-radius-md);
+  background: var(--wenpai-line-soft);
+  font-family: var(--wenpai-font-mono);
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* status_list: dl rows, label column + value + state pill. */
+.wenpai-status-list { margin: 0; }
+.wenpai-status-list__row { display: flex; align-items: baseline; gap: var(--wenpai-space-3); padding: var(--wenpai-space-2) 0; border-bottom: 1px solid var(--wenpai-line-soft); }
+.wenpai-status-list__row:last-child { border-bottom: 0; }
+.wenpai-status-list__row dt { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); min-width: 8em; flex: none; }
+.wenpai-status-list__row dd { flex: 1 1 auto; min-width: 0; margin: 0; display: flex; align-items: center; gap: var(--wenpai-space-2); flex-wrap: wrap; }
+.wenpai-status-list__state {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--wenpai-space-2);
+  border-radius: var(--wenpai-radius-xl);
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  background: var(--wenpai-mute-soft);
+  color: var(--wenpai-ink-2);
+  white-space: nowrap;
+}
+.wenpai-status-list__state.is-ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); }
+.wenpai-status-list__state.is-warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); }
+.wenpai-status-list__state.is-bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink); }
+.wenpai-status-list__state.is-accent { background: var(--wenpai-accent-soft); color: var(--wenpai-accent); }
+
+/* license_card: plan card with head / pitch / meta / actions. */
+.wenpai-license {
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius);
+  background: var(--wenpai-card);
+  padding: var(--wenpai-space-5);
+}
+.wenpai-license__head { display: flex; align-items: center; justify-content: space-between; gap: var(--wenpai-space-3); flex-wrap: wrap; }
+.wenpai-license__head h3 { margin: 0; font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); }
+.wenpai-license__state {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--wenpai-space-2);
+  border-radius: var(--wenpai-radius-xl);
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  background: var(--wenpai-mute-soft);
+  color: var(--wenpai-ink-2);
+  white-space: nowrap;
+}
+.wenpai-license__state.is-ok { background: var(--wenpai-ok-soft); color: var(--wenpai-ok-ink); }
+.wenpai-license__state.is-warn { background: var(--wenpai-warn-soft); color: var(--wenpai-warn-ink); }
+.wenpai-license__state.is-bad { background: var(--wenpai-bad-soft); color: var(--wenpai-bad-ink); }
+.wenpai-license__pitch { margin: var(--wenpai-space-2) 0 0; color: var(--wenpai-ink-2); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.wenpai-license__meta { margin: var(--wenpai-space-3) 0 0; font-size: var(--wenpai-text-meta); }
+.wenpai-license__meta .wenpai-status-list__row { padding: var(--wenpai-space-1) 0; }
+.wenpai-license__meta > div,
+.wenpai-license__meta .wenpai-status-list__row { display: flex; align-items: baseline; gap: var(--wenpai-space-3); }
+.wenpai-license__meta dt,
+.wenpai-license__meta .wenpai-status-list__row dt { color: var(--wenpai-ink-3); min-width: 8em; flex: none; }
+.wenpai-license__meta dd,
+.wenpai-license__meta .wenpai-status-list__row dd { margin: 0; flex: 1 1 auto; min-width: 0; }
+.wenpai-license__actions { display: flex; gap: var(--wenpai-space-2); flex-wrap: wrap; margin-top: var(--wenpai-space-4); }
+
+/* dashboard_widget body: optional stat row + free body. */
+.wenpai-dash {
+  border: 1px solid var(--wenpai-line-card);
+  border-radius: var(--wenpai-radius);
+  background: var(--wenpai-card);
+  padding: var(--wenpai-space-5);
+}
+.wenpai-dash strong, .wenpai-dash b { font-weight: var(--wenpai-weight-regular); }
+.wenpai-dash__title { margin: 0; font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); }
+.wenpai-dash__stats { display: flex; gap: var(--wenpai-space-6); flex-wrap: wrap; }
+.wenpai-dash__stat { display: grid; gap: var(--wenpai-space-0-5); min-width: 0; }
+.wenpai-dash__stat .n {
+  font-size: var(--wenpai-text-title);
+  line-height: var(--wenpai-leading-title);
+  font-weight: var(--wenpai-weight-regular);
+  font-variant-numeric: tabular-nums;
+  color: var(--wenpai-ink);
+}
+.wenpai-dash__stat > :not(.n) { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+
+/* quick_edit_box rows inside WP inline edit. */
+.wenpai-qe__row { display: flex; gap: var(--wenpai-space-3); align-items: flex-start; padding: var(--wenpai-space-1) 0; flex-wrap: wrap; }
+.wenpai-qe__row > label { min-width: 9em; flex: none; color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); padding-top: var(--wenpai-space-2); }
+.wenpai-qe__row > :not(label) { flex: 1 1 auto; min-width: 0; }
+
+/* Small text/icon controls share the kit focus ring (0.9.1 polish). */
+.wenpai-checkgroup__acts button:focus-visible,
+.wenpai-file__remove:focus-visible,
+.wenpai-tags__chip-x:focus-visible,
+.wenpai-entity__clear:focus-visible,
+.wenpai-icon__opt:focus-visible,
+.wenpai-entity__item:focus-visible,
+.wenpai-suggest__item:focus-visible {
+  outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color);
+  outline-offset: var(--wenpai-focus-offset);
+}
+
+/* depends_on disable/exclude leaves composite widgets looking active;
+   mute the drop zone to match disabled inputs. */
+.wenpai-field.is-disabled .wenpai-file__drop {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* depends_on disable also reaches the composite widgets' own buttons. */
+.wenpai-field.is-disabled :is(.wenpai-entity__clear, .wenpai-file__remove, .wenpai-tags__chip-x, .wenpai-icon__opt):disabled {
+  color: var(--wenpai-ink-3);
+  cursor: default;
+}
+
+/* forced-colors (Windows 高对比度): author colors are stripped, so every
+   state that relied on a background tint or accent border gets a system-color
+   equivalent. Status dots and the subnav badge keep their semantic colors via
+   forced-color-adjust:none — they are the double-coding for pill/notice states
+   whose text is already forced to CanvasText. */
+@media (forced-colors: active) {
+  .pill::before,
+  .wenpai-subnav__badge { forced-color-adjust: none; }
+  .pill { border: 1px solid CanvasText; }
+  .choice.is-on { outline: 2px solid Highlight; outline-offset: 1px; box-shadow: none; }
+  .seg a.on { box-shadow: inset 0 -2px 0 Highlight; }
+  .seg--radio input:checked + span { box-shadow: inset 0 -2px 0 Highlight; }
+  .wenpai-icon__opt.is-current,
+  .wenpai-entity__item.is-active { outline: 2px solid Highlight; outline-offset: -2px; }
+  .wenpai-field.is-invalid .field-ctl input,
+  .wenpai-field.is-invalid .field-ctl select,
+  .wenpai-field.is-invalid .field-ctl textarea { border-color: CanvasText; border-width: 2px; }
+  .wenpai-file__drop.is-drag { outline: 2px dashed Highlight; outline-offset: -2px; }
+}
+
+/* --- 页面模式与布局原语：设置表单之外的页面。只用 token，逻辑属性（RTL 自动镜像）。 --- */
+
+/* 布局原语：横排、卡内竖排、自适应栅格、主从双栏。取代产品里的 margin / gap 胶水类。 */
+.wenpai-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wenpai-space-2) var(--wenpai-space-3); }
+.wenpai-row--tight { gap: var(--wenpai-space-1-5) var(--wenpai-space-2); }
+.wenpai-row--top { align-items: flex-start; }
+.wenpai-push { margin-inline-start: auto; }
+.wenpai-stack--sm { gap: var(--wenpai-space-3); }
+.wenpai-stack--xs { gap: var(--wenpai-space-2); }
+.wenpai-grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--wenpai-size-grid-min), 100%), 1fr)); gap: var(--wenpai-space-5); }
+.wenpai-split { display: grid; grid-template-columns: minmax(0, 1fr) var(--wenpai-size-side-col); gap: var(--wenpai-space-5); align-items: start; }
+@media (max-width: 1100px) { .wenpai-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* 折叠配置行：details.wenpai-fold 自带箭头（decisions.md D-31）；普通 details 仍不画箭头。 */
+.wenpai-app .wenpai-folds { border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-app details.wenpai-fold { margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--wenpai-line-soft); }
+.wenpai-app .wenpai-fold > summary { display: flex; align-items: center; gap: var(--wenpai-space-3); padding: var(--wenpai-space-3) 0; cursor: pointer; list-style: none; border-radius: var(--wenpai-radius-sm); }
+.wenpai-app .wenpai-fold > summary::-webkit-details-marker { display: none; }
+.wenpai-app .wenpai-fold > summary::before,
+.wenpai-app .wenpai-fold > summary::after { content: none; }
+.wenpai-app .wenpai-fold > summary:focus-visible { outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color); outline-offset: var(--wenpai-focus-offset); }
+.wenpai-fold__text { display: grid; min-inline-size: 0; flex: 1 1 12rem; }
+.wenpai-fold__title { color: var(--wenpai-ink); font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
+.wenpai-fold__desc { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wenpai-fold__side { display: flex; align-items: center; gap: var(--wenpai-space-2); flex: none; }
+.wenpai-app .wenpai-fold__chevron { inline-size: var(--wenpai-space-4); block-size: var(--wenpai-space-4); color: var(--wenpai-ink-3); flex: none; transition: transform var(--wenpai-motion-base) var(--wenpai-motion-ease); }
+:is(.wenpai-fold, .wenpai-help__group)[open] > summary .wenpai-fold__chevron { transform: rotate(180deg); }
+.wenpai-fold > summary:hover .wenpai-fold__title { color: var(--wenpai-accent); }
+/* 展开区与标题文字对齐：品牌标宽 + 间距。 */
+.wenpai-fold__body { padding: 0 0 var(--wenpai-space-4); padding-inline-start: calc(var(--wenpai-size-logo) + var(--wenpai-space-3)); }
+.wenpai-app .wenpai-fold__body > .field:first-child { border-top: 0; padding-top: var(--wenpai-space-1); }
+.wenpai-fold__foot { padding-top: var(--wenpai-space-3); }
+@media (max-width: 600px) { .wenpai-fold__body { padding-inline-start: 0; } }
+
+/* 统计条：负外边距让首格文字与卡内标题对齐，首格的分隔线被 overflow 裁掉。 */
+.wenpai-app .wenpai-statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--wenpai-space-5) 0; margin: 0 calc(var(--wenpai-space-5) * -1); overflow: hidden; }
+.wenpai-statbar__item { padding: 0 var(--wenpai-space-5); margin-inline-start: -1px; border-inline-start: 1px solid var(--wenpai-line-soft); min-inline-size: 0; }
+.wenpai-app .wenpai-statbar dt { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-app .wenpai-statbar dd { margin: var(--wenpai-space-1) 0 0; color: var(--wenpai-ink); font-size: var(--wenpai-text-h1); line-height: var(--wenpai-leading-h1); font-variant-numeric: tabular-nums; }
+.wenpai-app .wenpai-statbar dd small { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); }
+.wenpai-app .wenpai-statbar dd.is-none { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-title); }
+.wenpai-app .wenpai-statbar p { margin: var(--wenpai-space-0-5) 0 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
+
+/* 比例条列表：数字始终写出来，条只是辅助。条宽是数据，由内联 inline-size 给。 */
+.wenpai-app .wenpai-meter { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--wenpai-space-2-5); }
+.wenpai-meter__row { display: grid; grid-template-columns: auto minmax(0, 9rem) minmax(0, 1fr) auto; align-items: center; gap: var(--wenpai-space-3); margin: 0; }
+.wenpai-meter__rank { inline-size: var(--wenpai-size-logo-sm); block-size: var(--wenpai-size-logo-sm); border-radius: 50%; background: var(--wenpai-mute-soft); color: var(--wenpai-ink-2); display: grid; place-items: center; font-size: var(--wenpai-text-meta); font-variant-numeric: tabular-nums; }
+.wenpai-meter__row.is-top .wenpai-meter__rank { background: var(--wenpai-accent); color: var(--wenpai-on-accent); }
+.wenpai-meter__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wenpai-meter__bar { block-size: var(--wenpai-size-meter); border-radius: var(--wenpai-radius-sm); background: var(--wenpai-mute-soft); overflow: hidden; }
+.wenpai-meter__bar i { display: block; block-size: 100%; background: var(--wenpai-accent); border-radius: inherit; }
+.wenpai-meter__value { min-inline-size: 3.5rem; text-align: end; color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); font-variant-numeric: tabular-nums; }
+/* 不排名（ul，没有 __rank）时少一列。 */
+.wenpai-meter:not(ol) > .wenpai-meter__row { grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto; }
+@media (max-width: 600px) {
+  .wenpai-meter__row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .wenpai-meter:not(ol) > .wenpai-meter__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .wenpai-meter__bar { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* 可排序列表：上移 / 下移按钮是主操作。拖拽手柄默认不显示，启用拖拽（.is-draggable）后才出现。 */
+.wenpai-app .wenpai-sortable { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--wenpai-line-soft); }
+.wenpai-sortable__item { display: flex; align-items: center; gap: var(--wenpai-space-3); margin: 0; padding: var(--wenpai-space-2-5) 0; border-bottom: 1px solid var(--wenpai-line-soft); background: var(--wenpai-card); }
+.wenpai-sortable__handle { display: none; place-items: center; color: var(--wenpai-ink-3); cursor: grab; flex: none; }
+.wenpai-sortable.is-draggable .wenpai-sortable__handle { display: grid; }
+.wenpai-app .wenpai-sortable__handle .wenpai-ico { inline-size: var(--wenpai-space-5); block-size: var(--wenpai-space-5); }
+.wenpai-sortable__index { inline-size: var(--wenpai-size-logo-sm); block-size: var(--wenpai-size-logo-sm); border-radius: 50%; background: var(--wenpai-mute-soft); color: var(--wenpai-ink-2); display: grid; place-items: center; font-size: var(--wenpai-text-meta); font-variant-numeric: tabular-nums; flex: none; }
+.wenpai-sortable__text { display: grid; min-inline-size: 0; flex: 1 1 auto; }
+.wenpai-sortable__title { color: var(--wenpai-ink); }
+.wenpai-sortable__desc { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-sortable__moves { display: flex; gap: var(--wenpai-space-1); flex: none; }
+.wenpai-app .wenpai-sortable__moves .btn { inline-size: var(--wenpai-size-control-sm); padding: 0; justify-content: center; }
+.wenpai-app .wenpai-sortable__moves .wenpai-ico { inline-size: var(--wenpai-space-4); block-size: var(--wenpai-space-4); }
+.wenpai-sortable__item.is-dragging { box-shadow: var(--wenpai-shadow); border-color: var(--wenpai-line-strong); }
+
+/* 品牌标：第三方服务商、厂商的标。和 .tile 分开：tile 表示状态，品牌标表示是谁。 */
+.wenpai-logo { inline-size: var(--wenpai-size-logo); block-size: var(--wenpai-size-logo); border-radius: var(--wenpai-radius-lg); background: var(--wenpai-card); border: 1px solid var(--wenpai-line-card); color: var(--wenpai-ink-2); display: inline-grid; place-items: center; flex: none; font-size: var(--wenpai-text-meta); line-height: 1; overflow: hidden; }
+.wenpai-logo > svg, .wenpai-logo > img { inline-size: 56%; block-size: 56%; object-fit: contain; }
+.wenpai-logo--sm { inline-size: var(--wenpai-size-logo-sm); block-size: var(--wenpai-size-logo-sm); border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-caption); }
+.wenpai-logo--xs { inline-size: var(--wenpai-size-logo-xs); block-size: var(--wenpai-size-logo-xs); border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-caption); }
+
+/* 图表框：kit 只管框（标题、固定高度、空状态、下方数据表），里面画什么由产品决定。
+   plot 里的 svg 不受图标 24px 上限约束（见文件开头的 svg 兜底规则）。 */
+.wenpai-app .wenpai-chart { margin: 0; display: grid; gap: var(--wenpai-space-3); min-inline-size: 0; }
+.wenpai-app .wenpai-chart figcaption { color: var(--wenpai-ink-2); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-chart__plot { block-size: var(--wenpai-size-chart); border-radius: var(--wenpai-radius-md); background: var(--wenpai-line-soft); color: var(--wenpai-accent); padding: var(--wenpai-space-4); display: grid; }
+.wenpai-app .wenpai-chart__plot > svg, .wenpai-app .wenpai-chart__plot > canvas { inline-size: 100%; block-size: 100%; min-block-size: 0; }
+.wenpai-chart__plot.is-empty { place-items: center; text-align: center; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
+.wenpai-app .wenpai-chart__plot.is-empty p { margin: 0; max-inline-size: 22rem; }
+.wenpai-app .wenpai-chart__data > summary { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wenpai-app .wenpai-fold__chevron { transition: none; }
+}
+/* forced-colors：底色会被系统抹掉，比例条、序号圆、品牌标、图表框靠边框和系统色保持可见。 */
+@media (forced-colors: active) {
+  .wenpai-meter__bar { border: 1px solid CanvasText; }
+  .wenpai-meter__bar i { background: Highlight; }
+  .wenpai-meter__rank,
+  .wenpai-sortable__index { border: 1px solid CanvasText; }
+  .wenpai-meter__row.is-top .wenpai-meter__rank { border-color: Highlight; }
+  .wenpai-logo { border-color: CanvasText; }
+  .wenpai-chart__plot { border: 1px solid CanvasText; }
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<ruleset name="wenpai-admin-ui">
+	<description>Kit PHP. Not a WordPress plugin. No text domain.</description>
+	<file>php</file>
+	<exclude-pattern>dist/*</exclude-pattern>
+	<rule ref="WordPress">
+		<exclude name="WordPress.Files.FileName"/>
+		<exclude name="WordPress.WP.I18n"/>
+	</rule>
+	<config name="minimum_supported_wp_version" value="6.0"/>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wenpai_admin_ui"/>
+				<element value="Wenpai_Admin"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

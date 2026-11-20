@@ -1,0 +1,11 @@
+RemixIcon line paths.
+
+These path `d` values come from a historical MIT-licensed RemixIcon release,
+inlined (not the icon font, not a CDN, not RemixIcon 4.9.x).
+
+Exact npm version will be written here when scripts/extract-icons.py first runs.
+Until then the set is the small semantic table used by the WPSSS helper.
+
+Brand marks are NOT in this directory. Vendor logos are NOT in this directory.
+
+Lucide feather (ISC) is inlined in class-wenpai-admin-icons.php for brand marks; stroke, not Remix fill.

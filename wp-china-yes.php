@@ -23,6 +23,10 @@ define( 'CHINA_YES_PLUGIN_FILE', __FILE__ );
 define( 'CHINA_YES_PLUGIN_URL', plugin_dir_url( CHINA_YES_PLUGIN_FILE ) );
 define( 'CHINA_YES_PLUGIN_PATH', plugin_dir_path( CHINA_YES_PLUGIN_FILE ) );
 
+if ( file_exists( CHINA_YES_PLUGIN_PATH . 'lib/wenpai-admin-ui/php/load.php' ) ) {
+	require_once CHINA_YES_PLUGIN_PATH . 'lib/wenpai-admin-ui/php/load.php';
+}
+
 if ( file_exists( CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
 	require_once CHINA_YES_PLUGIN_PATH . 'vendor/autoload.php';
 	\WenPai\ChinaYes\Core\Plugin::boot();

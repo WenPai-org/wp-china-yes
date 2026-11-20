@@ -1,0 +1,711 @@
+/* wenpai-admin-ui wp-admin collisions.
+ * Extracted from WPSSS 0.9.2 assets/css/admin.css (product selectors dropped).
+ * Loader adds body.wenpai-ui-page. Product still adds body.{slug}-admin.
+ * No raw colors: tokens come from css/wenpai-tokens.css (lint enforces).
+ */
+
+/* WP 后台里套 4.0 壳。token 在 css/wenpai-tokens.css（#wpcontent 在 .wenpai-app 外，--wenpai-bg 另挂在 body.wenpai-ui-page）。 */
+body.wenpai-ui-page,
+body.wenpai-ui-page #wpcontent,
+body.wenpai-ui-page #wpbody,
+body.wenpai-ui-page #wpbody-content {
+  background: var(--wenpai-bg);
+}
+
+body.wenpai-ui-page #wpcontent {
+  padding: 0;
+}
+
+body.wenpai-ui-page #wpbody-content {
+  padding-bottom: 0;
+  float: none;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+body.wenpai-ui-page #wpfooter {
+  display: none;
+}
+
+/* Core WP version nag is site chrome, not product UI — hide on 4.0 shell pages. */
+body.wenpai-ui-page #wpbody-content > .update-nag,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .update-nag {
+  display: none !important;
+}
+
+/* WP / third-party top bars: wrap + no float (pre-relocate). JS moves them into .wenpai-main. */
+body.wenpai-ui-page #wpbody-content > .notice,
+body.wenpai-ui-page #wpbody-content > .updated,
+body.wenpai-ui-page #wpbody-content > .error,
+body.wenpai-ui-page #wpbody-content > .fade,
+body.wenpai-ui-page #wpbody-content > .update-nag,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .notice,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .updated,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .error,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .fade,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .update-nag {
+  display: block;
+  float: none;
+  clear: both;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+body.wenpai-ui-page #wpbody-content > .notice,
+body.wenpai-ui-page #wpbody-content > .updated,
+body.wenpai-ui-page #wpbody-content > .error,
+body.wenpai-ui-page #wpbody-content > .fade,
+body.wenpai-ui-page #wpbody-content > .update-nag {
+  margin: var(--wenpai-space-4) var(--wenpai-space-8) var(--wenpai-space-4);
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-main > .notice,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .updated,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .error,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .fade,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .update-nag {
+  margin: 0 0 var(--wenpai-space-3);
+}
+
+body.wenpai-ui-page #wpbody-content > .notice p,
+body.wenpai-ui-page #wpbody-content > .updated p,
+body.wenpai-ui-page #wpbody-content > .error p,
+body.wenpai-ui-page #wpbody-content > .fade p,
+body.wenpai-ui-page #wpbody-content > .update-nag p,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .notice p,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .updated p,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .error p,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .fade p,
+body.wenpai-ui-page .wenpai-app .wenpai-main > .update-nag p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  max-width: 100%;
+}
+
+body.wenpai-ui-page .wenpai-app,
+body.wenpai-ui-page .wenpai-app *,
+body.wenpai-ui-page .wenpai-app *::before,
+body.wenpai-ui-page .wenpai-app *::after {
+  box-sizing: border-box;
+}
+
+body.wenpai-ui-page .wenpai-app a,
+body.wenpai-ui-page .wenpai-app a:hover,
+body.wenpai-ui-page .wenpai-app a:focus,
+body.wenpai-ui-page .wenpai-app a:active {
+  text-decoration: none;
+}
+
+body.wenpai-ui-page .wenpai-app .card {
+  max-width: none;
+  margin-top: 0;
+  min-width: 0;
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-stack,
+body.wenpai-ui-page .wenpai-app .wenpai-stack > form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wenpai-space-5);
+}
+
+/* 卡内竖排的紧凑档。上面那条把 gap 定在 20，同级优先级才放得开。 */
+body.wenpai-ui-page .wenpai-app .wenpai-stack--sm { gap: var(--wenpai-space-3); }
+body.wenpai-ui-page .wenpai-app .wenpai-stack--xs { gap: var(--wenpai-space-2); }
+
+body.wenpai-ui-page .wenpai-app h1,
+body.wenpai-ui-page .wenpai-app h2,
+body.wenpai-ui-page .wenpai-app h3 {
+  color: var(--wenpai-ink);
+}
+
+body.wenpai-ui-page .wenpai-app .notice {
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* 压掉 WP 左边条之后，必须自己把条距写回来，否则多条会粘在一起。 */
+body.wenpai-ui-page .wenpai-app .notice + .notice {
+  margin-top: var(--wenpai-space-3);
+}
+body.wenpai-ui-page .wenpai-app .wenpai-stack > .notice {
+  margin: 0;
+}
+body.wenpai-ui-page .wenpai-app .wenpai-main > .wenpai-notice-wrap {
+  margin: 0 0 var(--wenpai-space-4);
+}
+body.wenpai-ui-page .wenpai-app .card > .notice {
+  margin-top: var(--wenpai-space-4);
+}
+body.wenpai-ui-page .wenpai-app .card > .notice + .notice {
+  margin-top: var(--wenpai-space-3);
+}
+body.wenpai-ui-page .wenpai-app .card > .notice:first-child {
+  margin-top: 0;
+}
+
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="text"],
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="url"],
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="search"],
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="email"],
+body.wenpai-ui-page .wenpai-app input[type="text"],
+body.wenpai-ui-page .wenpai-app input[type="password"],
+body.wenpai-ui-page .wenpai-app input[type="number"],
+body.wenpai-ui-page .wenpai-app input[type="url"],
+body.wenpai-ui-page .wenpai-app input[type="search"],
+body.wenpai-ui-page .wenpai-app input[type="email"],
+body.wenpai-ui-page .wenpai-app select {
+  width: 100%;
+  max-width: var(--wenpai-size-control-max);
+  height: var(--wenpai-size-control);
+  min-height: var(--wenpai-size-control);
+  max-height: var(--wenpai-size-control);
+  padding: 0 var(--wenpai-space-2-5);
+  line-height: var(--wenpai-leading-meta);
+  border: 1px solid var(--wenpai-control-line);
+  border-radius: var(--wenpai-radius-sm);
+  font: inherit;
+  font-size: var(--wenpai-text-body);
+  color: var(--wenpai-ink);
+  background-color: var(--wenpai-card);
+  box-shadow: none;
+}
+
+body.wenpai-ui-page .wenpai-app select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--wenpai-space-8);
+  cursor: pointer;
+  background: var(--wenpai-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23646970'%3E%3Cpath d='M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z'/%3E%3C/svg%3E") no-repeat right 10px center / 16px 16px;
+}
+
+/* 跟 WPCY 4.0 E：系统原生圆点 + accent，不自绘 18px 圈。 */
+body.wenpai-ui-page .wenpai-app .choice input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: radio;
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  margin: 3px 3px 0 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  accent-color: var(--wenpai-accent);
+  flex: none;
+  cursor: pointer;
+}
+
+body.wenpai-ui-page .wenpai-app .choice input[type="radio"]:checked,
+body.wenpai-ui-page .wenpai-app .choice.is-on input[type="radio"] {
+  border: 0 !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  accent-color: var(--wenpai-accent);
+}
+
+body.wenpai-ui-page .wenpai-app .choice input[type="radio"]::before {
+  display: none !important;
+  content: none !important;
+}
+
+body.wenpai-ui-page .wenpai-app input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+body.wenpai-ui-page .wenpai-app input::placeholder {
+  color: var(--wenpai-ink-3);
+}
+
+body.wenpai-ui-page .wenpai-app button.btn-primary:hover,
+body.wenpai-ui-page .wenpai-app button.btn-primary:focus {
+  background: var(--wenpai-accent-hover);
+  color: var(--wenpai-on-accent);
+  border-color: transparent;
+}
+
+body.wenpai-ui-page .wenpai-app button.btn-secondary,
+body.wenpai-ui-page .wenpai-app button.btn-secondary:focus {
+  background: var(--wenpai-card);
+  color: var(--wenpai-ink);
+  border: 1px solid var(--wenpai-line-strong);
+}
+
+body.wenpai-ui-page .wenpai-app button.btn-secondary:hover {
+  background: var(--wenpai-card);
+  color: var(--wenpai-ink);
+  border-color: var(--wenpai-ink-3);
+}
+
+.choice.is-soon {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.choice.is-soon input {
+  pointer-events: none;
+}
+
+.choice.is-locked input {
+  pointer-events: none;
+}
+
+.choice-cards.is-vendors,
+.choice-cards.is-vendors.is-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--wenpai-space-4);
+}
+
+body.wenpai-ui-page .wenpai-app .choice-cards.is-vendors .choice,
+body.wenpai-ui-page .wenpai-app .choice-cards.is-vendors.is-compact .choice {
+  padding: var(--wenpai-space-4) 18px;
+  align-items: flex-start;
+  min-height: 72px;
+}
+
+body.wenpai-ui-page .wenpai-app .choice-cards.is-compact:not(.is-vendors) .choice {
+  padding: var(--wenpai-space-3-5) var(--wenpai-space-4);
+}
+
+.choice .vendor-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--wenpai-radius-md);
+  margin-top: calc(var(--wenpai-space-0-5) * -1);
+}
+
+.choice .vendor-tile .vendor-mark,
+.choice .vendor-mark {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  color: inherit;
+  display: block;
+}
+
+.choice.is-on .vendor-tile {
+  background: var(--wenpai-accent-soft);
+  color: var(--wenpai-accent);
+}
+
+.choice-cards.is-vendors .choice input {
+  margin: 3px 3px 0 5px;
+}
+
+.simple-row .tile .vendor-mark {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+body.wenpai-ui-page .wenpai-app .field {
+  align-items: start;
+}
+
+body.wenpai-ui-page .wenpai-app .field[hidden] {
+  display: none;
+}
+
+.field-ctl-row {
+  display: flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  max-width: 28rem;
+}
+
+.field-ctl-row input[type="text"] {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.field-ctl-row .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-outer-spin-button,
+body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-page-head {
+  align-items: center;
+}
+
+body.wenpai-ui-page .wenpai-main > .wenpai-stack {
+  gap: var(--wenpai-space-5);
+}
+
+body.wenpai-ui-page .wenpai-app .mode .btn-primary {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--wenpai-space-3);
+  font-size: var(--wenpai-text-meta);
+}
+
+/* 说明退到标题后面：12/18 + 淡色，别和 14 标题抢视线。 */
+body.wenpai-ui-page .wenpai-app .wenpai-lede {
+  font-size: var(--wenpai-text-meta);
+  line-height: var(--wenpai-leading-meta);
+  color: var(--wenpai-ink-3);
+}
+
+body.wenpai-ui-page .wenpai-app .section-desc {
+  margin-bottom: var(--wenpai-space-2);
+}
+
+body.wenpai-ui-page .wenpai-app .notice {
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+}
+
+body.wenpai-ui-page .wenpai-app .field {
+  padding: var(--wenpai-space-3-5) 0;
+  gap: var(--wenpai-space-5);
+}
+
+body.wenpai-ui-page .wenpai-app .field:first-of-type {
+  padding-top: var(--wenpai-space-2);
+}
+
+body.wenpai-ui-page .wenpai-app .choice {
+  padding: var(--wenpai-space-3) var(--wenpai-space-3-5);
+  gap: var(--wenpai-space-2-5);
+}
+
+body.wenpai-ui-page .wenpai-app .choice-cards { --wenpai-choice-gap: var(--wenpai-space-4); }
+
+body.wenpai-ui-page .wenpai-app .simple-row {
+  padding: var(--wenpai-space-3) 0;
+}
+
+body.wenpai-ui-page .wenpai-app .card {
+  padding: var(--wenpai-space-5) var(--wenpai-space-6);
+}
+
+body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-outer-spin-button,
+body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.wenpai-app form.is-busy {
+  pointer-events: none;
+}
+
+.next-actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--wenpai-space-2);
+  flex-shrink: 0;
+}
+
+.next-actions .btn {
+  margin-inline-start: 0;
+}
+
+.wenpai-head-right .btn-ghost.is-active {
+  color: var(--wenpai-accent);
+}
+
+.upload-php .column-wpsss .pill {
+  margin-bottom: var(--wenpai-space-1);
+}
+
+.upload-php .column-wpsss .p {
+  font-size: var(--wenpai-text-caption);
+  line-height: var(--wenpai-leading-caption);
+  color: var(--wenpai-ink-3);
+  max-width: 18rem;
+  word-break: break-word;
+}
+
+#wpsss_attachment .inside {
+  margin: 0;
+  /* wenpai-lint-disable-next-line spacing-token -- core metabox .inside wraps .wenpai-native, so it is outside the token scope */
+  padding: 12px 14px 14px;
+}
+
+@media (max-width: 960px) {
+  body.wenpai-ui-page .wenpai-app .wenpai-wrap {
+    padding-left: var(--wenpai-space-5);
+    padding-right: var(--wenpai-space-5);
+  }
+
+}
+
+@media (max-width: 782px) {
+  /* 顶栏折行规则只在 wenpai-admin.css 的 782 断点（账本：品牌+帮助/反馈一行，页签第二行）。 */
+  body.wenpai-ui-page .wenpai-app .choice-cards,
+  body.wenpai-ui-page .wenpai-app .choice-cards.is-vendors,
+  body.wenpai-ui-page .wenpai-app .choice-cards.is-vendors.is-compact {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+/* 控件反馈：点进去能看见，锁住的和能改的一眼分开。 */
+body.wenpai-ui-page .wenpai-app input[type="text"],
+body.wenpai-ui-page .wenpai-app input[type="password"],
+body.wenpai-ui-page .wenpai-app input[type="number"],
+body.wenpai-ui-page .wenpai-app input[type="url"],
+body.wenpai-ui-page .wenpai-app input[type="search"],
+body.wenpai-ui-page .wenpai-app input[type="email"],
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="text"],
+body.wenpai-ui-page .wenpai-app select {
+  transition: border-color var(--wenpai-motion-fast) var(--wenpai-motion-ease), box-shadow var(--wenpai-motion-fast) var(--wenpai-motion-ease), background-color var(--wenpai-motion-fast) var(--wenpai-motion-ease);
+}
+
+body.wenpai-ui-page .wenpai-app input[type="text"]:hover,
+body.wenpai-ui-page .wenpai-app input[type="password"]:hover,
+body.wenpai-ui-page .wenpai-app input[type="number"]:hover,
+body.wenpai-ui-page .wenpai-app input[type="url"]:hover,
+body.wenpai-ui-page .wenpai-app input[type="search"]:hover,
+body.wenpai-ui-page .wenpai-app input[type="email"]:hover,
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="text"]:hover,
+body.wenpai-ui-page .wenpai-app select:hover {
+  border-color: var(--wenpai-control-line-hover);
+}
+
+body.wenpai-ui-page .wenpai-app input[type="text"]:focus,
+body.wenpai-ui-page .wenpai-app input[type="password"]:focus,
+body.wenpai-ui-page .wenpai-app input[type="number"]:focus,
+body.wenpai-ui-page .wenpai-app input[type="url"]:focus,
+body.wenpai-ui-page .wenpai-app input[type="search"]:focus,
+body.wenpai-ui-page .wenpai-app input[type="email"]:focus,
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="text"]:focus,
+body.wenpai-ui-page .wenpai-app select:focus,
+body.wenpai-ui-page .wenpai-app input[type="text"].is-focused,
+body.wenpai-ui-page .wenpai-app input[type="password"].is-focused,
+body.wenpai-ui-page .wenpai-app input[type="number"].is-focused,
+body.wenpai-ui-page .wenpai-app input[type="url"].is-focused,
+body.wenpai-ui-page .wenpai-app input[type="search"].is-focused,
+body.wenpai-ui-page .wenpai-app input[type="email"].is-focused,
+body.wenpai-ui-page .wenpai-app .field-ctl-row input[type="text"].is-focused,
+body.wenpai-ui-page .wenpai-app select.is-focused {
+  border-color: var(--wenpai-focus-color) !important;
+  box-shadow: 0 0 0 1px var(--wenpai-focus-color), 0 0 0 3px var(--wenpai-focus-halo) !important;
+  /* transparent outline keeps a visible ring in forced-colors mode */
+  outline: var(--wenpai-focus-width) solid transparent;
+  background-color: var(--wenpai-card);
+}
+
+body.wenpai-ui-page .wenpai-app button.btn:hover,
+body.wenpai-ui-page .wenpai-app a.btn:hover {
+  box-shadow: none;
+}
+
+body.wenpai-ui-page .wenpai-app button.btn:focus-visible,
+body.wenpai-ui-page .wenpai-app a.btn:focus-visible {
+  outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color);
+  outline-offset: var(--wenpai-focus-offset);
+  box-shadow: none;
+}
+
+body.wenpai-ui-page .wenpai-app button.btn[disabled],
+body.wenpai-ui-page .wenpai-app button.btn[disabled]:hover,
+body.wenpai-ui-page .wenpai-app a.btn[aria-disabled="true"],
+body.wenpai-ui-page .wenpai-app a.btn[aria-disabled="true"]:hover {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 焦点画在轨道上：accent 实线环。0.2.5 只有 accent-soft 外晕（白底 1.13:1，看不见）。 */
+body.wenpai-ui-page .wenpai-app .simple-row {
+  margin: 0 calc(var(--wenpai-space-2) * -1);
+  padding-left: var(--wenpai-space-2);
+  padding-right: var(--wenpai-space-2);
+  /* Bottom corners only: a full radius bends the border-top separator's ends
+     into arcs. The hover band still gets rounded lower corners. */
+  border-radius: 0 0 var(--wenpai-radius-md) var(--wenpai-radius-md);
+}
+
+body.wenpai-ui-page .wenpai-app .simple-row.is-static {
+  cursor: default;
+}
+
+/* A whole-row link keeps the row's ink, and core's a:focus ring gives way to the kit ring. */
+body.wenpai-ui-page .wenpai-app a.simple-row,
+body.wenpai-ui-page .wenpai-app a.simple-row:hover,
+body.wenpai-ui-page .wenpai-app a.simple-row:focus {
+  color: inherit;
+  box-shadow: none;
+}
+
+body.wenpai-ui-page .wenpai-app a.simple-row:focus-visible {
+  outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color);
+  outline-offset: calc(-1 * var(--wenpai-focus-width));
+}
+
+body.wenpai-ui-page .wenpai-app .simple-row.is-action:hover {
+  background: var(--wenpai-line-soft);
+}
+
+body.wenpai-ui-page .wenpai-app .simple-row .d.is-url {
+  max-width: none;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-tab:hover {
+  background: transparent;
+}
+
+/* 焦点不能和「选中」的 2px 底线长得一样。 */
+body.wenpai-ui-page .wenpai-app .wenpai-tab:focus-visible {
+  outline: var(--wenpai-focus-width) solid var(--wenpai-focus-color);
+  outline-offset: calc(-1 * var(--wenpai-focus-width));
+  box-shadow: none;
+}
+
+.simple-row.is-static .tile { transition: background var(--wenpai-motion-slow) var(--wenpai-motion-ease), color var(--wenpai-motion-slow) var(--wenpai-motion-ease); }
+
+body.wenpai-ui-page .wenpai-app .tbl,
+body.wenpai-ui-page .wenpai-app .tbl th,
+body.wenpai-ui-page .wenpai-app .tbl td {
+  border-spacing: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-code,
+body.wenpai-ui-page .wenpai-app .wenpai-code code {
+  background: var(--wenpai-line-soft);
+  border: 0;
+  box-shadow: none;
+}
+
+/* WP core pads <code>/<kbd> (padding/margin/13px); inline code.wenpai-code
+ * chips render flat like the prototype, so clear the admin chrome. */
+body.wenpai-ui-page .wenpai-app code.wenpai-code {
+  padding: 0;
+  margin: 0;
+  font-family: var(--wenpai-font-mono);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+@media (max-width: 600px) {
+  /* narrow: wp-admin layer. 600px matches the admin-bar switch. */
+  body.wenpai-ui-page #wpcontent,
+  body.wenpai-ui-page #wpbody,
+  body.wenpai-ui-page #wpbody-content,
+  body.wenpai-ui-page .wenpai-app,
+  body.wenpai-ui-page .wenpai-app .wenpai-wrap,
+  body.wenpai-ui-page .wenpai-app .wenpai-main,
+  body.wenpai-ui-page .wenpai-app .wenpai-head,
+  body.wenpai-ui-page .wenpai-app .card,
+  body.wenpai-ui-page .wenpai-app .field,
+  body.wenpai-ui-page .wenpai-app .field-ctl,
+  body.wenpai-ui-page .wenpai-app .wenpai-stack {
+    min-width: 0;
+    max-width: 100%;
+  }
+  body.wenpai-ui-page .wenpai-app input[type="text"],
+  body.wenpai-ui-page .wenpai-app input[type="password"],
+  body.wenpai-ui-page .wenpai-app input[type="number"],
+  body.wenpai-ui-page .wenpai-app input[type="url"],
+  body.wenpai-ui-page .wenpai-app input[type="search"],
+  body.wenpai-ui-page .wenpai-app input[type="email"],
+  body.wenpai-ui-page .wenpai-app select,
+  body.wenpai-ui-page .wenpai-app textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+  body.wenpai-ui-page .wenpai-app .wenpai-page-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  body.wenpai-ui-page .wenpai-app .wenpai-page-head > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  body.wenpai-ui-page .wenpai-app .mode {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  body.wenpai-ui-page .wenpai-app .simple-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: var(--wenpai-space-2);
+  }
+  body.wenpai-ui-page .wenpai-app .simple-row .d {
+    max-width: none;
+  }
+  body.wenpai-ui-page .wenpai-app .simple-row .r {
+    margin-left: 52px;
+    flex: 1 1 calc(100% - 52px);
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  body.wenpai-ui-page .wenpai-app .simple-row .scope,
+  body.wenpai-ui-page .wenpai-app .simple-row .pill {
+    white-space: normal;
+    height: auto;
+    min-height: 24px;
+    max-width: 100%;
+  }
+  body.wenpai-ui-page .wenpai-app .wenpai-gate label {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  body.wenpai-ui-page .wenpai-app .wenpai-gate input {
+    margin-right: var(--wenpai-space-2);
+  }
+  body.wenpai-ui-page .wenpai-app .hint,
+  body.wenpai-ui-page .wenpai-app .wenpai-lede,
+  body.wenpai-ui-page .wenpai-app .section-desc {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Narrow / touch: overflow-x:hidden on #wpbody-content shifts native <select> popovers. */
+@media (max-width: 782px) {
+  body.wenpai-ui-page #wpbody-content {
+    overflow-x: visible;
+  }
+}
+
+/* Coarse pointer: keep system select UI; appearance:none + custom chevron misplaces pickers on iOS. */
+@media (hover: none) and (pointer: coarse) {
+  body.wenpai-ui-page .wenpai-app select,
+  .wenpai-app select {
+    appearance: menulist;
+    -webkit-appearance: menulist;
+    background-image: none;
+    padding-right: var(--wenpai-space-2-5);
+  }
+}
+
+/* 字段出错（aria-invalid）：红边框；聚焦时仍是焦点环。 */
+body.wenpai-ui-page .wenpai-app .wenpai-field [aria-invalid="true"]:is(input, select, textarea),
+body.wenpai-ui-page .wenpai-app .wenpai-field [aria-invalid="true"]:is(input, select, textarea):hover {
+  border-color: var(--wenpai-bad);
+}
+body.wenpai-ui-page .wenpai-app .wenpai-field.is-invalid input[type="checkbox"],
+body.wenpai-ui-page .wenpai-app .wenpai-field.is-invalid input[type="radio"] {
+  outline: 1px solid var(--wenpai-bad);
+  outline-offset: 1px;
+}
+
+/* 0.5.5: native bulk select must keep intrinsic width; wp-scoped select rules above set width:100%. */
+body.wenpai-ui-page .wenpai-native-bulk select { width: auto; min-width: 10em; max-width: 18em; }
+
+/* 0.6.0: media/date controls keep intrinsic width; wp-scoped 100% rules above would stretch them. */
+body.wenpai-ui-page .wenpai-app .wenpai-media-row input[type="text"] { width: 16em; }
