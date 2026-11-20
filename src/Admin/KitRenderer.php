@@ -610,9 +610,9 @@ final class KitRenderer {
 		);
 
 		$scene_recommended = array(
-			'domestic'    => array( 'compliance', 'windfonts' ),
-			'crossborder' => array( 'converter', 'ai' ),
-			'mixed'       => array( 'ai', 'storage' ),
+			'domestic'    => array( 'compliance', 'slug', 'windfonts' ),
+			'crossborder' => array( 'converter', 'ai', 'storage' ),
+			'mixed'       => array( 'ai', 'storage', 'converter' ),
 		);
 		$recommended_ids   = $scene_recommended[ $profile ] ?? $scene_recommended['domestic'];
 
@@ -621,20 +621,16 @@ final class KitRenderer {
 			'crossborder' => __( '跨境站', 'wp-china-yes' ),
 			'mixed'       => __( '混合站', 'wp-china-yes' ),
 		);
+		$profile_label  = $profile_labels[ $profile ] ?? $profile_labels['domestic'];
 
-		$builtin_on_count = count( array_filter( $builtin_active ) );
-		$linked_count     = 0;
-		$plugin_states    = array();
+		$plugin_states = array();
 		foreach ( $catalog as $id => $spec ) {
 			$plugin_states[ $id ] = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
-			if ( $plugin_states[ $id ]['active'] ) {
-				++$linked_count;
-			}
 		}
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '服务', 'wp-china-yes' ),
-			__( '文派叶子内置 4 项基础加速，并可按需联动 7 项文派独立插件。', 'wp-china-yes' ),
+			__( '文派叶子内置 4 项基础加速，并按站点环境智能推荐可联动的文派独立插件。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '绑定本站', 'wp-china-yes' ),
@@ -645,30 +641,6 @@ final class KitRenderer {
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="services">';
-
-		// Compact ecosystem summary bar.
-		\Wenpai_Admin_UI::card_open();
-		\Wenpai_Admin_UI::statbar(
-			array(
-				'items' => array(
-					array(
-						'label' => __( '内置基础加速', 'wp-china-yes' ),
-						'value' => $builtin_on_count . ' / 4',
-						'unit'  => __( '运行中', 'wp-china-yes' ),
-					),
-					array(
-						'label' => __( '已联动独立插件', 'wp-china-yes' ),
-						'value' => $linked_count . ' / ' . count( $catalog ),
-						'unit'  => __( '已接管', 'wp-china-yes' ),
-					),
-					array(
-						'label' => __( '当前站点场景', 'wp-china-yes' ),
-						'value' => $profile_labels[ $profile ] ?? $profile_labels['domestic'],
-					),
-				),
-			)
-		);
-		\Wenpai_Admin_UI::card_close();
 
 		// Section 1: 2x2 featured grid for the 4 built-in core services.
 		echo '<div class="wpcy-core-grid">';
@@ -724,72 +696,119 @@ final class KitRenderer {
 		}
 		echo '</div>';
 
-		// Section 2: Clean list card for the 7 ecosystem extension services.
-		\Wenpai_Admin_UI::card_open(
-			array(
-				'title' => __( '生态扩展服务', 'wp-china-yes' ),
-				'sub'   => __( '安装对应独立插件后自动接入文派叶子，并同步显示运行状态。', 'wp-china-yes' ),
-				'tile'  => false,
-			)
-		);
+		// Partition extension services into featured (installed/active OR recommended for current site scene) vs collapsed rest.
+		$featured_ext = array();
+		$other_ext    = array();
 		foreach ( $catalog as $id => $spec ) {
 			if ( 'ext' !== ( $spec['group'] ?? 'ext' ) ) {
 				continue;
 			}
-			$plugin_state = $plugin_states[ $id ];
-			$report       = isset( $reports[ $id ] ) && is_array( $reports[ $id ] ) ? $reports[ $id ] : array();
-			$detail_url   = self::page_url( 'wpcy-services', false, array( 'service' => $id ) );
-
-			if ( ! empty( $report['pill'] ) ) {
-				$pill      = array(
-					'text'  => (string) $report['pill'],
-					'state' => ! empty( $report['state'] ) ? (string) $report['state'] : 'ok',
-				);
-				$row_state = 'ok' === $pill['state'] ? 'ok' : '';
-			} elseif ( $plugin_state['active'] ) {
-				$pill      = array(
-					'text'  => __( '已接管', 'wp-china-yes' ),
-					'state' => 'ok',
-				);
-				$row_state = 'ok';
-			} elseif ( $plugin_state['installed'] ) {
-				$pill      = array(
-					'text'  => __( '未启用', 'wp-china-yes' ),
-					'state' => 'warn',
-				);
-				$row_state = 'warn';
+			$st = $plugin_states[ $id ];
+			if ( $st['active'] || $st['installed'] || in_array( $id, $recommended_ids, true ) ) {
+				$featured_ext[ $id ] = $spec;
 			} else {
-				$pill      = array(
-					'text'  => __( '未安装', 'wp-china-yes' ),
-					'state' => 'mute',
-				);
-				$row_state = '';
+				$other_ext[ $id ] = $spec;
 			}
+		}
 
-			$row_desc = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
-			$is_rec   = ! $plugin_state['active'] && in_array( $id, $recommended_ids, true );
-			$btn_text = $plugin_state['active'] ? __( '管理', 'wp-china-yes' ) : __( '详情', 'wp-china-yes' );
+		// Section 2: Scene-tailored recommended & active extensions (visible by default).
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => sprintf( /* translators: %s: site scene label */ __( '适合当前「%s」的扩展', 'wp-china-yes' ), $profile_label ),
+				'sub'   => __( '根据本站场景精选；已安装的独立插件会自动置顶并同步运行状态。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		foreach ( $featured_ext as $id => $spec ) {
+			self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
+		}
 
-			\Wenpai_Admin_UI::row(
+		// Collapsed fold for remaining ecosystem extensions.
+		if ( ! empty( $other_ext ) ) {
+			$other_titles = array();
+			foreach ( $other_ext as $other_spec ) {
+				$other_titles[] = $other_spec['title'];
+			}
+			ob_start();
+			foreach ( $other_ext as $id => $spec ) {
+				self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
+			}
+			$other_html = (string) ob_get_clean();
+
+			\Wenpai_Admin_UI::fold_list(
 				array(
-					'icon'         => $spec['icon'],
-					'state'        => $row_state,
-					'title'        => $spec['title'] . ( $is_rec ? ' · ' . __( '推荐', 'wp-china-yes' ) : '' ),
-					'desc'         => $row_desc,
-					'pill'         => $pill,
-					'control_html' => \Wenpai_Admin_UI::button_html(
+					'items' => array(
 						array(
-							'label'   => $btn_text,
-							'href'    => $detail_url,
-							'variant' => 'secondary',
-							'size'    => 'sm',
-						)
+							'icon'      => 'sparkle',
+							'title'     => sprintf( /* translators: %d: count of hidden extensions */ __( '更多生态扩展（%d 项）', 'wp-china-yes' ), count( $other_ext ) ),
+							'desc'      => implode( ' / ', $other_titles ),
+							'body_html' => $other_html,
+						),
 					),
 				)
 			);
 		}
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
+	}
+
+	/**
+	 * Render one ecosystem extension row inside the Services card.
+	 *
+	 * @param string                                                $id           Service id.
+	 * @param array<string, string>                                 $spec         Service catalog entry.
+	 * @param array{installed: bool, active: bool, version: string} $plugin_state Companion plugin state.
+	 * @param array<string, string>                                 $report       Optional status report.
+	 */
+	private static function render_extension_row( string $id, array $spec, array $plugin_state, array $report ): void {
+		$detail_url = self::page_url( 'wpcy-services', false, array( 'service' => $id ) );
+
+		if ( ! empty( $report['pill'] ) ) {
+			$pill      = array(
+				'text'  => (string) $report['pill'],
+				'state' => ! empty( $report['state'] ) ? (string) $report['state'] : 'ok',
+			);
+			$row_state = 'ok' === $pill['state'] ? 'ok' : '';
+		} elseif ( $plugin_state['active'] ) {
+			$pill      = array(
+				'text'  => __( '已接管', 'wp-china-yes' ),
+				'state' => 'ok',
+			);
+			$row_state = 'ok';
+		} elseif ( $plugin_state['installed'] ) {
+			$pill      = array(
+				'text'  => __( '未启用', 'wp-china-yes' ),
+				'state' => 'warn',
+			);
+			$row_state = 'warn';
+		} else {
+			$pill      = array(
+				'text'  => __( '未安装', 'wp-china-yes' ),
+				'state' => 'mute',
+			);
+			$row_state = '';
+		}
+
+		$row_desc = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
+		$btn_text = $plugin_state['active'] ? __( '管理', 'wp-china-yes' ) : __( '详情', 'wp-china-yes' );
+
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => $spec['icon'],
+				'state'        => $row_state,
+				'title'        => $spec['title'],
+				'desc'         => $row_desc,
+				'pill'         => $pill,
+				'control_html' => \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => $btn_text,
+						'href'    => $detail_url,
+						'variant' => 'secondary',
+						'size'    => 'sm',
+					)
+				),
+			)
+		);
 	}
 
 	/**
