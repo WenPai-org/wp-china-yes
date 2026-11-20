@@ -486,6 +486,41 @@ final class Schema {
 					'type'    => 'boolean',
 					'default' => true,
 				),
+				'whitelabel' => array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'default'              => array(
+						'enabled'    => false,
+						'brand_name' => '',
+						'logo_url'   => '',
+						'hide_logo'  => false,
+						'hide_links' => false,
+					),
+					'properties'           => array(
+						'enabled'    => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+						'brand_name' => array(
+							'type'      => 'string',
+							'maxLength' => 64,
+							'default'   => '',
+						),
+						'logo_url'   => array(
+							'type'      => 'string',
+							'maxLength' => 300,
+							'default'   => '',
+						),
+						'hide_logo'  => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+						'hide_links' => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+					),
+				),
 			),
 		);
 	}

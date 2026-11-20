@@ -51,11 +51,12 @@ final class KitRenderer {
 			'wpcy'          => 'overview',
 			'wpcy-connect'  => 'settings',
 			'wpcy-services' => 'services',
+			'wpcy-outbound' => 'outbound',
 			'wpcy-diagnose' => 'diagnose',
 		);
 		$view    = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( (string) $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
 		$current = $network ? 'settings' : ( 'help' === $view ? 'help' : ( $tab_map[ $page ] ?? 'overview' ) );
-		$shell   = self::shell_args( $current, $version, $links, $network );
+		$shell   = self::shell_args( $current, $version, $links, $network, $settings );
 
 		\Wenpai_Admin_Shell::open( $shell );
 
@@ -65,6 +66,8 @@ final class KitRenderer {
 			self::render_settings( $settings, $locked, $network );
 		} elseif ( 'services' === $current ) {
 			self::render_services( $settings, $locked );
+		} elseif ( 'outbound' === $current ) {
+			self::render_outbound( $locked );
 		} elseif ( 'diagnose' === $current ) {
 			self::render_diagnose( $settings );
 		} else {
@@ -121,13 +124,14 @@ final class KitRenderer {
 	/**
 	 * Build Wenpai_Admin_Shell args.
 	 *
-	 * @param string               $current Active tab id.
-	 * @param string               $version Plugin version string.
-	 * @param array<string, mixed> $links   External links.
-	 * @param bool                 $network Network admin context.
+	 * @param string               $current  Active tab id.
+	 * @param string               $version  Plugin version string.
+	 * @param array<string, mixed> $links    External links.
+	 * @param bool                 $network  Network admin context.
+	 * @param array<string, mixed> $settings Settings snapshot (for white-label).
 	 * @return array<string, mixed>
 	 */
-	private static function shell_args( string $current, string $version, array $links, bool $network ): array {
+	private static function shell_args( string $current, string $version, array $links, bool $network, array $settings = array() ): array {
 		$admin_url = static function ( string $slug, array $extra = array() ) use ( $network ): string {
 			return self::page_url( $slug, $network, $extra );
 		};
@@ -161,6 +165,12 @@ final class KitRenderer {
 					'icon_html' => self::kit_icon( 'sparkle' ),
 				),
 				array(
+					'id'        => 'outbound',
+					'label'     => __( '外链', 'wp-china-yes' ),
+					'url'       => $admin_url( 'wpcy-outbound' ),
+					'icon_html' => self::kit_icon( 'map' ),
+				),
+				array(
 					'id'        => 'diagnose',
 					'label'     => __( '诊断', 'wp-china-yes' ),
 					'url'       => $admin_url( 'wpcy-diagnose' ),
@@ -168,25 +178,39 @@ final class KitRenderer {
 				),
 			);
 
+		$wl          = WhiteLabel::resolve( $settings );
+		$brand_name  = WhiteLabel::brand_name( $settings );
 		$support_url = isset( $links['help'] ) ? (string) $links['help'] : 'https://wpcy.com/go/support';
 
-		return array(
-			'slug'               => 'wpcy',
-			'name'               => __( '文派叶子', 'wp-china-yes' ),
-			'mark_html'          => self::leaf_mark(),
-			'home_url'           => $admin_url( $network ? 'wpcy-connect' : 'wpcy' ),
-			'current'            => $current,
-			'tabs'               => $tabs,
-			'help_url'           => $network ? $support_url : $admin_url( 'wpcy', array( 'view' => 'help' ) ),
-			'help_label'         => __( '帮助', 'wp-china-yes' ),
-			'help_icon_html'     => self::kit_icon( 'help' ),
-			'feedback_url'       => $support_url,
-			'feedback_label'     => __( '反馈', 'wp-china-yes' ),
-			'feedback_icon_html' => self::kit_icon( 'feedback' ),
-			'version'            => sprintf( /* translators: %s: version */ __( '文派叶子 %s', 'wp-china-yes' ), $version ),
-			'doc_url'            => $support_url,
-			'doc_label'          => __( '文档与支持', 'wp-china-yes' ),
+		$mark_html = self::leaf_mark();
+		if ( $wl['enabled'] && $wl['hide_logo'] ) {
+			$mark_html = '';
+		} elseif ( $wl['enabled'] && '' !== $wl['logo_url'] ) {
+			$mark_html = '<img src="' . esc_url( $wl['logo_url'] ) . '" alt="' . esc_attr( $brand_name ) . '" width="22" height="22" style="object-fit:contain;border-radius:4px">';
+		}
+
+		$args = array(
+			'slug'      => 'wpcy',
+			'name'      => $brand_name,
+			'mark_html' => $mark_html,
+			'home_url'  => $admin_url( $network ? 'wpcy-connect' : 'wpcy' ),
+			'current'   => $current,
+			'tabs'      => $tabs,
+			'version'   => $brand_name . ' ' . $version,
 		);
+
+		if ( ! ( $wl['enabled'] && $wl['hide_links'] ) ) {
+			$args['help_url']           = $network ? $support_url : $admin_url( 'wpcy', array( 'view' => 'help' ) );
+			$args['help_label']         = __( '帮助', 'wp-china-yes' );
+			$args['help_icon_html']     = self::kit_icon( 'help' );
+			$args['feedback_url']       = $support_url;
+			$args['feedback_label']     = __( '反馈', 'wp-china-yes' );
+			$args['feedback_icon_html'] = self::kit_icon( 'feedback' );
+			$args['doc_url']            = $support_url;
+			$args['doc_label']          = __( '文档与支持', 'wp-china-yes' );
+		}
+
+		return $args;
 	}
 
 	/**
@@ -546,35 +570,6 @@ final class KitRenderer {
 			. ' · ' . ( 'off' === $scope ? __( '前端加速关', 'wp-china-yes' ) : __( '前端加速开', 'wp-china-yes' ) )
 			. ' · ' . ( $heartbeat ? __( '已优化心跳', 'wp-china-yes' ) : __( '默认心跳', 'wp-china-yes' ) );
 
-		$blocklist_html = '<div data-wpcy-blocklist="1">'
-			. '<div class="wpcy-inline-bar" style="margin-bottom:10px">'
-			. '<label class="wenpai-switch">'
-			. '<input type="checkbox" data-wpcy-bl-enabled="1"' . $dis_attr . '>'
-			. '<span class="track" aria-hidden="true"></span>'
-			. '<span class="wenpai-switch__label">' . esc_html__( '启用自定义外链拦截表（最多 20 条，受保护核心域名不可拦截）', 'wp-china-yes' ) . '</span>'
-			. '</label>'
-			. '</div>'
-			. '<div class="wpcy-inline-bar">'
-			. '<input type="text" data-wpcy-bl-host="1" placeholder="' . esc_attr__( '输入域名，例如 telemetry.example.com', 'wp-china-yes' ) . '"' . $dis_attr . '>'
-			. '<select data-wpcy-bl-match="1"' . $dis_attr . '>'
-			. '<option value="exact">' . esc_html__( '精确匹配', 'wp-china-yes' ) . '</option>'
-			. '<option value="suffix">' . esc_html__( '含子域名', 'wp-china-yes' ) . '</option>'
-			. '</select>'
-			. '<input type="text" data-wpcy-bl-note="1" placeholder="' . esc_attr__( '备注（可选）', 'wp-china-yes' ) . '"' . $dis_attr . '>'
-			. \Wenpai_Admin_UI::button_html(
-				array(
-					'label'    => __( '添加域名', 'wp-china-yes' ),
-					'type'     => 'button',
-					'variant'  => 'secondary',
-					'size'     => 'sm',
-					'disabled' => $locked,
-					'attrs'    => array( 'data-wpcy-bl-add' => '1' ),
-				)
-			)
-			. '</div>'
-			. '<ul class="wpcy-host-list" data-wpcy-bl-list="1"></ul>'
-			. '</div>';
-
 		\Wenpai_Admin_UI::fold_list(
 			array(
 				'items' => array(
@@ -588,18 +583,45 @@ final class KitRenderer {
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
-		echo '</form>';
 
-		// Standalone module card: Outbound Site Blocklist (GET/PUT /wpcy/v1/site-blocklist).
+		// White-label & branding module card.
+		$wl        = WhiteLabel::resolve( $settings );
+		$wl_locked = $locked || $wl['locked'];
+		$wl_dis    = $wl_locked ? ' disabled' : '';
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '外链拦截', 'wp-china-yes' ),
-				'sub'   => __( '按域名屏蔽拖慢后台的第三方出站请求，最多 20 条，受保护核心域名自动放行。', 'wp-china-yes' ),
+				'title' => __( '白标与品牌', 'wp-china-yes' ),
+				'sub'   => $wl['locked']
+					? __( '已通过 wp-config.php 中的 WPCY_WHITELABEL 常量锁定生效，当前页面只读。', 'wp-china-yes' )
+					: __( '面向建站与交付场景：自定义菜单品牌名、Logo，或隐藏文派外链与未安装扩展推荐。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
-		echo $blocklist_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes and strings escaped above.
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'sparkle',
+				'state'        => $wl['enabled'] ? 'ok' : '',
+				'title'        => __( '启用白标模式', 'wp-china-yes' ),
+				'desc'         => __( '开启后按下方规则替换后台菜单、顶栏与页脚品牌标识；可在 wp-config.php 定义 WPCY_WHITELABEL 锁定。', 'wp-china-yes' ),
+				'control_html' => '<label class="wenpai-switch"><input type="checkbox" name="wl_enabled" value="1"' . checked( $wl['enabled'], true, false ) . $wl_dis . '><span class="track" aria-hidden="true"></span><span class="wenpai-switch__label">' . esc_html( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '已关闭', 'wp-china-yes' ) ) . '</span></label>',
+			)
+		);
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes and values escaped below.
+		echo '<div class="wenpai-field wenpai-field--row">'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-name">' . esc_html__( '自定义品牌名称', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '留空则保持默认「文派叶子」。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-name" type="text" name="wl_brand_name" maxlength="64" value="' . esc_attr( $wl['brand_name'] ) . '" placeholder="' . esc_attr__( '例如：站点加速中心', 'wp-china-yes' ) . '"' . $wl_dis . '></div>'
+			. '</div>';
+		echo '<div class="wenpai-field wenpai-field--row">'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-logo">' . esc_html__( '自定义 Logo 地址', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '可选，建议 44×44 正方形 PNG/SVG 地址。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-logo" type="url" name="wl_logo_url" maxlength="300" value="' . esc_attr( $wl['logo_url'] ) . '" placeholder="https://"' . $wl_dis . '></div>'
+			. '</div>';
+		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏默认品牌图标', 'wp-china-yes' ), __( '不显示顶栏左侧图标，仅保留纯文字名称。', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
+		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏帮助、反馈与生态推广', 'wp-china-yes' ), __( '隐藏顶栏帮助/反馈按钮、页脚文档链及服务页未安装的扩展推荐。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::card_close();
+		echo '</form>';
 		echo '</div>';
 	}
 
@@ -739,13 +761,18 @@ final class KitRenderer {
 		echo '</div>';
 
 		// Partition extension services into featured (installed/active OR recommended for current site scene) vs collapsed rest.
-		$featured_ext = array();
-		$other_ext    = array();
+		$wl            = WhiteLabel::resolve( $settings );
+		$hide_unlinked = $wl['enabled'] && $wl['hide_links'];
+		$featured_ext  = array();
+		$other_ext     = array();
 		foreach ( $catalog as $id => $spec ) {
 			if ( 'ext' !== ( $spec['group'] ?? 'ext' ) ) {
 				continue;
 			}
 			$st = $plugin_states[ $id ];
+			if ( $hide_unlinked && ! $st['active'] && ! $st['installed'] ) {
+				continue;
+			}
 			if ( $st['active'] || $st['installed'] || in_array( $id, $recommended_ids, true ) ) {
 				$featured_ext[ $id ] = $spec;
 			} else {
@@ -753,44 +780,171 @@ final class KitRenderer {
 			}
 		}
 
-		// Section 2: Scene-tailored recommended & active extensions (visible by default).
+		// Section 2: Scene-tailored recommended & active extensions (hidden in white-label mode when none installed).
+		if ( ! empty( $featured_ext ) || ! empty( $other_ext ) ) {
+			\Wenpai_Admin_UI::card_open(
+				array(
+					'title' => $hide_unlinked
+						? __( '已联动扩展插件', 'wp-china-yes' )
+						: sprintf( /* translators: %s: site scene label */ __( '适合当前「%s」的扩展', 'wp-china-yes' ), $profile_label ),
+					'sub'   => __( '根据本站场景精选；已安装的独立插件会自动置顶并同步运行状态。', 'wp-china-yes' ),
+					'tile'  => false,
+				)
+			);
+			foreach ( $featured_ext as $id => $spec ) {
+				self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
+			}
+
+			// Collapsed fold for remaining ecosystem extensions.
+			if ( ! empty( $other_ext ) ) {
+				$other_titles = array();
+				foreach ( $other_ext as $other_spec ) {
+					$other_titles[] = $other_spec['title'];
+				}
+				ob_start();
+				foreach ( $other_ext as $id => $spec ) {
+					self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
+				}
+				$other_html = (string) ob_get_clean();
+
+				\Wenpai_Admin_UI::fold_list(
+					array(
+						'items' => array(
+							array(
+								'icon'      => 'sparkle',
+								'title'     => sprintf( /* translators: %d: count of hidden extensions */ __( '更多生态扩展（%d 项）', 'wp-china-yes' ), count( $other_ext ) ),
+								'desc'      => implode( ' / ', $other_titles ),
+								'body_html' => $other_html,
+							),
+						),
+					)
+				);
+			}
+			\Wenpai_Admin_UI::card_close();
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Dedicated Outbound Governance screen (?page=wpcy-outbound).
+	 *
+	 * @param bool $locked Whether subsite settings are locked.
+	 */
+	private static function render_outbound( bool $locked = false ): void {
+		$dis_attr = $locked ? ' disabled' : '';
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '外链', 'wp-china-yes' ),
+			__( '集中管理出站请求拦截表、实时检测任意 URL 命中策略，并查看三层数据驻留规则。', 'wp-china-yes' )
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="outbound">';
+
+		// Card 1: Custom outbound site blocklist (GET/PUT /wpcy/v1/site-blocklist).
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => sprintf( /* translators: %s: site scene label */ __( '适合当前「%s」的扩展', 'wp-china-yes' ), $profile_label ),
-				'sub'   => __( '根据本站场景精选；已安装的独立插件会自动置顶并同步运行状态。', 'wp-china-yes' ),
+				'title' => __( '自定义外链拦截表', 'wp-china-yes' ),
+				'sub'   => __( '按域名屏蔽拖慢后台的第三方出站请求，最多 20 条，L0 核心白名单域名不可被拦截。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
-		foreach ( $featured_ext as $id => $spec ) {
-			self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
-		}
-
-		// Collapsed fold for remaining ecosystem extensions.
-		if ( ! empty( $other_ext ) ) {
-			$other_titles = array();
-			foreach ( $other_ext as $other_spec ) {
-				$other_titles[] = $other_spec['title'];
-			}
-			ob_start();
-			foreach ( $other_ext as $id => $spec ) {
-				self::render_extension_row( $id, $spec, $plugin_states[ $id ], $reports[ $id ] ?? array() );
-			}
-			$other_html = (string) ob_get_clean();
-
-			\Wenpai_Admin_UI::fold_list(
-				array(
-					'items' => array(
-						array(
-							'icon'      => 'sparkle',
-							'title'     => sprintf( /* translators: %d: count of hidden extensions */ __( '更多生态扩展（%d 项）', 'wp-china-yes' ), count( $other_ext ) ),
-							'desc'      => implode( ' / ', $other_titles ),
-							'body_html' => $other_html,
-						),
-					),
-				)
-			);
-		}
+		echo '<div data-wpcy-blocklist="1">';
+		echo '<div class="wpcy-inline-bar" style="margin-bottom:12px">';
+		echo '<label class="wenpai-switch">';
+		echo '<input type="checkbox" data-wpcy-bl-enabled="1"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
+		echo '<span class="track" aria-hidden="true"></span>';
+		echo '<span class="wenpai-switch__label">' . esc_html__( '启用自定义外链拦截表', 'wp-china-yes' ) . '</span>';
+		echo '</label>';
+		echo '</div>';
+		echo '<div class="wpcy-inline-bar">';
+		echo '<input type="text" data-wpcy-bl-host="1" placeholder="' . esc_attr__( '输入域名，例如 telemetry.example.com', 'wp-china-yes' ) . '"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
+		echo '<select data-wpcy-bl-match="1"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
+		echo '<option value="exact">' . esc_html__( '精确匹配', 'wp-china-yes' ) . '</option>';
+		echo '<option value="suffix">' . esc_html__( '含子域名', 'wp-china-yes' ) . '</option>';
+		echo '</select>';
+		echo '<input type="text" data-wpcy-bl-note="1" placeholder="' . esc_attr__( '备注（可选）', 'wp-china-yes' ) . '"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
+		$add_btn = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'    => __( '添加域名', 'wp-china-yes' ),
+				'type'     => 'button',
+				'variant'  => 'primary',
+				'size'     => 'sm',
+				'disabled' => $locked,
+				'attrs'    => array( 'data-wpcy-bl-add' => '1' ),
+			)
+		);
+		echo $add_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
+		echo '</div>';
+		echo '<ul class="wpcy-host-list" data-wpcy-bl-list="1"></ul>';
+		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
+
+		// Card 2: Live outbound URL routing tester (POST /wpcy/v1/residency/test).
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '出站 URL 路由检测', 'wp-china-yes' ),
+				'sub'   => __( '输入任意外部网址，实时查看文派叶子对其的放行、镜像改写或拦截策略。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		echo '<div data-wpcy-url-tester="1">';
+		echo '<div class="wpcy-inline-bar">';
+		echo '<input type="url" data-wpcy-url-input="1" placeholder="https://api.wordpress.org/core/version-check/1.7/" aria-label="' . esc_attr__( '待检测网址', 'wp-china-yes' ) . '">';
+		$test_btn = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '检测策略', 'wp-china-yes' ),
+				'type'    => 'button',
+				'variant' => 'secondary',
+				'attrs'   => array( 'data-wpcy-url-submit' => '1' ),
+			)
+		);
+		echo $test_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
+		echo '</div>';
+		echo '<div class="wpcy-test-result" data-wpcy-url-output="1" hidden></div>';
+		echo '</div>';
+		\Wenpai_Admin_UI::card_close();
+
+		// Card 3: Three-layer outbound rules snapshot & recent B-tier log.
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '出站治理规则与记录', 'wp-china-yes' ),
+				'sub'   => __( 'L0 核心保护白名单、L1 数据驻留规则、后台减噪拦截与近期出站记录。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		\Wenpai_Admin_UI::status_list(
+			array(
+				'attrs' => array( 'data-wpcy-outbound-layers' => '1' ),
+				'items' => array(
+					array(
+						'label' => __( 'L0 核心保护白名单', 'wp-china-yes' ),
+						'value' => __( '加载中…', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( 'L1 数据驻留规则集', 'wp-china-yes' ),
+						'value' => __( '加载中…', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( '后台减噪拦截包', 'wp-china-yes' ),
+						'value' => __( '加载中…', 'wp-china-yes' ),
+					),
+				),
+			)
+		);
+		\Wenpai_Admin_UI::fold_list(
+			array(
+				'items' => array(
+					array(
+						'icon'      => 'info',
+						'title'     => __( '近期出站记录', 'wp-china-yes' ),
+						'desc'      => __( '展开查看最近记录的外部主机与请求次数（不含请求体）', 'wp-china-yes' ),
+						'body_html' => '<div data-wpcy-outbound-log="1"><p class="meta">' . esc_html__( '正在加载记录…', 'wp-china-yes' ) . '</p></div>',
+					),
+				),
+			)
+		);
+		\Wenpai_Admin_UI::card_close();
+
 		echo '</div>';
 	}
 

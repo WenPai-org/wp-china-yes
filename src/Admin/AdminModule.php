@@ -67,6 +67,7 @@ final class AdminModule implements Module {
 		'wpcy',
 		'wpcy-connect',
 		'wpcy-services',
+		'wpcy-outbound',
 		'wpcy-diagnose',
 		'wpcy-onboarding',
 	);
@@ -163,11 +164,12 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function add_pages(): void {
-		$cap = 'manage_options';
+		$cap        = 'manage_options';
+		$brand_name = WhiteLabel::brand_name( $this->repository->all() );
 
 		add_menu_page(
 			__( '概览', 'wp-china-yes' ),
-			__( '文派叶子', 'wp-china-yes' ),
+			$brand_name,
 			$cap,
 			self::SLUG,
 			array( $this, 'render' ),
@@ -199,6 +201,15 @@ final class AdminModule implements Module {
 			__( '服务', 'wp-china-yes' ),
 			$cap,
 			'wpcy-services',
+			array( $this, 'render' )
+		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( '外链', 'wp-china-yes' ),
+			__( '外链', 'wp-china-yes' ),
+			$cap,
+			'wpcy-outbound',
 			array( $this, 'render' )
 		);
 

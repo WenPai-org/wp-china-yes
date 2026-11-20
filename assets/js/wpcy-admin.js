@@ -284,8 +284,25 @@
 					dashboard_feeds: fd.get('dashboard_feeds') ? 'block' : 'allow',
 				},
 			};
+			const wlToggle = form.querySelector('input[name="wl_enabled"]');
+			if (wlToggle && !wlToggle.disabled) {
+				payload.admin = {
+					whitelabel: {
+						enabled: wlToggle.checked,
+						brand_name: String(fd.get('wl_brand_name') || '').trim(),
+						logo_url: String(fd.get('wl_logo_url') || '').trim(),
+						hide_logo: !!fd.get('wl_hide_logo'),
+						hide_links: !!fd.get('wl_hide_links'),
+					},
+				};
+			}
 			api(settingsEndpoint(isNetwork), { method: 'PUT', body: payload })
-				.then(function () { notify('ok', '全部设置已保存。'); })
+				.then(function () {
+					notify('ok', '全部设置已保存。');
+					if (payload.admin && payload.admin.whitelabel) {
+						setTimeout(function () { window.location.reload(); }, 450);
+					}
+				})
 				.catch(function (err) { notify('bad', err.message); });
 		});
 	}
@@ -622,6 +639,48 @@
 		}
 	}
 
+	// 3d. Outbound screen rules snapshot & B-tier log.
+	function initOutboundOverview() {
+		const layersEl = document.querySelector('[data-wpcy-outbound-layers]');
+		if (layersEl) {
+			api('/residency/protected').then(function (snap) {
+				const l0Count = snap && snap.l0 && Array.isArray(snap.l0.hosts) ? snap.l0.hosts.length : 0;
+				const l1Ver = snap && snap.l1 && snap.l1.version ? String(snap.l1.version) : '内建基线';
+				const noiseOn = !!(snap && snap.noise_block && snap.noise_block.enabled);
+				const noiseCount = snap && snap.noise_block && Array.isArray(snap.noise_block.hosts) ? snap.noise_block.hosts.length : 0;
+				updateStatusListRow(layersEl, 0, l0Count + ' 个受保护核心域名', 'ok', '永久放行');
+				updateStatusListRow(layersEl, 1, '规则版本 ' + l1Ver, 'ok', '运行中');
+				updateStatusListRow(layersEl, 2, noiseCount + ' 个已知噪音源', noiseOn ? 'ok' : 'mute', noiseOn ? '已开启' : '已关闭');
+			}).catch(function () {});
+		}
+
+		const logEl = document.querySelector('[data-wpcy-outbound-log]');
+		if (logEl) {
+			api('/residency/log?per_page=10').then(function (data) {
+				const items = Array.isArray(data && data.items) ? data.items : [];
+				if (!items.length) {
+					logEl.innerHTML = '<p class="meta">近期暂无 B 级外部请求记录。</p>';
+					return;
+				}
+				const ul = document.createElement('ul');
+				ul.className = 'wpcy-host-list';
+				items.forEach(function (row) {
+					const li = document.createElement('li');
+					li.className = 'wpcy-host-item';
+					li.innerHTML = '<span class="wpcy-host-item__main"><code></code><span class="pill mute"></span></span><span class="wpcy-host-item__note"></span>';
+					li.querySelector('code').textContent = row.host || '';
+					li.querySelector('.pill').textContent = (row.count || 0) + ' 次';
+					li.querySelector('.wpcy-host-item__note').textContent = (row.data_class || '') + (row.last_seen ? ' · ' + row.last_seen : '');
+					ul.appendChild(li);
+				});
+				logEl.innerHTML = '';
+				logEl.appendChild(ul);
+			}).catch(function () {
+				logEl.innerHTML = '<p class="meta">近期暂无 B 级外部请求记录。</p>';
+			});
+		}
+	}
+
 	// 4. Wizard: save chosen profile with defaults and navigate to overview.
 	function initWizard() {
 		const form = document.getElementById('wpcy-wizard-form');
@@ -651,6 +710,7 @@
 		initDiagnoseAndServices();
 		initSiteBlocklist();
 		initUrlTester();
+		initOutboundOverview();
 		initWizard();
 	});
 })();
