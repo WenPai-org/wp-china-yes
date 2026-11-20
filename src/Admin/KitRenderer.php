@@ -742,8 +742,15 @@ final class KitRenderer {
 				echo '</div>';
 				echo '<div class="wpcy-core-card__foot">';
 				echo '<span class="wpcy-core-card__metric"><span class="wpcy-core-card__dot is-ok" aria-hidden="true"></span>' . esc_html( $mod['metric'] ) . '</span>';
-				$link_label = ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' );
-				echo '<a class="wpcy-core-card__link" href="' . esc_url( $mod['url'] ) . '">' . esc_html( $link_label ) . ' ›</a>';
+				$btn_html = \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
+						'href'    => $mod['url'],
+						'variant' => 'secondary',
+						'size'    => 'sm',
+					)
+				);
+				echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
 				echo '</div>';
 				echo '</div>';
 			}
@@ -759,7 +766,6 @@ final class KitRenderer {
 				)
 			);
 			foreach ( $inactive_mods as $mod ) {
-				$is_gated = 'whitelabel' === $mod['id'] && ! $wl['entitled'];
 				\Wenpai_Admin_UI::row(
 					array(
 						'icon'         => $mod['icon'],
@@ -769,16 +775,14 @@ final class KitRenderer {
 							'text'  => $mod['pill'],
 							'state' => 'mute',
 						),
-						'control_html' => $is_gated
-							? \Wenpai_Admin_UI::button_html(
-								array(
-									'label'   => __( '了解与开通', 'wp-china-yes' ),
-									'href'    => $mod['url'],
-									'variant' => 'secondary',
-									'size'    => 'sm',
-								)
+						'control_html' => \Wenpai_Admin_UI::button_html(
+							array(
+								'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
+								'href'    => $mod['url'],
+								'variant' => 'secondary',
+								'size'    => 'sm',
 							)
-							: '<a class="wpcy-core-card__link" href="' . esc_url( $mod['url'] ) . '">' . esc_html__( '配置 ›', 'wp-china-yes' ) . '</a>',
+						),
 					)
 				);
 			}
@@ -1325,8 +1329,15 @@ final class KitRenderer {
 			echo '</div>';
 			echo '<div class="wpcy-core-card__foot">';
 			echo '<span class="wpcy-core-card__metric" data-wpcy-core-metric="' . esc_attr( $id ) . '"><span class="wpcy-core-card__dot' . ( $is_ok ? ' is-ok' : '' ) . '" aria-hidden="true"></span><span data-wpcy-core-metric-text="' . esc_attr( $id ) . '">' . esc_html( $metric_text ) . '</span></span>';
-			$link_label = $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' );
-			echo '<a class="wpcy-core-card__link" href="' . esc_url( $detail_url ) . '">' . esc_html( $link_label ) . ' ›</a>';
+			$btn_html = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' ),
+					'href'    => $detail_url,
+					'variant' => 'secondary',
+					'size'    => 'sm',
+				)
+			);
+			echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes attributes and label.
 			echo '</div>';
 			echo '</div>';
 		}
@@ -1607,17 +1618,17 @@ final class KitRenderer {
 		}
 
 		$row_desc   = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
-		$is_action  = $plugin_state['active'] || $plugin_state['installed'];
-		$action_ctl = $is_action
-			? \Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => $plugin_state['active'] ? __( '管理', 'wp-china-yes' ) : __( '启用', 'wp-china-yes' ),
-					'href'    => $detail_url,
-					'variant' => 'secondary',
-					'size'    => 'sm',
-				)
+		$btn_label  = $plugin_state['active']
+			? __( '管理', 'wp-china-yes' )
+			: ( $plugin_state['installed'] ? __( '启用', 'wp-china-yes' ) : __( '查看', 'wp-china-yes' ) );
+		$action_ctl = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => $btn_label,
+				'href'    => $detail_url,
+				'variant' => 'secondary',
+				'size'    => 'sm',
 			)
-			: '<a class="wpcy-core-card__link" href="' . esc_url( $detail_url ) . '">' . esc_html__( '查看 ›', 'wp-china-yes' ) . '</a>';
+		);
 
 		\Wenpai_Admin_UI::row(
 			array(
