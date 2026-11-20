@@ -450,9 +450,9 @@ final class KitRenderer {
 		);
 		echo '<div class="choice-cards">';
 		$scenes = array(
-			'domestic'    => array( __( '国内站', 'wp-china-yes' ), __( '站点和访客都在中国大陆，默认走国内镜像与 Cravatar 国内节点。', 'wp-china-yes' ) ),
-			'crossborder' => array( __( '跨境站', 'wp-china-yes' ), __( '访客主要在海外，后台走加速，前台保持直连。', 'wp-china-yes' ) ),
-			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
+			'domestic'    => array( __( '国内站', 'wp-china-yes' ), __( '前后台全量加速，默认国内镜像、adminCDN 与 Cravatar 中国节点。', 'wp-china-yes' ) ),
+			'crossborder' => array( __( '跨境站', 'wp-china-yes' ), __( '前台保持海外直连不误伤支付/物流，仅加速后台并默认开启减噪。', 'wp-china-yes' ) ),
+			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外兼顾，后台加速与减噪默认开启，前台可按访客占比细调。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
 			$is_on = $profile === $key;
@@ -1992,9 +1992,9 @@ final class KitRenderer {
 		);
 		echo '<div class="choice-cards">';
 		$scenes = array(
-			'domestic'    => array( __( '国内站', 'wp-china-yes' ), __( '站点和访客都在中国大陆，默认走国内镜像与 Cravatar 国内节点。', 'wp-china-yes' ) ),
-			'crossborder' => array( __( '跨境站', 'wp-china-yes' ), __( '访客主要在海外，后台走加速，前台保持直连。', 'wp-china-yes' ) ),
-			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
+			'domestic'    => array( __( '国内站', 'wp-china-yes' ), __( '前后台全量加速，默认国内镜像、adminCDN 与 Cravatar 中国节点。', 'wp-china-yes' ) ),
+			'crossborder' => array( __( '跨境站', 'wp-china-yes' ), __( '前台保持海外直连不误伤支付/物流，仅加速后台并默认开启减噪。', 'wp-china-yes' ) ),
+			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外兼顾，后台加速与减噪默认开启，前台可按访客占比细调。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
 			$is_on = $profile === $key;
