@@ -25,6 +25,7 @@
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: var(--wenpai-space-4, 16px);
+	align-items: stretch;
 }
 
 .wpcy-core-grid--3 {
@@ -48,10 +49,10 @@
 	background: var(--wenpai-surface, #fff);
 	border: 1px solid var(--wenpai-line-card, #e2e5ea);
 	border-radius: var(--wenpai-radius-lg, 12px);
-	padding: 18px 20px;
+	padding: var(--wenpai-space-5, 20px);
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: var(--wenpai-space-4, 16px);
 	transition: border-color 0.15s ease;
 }
 
@@ -62,7 +63,7 @@
 .wpcy-core-card__top {
 	display: flex;
 	align-items: flex-start;
-	gap: 12px;
+	gap: var(--wenpai-space-3, 12px);
 }
 
 .wpcy-core-card__top .wenpai-switch {
@@ -77,7 +78,7 @@
 .wpcy-core-card__icon {
 	width: 36px;
 	height: 36px;
-	border-radius: 9px;
+	border-radius: var(--wenpai-radius-md, 8px);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -89,6 +90,11 @@
 .wpcy-core-card__icon.is-ok {
 	background: var(--wenpai-accent-soft, #eef2ff);
 	color: var(--wenpai-accent, #3858e9);
+}
+
+.wpcy-core-card__icon.is-green {
+	background: var(--wenpai-ok-soft, #ecfdf3);
+	color: var(--wenpai-ok-ink, #166534);
 }
 
 .wpcy-core-card__icon svg {
@@ -110,27 +116,62 @@
 }
 
 .wpcy-core-card__desc {
-	margin: 3px 0 0;
+	margin: var(--wenpai-space-1, 4px) 0 0;
 	font-size: var(--wenpai-text-caption, 12px);
 	color: var(--wenpai-ink-3, #6b7280);
-	line-height: 1.5;
+	line-height: 1.55;
 }
 
 .wpcy-core-card__foot {
+	margin-top: auto;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding-top: 12px;
+	gap: var(--wenpai-space-3, 12px);
+	padding-top: var(--wenpai-space-3, 12px);
 	border-top: 1px solid var(--wenpai-line-soft, #eef0f3);
 }
 
 .wpcy-core-card__metric {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-2, #4b5563);
+	color: var(--wenpai-ink-3, #6b7280);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	font-variant-numeric: tabular-nums;
+}
+
+.wpcy-core-card__dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 999px;
+	flex: none;
+	background: var(--wenpai-line-strong, #c9cfd8);
+}
+
+.wpcy-core-card__dot.is-ok {
+	background: var(--wenpai-ok-ink, #16a34a);
+}
+
+.wpcy-core-card__link {
+	font-size: var(--wenpai-text-caption, 12px);
+	color: var(--wenpai-accent, #3858e9);
+	text-decoration: none;
+	white-space: nowrap;
+	flex: none;
+}
+
+.wpcy-core-card__link:hover {
+	text-decoration: underline;
+}
+
+.wenpai-app [data-wpcy-screen="services"] .row:hover,
+.wenpai-app [data-wpcy-screen="features"] .row:hover {
+	background: var(--wenpai-line-soft, #f7f8fa);
+	border-radius: var(--wenpai-radius-sm, 6px);
 }
 
 .wpcy-scene-tag {

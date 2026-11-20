@@ -542,13 +542,32 @@
 			});
 		});
 
+		// Hydrate live node latencies onto Services 3-col cloud cards from cached diagnostics.
+		const svcScreen = document.querySelector('[data-wpcy-screen="services"]');
+		if (svcScreen) {
+			api('/diagnostics').then(function (data) {
+				const targets = Array.isArray(data && data.targets) ? data.targets : [];
+				const map = { wporg_mirror: ['wporg', 'WenPai.org'], public_assets: ['admincdn', 'adminCDN'], cravatar: ['cravatar', 'Cravatar'] };
+				targets.forEach(function (t) {
+					const m = t && map[t.target];
+					if (!m || typeof t.latency_ms !== 'number' || t.latency_ms <= 0) return;
+					const el = svcScreen.querySelector('[data-wpcy-core-metric-text="' + m[0] + '"]');
+					const sw = svcScreen.querySelector('[data-wpcy-service-toggle="' + m[0] + '"]');
+					if (el && (!sw || sw.checked)) {
+						el.textContent = Math.round(t.latency_ms) + ' ms · ' + m[1];
+					}
+				});
+			}).catch(function () {});
+		}
+
 		document.querySelectorAll('[data-wpcy-service-toggle]').forEach(function (input) {
 			input.addEventListener('change', function () {
 				const id = input.getAttribute('data-wpcy-service-toggle');
 				const on = input.checked;
 				const card = input.closest('[data-wpcy-core-card]');
 				const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-				const metricEl = card && card.querySelector('[data-wpcy-core-metric]');
+				const dotEl = card && card.querySelector('.wpcy-core-card__dot');
+				const metricEl = card && (card.querySelector('[data-wpcy-core-metric-text]') || card.querySelector('[data-wpcy-core-metric]'));
 				const labelEl = input.parentElement && input.parentElement.querySelector('.wenpai-switch__label');
 
 				let patch = {};
@@ -569,6 +588,7 @@
 
 				if (labelEl) labelEl.textContent = on ? '已开启' : '未开启';
 				if (iconEl) iconEl.classList.toggle('is-ok', on);
+				if (dotEl) dotEl.classList.toggle('is-ok', on);
 				if (metricEl && nextMetric) metricEl.textContent = nextMetric;
 
 				api('/settings', { method: 'PUT', body: patch })
