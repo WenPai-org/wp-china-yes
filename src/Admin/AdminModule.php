@@ -130,10 +130,31 @@ final class AdminModule implements Module {
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'add_pages' ) );
 		add_action( 'network_admin_menu', array( $this, 'add_network_pages' ) );
+		add_action( 'admin_page_access_denied', array( $this, 'redirect_legacy_options_url' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_onboarding' ) );
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
+	}
+
+	/**
+	 * Redirect accidental options-general.php?page=wpcy* links to admin.php?page=wpcy*.
+	 *
+	 * @since 4.0.0
+	 */
+	public function redirect_legacy_options_url(): void {
+		if ( $this->in_network_admin() || ! $this->is_app_screen() ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$slug = $this->current_page();
+		if ( '' === $slug ) {
+			return;
+		}
+		wp_safe_redirect( admin_url( 'admin.php?page=' . rawurlencode( $slug ) ) );
+		exit;
 	}
 
 	/**

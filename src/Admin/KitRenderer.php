@@ -86,7 +86,13 @@ final class KitRenderer {
 	 * @return string
 	 */
 	private static function page_url( string $slug, bool $network = false ): string {
-		unset( $network );
+		$entry = 'admin.php';
+		if ( $network && function_exists( 'network_admin_url' ) && function_exists( 'add_query_arg' ) ) {
+			return (string) add_query_arg( array( 'page' => $slug ), network_admin_url( $entry ) );
+		}
+		if ( function_exists( 'admin_url' ) && function_exists( 'add_query_arg' ) ) {
+			return (string) add_query_arg( array( 'page' => $slug ), admin_url( $entry ) );
+		}
 		return '?page=' . rawurlencode( $slug );
 	}
 
