@@ -583,7 +583,7 @@ final class KitRenderer {
 						'body_html' => $adv_html,
 					),
 					array(
-						'icon'      => 'lock',
+						'icon'      => 'info',
 						'title'     => __( '自定义外链拦截表', 'wp-china-yes' ),
 						'desc'      => __( '按域名屏蔽拖慢后台的第三方出站请求，与核心白名单自动隔离。', 'wp-china-yes' ),
 						'body_html' => $blocklist_html,

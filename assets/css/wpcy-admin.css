@@ -136,12 +136,13 @@
 
 .wpcy-inline-bar input[type="text"],
 .wpcy-inline-bar input[type="url"] {
-	flex: 1 1 220px;
+	flex: 1 1 180px;
 	min-width: 0;
 }
 
 .wpcy-inline-bar select {
-	flex: 0 0 auto;
+	flex: 0 0 110px;
+	width: 110px;
 }
 
 .wpcy-host-list {
