@@ -290,6 +290,9 @@
 					whitelabel: {
 						enabled: wlToggle.checked,
 						brand_name: String(fd.get('wl_brand_name') || '').trim(),
+						help_url: String(fd.get('wl_help_url') || '').trim(),
+						feedback_url: String(fd.get('wl_feedback_url') || '').trim(),
+						docs_url: String(fd.get('wl_docs_url') || '').trim(),
 						logo_url: String(fd.get('wl_logo_url') || '').trim(),
 						hide_logo: !!fd.get('wl_hide_logo'),
 						hide_links: !!fd.get('wl_hide_links'),

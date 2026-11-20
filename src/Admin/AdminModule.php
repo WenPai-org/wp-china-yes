@@ -136,6 +136,7 @@ final class AdminModule implements Module {
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
+		WhiteLabel::register( $this->repository );
 	}
 
 	/**

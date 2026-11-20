@@ -490,32 +490,50 @@ final class Schema {
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'default'              => array(
-						'enabled'    => false,
-						'brand_name' => '',
-						'logo_url'   => '',
-						'hide_logo'  => false,
-						'hide_links' => false,
+						'enabled'      => false,
+						'brand_name'   => '',
+						'help_url'     => '',
+						'feedback_url' => '',
+						'docs_url'     => '',
+						'logo_url'     => '',
+						'hide_logo'    => false,
+						'hide_links'   => false,
 					),
 					'properties'           => array(
-						'enabled'    => array(
+						'enabled'      => array(
 							'type'    => 'boolean',
 							'default' => false,
 						),
-						'brand_name' => array(
+						'brand_name'   => array(
 							'type'      => 'string',
 							'maxLength' => 64,
 							'default'   => '',
 						),
-						'logo_url'   => array(
+						'help_url'     => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'hide_logo'  => array(
+						'feedback_url' => array(
+							'type'      => 'string',
+							'maxLength' => 300,
+							'default'   => '',
+						),
+						'docs_url'     => array(
+							'type'      => 'string',
+							'maxLength' => 300,
+							'default'   => '',
+						),
+						'logo_url'     => array(
+							'type'      => 'string',
+							'maxLength' => 300,
+							'default'   => '',
+						),
+						'hide_logo'    => array(
 							'type'    => 'boolean',
 							'default' => false,
 						),
-						'hide_links' => array(
+						'hide_links'   => array(
 							'type'    => 'boolean',
 							'default' => false,
 						),

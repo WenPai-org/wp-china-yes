@@ -179,8 +179,24 @@ final class KitRenderer {
 			);
 
 		$wl          = WhiteLabel::resolve( $settings );
-		$brand_name  = WhiteLabel::brand_name( $settings );
 		$support_url = isset( $links['help'] ) ? (string) $links['help'] : 'https://wpcy.com/go/support';
+		$defaults    = array(
+			'brand'        => __( '文派叶子', 'wp-china-yes' ),
+			'plugin_name'  => __( '文派叶子', 'wp-china-yes' ),
+			'help_url'     => $network ? $support_url : $admin_url( 'wpcy', array( 'view' => 'help' ) ),
+			'feedback_url' => $support_url,
+			'docs_url'     => $support_url,
+		);
+		$display     = function_exists( 'apply_filters' )
+			? apply_filters( 'wenpai_plugin_display', $defaults, 'wp-china-yes' )
+			: WhiteLabel::filter_display( $defaults, $settings );
+		if ( ! is_array( $display ) ) {
+			$display = $defaults;
+		}
+		$brand_name   = ! empty( $display['brand'] ) ? (string) $display['brand'] : $defaults['brand'];
+		$help_url     = ! empty( $display['help_url'] ) ? (string) $display['help_url'] : $defaults['help_url'];
+		$feedback_url = ! empty( $display['feedback_url'] ) ? (string) $display['feedback_url'] : $defaults['feedback_url'];
+		$docs_url     = ! empty( $display['docs_url'] ) ? (string) $display['docs_url'] : $defaults['docs_url'];
 
 		$mark_html = self::leaf_mark();
 		if ( $wl['enabled'] && $wl['hide_logo'] ) {
@@ -199,15 +215,22 @@ final class KitRenderer {
 			'version'   => $brand_name . ' ' . $version,
 		);
 
-		if ( ! ( $wl['enabled'] && $wl['hide_links'] ) ) {
-			$args['help_url']           = $network ? $support_url : $admin_url( 'wpcy', array( 'view' => 'help' ) );
-			$args['help_label']         = __( '帮助', 'wp-china-yes' );
-			$args['help_icon_html']     = self::kit_icon( 'help' );
-			$args['feedback_url']       = $support_url;
-			$args['feedback_label']     = __( '反馈', 'wp-china-yes' );
-			$args['feedback_icon_html'] = self::kit_icon( 'feedback' );
-			$args['doc_url']            = $support_url;
-			$args['doc_label']          = __( '文档与支持', 'wp-china-yes' );
+		$show_links = ! ( $wl['enabled'] && $wl['hide_links'] ) || '' !== $wl['help_url'] || '' !== $wl['feedback_url'] || '' !== $wl['docs_url'];
+		if ( $show_links ) {
+			if ( ! ( $wl['enabled'] && $wl['hide_links'] && '' === $wl['help_url'] ) ) {
+				$args['help_url']       = $help_url;
+				$args['help_label']     = __( '帮助', 'wp-china-yes' );
+				$args['help_icon_html'] = self::kit_icon( 'help' );
+			}
+			if ( ! ( $wl['enabled'] && $wl['hide_links'] && '' === $wl['feedback_url'] ) ) {
+				$args['feedback_url']       = $feedback_url;
+				$args['feedback_label']     = __( '反馈', 'wp-china-yes' );
+				$args['feedback_icon_html'] = self::kit_icon( 'feedback' );
+			}
+			if ( ! ( $wl['enabled'] && $wl['hide_links'] && '' === $wl['docs_url'] ) ) {
+				$args['doc_url']   = $docs_url;
+				$args['doc_label'] = __( '文档与支持', 'wp-china-yes' );
+			}
 		}
 
 		return $args;
@@ -584,16 +607,16 @@ final class KitRenderer {
 		);
 		\Wenpai_Admin_UI::card_close();
 
-		// White-label & branding module card.
+		// Suite-wide White-label & branding module card (applies to WPCY + all WenPai plugins via wenpai_plugin_display).
 		$wl        = WhiteLabel::resolve( $settings );
 		$wl_locked = $locked || $wl['locked'];
 		$wl_dis    = $wl_locked ? ' disabled' : '';
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '白标与品牌', 'wp-china-yes' ),
+				'title' => __( '全套白标与品牌', 'wp-china-yes' ),
 				'sub'   => $wl['locked']
 					? __( '已通过 wp-config.php 中的 WPCY_WHITELABEL 常量锁定生效，当前页面只读。', 'wp-china-yes' )
-					: __( '面向建站与交付场景：自定义菜单品牌名、Logo，或隐藏文派外链与未安装扩展推荐。', 'wp-china-yes' ),
+					: __( '一次配置，通过 wenpai_plugin_display 统一覆盖文派叶子及全站文派独立插件的品牌名、帮助/反馈/文档地址与插件列表作者（不改插件文件头与更新通道）。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -601,16 +624,31 @@ final class KitRenderer {
 			array(
 				'icon'         => 'sparkle',
 				'state'        => $wl['enabled'] ? 'ok' : '',
-				'title'        => __( '启用白标模式', 'wp-china-yes' ),
-				'desc'         => __( '开启后按下方规则替换后台菜单、顶栏与页脚品牌标识；可在 wp-config.php 定义 WPCY_WHITELABEL 锁定。', 'wp-china-yes' ),
+				'title'        => __( '启用全套白标模式', 'wp-china-yes' ),
+				'desc'         => __( '留空的字段保持各插件默认；可在 wp-config.php 定义 WPCY_WHITELABEL 交付锁定。', 'wp-china-yes' ),
 				'control_html' => '<label class="wenpai-switch"><input type="checkbox" name="wl_enabled" value="1"' . checked( $wl['enabled'], true, false ) . $wl_dis . '><span class="track" aria-hidden="true"></span><span class="wenpai-switch__label">' . esc_html( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '已关闭', 'wp-china-yes' ) ) . '</span></label>',
 			)
 		);
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes and values escaped below.
 		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-name">' . esc_html__( '自定义品牌名称', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '留空则保持默认「文派叶子」。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-name" type="text" name="wl_brand_name" maxlength="64" value="' . esc_attr( $wl['brand_name'] ) . '" placeholder="' . esc_attr__( '例如：站点加速中心', 'wp-china-yes' ) . '"' . $wl_dis . '></div>'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-name">' . esc_html__( '品牌名', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏品牌名与插件列表作者（左侧功能名如「别名」「智储」不变）。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-name" type="text" name="wl_brand_name" maxlength="64" value="' . esc_attr( $wl['brand_name'] ) . '" placeholder="' . esc_attr__( '例如：我的建站品牌', 'wp-china-yes' ) . '"' . $wl_dis . '></div>'
+			. '</div>';
+		echo '<div class="wenpai-field wenpai-field--row">'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-help">' . esc_html__( '帮助地址', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏「帮助」链接；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-help" type="url" name="wl_help_url" maxlength="300" value="' . esc_attr( $wl['help_url'] ) . '" placeholder="https://example.com/help"' . $wl_dis . '></div>'
+			. '</div>';
+		echo '<div class="wenpai-field wenpai-field--row">'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-feedback">' . esc_html__( '反馈地址', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏「反馈」与工单入口；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-feedback" type="url" name="wl_feedback_url" maxlength="300" value="' . esc_attr( $wl['feedback_url'] ) . '" placeholder="https://example.com/support"' . $wl_dis . '></div>'
+			. '</div>';
+		echo '<div class="wenpai-field wenpai-field--row">'
+			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-docs">' . esc_html__( '文档地址', 'wp-china-yes' ) . '</label>'
+			. '<p class="field-help">' . esc_html__( '替换全站文派插件页脚文档链与插件列表官网地址；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
+			. '<div class="field-ctl"><input id="wpcy-wl-docs" type="url" name="wl_docs_url" maxlength="300" value="' . esc_attr( $wl['docs_url'] ) . '" placeholder="https://example.com/docs"' . $wl_dis . '></div>'
 			. '</div>';
 		echo '<div class="wenpai-field wenpai-field--row">'
 			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-logo">' . esc_html__( '自定义 Logo 地址', 'wp-china-yes' ) . '</label>'
@@ -618,7 +656,7 @@ final class KitRenderer {
 			. '<div class="field-ctl"><input id="wpcy-wl-logo" type="url" name="wl_logo_url" maxlength="300" value="' . esc_attr( $wl['logo_url'] ) . '" placeholder="https://"' . $wl_dis . '></div>'
 			. '</div>';
 		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏默认品牌图标', 'wp-china-yes' ), __( '不显示顶栏左侧图标，仅保留纯文字名称。', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
-		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏帮助、反馈与生态推广', 'wp-china-yes' ), __( '隐藏顶栏帮助/反馈按钮、页脚文档链及服务页未安装的扩展推荐。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
+		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏文派推广与未安装扩展推荐', 'wp-china-yes' ), __( '独立开关：隐藏服务页未安装的扩展推荐及未自定义的外链（不关闭整个服务页）。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::card_close();
 		echo '</form>';
