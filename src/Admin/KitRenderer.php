@@ -217,6 +217,8 @@ final class KitRenderer {
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="overview">';
+		echo '<div class="wenpai-stack" data-wpcy-announcements="1" hidden></div>';
+		echo '<div data-wpcy-migration-banner="1" hidden></div>';
 
 		if ( $recovery ) {
 			\Wenpai_Admin_UI::next(
@@ -582,17 +584,22 @@ final class KitRenderer {
 						'desc'      => $summary,
 						'body_html' => $adv_html,
 					),
-					array(
-						'icon'      => 'info',
-						'title'     => __( '自定义外链拦截表', 'wp-china-yes' ),
-						'desc'      => __( '按域名屏蔽拖慢后台的第三方出站请求，与核心白名单自动隔离。', 'wp-china-yes' ),
-						'body_html' => $blocklist_html,
-					),
 				),
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
 		echo '</form>';
+
+		// Standalone module card: Outbound Site Blocklist (GET/PUT /wpcy/v1/site-blocklist).
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '外链拦截', 'wp-china-yes' ),
+				'sub'   => __( '按域名屏蔽拖慢后台的第三方出站请求，最多 20 条，受保护核心域名自动放行。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		echo $blocklist_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes and strings escaped above.
+		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
 	}
 

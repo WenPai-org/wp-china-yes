@@ -187,6 +187,51 @@
 				eventsEl.innerHTML = '<p class="meta">最近还没有新的加速或巡检事件。</p>';
 			});
 		}
+
+		const annEl = document.querySelector('[data-wpcy-announcements]');
+		if (annEl) {
+			api('/announcements').then(function (data) {
+				const items = Array.isArray(data && data.items) ? data.items : [];
+				if (!items.length) return;
+				annEl.hidden = false;
+				items.forEach(function (item) {
+					const div = document.createElement('div');
+					div.className = 'notice ' + (item.tone === 'warn' ? 'warn' : 'info');
+					const text = document.createElement('span');
+					text.textContent = (item.title ? item.title + '：' : '') + (item.body || item.message || '');
+					const btn = document.createElement('button');
+					btn.type = 'button';
+					btn.className = 'btn btn-ghost btn-sm';
+					btn.textContent = '知道了';
+					btn.addEventListener('click', function () {
+						api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
+							.finally(function () {
+								div.remove();
+								if (!annEl.children.length) annEl.hidden = true;
+							});
+					});
+					div.appendChild(text);
+					div.appendChild(btn);
+					annEl.appendChild(div);
+				});
+			}).catch(function () {});
+		}
+
+		const migEl = document.querySelector('[data-wpcy-migration-banner]');
+		if (migEl) {
+			api('/migration/report').then(function (rep) {
+				if (!rep || rep.status === 'none') return;
+				migEl.hidden = false;
+				const div = document.createElement('div');
+				div.className = 'notice info';
+				const ver = rep.source_version ? ' ' + rep.source_version : '';
+				const migratedCount = Array.isArray(rep.migrated) ? rep.migrated.length : 0;
+				const span = document.createElement('span');
+				span.textContent = '已从文派叶子' + ver + ' 自动迁移 ' + migratedCount + ' 项配置至 4.0，原设置已保留备份。';
+				div.appendChild(span);
+				migEl.appendChild(div);
+			}).catch(function () {});
+		}
 	}
 
 	// 2. Settings: instant toggles + unified form save.
