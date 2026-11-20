@@ -366,61 +366,15 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
 
-		// Core 4 channels + folded events log.
+		// Recent events card (channels live in Settings & Services; avoid cross-tab duplication).
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '核心通道状态', 'wp-china-yes' ),
-				'icon'  => 'cloud',
+				'title' => __( '最近加速与巡检事件', 'wp-china-yes' ),
+				'sub'   => __( '自动记录镜像切换、节点探测与规则变更。', 'wp-china-yes' ),
+				'tile'  => false,
 			)
 		);
-		\Wenpai_Admin_UI::row(
-			array(
-				'icon'  => 'cloud',
-				'state' => 'off' === $mirror ? '' : 'ok',
-				'title' => __( 'WordPress.org 更新与安装', 'wp-china-yes' ),
-				'desc'  => 'off' === $mirror ? __( '直连 WordPress.org 官方源', 'wp-china-yes' ) : __( '优先国内镜像，异常自动回退官方源', 'wp-china-yes' ),
-				'pill'  => array(
-					'text'  => 'off' === $mirror ? __( '直连', 'wp-china-yes' ) : __( '国内镜像', 'wp-china-yes' ),
-					'state' => 'off' === $mirror ? 'mute' : 'ok',
-				),
-			)
-		);
-		\Wenpai_Admin_UI::row(
-			array(
-				'icon'  => 'flash',
-				'state' => 'off' === $assets ? '' : 'ok',
-				'title' => __( '常用前端资源', 'wp-china-yes' ),
-				'desc'  => __( 'Google Fonts、CDNJS、jsDelivr 与 Emoji 加速', 'wp-china-yes' ),
-				'pill'  => array(
-					'text'  => 'off' === $assets ? __( '已关闭', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ),
-					'state' => 'off' === $assets ? 'mute' : 'ok',
-				),
-			)
-		);
-		\Wenpai_Admin_UI::row(
-			array(
-				'icon'  => 'image',
-				'state' => 'off' === $avatar ? '' : 'ok',
-				'title' => __( 'Cravatar 头像', 'wp-china-yes' ),
-				'desc'  => __( '替代 Gravatar，解决头像空白与慢加载', 'wp-china-yes' ),
-				'pill'  => array(
-					'text'  => 'off' === $avatar ? __( '已关闭', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ),
-					'state' => 'off' === $avatar ? 'mute' : 'ok',
-				),
-			)
-		);
-		\Wenpai_Admin_UI::fold_list(
-			array(
-				'items' => array(
-					array(
-						'icon'      => 'info',
-						'title'     => __( '最近事件记录', 'wp-china-yes' ),
-						'desc'      => __( '展开查看最近加速与巡检记录', 'wp-china-yes' ),
-						'body_html' => '<div data-wpcy-events="1"><p class="meta">' . esc_html__( '正在加载最近记录…', 'wp-china-yes' ) . '</p></div>',
-					),
-				),
-			)
-		);
+		echo '<div data-wpcy-events="1"><p class="meta">' . esc_html__( '正在加载最近记录…', 'wp-china-yes' ) . '</p></div>';
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
@@ -610,13 +564,12 @@ final class KitRenderer {
 		// Suite-wide White-label & branding module card (applies to WPCY + all WenPai plugins via wenpai_plugin_display).
 		$wl        = WhiteLabel::resolve( $settings );
 		$wl_locked = $locked || $wl['locked'];
-		$wl_dis    = $wl_locked ? ' disabled' : '';
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '全套白标与品牌', 'wp-china-yes' ),
 				'sub'   => $wl['locked']
 					? __( '已通过 wp-config.php 中的 WPCY_WHITELABEL 常量锁定生效，当前页面只读。', 'wp-china-yes' )
-					: __( '一次配置，通过 wenpai_plugin_display 统一覆盖文派叶子及全站文派独立插件的品牌名、帮助/反馈/文档地址与插件列表作者（不改插件文件头与更新通道）。', 'wp-china-yes' ),
+					: __( '一次配置，统一覆盖文派叶子及全站文派独立插件的品牌名、帮助/反馈/文档地址与插件列表作者。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -625,39 +578,21 @@ final class KitRenderer {
 				'icon'         => 'sparkle',
 				'state'        => $wl['enabled'] ? 'ok' : '',
 				'title'        => __( '启用全套白标模式', 'wp-china-yes' ),
-				'desc'         => __( '留空的字段保持各插件默认；可在 wp-config.php 定义 WPCY_WHITELABEL 交付锁定。', 'wp-china-yes' ),
-				'control_html' => '<label class="wenpai-switch"><input type="checkbox" name="wl_enabled" value="1"' . checked( $wl['enabled'], true, false ) . $wl_dis . '><span class="track" aria-hidden="true"></span><span class="wenpai-switch__label">' . esc_html( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '已关闭', 'wp-china-yes' ) ) . '</span></label>',
+				'desc'         => __( '开启后可配置品牌名与外链；支持通过 wp-config.php 定义 WPCY_WHITELABEL 交付锁定。', 'wp-china-yes' ),
+				'control_html' => self::switch_control( 'wl_enabled', $wl['enabled'], $wl_locked, array( 'data-wpcy-wl-toggle' => '1' ) ),
 			)
 		);
-		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes and values escaped below.
-		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-name">' . esc_html__( '品牌名', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏品牌名与插件列表作者（左侧功能名如「别名」「智储」不变）。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-name" type="text" name="wl_brand_name" maxlength="64" value="' . esc_attr( $wl['brand_name'] ) . '" placeholder="' . esc_attr__( '例如：我的建站品牌', 'wp-china-yes' ) . '"' . $wl_dis . '></div>'
-			. '</div>';
-		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-help">' . esc_html__( '帮助地址', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏「帮助」链接；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-help" type="url" name="wl_help_url" maxlength="300" value="' . esc_attr( $wl['help_url'] ) . '" placeholder="https://example.com/help"' . $wl_dis . '></div>'
-			. '</div>';
-		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-feedback">' . esc_html__( '反馈地址', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '替换全站文派插件顶栏「反馈」与工单入口；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-feedback" type="url" name="wl_feedback_url" maxlength="300" value="' . esc_attr( $wl['feedback_url'] ) . '" placeholder="https://example.com/support"' . $wl_dis . '></div>'
-			. '</div>';
-		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-docs">' . esc_html__( '文档地址', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '替换全站文派插件页脚文档链与插件列表官网地址；留空则保持默认。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-docs" type="url" name="wl_docs_url" maxlength="300" value="' . esc_attr( $wl['docs_url'] ) . '" placeholder="https://example.com/docs"' . $wl_dis . '></div>'
-			. '</div>';
-		echo '<div class="wenpai-field wenpai-field--row">'
-			. '<div class="field-meta"><label class="field-label" for="wpcy-wl-logo">' . esc_html__( '自定义 Logo 地址', 'wp-china-yes' ) . '</label>'
-			. '<p class="field-help">' . esc_html__( '可选，建议 44×44 正方形 PNG/SVG 地址。', 'wp-china-yes' ) . '</p></div>'
-			. '<div class="field-ctl"><input id="wpcy-wl-logo" type="url" name="wl_logo_url" maxlength="300" value="' . esc_attr( $wl['logo_url'] ) . '" placeholder="https://"' . $wl_dis . '></div>'
-			. '</div>';
+		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( $wl['enabled'] ? '' : ' hidden' ) . '>';
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
+		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名', 'wp-china-yes' ), __( '替换全站文派插件顶栏品牌名与插件列表作者（左侧功能名不变）。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：我的建站品牌', 'wp-china-yes' ), 64, $wl_locked );
+		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏「帮助」链接；留空保持默认。', 'wp-china-yes' ), $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
+		echo self::field_row_input( 'wl_feedback_url', 'url', __( '反馈地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏「反馈」与工单入口；留空保持默认。', 'wp-china-yes' ), $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
+		echo self::field_row_input( 'wl_docs_url', 'url', __( '文档地址', 'wp-china-yes' ), __( '替换全站文派插件页脚文档链与插件列表官网地址；留空保持默认。', 'wp-china-yes' ), $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
+		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义 Logo 地址', 'wp-china-yes' ), __( '可选，建议 44×44 正方形 PNG/SVG 地址。', 'wp-china-yes' ), $wl['logo_url'], 'https://', 300, $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏默认品牌图标', 'wp-china-yes' ), __( '不显示顶栏左侧图标，仅保留纯文字名称。', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
-		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏文派推广与未安装扩展推荐', 'wp-china-yes' ), __( '独立开关：隐藏服务页未安装的扩展推荐及未自定义的外链（不关闭整个服务页）。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
+		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏文派推广与扩展推荐', 'wp-china-yes' ), __( '独立开关：隐藏服务页未安装的扩展推荐及未自定义的外链（不关闭整个服务页）。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
 		echo '</form>';
 		echo '</div>';
@@ -887,14 +822,15 @@ final class KitRenderer {
 			)
 		);
 		echo '<div data-wpcy-blocklist="1">';
-		echo '<div class="wpcy-inline-bar" style="margin-bottom:12px">';
-		echo '<label class="wenpai-switch">';
-		echo '<input type="checkbox" data-wpcy-bl-enabled="1"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
-		echo '<span class="track" aria-hidden="true"></span>';
-		echo '<span class="wenpai-switch__label">' . esc_html__( '启用自定义外链拦截表', 'wp-china-yes' ) . '</span>';
-		echo '</label>';
-		echo '</div>';
-		echo '<div class="wpcy-inline-bar">';
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'map',
+				'title'        => __( '启用自定义外链拦截表', 'wp-china-yes' ),
+				'desc'         => __( '开启后按下方规则拦截匹配的出站域名请求。', 'wp-china-yes' ),
+				'control_html' => self::switch_control( 'bl_enabled', false, $locked, array( 'data-wpcy-bl-enabled' => '1' ) ),
+			)
+		);
+		echo '<div class="wpcy-inline-bar" style="margin-top:12px">';
 		echo '<input type="text" data-wpcy-bl-host="1" placeholder="' . esc_attr__( '输入域名，例如 telemetry.example.com', 'wp-china-yes' ) . '"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
 		echo '<select data-wpcy-bl-match="1"' . $dis_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string.
 		echo '<option value="exact">' . esc_html__( '精确匹配', 'wp-china-yes' ) . '</option>';
@@ -1666,30 +1602,6 @@ final class KitRenderer {
 
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '出站 URL 路由检测', 'wp-china-yes' ),
-				'sub'   => __( '输入任意外部网址，实时查看文派叶子对其的放行、镜像改写或拦截策略。', 'wp-china-yes' ),
-				'tile'  => false,
-			)
-		);
-		echo '<div data-wpcy-url-tester="1">';
-		echo '<div class="wpcy-inline-bar">';
-		echo '<input type="url" data-wpcy-url-input="1" placeholder="https://api.wordpress.org/core/version-check/1.7/" aria-label="' . esc_attr__( '待检测网址', 'wp-china-yes' ) . '">';
-		$test_btn = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => __( '检测策略', 'wp-china-yes' ),
-				'type'    => 'button',
-				'variant' => 'secondary',
-				'attrs'   => array( 'data-wpcy-url-submit' => '1' ),
-			)
-		);
-		echo $test_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes attributes and label.
-		echo '</div>';
-		echo '<div class="wpcy-test-result" data-wpcy-url-output="1" hidden></div>';
-		echo '</div>';
-		\Wenpai_Admin_UI::card_close();
-
-		\Wenpai_Admin_UI::card_open(
-			array(
 				'title' => __( '紧急恢复', 'wp-china-yes' ),
 				'sub'   => __( '遇到资源加载异常时，可一键暂停全部代理规则并保留当前设置。', 'wp-china-yes' ),
 				'tile'  => false,
@@ -1813,7 +1725,7 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Toggle switch HTML using kit switch markup.
+	 * Toggle switch HTML using kit switch markup (instant save).
 	 *
 	 * @param string $name     Input name.
 	 * @param bool   $checked  Whether checked.
@@ -1821,14 +1733,54 @@ final class KitRenderer {
 	 * @return string
 	 */
 	private static function toggle_control( string $name, bool $checked, bool $disabled ): string {
-		$dis = $disabled ? ' disabled' : '';
-		$chk = $checked ? ' checked' : '';
-		$txt = $checked ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' );
+		return self::switch_control( $name, $checked, $disabled, array( 'data-wpcy-instant' => '1' ) );
+	}
+
+	/**
+	 * Generic kit pill switch HTML with optional data attributes.
+	 *
+	 * @param string                $name     Input name.
+	 * @param bool                  $checked  Whether checked.
+	 * @param bool                  $disabled Whether disabled.
+	 * @param array<string, string> $attrs    Extra input attributes.
+	 * @return string
+	 */
+	private static function switch_control( string $name, bool $checked, bool $disabled, array $attrs = array() ): string {
+		$dis   = $disabled ? ' disabled' : '';
+		$chk   = $checked ? ' checked' : '';
+		$txt   = $checked ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' );
+		$extra = '';
+		foreach ( $attrs as $k => $v ) {
+			$extra .= ' ' . esc_attr( $k ) . '="' . esc_attr( $v ) . '"';
+		}
 		return '<span class="wenpai-switch">'
-			. '<input type="checkbox" class="wenpai-switch__input" name="' . esc_attr( $name ) . '" value="1" data-wpcy-instant="1"' . $chk . $dis . '>'
+			. '<input type="checkbox" class="wenpai-switch__input" name="' . esc_attr( $name ) . '" value="1"' . $extra . $chk . $dis . '>'
 			. '<span class="wenpai-switch__track" aria-hidden="true"></span>'
 			. '<span class="wenpai-switch__label">' . esc_html( $txt ) . '</span>'
 			. '</span>';
+	}
+
+	/**
+	 * Two-column text/url input field row (.wenpai-field.field.wenpai-field--row).
+	 *
+	 * @param string $name        Input name.
+	 * @param string $type        Input type (`text` or `url`).
+	 * @param string $label       Field label.
+	 * @param string $desc        Field description.
+	 * @param string $value       Current value.
+	 * @param string $placeholder Placeholder text.
+	 * @param int    $max_length  Max length.
+	 * @param bool   $disabled    Whether disabled.
+	 * @return string
+	 */
+	private static function field_row_input( string $name, string $type, string $label, string $desc, string $value, string $placeholder, int $max_length, bool $disabled ): string {
+		$id  = 'wpcy-f-' . $name;
+		$dis = $disabled ? ' disabled' : '';
+		$h   = '<div class="wenpai-field field wenpai-field--row">';
+		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
+		$h  .= '<div class="field-ctl"><input id="' . esc_attr( $id ) . '" type="' . esc_attr( $type ) . '" name="' . esc_attr( $name ) . '" maxlength="' . (int) $max_length . '" value="' . esc_attr( $value ) . '" placeholder="' . esc_attr( $placeholder ) . '"' . $dis . '>';
+		$h  .= '<p class="wenpai-field__desc">' . esc_html( $desc ) . '</p></div></div>';
+		return $h;
 	}
 
 	/**

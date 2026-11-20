@@ -270,6 +270,17 @@
 			});
 		});
 
+		const wlToggleEl = form.querySelector('[data-wpcy-wl-toggle]');
+		const wlFieldsEl = form.querySelector('[data-wpcy-wl-fields]');
+		if (wlToggleEl && wlFieldsEl) {
+			wlToggleEl.addEventListener('change', function () {
+				const on = wlToggleEl.checked;
+				wlFieldsEl.hidden = !on;
+				const lbl = wlToggleEl.parentElement && wlToggleEl.parentElement.querySelector('.wenpai-switch__label');
+				if (lbl) lbl.textContent = on ? '已开启' : '未开启';
+			});
+		}
+
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			const fd = new FormData(form);
@@ -480,7 +491,11 @@
 		let state = { enabled: false, hosts: [] };
 
 		function renderList() {
-			if (chk) chk.checked = !!state.enabled;
+			if (chk) {
+				chk.checked = !!state.enabled;
+				const lbl = chk.parentElement && chk.parentElement.querySelector('.wenpai-switch__label');
+				if (lbl) lbl.textContent = state.enabled ? '已开启' : '未开启';
+			}
 			if (!listEl) return;
 			listEl.innerHTML = '';
 			if (!state.hosts.length) {
