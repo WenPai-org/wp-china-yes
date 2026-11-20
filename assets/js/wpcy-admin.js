@@ -174,6 +174,8 @@
 				recovery_entered: '进入安全恢复模式',
 				recovery_exited: '退出安全恢复模式',
 				fallback: '镜像异常自动回退官方源',
+				route_down: '上游节点暂不可达（已自动回退）',
+				route_up: '上游节点已恢复正常',
 				binding_started: '发起站点绑定',
 				binding_revoked: '解除站点绑定'
 			};
