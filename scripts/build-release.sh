@@ -15,16 +15,14 @@ if [[ -z "$VERSION" ]]; then
 	exit 1
 fi
 
-# Frontend assets: build in the source tree before rsync so build/ is packed.
-# Skip npm when CI (or a previous step) already produced build/index.js.
-if [[ -f "$ROOT/package.json" ]]; then
-	if [[ ! -f "$ROOT/build/index.js" ]]; then
-		( cd "$ROOT" && npm ci && npm run build )
-	fi
-	if [[ ! -f "$ROOT/build/index.js" ]]; then
-		echo "frontend build did not produce build/index.js" >&2
-		exit 1
-	fi
+# Verify PHP kit and lightweight native admin JS are present.
+if [[ ! -f "$ROOT/lib/wenpai-admin-ui/php/load.php" ]]; then
+	echo "missing vendored kit: lib/wenpai-admin-ui/php/load.php" >&2
+	exit 1
+fi
+if [[ ! -f "$ROOT/assets/js/wpcy-admin.js" ]]; then
+	echo "missing admin script: assets/js/wpcy-admin.js" >&2
+	exit 1
 fi
 
 mkdir -p "$PACKAGE_DIR" "$ARTIFACT_DIR"
@@ -38,6 +36,7 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'tests/' \
   --exclude 'scripts/' \
   --exclude 'docs/' \
+  --exclude 'prototypes/' \
   --exclude 'AGENTS.md' \
   --exclude '.grok-context/' \
   --exclude 'vendor/' \
@@ -54,7 +53,6 @@ rsync -a "$ROOT/" "$PACKAGE_DIR/" \
   --exclude 'phpcs.xml.dist' \
   --exclude 'phpstan.neon.dist' \
   --exclude 'phpunit.xml.dist' \
-  --exclude '.grok-context/' \
   --exclude 'package.json' \
   --exclude 'package-lock.json' \
   --exclude '.gitkeep'
@@ -76,15 +74,19 @@ find "$PACKAGE_DIR" -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/nu
 mv -f "$PACKAGE_ARCHIVE" "$FINAL_ARCHIVE"
 
 CONTENTS="$(unzip -Z1 "$FINAL_ARCHIVE")"
-if ! printf '%s\n' "$CONTENTS" | grep -q '^wp-china-yes/build/index.js$'; then
-	echo "release archive missing wp-china-yes/build/index.js" >&2
+if ! printf '%s\n' "$CONTENTS" | grep -q '^wp-china-yes/lib/wenpai-admin-ui/php/load.php$'; then
+	echo "release archive missing wp-china-yes/lib/wenpai-admin-ui/php/load.php" >&2
 	exit 1
 fi
-if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/\.git(/|$)|/tests/|/docs/|/src/Admin/app/|/packages/)'; then
-	echo "release archive contains excluded paths (.git, tests/, docs/, src/Admin/app/, or packages/)" >&2
+if ! printf '%s\n' "$CONTENTS" | grep -q '^wp-china-yes/assets/js/wpcy-admin.js$'; then
+	echo "release archive missing wp-china-yes/assets/js/wpcy-admin.js" >&2
 	exit 1
 fi
-if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
+if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/\.git(/|$)|/tests/|/docs/|/prototypes/|/src/Admin/app/|/packages/)'; then
+	echo "release archive contains excluded paths (.git, tests/, docs/, prototypes/, src/Admin/app/, or packages/)" >&2
+	exit 1
+fi
+if printf '%s\n' "$CONTENTS" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
 	echo "release archive contains deleted 3.x paths" >&2
 	exit 1
 fi

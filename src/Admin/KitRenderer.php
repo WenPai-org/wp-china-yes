@@ -80,6 +80,10 @@ final class KitRenderer {
 
 	/**
 	 * Build an admin page URL via Wenpai_Admin_Menu::url when available.
+	 *
+	 * @param string $slug    Admin page slug.
+	 * @param bool   $network Whether this is a network admin page.
+	 * @return string
 	 */
 	private static function page_url( string $slug, bool $network = false ): string {
 		if ( ! $network && class_exists( '\Wenpai_Admin_Menu', false ) ) {
@@ -107,13 +111,33 @@ final class KitRenderer {
 
 		$tabs = $network
 			? array(
-				array( 'id' => 'settings', 'label' => __( '设置', 'wp-china-yes' ), 'url' => $admin_url( 'wpcy-connect' ) ),
+				array(
+					'id'    => 'settings',
+					'label' => __( '设置', 'wp-china-yes' ),
+					'url'   => $admin_url( 'wpcy-connect' ),
+				),
 			)
 			: array(
-				array( 'id' => 'overview', 'label' => __( '概览', 'wp-china-yes' ), 'url' => $admin_url( 'wpcy' ) ),
-				array( 'id' => 'settings', 'label' => __( '设置', 'wp-china-yes' ), 'url' => $admin_url( 'wpcy-connect' ) ),
-				array( 'id' => 'services', 'label' => __( '服务', 'wp-china-yes' ), 'url' => $admin_url( 'wpcy-services' ) ),
-				array( 'id' => 'diagnose', 'label' => __( '诊断', 'wp-china-yes' ), 'url' => $admin_url( 'wpcy-diagnose' ) ),
+				array(
+					'id'    => 'overview',
+					'label' => __( '概览', 'wp-china-yes' ),
+					'url'   => $admin_url( 'wpcy' ),
+				),
+				array(
+					'id'    => 'settings',
+					'label' => __( '设置', 'wp-china-yes' ),
+					'url'   => $admin_url( 'wpcy-connect' ),
+				),
+				array(
+					'id'    => 'services',
+					'label' => __( '服务', 'wp-china-yes' ),
+					'url'   => $admin_url( 'wpcy-services' ),
+				),
+				array(
+					'id'    => 'diagnose',
+					'label' => __( '诊断', 'wp-china-yes' ),
+					'url'   => $admin_url( 'wpcy-diagnose' ),
+				),
 			);
 
 		return array(
@@ -165,7 +189,11 @@ final class KitRenderer {
 					'title'   => __( '当前处于安全恢复模式，全部加速代理已暂停', 'wp-china-yes' ),
 					'desc'    => __( '站点已切回 WordPress 原始直连。排查完成后可在诊断页恢复正常运行。', 'wp-china-yes' ),
 					'actions' => array(
-						array( 'label' => __( '前往诊断页', 'wp-china-yes' ), 'href' => $diag_url, 'variant' => 'primary' ),
+						array(
+							'label'   => __( '前往诊断页', 'wp-china-yes' ),
+							'href'    => $diag_url,
+							'variant' => 'primary',
+						),
 					),
 				)
 			);
@@ -177,10 +205,26 @@ final class KitRenderer {
 			array(
 				'attrs' => array( 'data-wpcy-stats' => '1' ),
 				'items' => array(
-					array( 'label' => __( '7 日总加速', 'wp-china-yes' ), 'value' => '—', 'unit' => __( '次', 'wp-china-yes' ) ),
-					array( 'label' => __( '镜像平均延迟', 'wp-china-yes' ), 'value' => '—', 'unit' => 'ms' ),
-					array( 'label' => __( '头像代理', 'wp-china-yes' ), 'value' => '—', 'unit' => __( '次', 'wp-china-yes' ) ),
-					array( 'label' => __( '拦截外部慢请求', 'wp-china-yes' ), 'value' => '—', 'unit' => __( '次', 'wp-china-yes' ) ),
+					array(
+						'label' => __( '7 日总加速', 'wp-china-yes' ),
+						'value' => '—',
+						'unit'  => __( '次', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( '镜像平均延迟', 'wp-china-yes' ),
+						'value' => '—',
+						'unit'  => 'ms',
+					),
+					array(
+						'label' => __( '头像代理', 'wp-china-yes' ),
+						'value' => '—',
+						'unit'  => __( '次', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( '拦截外部慢请求', 'wp-china-yes' ),
+						'value' => '—',
+						'unit'  => __( '次', 'wp-china-yes' ),
+					),
 				),
 			)
 		);
@@ -215,9 +259,21 @@ final class KitRenderer {
 			array(
 				'attrs' => array( 'data-wpcy-latency' => '1' ),
 				'items' => array(
-					array( 'name' => __( 'WP.org 国内镜像', 'wp-china-yes' ), 'value' => '—', 'percent' => 15 ),
-					array( 'name' => __( '公共前端库 CDN', 'wp-china-yes' ), 'value' => '—', 'percent' => 15 ),
-					array( 'name' => __( 'Cravatar 节点', 'wp-china-yes' ), 'value' => '—', 'percent' => 15 ),
+					array(
+						'name'    => __( 'WP.org 国内镜像', 'wp-china-yes' ),
+						'value'   => '—',
+						'percent' => 15,
+					),
+					array(
+						'name'    => __( '公共前端库 CDN', 'wp-china-yes' ),
+						'value'   => '—',
+						'percent' => 15,
+					),
+					array(
+						'name'    => __( 'Cravatar 节点', 'wp-china-yes' ),
+						'value'   => '—',
+						'percent' => 15,
+					),
 				),
 			)
 		);
@@ -284,7 +340,11 @@ final class KitRenderer {
 				'start'   => true,
 				'meta'    => __( '按当前站点场景自动配好，一般无需频繁调整。', 'wp-china-yes' ),
 				'actions' => array(
-					array( 'label' => __( '调整设置', 'wp-china-yes' ), 'href' => $set_url, 'variant' => 'secondary' ),
+					array(
+						'label'   => __( '调整设置', 'wp-china-yes' ),
+						'href'    => $set_url,
+						'variant' => 'secondary',
+					),
 				),
 			)
 		);
@@ -355,10 +415,12 @@ final class KitRenderer {
 			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
-			$is_on   = $profile === $key;
-			$checked = $is_on ? ' checked' : '';
-			$cls     = $is_on ? 'choice is-on' : 'choice';
-			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . $dis_attr . '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
+			$is_on = $profile === $key;
+			$cls   = $is_on ? 'choice is-on' : 'choice';
+			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"';
+			checked( $is_on );
+			disabled( $locked );
+			echo '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
 		}
 		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
@@ -491,7 +553,12 @@ final class KitRenderer {
 			array( __( '云桥统一连接', 'wp-china-yes' ), 'plug', __( '一次绑定本站即可同步文派生态插件的更新通道与扩展能力。', 'wp-china-yes' ), __( '可选扩展', 'wp-china-yes' ), __( '绑定本站', 'wp-china-yes' ), false ),
 		);
 		foreach ( $cards as $card ) {
-			\Wenpai_Admin_UI::card_open( array( 'title' => $card[0], 'icon' => $card[1] ) );
+			\Wenpai_Admin_UI::card_open(
+				array(
+					'title' => $card[0],
+					'icon'  => $card[1],
+				)
+			);
 			echo '<p class="meta">' . esc_html( $card[2] ) . '</p>';
 			\Wenpai_Admin_UI::card_foot(
 				array(
@@ -533,28 +600,59 @@ final class KitRenderer {
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="diagnose">';
 		echo '<div class="wenpai-grid-2">';
-		\Wenpai_Admin_UI::card_open( array( 'title' => __( '服务器到各源', 'wp-china-yes' ), 'icon' => 'server' ) );
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '服务器到各源', 'wp-china-yes' ),
+				'icon'  => 'server',
+			)
+		);
 		\Wenpai_Admin_UI::status_list(
 			array(
 				'attrs' => array( 'data-wpcy-diag-server' => '1' ),
 				'items' => array(
-					array( 'label' => __( 'WP.org 国内镜像', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
-					array( 'label' => __( 'WP.org 官方源', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
-					array( 'label' => __( 'Cravatar API', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
-					array( 'label' => __( '公共前端库源', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
+					array(
+						'label' => __( 'WP.org 国内镜像', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( 'WP.org 官方源', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( 'Cravatar API', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( '公共前端库源', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
 				),
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
 
-		\Wenpai_Admin_UI::card_open( array( 'title' => __( '浏览器到各源', 'wp-china-yes' ), 'icon' => 'eye' ) );
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '浏览器到各源', 'wp-china-yes' ),
+				'icon'  => 'eye',
+			)
+		);
 		\Wenpai_Admin_UI::status_list(
 			array(
 				'attrs' => array( 'data-wpcy-diag-browser' => '1' ),
 				'items' => array(
-					array( 'label' => __( 'Cravatar 头像节点', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
-					array( 'label' => __( '公共前端库 CDN', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
-					array( 'label' => __( 'Windfonts 字体源', 'wp-china-yes' ), 'value' => __( '待检测', 'wp-china-yes' ) ),
+					array(
+						'label' => __( 'Cravatar 头像节点', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( '公共前端库 CDN', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
+					array(
+						'label' => __( 'Windfonts 字体源', 'wp-china-yes' ),
+						'value' => __( '待检测', 'wp-china-yes' ),
+					),
 				),
 			)
 		);
@@ -602,9 +700,9 @@ final class KitRenderer {
 	 * @param string               $version  Plugin version string.
 	 */
 	private static function render_wizard( array $settings, array $links, string $version = '4.0.0' ): void {
-		$profile  = (string) ( $settings['profile'] ?? 'domestic' );
-		$home_url = self::page_url( 'wpcy' );
-		$shell    = self::shell_args( '', $version, $links, false );
+		$profile                  = (string) ( $settings['profile'] ?? 'domestic' );
+		$home_url                 = self::page_url( 'wpcy' );
+		$shell                    = self::shell_args( '', $version, $links, false );
 		$shell['tabs']            = array();
 		$shell['head_right_html'] = \Wenpai_Admin_UI::button_html(
 			array(
@@ -641,17 +739,26 @@ final class KitRenderer {
 			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
-			$is_on   = $profile === $key;
-			$checked = $is_on ? ' checked' : '';
-			$cls     = $is_on ? 'choice is-on' : 'choice';
-			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
+			$is_on = $profile === $key;
+			$cls   = $is_on ? 'choice is-on' : 'choice';
+			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"';
+			checked( $is_on );
+			echo '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
 		}
 		echo '</div>';
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'actions' => array(
-					array( 'label' => __( '跳过', 'wp-china-yes' ), 'href' => $home_url, 'variant' => 'ghost' ),
-					array( 'label' => __( '应用并进入概览', 'wp-china-yes' ), 'type' => 'submit', 'variant' => 'primary' ),
+					array(
+						'label'   => __( '跳过', 'wp-china-yes' ),
+						'href'    => $home_url,
+						'variant' => 'ghost',
+					),
+					array(
+						'label'   => __( '应用并进入概览', 'wp-china-yes' ),
+						'type'    => 'submit',
+						'variant' => 'primary',
+					),
 				),
 			)
 		);
@@ -663,6 +770,9 @@ final class KitRenderer {
 
 	/**
 	 * Localized label for site profile.
+	 *
+	 * @param string $profile Profile slug.
+	 * @return string
 	 */
 	private static function profile_label( string $profile ): string {
 		$map = array(
@@ -675,6 +785,11 @@ final class KitRenderer {
 
 	/**
 	 * Toggle switch HTML using kit switch markup.
+	 *
+	 * @param string $name     Input name.
+	 * @param bool   $checked  Whether checked.
+	 * @param bool   $disabled Whether disabled.
+	 * @return string
 	 */
 	private static function toggle_control( string $name, bool $checked, bool $disabled ): string {
 		$dis = $disabled ? ' disabled' : '';
@@ -690,7 +805,13 @@ final class KitRenderer {
 	/**
 	 * Two-column select field row (.field).
 	 *
-	 * @param array<string, string> $options Value => label map.
+	 * @param string                $name     Input name.
+	 * @param string                $label    Field label.
+	 * @param string                $desc     Field description.
+	 * @param array<string, string> $options  Value => label map.
+	 * @param string                $current  Current value.
+	 * @param bool                  $disabled Whether disabled.
+	 * @return string
 	 */
 	private static function field_row_select( string $name, string $label, string $desc, array $options, string $current, bool $disabled ): string {
 		$id  = 'wpcy-f-' . $name;
@@ -708,6 +829,13 @@ final class KitRenderer {
 
 	/**
 	 * Two-column checkbox field row (.field).
+	 *
+	 * @param string $name     Input name.
+	 * @param string $label    Field label.
+	 * @param string $desc     Checkbox label text.
+	 * @param bool   $checked  Whether checked.
+	 * @param bool   $disabled Whether disabled.
+	 * @return string
 	 */
 	private static function field_row_checkbox( string $name, string $label, string $desc, bool $checked, bool $disabled ): string {
 		$id  = 'wpcy-f-' . $name;
