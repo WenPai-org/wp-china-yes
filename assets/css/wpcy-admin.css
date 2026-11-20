@@ -61,8 +61,17 @@
 
 .wpcy-core-card__top {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 12px;
+}
+
+.wpcy-core-card__top .wenpai-switch {
+	flex: none;
+	white-space: nowrap;
+}
+
+.wpcy-core-grid--3 .wpcy-core-card__top .wenpai-switch__label {
+	display: none;
 }
 
 .wpcy-core-card__icon {
