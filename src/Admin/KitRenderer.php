@@ -544,6 +544,35 @@ final class KitRenderer {
 			. ' · ' . ( 'off' === $scope ? __( '前端加速关', 'wp-china-yes' ) : __( '前端加速开', 'wp-china-yes' ) )
 			. ' · ' . ( $heartbeat ? __( '已优化心跳', 'wp-china-yes' ) : __( '默认心跳', 'wp-china-yes' ) );
 
+		$blocklist_html = '<div data-wpcy-blocklist="1">'
+			. '<div class="wpcy-inline-bar" style="margin-bottom:10px">'
+			. '<label class="wenpai-switch">'
+			. '<input type="checkbox" data-wpcy-bl-enabled="1"' . $dis_attr . '>'
+			. '<span class="track" aria-hidden="true"></span>'
+			. '<span class="wenpai-switch__label">' . esc_html__( '启用自定义外链拦截表（最多 20 条，受保护核心域名不可拦截）', 'wp-china-yes' ) . '</span>'
+			. '</label>'
+			. '</div>'
+			. '<div class="wpcy-inline-bar">'
+			. '<input type="text" data-wpcy-bl-host="1" placeholder="' . esc_attr__( '输入域名，例如 telemetry.example.com', 'wp-china-yes' ) . '"' . $dis_attr . '>'
+			. '<select data-wpcy-bl-match="1"' . $dis_attr . '>'
+			. '<option value="exact">' . esc_html__( '精确匹配', 'wp-china-yes' ) . '</option>'
+			. '<option value="suffix">' . esc_html__( '含子域名', 'wp-china-yes' ) . '</option>'
+			. '</select>'
+			. '<input type="text" data-wpcy-bl-note="1" placeholder="' . esc_attr__( '备注（可选）', 'wp-china-yes' ) . '"' . $dis_attr . '>'
+			. \Wenpai_Admin_UI::button_html(
+				array(
+					'label'    => __( '添加域名', 'wp-china-yes' ),
+					'type'     => 'button',
+					'variant'  => 'secondary',
+					'size'     => 'sm',
+					'disabled' => $locked,
+					'attrs'    => array( 'data-wpcy-bl-add' => '1' ),
+				)
+			)
+			. '</div>'
+			. '<ul class="wpcy-host-list" data-wpcy-bl-list="1"></ul>'
+			. '</div>';
+
 		\Wenpai_Admin_UI::fold_list(
 			array(
 				'items' => array(
@@ -552,6 +581,12 @@ final class KitRenderer {
 						'title'     => __( '高级线路与后台体验', 'wp-china-yes' ),
 						'desc'      => $summary,
 						'body_html' => $adv_html,
+					),
+					array(
+						'icon'      => 'lock',
+						'title'     => __( '自定义外链拦截表', 'wp-china-yes' ),
+						'desc'      => __( '按域名屏蔽拖慢后台的第三方出站请求，与核心白名单自动隔离。', 'wp-china-yes' ),
+						'body_html' => $blocklist_html,
 					),
 				),
 			)
@@ -1429,6 +1464,30 @@ final class KitRenderer {
 		);
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '出站 URL 路由检测', 'wp-china-yes' ),
+				'sub'   => __( '输入任意外部网址，实时查看文派叶子对其的放行、镜像改写或拦截策略。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		echo '<div data-wpcy-url-tester="1">';
+		echo '<div class="wpcy-inline-bar">';
+		echo '<input type="url" data-wpcy-url-input="1" placeholder="https://api.wordpress.org/core/version-check/1.7/" aria-label="' . esc_attr__( '待检测网址', 'wp-china-yes' ) . '">';
+		$test_btn = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '检测策略', 'wp-china-yes' ),
+				'type'    => 'button',
+				'variant' => 'secondary',
+				'attrs'   => array( 'data-wpcy-url-submit' => '1' ),
+			)
+		);
+		echo $test_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes attributes and label.
+		echo '</div>';
+		echo '<div class="wpcy-test-result" data-wpcy-url-output="1" hidden></div>';
+		echo '</div>';
+		\Wenpai_Admin_UI::card_close();
 
 		\Wenpai_Admin_UI::card_open(
 			array(

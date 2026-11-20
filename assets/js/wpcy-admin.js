@@ -363,8 +363,30 @@
 		});
 
 		document.querySelectorAll('[data-wpcy-action="bind"]').forEach(function (el) {
+			api('/binding').then(function (snap) {
+				if (snap && snap.state === 'bound') {
+					el.textContent = '已绑定 · 解绑';
+					el.classList.remove('btn-primary');
+					el.classList.add('btn-secondary');
+					el.dataset.wpcyBound = '1';
+				}
+			}).catch(function () {});
+
 			el.addEventListener('click', function () {
 				el.classList.add('is-busy');
+				if (el.dataset.wpcyBound === '1') {
+					api('/binding', { method: 'DELETE' })
+						.then(function () {
+							el.dataset.wpcyBound = '0';
+							el.textContent = '绑定本站';
+							el.classList.remove('btn-secondary');
+							el.classList.add('btn-primary');
+							notify('ok', '已解除本站绑定。');
+						})
+						.catch(function (err) { notify('bad', err.message); })
+						.finally(function () { el.classList.remove('is-busy'); });
+					return;
+				}
 				api('/binding/start', { method: 'POST' })
 					.then(function (data) {
 						if (data && data.authorize_url) {
@@ -377,6 +399,182 @@
 					.finally(function () { el.classList.remove('is-busy'); });
 			});
 		});
+	}
+
+	// 3b. Site Blocklist (GET/PUT /site-blocklist).
+	function initSiteBlocklist() {
+		const root = document.querySelector('[data-wpcy-blocklist]');
+		if (!root) return;
+		const chk = root.querySelector('[data-wpcy-bl-enabled]');
+		const hostInput = root.querySelector('[data-wpcy-bl-host]');
+		const matchSelect = root.querySelector('[data-wpcy-bl-match]');
+		const noteInput = root.querySelector('[data-wpcy-bl-note]');
+		const addBtn = root.querySelector('[data-wpcy-bl-add]');
+		const listEl = root.querySelector('[data-wpcy-bl-list]');
+
+		let state = { enabled: false, hosts: [] };
+
+		function renderList() {
+			if (chk) chk.checked = !!state.enabled;
+			if (!listEl) return;
+			listEl.innerHTML = '';
+			if (!state.hosts.length) {
+				const li = document.createElement('li');
+				li.className = 'wpcy-host-item';
+				li.innerHTML = '<span class="wpcy-host-item__note">暂无自定义拦截域名。</span>';
+				listEl.appendChild(li);
+				return;
+			}
+			state.hosts.forEach(function (item, idx) {
+				const li = document.createElement('li');
+				li.className = 'wpcy-host-item';
+				const main = document.createElement('div');
+				main.className = 'wpcy-host-item__main';
+				const code = document.createElement('code');
+				code.textContent = item.host;
+				const badge = document.createElement('span');
+				badge.className = 'pill mute';
+				badge.textContent = item.match === 'suffix' ? '含子域名' : '精确匹配';
+				main.appendChild(code);
+				main.appendChild(badge);
+				if (item.note) {
+					const note = document.createElement('span');
+					note.className = 'wpcy-host-item__note';
+					note.textContent = item.note;
+					main.appendChild(note);
+				}
+				const rm = document.createElement('button');
+				rm.type = 'button';
+				rm.className = 'btn btn-ghost btn-sm';
+				rm.textContent = '移除';
+				rm.addEventListener('click', function () {
+					const next = {
+						enabled: state.enabled,
+						hosts: state.hosts.filter(function (_, i) { return i !== idx; })
+					};
+					saveBlocklist(next, '已移除拦截域名。');
+				});
+				li.appendChild(main);
+				li.appendChild(rm);
+				listEl.appendChild(li);
+			});
+		}
+
+		function saveBlocklist(next, msg) {
+			api('/site-blocklist', { method: 'PUT', body: next })
+				.then(function (saved) {
+					state = {
+						enabled: !!(saved && saved.enabled),
+						hosts: Array.isArray(saved && saved.hosts) ? saved.hosts : []
+					};
+					renderList();
+					if (msg) notify('ok', msg);
+				})
+				.catch(function (err) {
+					renderList();
+					notify('bad', err.message || '保存外链拦截表失败');
+				});
+		}
+
+		api('/site-blocklist').then(function (data) {
+			state = {
+				enabled: !!(data && data.enabled),
+				hosts: Array.isArray(data && data.hosts) ? data.hosts : []
+			};
+			renderList();
+		}).catch(function () {});
+
+		if (chk) {
+			chk.addEventListener('change', function () {
+				saveBlocklist({ enabled: chk.checked, hosts: state.hosts }, chk.checked ? '已启用外链拦截表。' : '已关闭外链拦截表。');
+			});
+		}
+
+		if (addBtn) {
+			addBtn.addEventListener('click', function () {
+				const host = hostInput ? hostInput.value.trim().toLowerCase() : '';
+				if (!host) {
+					notify('warn', '请先输入要拦截的域名。');
+					return;
+				}
+				const entry = {
+					host: host,
+					match: matchSelect ? matchSelect.value : 'exact',
+					note: noteInput ? noteInput.value.trim() : ''
+				};
+				const next = {
+					enabled: state.enabled || true,
+					hosts: state.hosts.concat([entry])
+				};
+				saveBlocklist(next, '已添加拦截域名：' + host);
+				if (hostInput) hostInput.value = '';
+				if (noteInput) noteInput.value = '';
+			});
+		}
+	}
+
+	// 3c. Outbound URL routing tester (POST /residency/test).
+	function initUrlTester() {
+		const root = document.querySelector('[data-wpcy-url-tester]');
+		if (!root) return;
+		const input = root.querySelector('[data-wpcy-url-input]');
+		const btn = root.querySelector('[data-wpcy-url-submit]');
+		const out = root.querySelector('[data-wpcy-url-output]');
+
+		const layerLabels = {
+			l0: 'L0 核心白名单（永久放行）',
+			l1: 'L1 数据驻留 / 镜像规则',
+			l2: 'L2 自定义外链拦截表',
+			noise_block: '后台减噪拦截规则',
+			none: '未命中特殊规则'
+		};
+		const actionMap = {
+			allow: { text: '直连放行', cls: 'mute' },
+			reroute: { text: '走国内镜像改写', cls: 'ok' },
+			record: { text: '放行并记录', cls: 'warn' },
+			block: { text: '拦截阻止', cls: 'bad' },
+			ignore: { text: '忽略放行', cls: 'mute' }
+		};
+
+		function runTest() {
+			const url = input ? input.value.trim() : '';
+			if (!url) {
+				notify('warn', '请输入完整的 http:// 或 https:// 网址。');
+				return;
+			}
+			if (btn) btn.classList.add('is-busy');
+			api('/residency/test', { method: 'POST', body: { url: url } })
+				.then(function (res) {
+					if (!out) return;
+					const layer = layerLabels[res && res.layer] || String(res && res.layer || 'none');
+					const act = actionMap[res && res.action] || { text: String(res && res.action || 'allow'), cls: 'mute' };
+					out.hidden = false;
+					out.innerHTML = '';
+					const left = document.createElement('span');
+					left.textContent = (res && res.host ? res.host + ' · ' : '') + layer;
+					const pill = document.createElement('span');
+					pill.className = 'pill ' + act.cls;
+					pill.innerHTML = '<span class="dot" aria-hidden="true"></span>' + act.text;
+					out.appendChild(left);
+					out.appendChild(pill);
+				})
+				.catch(function (err) {
+					notify('bad', err.message || 'URL 检测失败，请确认输入了完整网址。');
+				})
+				.finally(function () {
+					if (btn) btn.classList.remove('is-busy');
+				});
+		}
+
+		if (btn) btn.addEventListener('click', runTest);
+		if (input) {
+			input.addEventListener('keydown', function (e) {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					runTest();
+				}
+			});
+		}
 	}
 
 	// 4. Wizard: save chosen profile with defaults and navigate to overview.
@@ -406,6 +604,8 @@
 		initOverview();
 		initSettings();
 		initDiagnoseAndServices();
+		initSiteBlocklist();
+		initUrlTester();
 		initWizard();
 	});
 })();
