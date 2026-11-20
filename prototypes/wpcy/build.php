@@ -428,10 +428,10 @@ Wenpai_Admin_UI::card_open( array( 'title' => '服务器到各源', 'icon' => 's
 Wenpai_Admin_UI::status_list(
 	array(
 		'items' => array(
-			array( 'label' => 'WP.org 国内镜像', 'value' => '38ms · HTTP 200', 'state' => 'ok' ),
-			array( 'label' => 'WP.org 官方源', 'value' => '612ms · HTTP 200', 'state' => 'warn' ),
-			array( 'label' => 'Cravatar API', 'value' => '29ms · HTTP 200', 'state' => 'ok' ),
-			array( 'label' => '文派云桥更新源', 'value' => '45ms · HTTP 200', 'state' => 'ok' ),
+			array( 'label' => 'WP.org 国内镜像', 'value' => '38ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
+			array( 'label' => 'WP.org 官方源', 'value' => '612ms · HTTP 200', 'state' => 'warn', 'state_label' => '较慢' ),
+			array( 'label' => 'Cravatar API', 'value' => '29ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
+			array( 'label' => '文派云桥更新源', 'value' => '45ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
 		),
 	)
 );
@@ -441,10 +441,10 @@ Wenpai_Admin_UI::card_open( array( 'title' => '浏览器到各源', 'icon' => 'e
 Wenpai_Admin_UI::status_list(
 	array(
 		'items' => array(
-			array( 'label' => 'Cravatar 头像节点', 'value' => '24ms · 正常', 'state' => 'ok' ),
-			array( 'label' => '公共前端库 CDN', 'value' => '31ms · 正常', 'state' => 'ok' ),
-			array( 'label' => 'Windfonts 字体源', 'value' => '42ms · 正常', 'state' => 'ok' ),
-			array( 'label' => 'Gravatar 原站', 'value' => '超时 (>3s)', 'state' => 'bad' ),
+			array( 'label' => 'Cravatar 头像节点', 'value' => '24ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
+			array( 'label' => '公共前端库 CDN', 'value' => '31ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
+			array( 'label' => 'Windfonts 字体源', 'value' => '42ms · HTTP 200', 'state' => 'ok', 'state_label' => '正常' ),
+			array( 'label' => 'Gravatar 原站', 'value' => '超时 (>3s)', 'state' => 'bad', 'state_label' => '不可达' ),
 		),
 	)
 );
@@ -453,16 +453,20 @@ echo '</div>';
 
 $fw->render_tools( array( 'export' => true, 'import' => true, 'reset' => true ) );
 
-Wenpai_Admin_UI::card_open( array( 'title' => '紧急恢复', 'desc' => '遇到资源加载异常时，一键暂停全部代理规则并保留当前设置。', 'tile' => false ) );
-Wenpai_Admin_UI::task(
+Wenpai_Admin_UI::card_open( array( 'title' => '紧急恢复', 'sub' => '遇到资源加载异常时，一键暂停全部代理规则并保留当前设置。', 'tile' => false ) );
+Wenpai_Admin_UI::row(
 	array(
-		'title'       => '暂停全部加速规则',
-		'desc'        => '立即恢复 WordPress 原始直连，可随时在设置页重新开启。',
-		'action_html' => Wenpai_Admin_UI::button_html(
+		'icon'         => 'tools',
+		'state'        => 'bad',
+		'title'        => '暂停全部加速规则',
+		'desc'         => '立即恢复 WordPress 原始直连，可随时在设置页重新开启。',
+		'control_html' => Wenpai_Admin_UI::button_html(
 			array(
 				'label'   => '进入恢复模式',
 				'variant' => 'danger',
-				'attrs'   => Wenpai_Admin_UI::confirm_attrs( '将立即暂停所有镜像与资源代理并切回直连，确定继续？' ),
+				'attrs'   => array(
+					'data-wenpai-confirm' => '将立即暂停所有镜像与资源代理并切回直连，确定继续？',
+				),
 			)
 		),
 	)
@@ -474,26 +478,30 @@ $pages['diagnose.html'] = wpcy_v4_wrap( '诊断 — 文派叶子 4.0', ob_get_cl
 
 // 6. 向导
 ob_start();
+$wsh                    = wpcy_v4_shell( '' );
+$wsh['tabs']            = array();
+$wsh['head_right_html'] = Wenpai_Admin_UI::button_html(
+	array(
+		'label'   => '退出向导',
+		'href'    => 'overview.html',
+		'variant' => 'ghost',
+	)
+);
+Wenpai_Admin_Shell::open( $wsh );
 Wenpai_Admin_UI::wizard_open(
 	array(
-		'name'      => '文派叶子',
-		'mark_html' => wpcy_v4_mark(),
-		'title'     => '首次配置',
-		'desc'      => '选定站点场景后，自动套用最合适的默认加速方案，30 秒完成。',
-		'exit_url'  => 'overview.html',
+		'steps'   => array( '选站点场景', '检测连通性', '完成启用' ),
+		'current' => 0,
 	)
 );
-Wenpai_Admin_UI::steps(
+Wenpai_Admin_UI::card_open(
 	array(
-		'current' => 1,
-		'items'   => array(
-			array( 'title' => '选站点场景', 'desc' => '国内 / 跨境 / 混合' ),
-			array( 'title' => '检测连通性', 'desc' => '验证镜像与头像源' ),
-			array( 'title' => '完成启用', 'desc' => '进入概览' ),
-		),
+		'title'   => '首次配置',
+		'sub'     => '选定站点场景后，自动套用最合适的默认加速方案，30 秒完成。',
+		'heading' => 1,
+		'tile'    => false,
 	)
 );
-Wenpai_Admin_UI::card_open();
 $fw->render_field( 'profile' );
 Wenpai_Admin_UI::card_foot(
 	array(
@@ -505,6 +513,7 @@ Wenpai_Admin_UI::card_foot(
 );
 Wenpai_Admin_UI::card_close();
 Wenpai_Admin_UI::wizard_close();
+Wenpai_Admin_Shell::close( $wsh );
 $pages['wizard.html'] = wpcy_v4_wrap( '首次配置 — 文派叶子 4.0', ob_get_clean() );
 
 $stale = 0;

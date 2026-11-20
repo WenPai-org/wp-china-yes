@@ -273,7 +273,7 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
 .choice .t .hint { margin-inline-start: var(--wenpai-space-1); color: var(--wenpai-accent); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); white-space: nowrap; }
 .choice.is-locked { opacity: .78; }
 .choice.is-locked:hover { opacity: 1; border-color: var(--wenpai-accent); }
-.seg { display: inline-flex; border: 1px solid var(--wenpai-line-strong); border-radius: var(--wenpai-radius-sm); overflow: hidden; }
+.seg { display: inline-flex; inline-size: fit-content; max-inline-size: 100%; border: 1px solid var(--wenpai-line-strong); border-radius: var(--wenpai-radius-sm); overflow: hidden; }
 .seg span, .seg a { padding: 0 var(--wenpai-space-3); height: 32px; display: inline-flex; align-items: center; color: var(--wenpai-ink-2); border-inline-start: 1px solid var(--wenpai-line-strong); font-size: var(--wenpai-text-body); }
 .seg span:first-child, .seg a:first-child { border-inline-start: 0; }
 .seg a:hover { color: var(--wenpai-ink); background: var(--wenpai-line-soft); }

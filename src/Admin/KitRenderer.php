@@ -43,7 +43,7 @@ final class KitRenderer {
 		$network  = ! empty( $caps['network_admin'] );
 
 		if ( 'wpcy-onboarding' === $page && ! $locked && ! $network ) {
-			self::render_wizard( $settings, $links );
+			self::render_wizard( $settings, $links, $version );
 			return;
 		}
 
@@ -562,17 +562,19 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '紧急恢复', 'wp-china-yes' ),
-				'desc'  => __( '遇到资源加载异常时，可一键暂停全部代理规则并保留当前设置。', 'wp-china-yes' ),
+				'sub'   => __( '遇到资源加载异常时，可一键暂停全部代理规则并保留当前设置。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
-		\Wenpai_Admin_UI::task(
+		\Wenpai_Admin_UI::row(
 			array(
-				'title'       => $recovery ? __( '退出恢复模式', 'wp-china-yes' ) : __( '暂停全部加速规则', 'wp-china-yes' ),
-				'desc'        => $recovery
+				'icon'         => 'tools',
+				'state'        => $recovery ? 'ok' : 'bad',
+				'title'        => $recovery ? __( '退出恢复模式', 'wp-china-yes' ) : __( '暂停全部加速规则', 'wp-china-yes' ),
+				'desc'         => $recovery
 					? __( '重新启用已保存的镜像与前端资源加速规则。', 'wp-china-yes' )
 					: __( '立即切回 WordPress 原始直连，可随时在此恢复。', 'wp-china-yes' ),
-				'action_html' => \Wenpai_Admin_UI::button_html(
+				'control_html' => \Wenpai_Admin_UI::button_html(
 					array(
 						'label'   => $recovery ? __( '恢复正常运行', 'wp-china-yes' ) : __( '进入恢复模式', 'wp-china-yes' ),
 						'variant' => $recovery ? 'secondary' : 'danger',
@@ -595,33 +597,41 @@ final class KitRenderer {
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
 	 * @param array<string, mixed> $links    Links map.
+	 * @param string               $version  Plugin version string.
 	 */
-	private static function render_wizard( array $settings, array $links ): void {
-		unset( $links );
+	private static function render_wizard( array $settings, array $links, string $version = '4.0.0' ): void {
 		$profile  = (string) ( $settings['profile'] ?? 'domestic' );
 		$home_url = self::page_url( 'wpcy' );
-
-		\Wenpai_Admin_UI::wizard_open(
+		$shell    = self::shell_args( '', $version, $links, false );
+		$shell['tabs']            = array();
+		$shell['head_right_html'] = \Wenpai_Admin_UI::button_html(
 			array(
-				'name'      => __( '文派叶子', 'wp-china-yes' ),
-				'mark_html' => self::leaf_mark(),
-				'title'     => __( '首次配置', 'wp-china-yes' ),
-				'desc'      => __( '选定站点场景后，自动套用最合适的默认加速方案，30 秒完成。', 'wp-china-yes' ),
-				'exit_url'  => $home_url,
+				'label'   => __( '退出向导', 'wp-china-yes' ),
+				'href'    => $home_url,
+				'variant' => 'ghost',
 			)
 		);
-		\Wenpai_Admin_UI::steps(
+
+		\Wenpai_Admin_Shell::open( $shell );
+		\Wenpai_Admin_UI::wizard_open(
 			array(
-				'current' => 1,
-				'items'   => array(
-					array( 'title' => __( '选站点场景', 'wp-china-yes' ), 'desc' => __( '国内 / 跨境 / 混合', 'wp-china-yes' ) ),
-					array( 'title' => __( '应用默认方案', 'wp-china-yes' ), 'desc' => __( '自动匹配镜像与头像', 'wp-china-yes' ) ),
-					array( 'title' => __( '进入概览', 'wp-china-yes' ), 'desc' => __( '随时可在设置调整', 'wp-china-yes' ) ),
+				'steps'   => array(
+					__( '选站点场景', 'wp-china-yes' ),
+					__( '应用默认方案', 'wp-china-yes' ),
+					__( '进入概览', 'wp-china-yes' ),
 				),
+				'current' => 0,
 			)
 		);
 		echo '<form id="wpcy-wizard-form" data-wpcy-screen="wizard" data-wpcy-home="' . esc_url( $home_url ) . '">';
-		\Wenpai_Admin_UI::card_open();
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title'   => __( '首次配置', 'wp-china-yes' ),
+				'sub'     => __( '选定站点场景后，自动套用最合适的默认加速方案，30 秒完成。', 'wp-china-yes' ),
+				'heading' => 1,
+				'tile'    => false,
+			)
+		);
 		echo '<div class="choice-cards">';
 		$scenes = array(
 			'domestic'    => array( __( '国内站', 'wp-china-yes' ), __( '站点和访客都在中国大陆，默认走国内镜像与 Cravatar 国内节点。', 'wp-china-yes' ) ),
@@ -629,8 +639,10 @@ final class KitRenderer {
 			'mixed'       => array( __( '混合站', 'wp-china-yes' ), __( '国内外都有访客，按后台与前台分别选择线路。', 'wp-china-yes' ) ),
 		);
 		foreach ( $scenes as $key => $info ) {
-			$checked = $profile === $key ? ' checked' : '';
-			echo '<label class="choice"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . '><span><strong>' . esc_html( $info[0] ) . '</strong><small>' . esc_html( $info[1] ) . '</small></span></label>';
+			$is_on   = $profile === $key;
+			$checked = $is_on ? ' checked' : '';
+			$cls     = $is_on ? 'choice is-on' : 'choice';
+			echo '<label class="' . esc_attr( $cls ) . '"><input type="radio" name="profile" value="' . esc_attr( $key ) . '"' . $checked . '><span><span class="t">' . esc_html( $info[0] ) . '</span><span class="d">' . esc_html( $info[1] ) . '</span></span></label>';
 		}
 		echo '</div>';
 		\Wenpai_Admin_UI::card_foot(
@@ -644,6 +656,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_close();
 		echo '</form>';
 		\Wenpai_Admin_UI::wizard_close();
+		\Wenpai_Admin_Shell::close( $shell );
 	}
 
 	/**
