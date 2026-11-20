@@ -746,7 +746,7 @@ final class KitRenderer {
 					array(
 						'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
 						'href'    => $mod['url'],
-						'variant' => 'secondary',
+						'variant' => 'ghost',
 						'size'    => 'sm',
 					)
 				);
@@ -766,6 +766,7 @@ final class KitRenderer {
 				)
 			);
 			foreach ( $inactive_mods as $mod ) {
+				$is_gated = 'whitelabel' === $mod['id'] && ! $wl['entitled'];
 				\Wenpai_Admin_UI::row(
 					array(
 						'icon'         => $mod['icon'],
@@ -779,7 +780,7 @@ final class KitRenderer {
 							array(
 								'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
 								'href'    => $mod['url'],
-								'variant' => 'secondary',
+								'variant' => $is_gated ? 'secondary' : 'ghost',
 								'size'    => 'sm',
 							)
 						),
@@ -1333,7 +1334,7 @@ final class KitRenderer {
 				array(
 					'label'   => $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' ),
 					'href'    => $detail_url,
-					'variant' => 'secondary',
+					'variant' => 'ghost',
 					'size'    => 'sm',
 				)
 			);
@@ -1618,6 +1619,7 @@ final class KitRenderer {
 		}
 
 		$row_desc   = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
+		$is_action  = $plugin_state['active'] || $plugin_state['installed'];
 		$btn_label  = $plugin_state['active']
 			? __( '管理', 'wp-china-yes' )
 			: ( $plugin_state['installed'] ? __( '启用', 'wp-china-yes' ) : __( '查看', 'wp-china-yes' ) );
@@ -1625,7 +1627,7 @@ final class KitRenderer {
 			array(
 				'label'   => $btn_label,
 				'href'    => $detail_url,
-				'variant' => 'secondary',
+				'variant' => $is_action ? 'secondary' : 'ghost',
 				'size'    => 'sm',
 			)
 		);
