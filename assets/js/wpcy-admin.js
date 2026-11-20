@@ -263,18 +263,19 @@
 	// 2. Settings: instant toggles + unified form save.
 	function initSettings() {
 		const form = document.getElementById('wpcy-settings-form');
-		if (!form) return;
-		const isNetwork = form.getAttribute('data-wpcy-network') === '1';
+		const isNetwork = !!(form && form.getAttribute('data-wpcy-network') === '1');
 
-		form.querySelectorAll('input[name="profile"]').forEach(function (radio) {
-			radio.addEventListener('change', function () {
-				form.querySelectorAll('.choice').forEach(function (lbl) {
-					lbl.classList.toggle('is-on', !!lbl.querySelector('input:checked'));
+		if (form) {
+			form.querySelectorAll('input[name="profile"]').forEach(function (radio) {
+				radio.addEventListener('change', function () {
+					form.querySelectorAll('.choice').forEach(function (lbl) {
+						lbl.classList.toggle('is-on', !!lbl.querySelector('input:checked'));
+					});
 				});
 			});
-		});
+		}
 
-		form.querySelectorAll('input[data-wpcy-instant="1"]').forEach(function (input) {
+		document.querySelectorAll('input[data-wpcy-instant="1"]').forEach(function (input) {
 			input.addEventListener('change', function () {
 				const checked = input.checked;
 				const labelEl = input.parentElement && input.parentElement.querySelector('.wenpai-switch__label');
@@ -282,9 +283,16 @@
 
 				const patch = {};
 				if (input.name === 'public_assets_enabled') {
-					patch.public_assets = { scope: checked ? 'both' : 'off' };
+					patch.connectivity = { public_assets: { scope: checked ? 'both' : 'off' } };
 				} else if (input.name === 'avatar_enabled') {
 					patch.connectivity = { avatar: checked ? 'cravatar_cn' : 'off' };
+				} else if (input.name === 'icon_photos_enabled') {
+					patch.connectivity = { icon_photos: { enabled: checked ? 'on' : 'off' } };
+				} else if (input.name === 'admin_locale_follow') {
+					patch.connectivity = { admin_locale_follow: checked };
+					const card = input.closest('[data-wpcy-core-card]');
+					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
+					if (iconEl) iconEl.classList.toggle('is-ok', checked);
 				}
 				api(settingsEndpoint(isNetwork), { method: 'PUT', body: patch })
 					.then(function () { notify('ok', '设置已保存。'); })
@@ -296,8 +304,8 @@
 			});
 		});
 
-		const wlToggleEl = form.querySelector('[data-wpcy-wl-toggle]');
-		const wlFieldsEl = form.querySelector('[data-wpcy-wl-fields]');
+		const wlToggleEl = form ? form.querySelector('[data-wpcy-wl-toggle]') : null;
+		const wlFieldsEl = form ? form.querySelector('[data-wpcy-wl-fields]') : null;
 		if (wlToggleEl && wlFieldsEl) {
 			wlToggleEl.addEventListener('change', function () {
 				const on = wlToggleEl.checked;
@@ -307,23 +315,33 @@
 			});
 		}
 
+		if (!form) return;
+
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			const fd = new FormData(form);
+			const connPatch = {
+				wordpress_org: String(fd.get('wporg_mirror') || 'auto'),
+				public_assets: { scope: String(fd.get('public_assets_scope') || 'both') },
+				avatar: String(fd.get('avatar_source') || 'cravatar_cn'),
+				heartbeat: fd.get('heartbeat') ? 'on' : 'off',
+				dashboard_feeds: fd.get('dashboard_feeds') ? 'block' : 'allow',
+			};
+			if (form.querySelector('select[name="icon_photos_mode"]')) {
+				connPatch.icon_photos = { enabled: String(fd.get('icon_photos_mode') || 'off') };
+			}
 			const payload = {
 				profile: String(fd.get('profile') || 'domestic'),
 				apply_defaults: false,
-				public_assets: { scope: String(fd.get('public_assets_scope') || 'both') },
-				connectivity: {
-					wporg_mirror: String(fd.get('wporg_mirror') || 'auto'),
-					avatar: String(fd.get('avatar_source') || 'cravatar_cn'),
-					heartbeat: fd.get('heartbeat') ? 'on' : 'off',
-					dashboard_feeds: fd.get('dashboard_feeds') ? 'block' : 'allow',
-				},
+				connectivity: connPatch,
 			};
+			if (form.querySelector('input[name="noise_form"]')) {
+				payload.modules = { notice_control: !!fd.get('notice_control') };
+				payload.admin = { hide_promo: !!fd.get('hide_promo') };
+			}
 			const wlToggle = form.querySelector('input[name="wl_enabled"]');
 			if (wlToggle && !wlToggle.disabled) {
-				payload.admin = {
+				payload.admin = Object.assign({}, payload.admin || {}, {
 					whitelabel: {
 						enabled: wlToggle.checked,
 						brand_name: String(fd.get('wl_brand_name') || '').trim(),
@@ -334,7 +352,7 @@
 						hide_logo: !!fd.get('wl_hide_logo'),
 						hide_links: !!fd.get('wl_hide_links'),
 					},
-				};
+				});
 			}
 			api(settingsEndpoint(isNetwork), { method: 'PUT', body: payload })
 				.then(function () {
@@ -514,10 +532,10 @@
 				let patch = {};
 				let nextMetric = '';
 				if (id === 'wporg') {
-					patch = { connectivity: { wporg_mirror: on ? 'auto' : 'off' } };
+					patch = { connectivity: { wordpress_org: on ? 'auto' : 'off' } };
 					nextMetric = on ? 'WenPai.org 镜像 · 异常自动回退' : '直连 WordPress.org 官方源';
 				} else if (id === 'admincdn') {
-					patch = { public_assets: { scope: on ? 'both' : 'off' } };
+					patch = { connectivity: { public_assets: { scope: on ? 'both' : 'off' } } };
 					nextMetric = on ? '前台与后台全量加速' : '当前未开启';
 				} else if (id === 'cravatar') {
 					patch = { connectivity: { avatar: on ? 'cravatar_cn' : 'off' } };
