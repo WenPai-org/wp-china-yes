@@ -17,6 +17,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+          ini-values: error_reporting=E_ALL & ~E_DEPRECATED
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
       - run: composer test:unit
@@ -38,20 +39,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run tokens:check
-      - run: npm run lint:js
-      - run: npm run format:check
-      - run: npm run test:unit
-      - run: npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: build/
+      - run: node --check assets/js/wpcy-admin.js
+      - run: php prototypes/wpcy/build.php --check
+      - name: Verify vendored kit manifest
+        run: |
+          set -euo pipefail
+          test -f lib/wenpai-admin-ui/php/load.php
+          test -f lib/wenpai-admin-ui/VENDOR_MANIFEST.sha256
+          (cd lib/wenpai-admin-ui && grep -v '^#' VENDOR_MANIFEST.sha256 | sha256sum -c -)
 
   package:
     runs-on: ubuntu-latest
@@ -62,27 +64,26 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
       - run: sudo apt-get update && sudo apt-get install -y zip rsync
-      - run: npm ci && npm run build
       - run: bash scripts/build-release.sh
       - name: Verify release contents
         run: |
           set -euo pipefail
           unzip -tq dist/wp-china-yes-*.zip
           LIST="$(unzip -Z1 dist/wp-china-yes-*.zip)"
-          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|scripts/|packages/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/|AGENTS\.md|\.grok-context/)'; then
+          if printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/(\.git|composer\.(json|lock)|tests/|docs/|prototypes/|scripts/|packages/|package(-lock)?\.json$|webpack\.config\.js|phpcs\.xml\.dist|phpstan\.neon\.dist|phpunit\.xml\.dist|src/Admin/app/|AGENTS\.md|\.grok-context/)'; then
             echo 'Release archive contains build-only files.' >&2
             exit 1
           fi
-          if ! printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/build/.+\.js$'; then
-            echo 'Release archive missing build/ JavaScript.' >&2
+          if ! printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/lib/wenpai-admin-ui/php/load\.php$'; then
+            echo 'Release archive missing vendored wenpai-admin-ui kit.' >&2
             exit 1
           fi
-          if printf '%s\n' "$LIST" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates|assets)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
+          if ! printf '%s\n' "$LIST" | grep -Eq '^wp-china-yes/assets/js/wpcy-admin\.js$'; then
+            echo 'Release archive missing assets/js/wpcy-admin.js.' >&2
+            exit 1
+          fi
+          if printf '%s\n' "$LIST" | grep -Eq '(^wp-china-yes/(framework|Service|client|templates)/|^wp-china-yes/(Plugin|helpers|autoload-guard)\.php$|yahnis-elsts)'; then
             echo 'Release archive contains deleted 3.x paths.' >&2
             exit 1
           fi
@@ -114,7 +115,6 @@ jobs:
           cache: npm
       - run: composer install --no-interaction --prefer-dist
       - run: npm ci
-      - run: npm run build
       # Plugin Check 必须扫发布包而不是仓库检出（检出里有 .npmrc/.eslintrc.js 等开发文件，会被判 hidden_files）。
       - name: Build release package for Plugin Check
         run: |
@@ -139,7 +139,7 @@ jobs:
           npx wp-env run cli wp plugin check wp-china-yes \
             --format=json \
             --exclude-checks=offloading_files,trademarks,plugin_readme,file_type,plugin_updater \
-            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github \
+            --exclude-directories=tests,docs,scripts,node_modules,vendor,dist,.github,lib \
             | tee plugin-check.json
           python3 - <<'PY'
           import json, re, sys
@@ -230,7 +230,6 @@ jobs:
           cache: npm
       - run: composer install --no-interaction --prefer-dist
       - run: npm ci
-      - run: npm run build
       - run: npx playwright install chromium --with-deps
       - run: npx wp-env start
       - name: Activate plugin

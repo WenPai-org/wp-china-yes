@@ -341,7 +341,7 @@ final class AdminModule implements Module {
 			if ( ! current_user_can( 'manage_network_options' ) ) {
 				wp_die( esc_html__( '暂时无法打开该页面，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 			}
-			echo '<div class="wrap wpcy-admin-wrap"><div id="wpcy-admin-root"></div></div>';
+			KitRenderer::render( self::NETWORK_SLUG, $this->bootstrap_payload() );
 			return;
 		}
 
@@ -349,13 +349,11 @@ final class AdminModule implements Module {
 			wp_die( esc_html__( '暂时无法打开该页面，请确认你有管理权限。', 'wp-china-yes' ), 403 );
 		}
 
-		echo '<div class="wrap wpcy-admin-wrap"><div id="wpcy-admin-root"></div></div>';
+		KitRenderer::render( $this->current_page(), $this->bootstrap_payload() );
 	}
 
 	/**
-	 * Enqueue build/ only on the four React pages.
-	 *
-	 * Inline bootstrap is limited to nonce, REST root, capabilities, settings snapshot.
+	 * Enqueue vendored wenpai-admin-ui kit and lightweight native JS on app screens.
 	 *
 	 * @since 4.0.0
 	 *
@@ -368,72 +366,22 @@ final class AdminModule implements Module {
 			return;
 		}
 
-		$asset_file = CHINA_YES_PLUGIN_PATH . 'build/index.asset.php';
-		if ( ! is_readable( $asset_file ) ) {
-			return;
+		if ( class_exists( '\Wenpai_Admin_Loader', false ) ) {
+			\Wenpai_Admin_Loader::enqueue( array( 'pages' => self::APP_PAGES ) );
 		}
 
-		$asset = require $asset_file;
-		if ( ! is_array( $asset ) ) {
+		$js_path = CHINA_YES_PLUGIN_PATH . 'assets/js/wpcy-admin.js';
+		if ( ! is_readable( $js_path ) ) {
 			return;
-		}
-
-		$dependencies = isset( $asset['dependencies'] ) && is_array( $asset['dependencies'] )
-			? $asset['dependencies']
-			: array();
-		$version      = isset( $asset['version'] ) ? (string) $asset['version'] : CHINA_YES_VERSION;
-
-		$script_deps = array();
-		foreach ( $dependencies as $dependency ) {
-			if ( ! is_string( $dependency ) ) {
-				continue;
-			}
-			if ( false !== strpos( $dependency, '.css' ) ) {
-				continue;
-			}
-			$script_deps[] = $dependency;
 		}
 
 		wp_enqueue_script(
 			self::HANDLE,
-			CHINA_YES_PLUGIN_URL . 'build/index.js',
-			$script_deps,
-			$version,
+			CHINA_YES_PLUGIN_URL . 'assets/js/wpcy-admin.js',
+			array( 'wenpai-admin-ui' ),
+			CHINA_YES_VERSION,
 			true
 		);
-
-		$style_index = CHINA_YES_PLUGIN_PATH . 'build/style-index.css';
-		$index_css   = CHINA_YES_PLUGIN_PATH . 'build/index.css';
-		$style_deps  = array( 'wp-components' );
-		if ( in_array( 'wp-commands', $script_deps, true ) ) {
-			$style_deps[] = 'wp-commands';
-		}
-
-		// Enqueue both CSS entrypoints when present: style-index holds the main
-		// admin styles; index.css holds webpack-extracted chunks (e.g. p2-charts).
-		if ( is_readable( $style_index ) ) {
-			wp_enqueue_style(
-				self::HANDLE,
-				CHINA_YES_PLUGIN_URL . 'build/style-index.css',
-				$style_deps,
-				$version
-			);
-			if ( is_readable( $index_css ) ) {
-				wp_enqueue_style(
-					self::HANDLE . '-extra',
-					CHINA_YES_PLUGIN_URL . 'build/index.css',
-					array( self::HANDLE ),
-					$version
-				);
-			}
-		} elseif ( is_readable( $index_css ) ) {
-			wp_enqueue_style(
-				self::HANDLE,
-				CHINA_YES_PLUGIN_URL . 'build/index.css',
-				$style_deps,
-				$version
-			);
-		}
 
 		$payload = wp_json_encode( $this->bootstrap_payload() );
 		if ( ! is_string( $payload ) ) {

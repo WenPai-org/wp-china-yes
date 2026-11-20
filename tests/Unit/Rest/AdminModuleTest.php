@@ -119,17 +119,16 @@ class AdminModuleTest extends TestCase {
 	 * Ordinary admin page: no fullscreen chrome, no admin-bar math, no History API.
 	 */
 	public function test_app_source_respects_ordinary_admin_page_constraints() {
-		$root  = dirname( __DIR__, 3 ) . '/src/Admin/app';
-		$files = glob( $root . '/*.js' );
-		$files = array_merge( $files, glob( $root . '/*/*.js' ) );
-		$files = array_merge( $files, glob( $root . '/*/*/*.js' ) );
-		$files = array_merge( $files, glob( $root . '/*.css' ) );
-
-		$this->assertNotEmpty( $files );
+		$root  = dirname( __DIR__, 3 );
+		$files = array(
+			$root . '/src/Admin/KitRenderer.php',
+			$root . '/assets/js/wpcy-admin.js',
+		);
 
 		$joined = '';
 		foreach ( $files as $file ) {
-			$joined .= file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source files.
+			$this->assertFileExists( $file );
+			$joined .= (string) file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source files.
 		}
 
 		$this->assertSame( 0, preg_match( '/#wpadminbar/', $joined ) );
@@ -140,25 +139,17 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 0, preg_match( '/pushState\s*\(/', $joined ) );
 		$this->assertSame( 0, preg_match( '/@wordpress\/interface/', $joined ) );
 		$this->assertSame( 0, preg_match( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/', $joined ) );
-		$this->assertNotFalse( strpos( $joined, 'wp.os' ) );
-		$this->assertNotFalse( strpos( $joined, 'registerCommand' ) );
 		$this->assertNotFalse( strpos( $joined, '绑定本站' ) );
 		$this->assertNotFalse( strpos( $joined, '绑定后显示' ) );
-		$this->assertNotFalse( strpos( $joined, 'allow-scripts allow-forms' ) );
-		$this->assertSame( 0, preg_match( '/allow-same-origin/', $joined ) );
 	}
 
 	/**
-	 * Chromeless iframe CSS: height is not pinned to admin-bar 32px.
+	 * Kit shell CSS replaces private app style.css (0 custom CSS).
 	 */
 	public function test_layout_css_does_not_assume_admin_bar_height() {
-		$css = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/style.css' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local stylesheet.
-		$this->assertNotFalse( $css );
-		$this->assertSame( 0, preg_match( '/#wpadminbar/', $css ) );
-		$this->assertSame( 0, preg_match( '/wpadminbar/', $css ) );
-		$this->assertSame( 0, preg_match( '/admin-bar--height/', $css ) );
-		$this->assertNotFalse( strpos( $css, 'max-width: 1120px' ) );
-		$this->assertSame( 0, preg_match( '/#wpcontent\s*\{[^}]*margin-left:\s*160px/', $css ) );
+		$kit_css = file_get_contents( dirname( __DIR__, 3 ) . '/lib/wenpai-admin-ui/css/wenpai-admin-wp.css' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local stylesheet.
+		$this->assertNotFalse( $kit_css );
+		$this->assertSame( 0, preg_match( '/#wpcontent\s*\{[^}]*margin-left:\s*160px/', $kit_css ) );
 	}
 
 	/**

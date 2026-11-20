@@ -1,0 +1,14 @@
+wenpai-admin-ui
+
+CSS and PHP: GPL-2.0-or-later. See LICENSE.
+
+Icons: Remix Icon 4.8.0 line paths, as shipped by motuicons
+@iconify/json 2.2.527 collection `ri` (info.version 4.8.0).
+Iconify metadata SPDX Apache-2.0. Do not upgrade to 4.9.x.
+Not the icon font, not a CDN, not icons.motucloud.com.
+
+Brand marks (.wenpai-mark) are supplied by each product plugin.
+Vendor logos (Aliyun, etc.) stay in the product plugin.
+
+This library is not a WordPress plugin and is not distributed via
+https://updates.wenpai.net.

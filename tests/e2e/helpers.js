@@ -131,8 +131,8 @@ async function openAdminPage( page, slug ) {
 		waitUntil: 'domcontentloaded',
 	} );
 	if ( slug !== 'wpcy-recovery' ) {
-		await page.locator( '#wpcy-admin-root' ).waitFor( { state: 'attached' } );
-		await page.locator( '#wpcy-admin-root' ).getByRole( 'heading', { level: 1 } ).waitFor( {
+		await page.locator( '.wenpai-app' ).waitFor( { state: 'attached' } );
+		await page.locator( '.wenpai-app' ).getByRole( 'heading', { level: 1 } ).waitFor( {
 			state: 'visible',
 		} );
 	}

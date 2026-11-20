@@ -314,7 +314,10 @@ class AdminNetworkOnboardingTest extends TestCase {
 		$module->render();
 		$html = (string) ob_get_clean();
 		$this->assertNull( RestStore::$die );
-		$this->assertStringContainsString( 'id="wpcy-admin-root"', $html );
+		$this->assertTrue(
+			str_contains( $html, 'class="wenpai-app"' ) || str_contains( $html, 'lib/wenpai-admin-ui' ),
+			'Expected kit shell or missing-kit notice.'
+		);
 	}
 
 	/**

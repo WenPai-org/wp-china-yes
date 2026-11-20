@@ -5,8 +5,8 @@ parameters:
     level: 6
     paths:
         - src
-    excludePaths:
-        - src/Admin/app
+    scanDirectories:
+        - lib/wenpai-admin-ui/php
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
     reportUnmatchedIgnoredErrors: false

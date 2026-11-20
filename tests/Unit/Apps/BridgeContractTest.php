@@ -399,7 +399,7 @@ class BridgeContractTest extends TestCase {
 	 * Host JS accepts opaque sandbox origin ("null") only after source is the iframe.
 	 */
 	public function test_host_js_accepts_opaque_sandbox_origin_via_source() {
-		$js = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/apps/Bridge.js' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
+		$js = file_get_contents( dirname( __DIR__, 3 ) . '/assets/js/wpcy-apps-bridge.js' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
 		$this->assertNotFalse( $js );
 		$this->assertNotFalse( strpos( $js, "origin === 'null'" ) );
 		$this->assertNotFalse( strpos( $js, 'function originAllowed' ) );
@@ -501,7 +501,7 @@ class BridgeContractTest extends TestCase {
 	 * Host JS never copies a REST nonce into an envelope.
 	 */
 	public function test_host_js_does_not_put_nonce_in_envelope() {
-		$js = file_get_contents( dirname( __DIR__, 3 ) . '/src/Admin/app/apps/Bridge.js' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
+		$js = file_get_contents( dirname( __DIR__, 3 ) . '/assets/js/wpcy-apps-bridge.js' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local source.
 		$this->assertNotFalse( $js );
 		$this->assertSame( 0, preg_match( '/\\bnonce\\b/', $js ) );
 		$this->assertSame( 0, preg_match( '/window\.top/', $js ) );
