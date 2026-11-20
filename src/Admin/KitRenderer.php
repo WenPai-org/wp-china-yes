@@ -600,6 +600,10 @@ final class KitRenderer {
 			self::render_feature_locale( $settings, $locked );
 			return;
 		}
+		if ( 'news' === $module ) {
+			self::render_feature_news( $settings, $locked );
+			return;
+		}
 		if ( 'outbound' === $module ) {
 			self::render_outbound( $locked );
 			return;
@@ -615,6 +619,7 @@ final class KitRenderer {
 
 		$conn          = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
 		$locale_follow = ! isset( $conn['admin_locale_follow'] ) || (bool) $conn['admin_locale_follow'];
+		$news_enabled  = ! isset( $settings['admin']['news_enabled'] ) || (bool) $settings['admin']['news_enabled'];
 		$heartbeat     = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
 		$feeds         = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
 		$notice_ctrl   = ! isset( $settings['modules']['notice_control'] ) || (bool) $settings['modules']['notice_control'];
@@ -643,18 +648,6 @@ final class KitRenderer {
 				'toggle' => 'admin_locale_follow',
 			),
 			array(
-				'id'     => 'outbound',
-				'icon'   => 'info',
-				'title'  => __( '外链治理', 'wp-china-yes' ),
-				'desc'   => __( '自定义外链拦截表、URL 路由检测与三层数据驻留规则。', 'wp-china-yes' ),
-				'active' => $bl_on,
-				'pill'   => $bl_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
-				'metric' => $bl_count > 0
-					? sprintf( /* translators: %d: host count */ __( '已拦截 %d 个自定义域名 · L0/L1 防护中', 'wp-china-yes' ), $bl_count )
-					: __( 'L0 白名单与 L1 数据驻留运行中', 'wp-china-yes' ),
-				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'outbound' ) ),
-			),
-			array(
 				'id'     => 'noise',
 				'icon'   => 'settings',
 				'title'  => __( '后台减噪与通知治理', 'wp-china-yes' ),
@@ -665,6 +658,31 @@ final class KitRenderer {
 					? __( '通知收纳与推销隐藏生效中', 'wp-china-yes' )
 					: __( '默认保持原样，可按需开启', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'noise' ) ),
+			),
+			array(
+				'id'     => 'news',
+				'icon'   => 'feedback',
+				'title'  => __( '资讯与公告源', 'wp-china-yes' ),
+				'desc'   => __( '默认接入 wptea.com 聚合 JSON 推送；开启白标后可改为自有新闻源。', 'wp-china-yes' ),
+				'active' => $news_enabled,
+				'pill'   => $news_enabled ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
+				'metric' => ( $wl['enabled'] && '' !== $wl['news_feed_url'] )
+					? __( '已使用白标自定义 JSON 源', 'wp-china-yes' )
+					: __( '默认源：wptea.com · 24h 缓存', 'wp-china-yes' ),
+				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) ),
+				'toggle' => 'admin_news_enabled',
+			),
+			array(
+				'id'     => 'outbound',
+				'icon'   => 'info',
+				'title'  => __( '外链治理', 'wp-china-yes' ),
+				'desc'   => __( '自定义外链拦截表、URL 路由检测与三层数据驻留规则。', 'wp-china-yes' ),
+				'active' => $bl_on,
+				'pill'   => $bl_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
+				'metric' => $bl_count > 0
+					? sprintf( /* translators: %d: host count */ __( '已拦截 %d 个自定义域名 · L0/L1 防护中', 'wp-china-yes' ), $bl_count )
+					: __( 'L0 白名单与 L1 数据驻留运行中', 'wp-china-yes' ),
+				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'outbound' ) ),
 			),
 			array(
 				'id'     => 'whitelabel',
@@ -771,6 +789,136 @@ final class KitRenderer {
 			}
 			\Wenpai_Admin_UI::card_close();
 		}
+		echo '</div>';
+	}
+
+	/**
+	 * Feature module detail: News & Announcements Feed (?page=wpcy-features&module=news).
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are locked.
+	 */
+	private static function render_feature_news( array $settings, bool $locked ): void {
+		$back_url     = self::page_url( 'wpcy-features' );
+		$news_enabled = ! isset( $settings['admin']['news_enabled'] ) || (bool) $settings['admin']['news_enabled'];
+		$wl           = WhiteLabel::resolve( $settings );
+		$wl_locked    = $locked || $wl['locked'] || ! $wl['entitled'];
+		$wl_url       = self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) );
+
+		$actions = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '返回功能列表', 'wp-china-yes' ),
+				'href'    => $back_url,
+				'variant' => 'ghost',
+			)
+		);
+		if ( ! $wl_locked ) {
+			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '保存新闻源', 'wp-china-yes' ),
+					'type'    => 'submit',
+					'variant' => 'primary',
+					'form'    => 'wpcy-settings-form',
+				)
+			);
+		}
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '资讯与公告源', 'wp-china-yes' ),
+			__( '默认接入 wptea.com / wpcy.com 聚合 JSON 推送（24 小时缓存，最多 5 条可逐条关闭）；开启全套白标后可替换为自有新闻源。', 'wp-china-yes' ),
+			$actions
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-news">';
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '默认资讯推送（wptea.com）', 'wp-china-yes' ),
+				'sub'   => __( '替代 WordPress 原生英文新闻源，采用轻量 JSON 接口与 24 小时本地缓存，不拖慢后台。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'feedback',
+				'state'        => $news_enabled ? 'ok' : '',
+				'title'        => __( '启用资讯与公告推送', 'wp-china-yes' ),
+				'desc'         => __( '默认拉取 https://wpcy.com/wp-json/wpcy/v1/announcements（聚合 wptea.com 与文派公告）。', 'wp-china-yes' ),
+				'control_html' => self::toggle_control( 'admin_news_enabled', $news_enabled, $locked ),
+			)
+		);
+		\Wenpai_Admin_UI::card_close();
+
+		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
+		$profile   = (string) ( $settings['profile'] ?? 'domestic' );
+		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror    = (string) ( $conn['wordpress_org'] ?? $conn['wporg_mirror'] ?? 'auto' );
+		$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+		$scope     = isset( $conn['public_assets']['scope'] ) ? (string) $conn['public_assets']['scope'] : 'both';
+		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
+		echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
+		echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
+		echo '<input type="hidden" name="avatar_source" value="' . esc_attr( $avatar ) . '">';
+		if ( $heartbeat ) {
+			echo '<input type="hidden" name="heartbeat" value="1">';
+		}
+		if ( $feeds ) {
+			echo '<input type="hidden" name="dashboard_feeds" value="1">';
+		}
+		if ( ! $wl_locked ) {
+			echo '<input type="hidden" name="wl_enabled" value="' . ( $wl['enabled'] ? '1' : '0' ) . '">';
+			echo '<input type="hidden" name="wl_brand_name" value="' . esc_attr( $wl['brand_name'] ) . '">';
+			echo '<input type="hidden" name="wl_help_url" value="' . esc_attr( $wl['help_url'] ) . '">';
+			echo '<input type="hidden" name="wl_feedback_url" value="' . esc_attr( $wl['feedback_url'] ) . '">';
+			echo '<input type="hidden" name="wl_docs_url" value="' . esc_attr( $wl['docs_url'] ) . '">';
+			echo '<input type="hidden" name="wl_logo_url" value="' . esc_attr( $wl['logo_url'] ) . '">';
+			if ( $wl['hide_logo'] ) {
+				echo '<input type="hidden" name="wl_hide_logo" value="1">';
+			}
+			if ( $wl['hide_links'] ) {
+				echo '<input type="hidden" name="wl_hide_links" value="1">';
+			}
+		}
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '自定义新闻源（白标能力）', 'wp-china-yes' ),
+				'sub'   => $wl['entitled']
+					? __( '填入自有品牌的 JSON 推送地址，启用白标后自动替换默认 wptea.com 源；留空保持默认。', 'wp-china-yes' )
+					: __( '开通全套白标授权后，可将默认 wptea.com 新闻源替换为建站商或企业自己的 JSON 公告接口。', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_input.
+		echo self::field_row_input(
+			'wl_news_feed_url',
+			'url',
+			__( '自定义新闻源 JSON 地址', 'wp-china-yes' ),
+			__( '返回兼容公告 JSON 列表（支持在 wp-config.php 定义 WPCY_WHITELABEL_NEWS_URL 锁定）。', 'wp-china-yes' ),
+			$wl['news_feed_url'],
+			'https://example.com/wp-json/agency/v1/news',
+			300,
+			$wl_locked
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( ! $wl['entitled'] ) {
+			\Wenpai_Admin_UI::card_foot(
+				array(
+					'start'   => true,
+					'meta'    => __( '自定义新闻源归属全套白标（Agency / OEM）付费能力。', 'wp-china-yes' ),
+					'actions' => array(
+						array(
+							'label'   => __( '查看全套白标授权', 'wp-china-yes' ),
+							'href'    => $wl_url,
+							'variant' => 'secondary',
+						),
+					),
+				)
+			);
+		}
+		\Wenpai_Admin_UI::card_close();
+		echo '</form>';
 		echo '</div>';
 	}
 
@@ -1039,6 +1187,7 @@ final class KitRenderer {
 		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏「帮助」链接；留空保持默认。', 'wp-china-yes' ), $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
 		echo self::field_row_input( 'wl_feedback_url', 'url', __( '反馈地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏「反馈」与工单入口；留空保持默认。', 'wp-china-yes' ), $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
 		echo self::field_row_input( 'wl_docs_url', 'url', __( '文档地址', 'wp-china-yes' ), __( '替换全站文派插件页脚文档链与插件列表官网地址；留空保持默认。', 'wp-china-yes' ), $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
+		echo self::field_row_input( 'wl_news_feed_url', 'url', __( '自定义新闻源 JSON', 'wp-china-yes' ), __( '替换默认 wptea.com 资讯推送接口为自有品牌 JSON 公告源；留空保持默认。', 'wp-china-yes' ), $wl['news_feed_url'], 'https://example.com/wp-json/agency/v1/news', 300, $wl_locked );
 		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义 Logo 地址', 'wp-china-yes' ), __( '可选，建议 44×44 正方形 PNG/SVG 地址。', 'wp-china-yes' ), $wl['logo_url'], 'https://', 300, $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏默认品牌图标', 'wp-china-yes' ), __( '不显示顶栏左侧图标，仅保留纯文字名称。', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏文派推广与扩展推荐', 'wp-china-yes' ), __( '独立开关：隐藏服务页未安装的扩展推荐及未自定义的外链（不关闭整个服务页）。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );

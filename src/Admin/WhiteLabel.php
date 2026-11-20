@@ -140,6 +140,9 @@ final class WhiteLabel {
 		if ( '' !== $wl['docs_url'] ) {
 			$display['docs_url'] = $wl['docs_url'];
 		}
+		if ( '' !== $wl['news_feed_url'] ) {
+			$display['news_feed_url'] = $wl['news_feed_url'];
+		}
 		return $display;
 	}
 
@@ -210,7 +213,7 @@ final class WhiteLabel {
 	 * - WPCY_WHITELABEL_HIDE_LINKS   (bool)   Hide uninstalled extension promos & default WenPai links.
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
-	 * @return array{entitled: bool, enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, logo_url: string, hide_logo: bool, hide_links: bool}
+	 * @return array{entitled: bool, enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, news_feed_url: string, logo_url: string, hide_logo: bool, hide_links: bool}
 	 */
 	public static function resolve( array $settings ): array {
 		$raw = isset( $settings['admin']['whitelabel'] ) && is_array( $settings['admin']['whitelabel'] )
@@ -221,11 +224,12 @@ final class WhiteLabel {
 		$locked   = defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' );
 		$enabled  = $entitled && ( $locked || ! empty( $raw['enabled'] ) );
 
-		$brand_name   = self::resolve_string( $raw, 'brand_name', 'WPCY_WHITELABEL_NAME' );
-		$help_url     = self::resolve_string( $raw, 'help_url', 'WPCY_WHITELABEL_HELP_URL' );
-		$feedback_url = self::resolve_string( $raw, 'feedback_url', 'WPCY_WHITELABEL_FEEDBACK_URL' );
-		$docs_url     = self::resolve_string( $raw, 'docs_url', 'WPCY_WHITELABEL_DOCS_URL' );
-		$logo_url     = self::resolve_string( $raw, 'logo_url', 'WPCY_WHITELABEL_LOGO' );
+		$brand_name    = self::resolve_string( $raw, 'brand_name', 'WPCY_WHITELABEL_NAME' );
+		$help_url      = self::resolve_string( $raw, 'help_url', 'WPCY_WHITELABEL_HELP_URL' );
+		$feedback_url  = self::resolve_string( $raw, 'feedback_url', 'WPCY_WHITELABEL_FEEDBACK_URL' );
+		$docs_url      = self::resolve_string( $raw, 'docs_url', 'WPCY_WHITELABEL_DOCS_URL' );
+		$news_feed_url = self::resolve_string( $raw, 'news_feed_url', 'WPCY_WHITELABEL_NEWS_URL' );
+		$logo_url      = self::resolve_string( $raw, 'logo_url', 'WPCY_WHITELABEL_LOGO' );
 
 		$hide_logo = ! empty( $raw['hide_logo'] );
 		if ( defined( 'WPCY_WHITELABEL_HIDE_LOGO' ) ) {
@@ -240,16 +244,17 @@ final class WhiteLabel {
 		}
 
 		return array(
-			'entitled'     => $entitled,
-			'enabled'      => $enabled,
-			'locked'       => $locked,
-			'brand_name'   => $brand_name,
-			'help_url'     => $help_url,
-			'feedback_url' => $feedback_url,
-			'docs_url'     => $docs_url,
-			'logo_url'     => $logo_url,
-			'hide_logo'    => $hide_logo,
-			'hide_links'   => $hide_links,
+			'entitled'      => $entitled,
+			'enabled'       => $enabled,
+			'locked'        => $locked,
+			'brand_name'    => $brand_name,
+			'help_url'      => $help_url,
+			'feedback_url'  => $feedback_url,
+			'docs_url'      => $docs_url,
+			'news_feed_url' => $news_feed_url,
+			'logo_url'      => $logo_url,
+			'hide_logo'     => $hide_logo,
+			'hide_links'    => $hide_links,
 		);
 	}
 

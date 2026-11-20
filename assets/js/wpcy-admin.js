@@ -293,6 +293,11 @@
 					const card = input.closest('[data-wpcy-core-card]');
 					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
 					if (iconEl) iconEl.classList.toggle('is-ok', checked);
+				} else if (input.name === 'admin_news_enabled') {
+					patch.admin = { news_enabled: checked };
+					const card = input.closest('[data-wpcy-core-card]');
+					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
+					if (iconEl) iconEl.classList.toggle('is-ok', checked);
 				}
 				api(settingsEndpoint(isNetwork), { method: 'PUT', body: patch })
 					.then(function () { notify('ok', '设置已保存。'); })
@@ -341,13 +346,15 @@
 			}
 			const wlToggle = form.querySelector('input[name="wl_enabled"]');
 			if (wlToggle && !wlToggle.disabled) {
+				const wlEnabled = wlToggle.type === 'checkbox' ? wlToggle.checked : wlToggle.value === '1';
 				payload.admin = Object.assign({}, payload.admin || {}, {
 					whitelabel: {
-						enabled: wlToggle.checked,
+						enabled: wlEnabled,
 						brand_name: String(fd.get('wl_brand_name') || '').trim(),
 						help_url: String(fd.get('wl_help_url') || '').trim(),
 						feedback_url: String(fd.get('wl_feedback_url') || '').trim(),
 						docs_url: String(fd.get('wl_docs_url') || '').trim(),
+						news_feed_url: String(fd.get('wl_news_feed_url') || '').trim(),
 						logo_url: String(fd.get('wl_logo_url') || '').trim(),
 						hide_logo: !!fd.get('wl_hide_logo'),
 						hide_links: !!fd.get('wl_hide_links'),
