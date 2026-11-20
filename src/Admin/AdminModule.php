@@ -391,6 +391,16 @@ final class AdminModule implements Module {
 			\Wenpai_Admin_Loader::enqueue( array( 'pages' => self::APP_PAGES ) );
 		}
 
+		$css_path = CHINA_YES_PLUGIN_PATH . 'assets/css/wpcy-admin.css';
+		if ( is_readable( $css_path ) ) {
+			wp_enqueue_style(
+				self::HANDLE,
+				CHINA_YES_PLUGIN_URL . 'assets/css/wpcy-admin.css',
+				array( 'wenpai-admin-ui' ),
+				CHINA_YES_VERSION
+			);
+		}
+
 		$js_path = CHINA_YES_PLUGIN_PATH . 'assets/js/wpcy-admin.js';
 		if ( ! is_readable( $js_path ) ) {
 			return;
