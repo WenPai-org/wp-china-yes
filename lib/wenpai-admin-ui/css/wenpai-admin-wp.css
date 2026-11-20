@@ -5,7 +5,11 @@
  */
 
 /* WP 后台里套 4.0 壳。token 在 css/wenpai-tokens.css（#wpcontent 在 .wenpai-app 外，--wenpai-bg 另挂在 body.wenpai-ui-page）。 */
-body.wenpai-ui-page,
+body.wenpai-ui-page {
+  margin: 0;
+  background: var(--wenpai-bg);
+}
+
 body.wenpai-ui-page #wpcontent,
 body.wenpai-ui-page #wpbody,
 body.wenpai-ui-page #wpbody-content {

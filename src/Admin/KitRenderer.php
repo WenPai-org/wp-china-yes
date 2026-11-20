@@ -281,7 +281,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'note'    => __( '按当前站点场景自动配好，一般无需频繁调整。', 'wp-china-yes' ),
+				'meta'    => __( '按当前站点场景自动配好，一般无需频繁调整。', 'wp-china-yes' ),
 				'actions' => array(
 					array( 'label' => __( '调整设置', 'wp-china-yes' ), 'href' => $set_url, 'variant' => 'secondary' ),
 				),

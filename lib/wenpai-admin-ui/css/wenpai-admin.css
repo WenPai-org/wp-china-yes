@@ -1639,6 +1639,8 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 /* 折叠配置行：details.wenpai-fold 自带箭头（decisions.md D-31）；普通 details 仍不画箭头。 */
 .wenpai-app .wenpai-folds { border-top: 1px solid var(--wenpai-line-soft); }
 .wenpai-app details.wenpai-fold { margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--wenpai-line-soft); }
+.wenpai-app .wenpai-folds:last-child > details.wenpai-fold:last-child,
+.wenpai-app .wenpai-folds:has(+ .card-foot) > details.wenpai-fold:last-child { border-bottom: 0; }
 .wenpai-app .wenpai-fold > summary { display: flex; align-items: center; gap: var(--wenpai-space-3); padding: var(--wenpai-space-3) 0; cursor: pointer; list-style: none; border-radius: var(--wenpai-radius-sm); }
 .wenpai-app .wenpai-fold > summary::-webkit-details-marker { display: none; }
 .wenpai-app .wenpai-fold > summary::before,

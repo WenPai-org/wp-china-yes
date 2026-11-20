@@ -279,7 +279,7 @@ Wenpai_Admin_UI::fold_list(
 Wenpai_Admin_UI::card_foot(
 	array(
 		'start'   => true,
-		'note'    => '按站点场景自动配好，一般无需频繁调整。',
+		'meta'    => '按站点场景自动配好，一般无需频繁调整。',
 		'actions' => array(
 			array( 'label' => '调整设置', 'href' => 'settings.html', 'variant' => 'secondary' ),
 			array( 'label' => '查看异常态', 'href' => 'overview-error.html', 'variant' => 'ghost' ),
