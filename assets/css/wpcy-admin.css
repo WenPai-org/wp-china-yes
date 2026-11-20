@@ -27,8 +27,19 @@
 	gap: var(--wenpai-space-4, 16px);
 }
 
+.wpcy-core-grid--3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1024px) {
+	.wpcy-core-grid--3 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
 @media (max-width: 900px) {
-	.wpcy-core-grid {
+	.wpcy-core-grid,
+	.wpcy-core-grid--3 {
 		grid-template-columns: 1fr;
 	}
 }

@@ -50,8 +50,8 @@ final class KitRenderer {
 		$tab_map = array(
 			'wpcy'          => 'overview',
 			'wpcy-connect'  => 'settings',
+			'wpcy-features' => 'features',
 			'wpcy-services' => 'services',
-			'wpcy-outbound' => 'outbound',
 			'wpcy-diagnose' => 'diagnose',
 		);
 		$view    = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( (string) $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
@@ -64,10 +64,10 @@ final class KitRenderer {
 			self::render_help( $links );
 		} elseif ( 'settings' === $current ) {
 			self::render_settings( $settings, $locked, $network );
+		} elseif ( 'features' === $current ) {
+			self::render_features( $settings, $locked );
 		} elseif ( 'services' === $current ) {
 			self::render_services( $settings, $locked );
-		} elseif ( 'outbound' === $current ) {
-			self::render_outbound( $locked );
 		} elseif ( 'diagnose' === $current ) {
 			self::render_diagnose( $settings );
 		} else {
@@ -159,16 +159,16 @@ final class KitRenderer {
 					'icon_html' => self::kit_icon( 'settings' ),
 				),
 				array(
+					'id'        => 'features',
+					'label'     => __( '功能', 'wp-china-yes' ),
+					'url'       => $admin_url( 'wpcy-features' ),
+					'icon_html' => self::kit_icon( 'equalizer' ),
+				),
+				array(
 					'id'        => 'services',
 					'label'     => __( '服务', 'wp-china-yes' ),
 					'url'       => $admin_url( 'wpcy-services' ),
 					'icon_html' => self::kit_icon( 'sparkle' ),
-				),
-				array(
-					'id'        => 'outbound',
-					'label'     => __( '外链', 'wp-china-yes' ),
-					'url'       => $admin_url( 'wpcy-outbound' ),
-					'icon_html' => self::kit_icon( 'map' ),
 				),
 				array(
 					'id'        => 'diagnose',
@@ -560,16 +560,244 @@ final class KitRenderer {
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
+		echo '</form>';
+		echo '</div>';
+	}
 
-		// Suite-wide White-label & branding module card (applies to WPCY + all WenPai plugins via wenpai_plugin_display).
+	/**
+	 * Features screen (?page=wpcy-features): built-in functional modules (Outbound, Noise, White-Label).
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are locked.
+	 */
+	private static function render_features( array $settings, bool $locked = false ): void {
+		$module = isset( $_GET['module'] ) ? sanitize_key( wp_unslash( (string) $_GET['module'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only module routing.
+		if ( 'outbound' === $module ) {
+			self::render_outbound( $locked );
+			return;
+		}
+		if ( 'noise' === $module ) {
+			self::render_feature_noise( $settings, $locked );
+			return;
+		}
+		if ( 'whitelabel' === $module ) {
+			self::render_feature_whitelabel( $settings, $locked );
+			return;
+		}
+
+		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		$noise_on  = $heartbeat || $feeds;
+		$bl_raw    = isset( $settings['modules']['site_blocklist'] ) && is_array( $settings['modules']['site_blocklist'] ) ? $settings['modules']['site_blocklist'] : array();
+		$bl_on     = ! empty( $bl_raw['enabled'] );
+		$bl_count  = isset( $bl_raw['hosts'] ) && is_array( $bl_raw['hosts'] ) ? count( $bl_raw['hosts'] ) : 0;
 		$wl        = WhiteLabel::resolve( $settings );
-		$wl_locked = $locked || $wl['locked'];
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '功能', 'wp-china-yes' ),
+			__( '文派叶子内置的站点治理与交付功能模块；每个模块独立配置，按需启用。', 'wp-china-yes' )
+		);
+
+		$modules = array(
+			array(
+				'id'     => 'outbound',
+				'icon'   => 'map',
+				'title'  => __( '外链治理', 'wp-china-yes' ),
+				'desc'   => __( '自定义外链拦截表、URL 路由检测与三层数据驻留规则。', 'wp-china-yes' ),
+				'active' => $bl_on,
+				'pill'   => $bl_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
+				'metric' => $bl_count > 0
+					? sprintf( /* translators: %d: host count */ __( '已拦截 %d 个自定义域名 · L0/L1 防护中', 'wp-china-yes' ), $bl_count )
+					: __( 'L0 白名单与 L1 数据驻留运行中', 'wp-china-yes' ),
+				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'outbound' ) ),
+			),
+			array(
+				'id'     => 'noise',
+				'icon'   => 'settings',
+				'title'  => __( '后台减噪', 'wp-china-yes' ),
+				'desc'   => __( 'Heartbeat 心跳降频、屏蔽仪表盘外部慢源与推销横幅收纳。', 'wp-china-yes' ),
+				'active' => $noise_on,
+				'pill'   => $noise_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
+				'metric' => $noise_on ? __( '已启用心跳降频或外部源屏蔽', 'wp-china-yes' ) : __( '默认保持原样，可按需开启', 'wp-china-yes' ),
+				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'noise' ) ),
+			),
+			array(
+				'id'     => 'whitelabel',
+				'icon'   => 'sparkle',
+				'title'  => __( '全套白标', 'wp-china-yes' ),
+				'desc'   => __( '一次配置，统一覆盖全站文派插件的品牌名、帮助/反馈/文档链与作者。', 'wp-china-yes' ),
+				'active' => $wl['enabled'],
+				'pill'   => $wl['locked'] ? __( '常量锁定', 'wp-china-yes' ) : ( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ) ),
+				'metric' => $wl['enabled']
+					? ( '' !== $wl['brand_name'] ? sprintf( /* translators: %s: brand name */ __( '当前品牌：%s', 'wp-china-yes' ), $wl['brand_name'] ) : __( '已启用白标过滤', 'wp-china-yes' ) )
+					: __( '面向建站与客户交付场景', 'wp-china-yes' ),
+				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) ),
+			),
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="features">';
+		echo '<div class="wpcy-core-grid wpcy-core-grid--3">';
+		foreach ( $modules as $mod ) {
+			$is_ok      = ! empty( $mod['active'] );
+			$pill_state = $is_ok ? 'ok' : 'mute';
+			echo '<div class="wpcy-core-card">';
+			echo '<div class="wpcy-core-card__top">';
+			echo '<span class="wpcy-core-card__icon' . ( $is_ok ? ' is-ok' : '' ) . '">';
+			echo \Wenpai_Admin_Icons::svg( $mod['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
+			echo '</span>';
+			echo '<div class="wpcy-core-card__head">';
+			echo '<h3 class="wpcy-core-card__title">' . esc_html( $mod['title'] ) . '</h3>';
+			echo '<p class="wpcy-core-card__desc">' . esc_html( $mod['desc'] ) . '</p>';
+			echo '</div>';
+			echo '<span class="pill ' . esc_attr( $pill_state ) . '"><span class="dot" aria-hidden="true"></span>' . esc_html( $mod['pill'] ) . '</span>';
+			echo '</div>';
+			echo '<div class="wpcy-core-card__foot">';
+			echo '<span class="wpcy-core-card__metric">' . esc_html( $mod['metric'] ) . '</span>';
+			$btn_html = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '配置', 'wp-china-yes' ),
+					'href'    => $mod['url'],
+					'variant' => 'secondary',
+					'size'    => 'sm',
+				)
+			);
+			echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
+			echo '</div>';
+			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
+	}
+
+	/**
+	 * Feature module detail: Admin Noise Reduction (?page=wpcy-features&module=noise).
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are locked.
+	 */
+	private static function render_feature_noise( array $settings, bool $locked ): void {
+		$back_url  = self::page_url( 'wpcy-features' );
+		$profile   = (string) ( $settings['profile'] ?? 'domestic' );
+		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror    = (string) ( $conn['wporg_mirror'] ?? 'auto' );
+		$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		$scope     = isset( $settings['public_assets']['scope'] ) ? (string) $settings['public_assets']['scope'] : 'both';
+
+		$actions = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '返回功能列表', 'wp-china-yes' ),
+				'href'    => $back_url,
+				'variant' => 'ghost',
+			)
+		);
+		if ( ! $locked ) {
+			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '保存设置', 'wp-china-yes' ),
+					'type'    => 'submit',
+					'variant' => 'primary',
+					'form'    => 'wpcy-settings-form',
+				)
+			);
+		}
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '后台减噪', 'wp-china-yes' ),
+			__( '降低 WordPress 后台轮询频率并屏蔽拖慢仪表盘的外部新闻与活动源。', 'wp-china-yes' ),
+			$actions
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-noise">';
+		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
+		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
+		echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
+		echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
+		echo '<input type="hidden" name="avatar_source" value="' . esc_attr( $avatar ) . '">';
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '全套白标与品牌', 'wp-china-yes' ),
-				'sub'   => $wl['locked']
-					? __( '已通过 wp-config.php 中的 WPCY_WHITELABEL 常量锁定生效，当前页面只读。', 'wp-china-yes' )
-					: __( '一次配置，统一覆盖文派叶子及全站文派独立插件的品牌名、帮助/反馈/文档地址与插件列表作者。', 'wp-china-yes' ),
+				'title' => __( '减噪规则', 'wp-china-yes' ),
+				'tile'  => false,
+			)
+		);
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
+		echo self::field_row_checkbox( 'heartbeat', __( '减少后台心跳 (Heartbeat)', 'wp-china-yes' ), __( '仪表盘停止轮询，编辑器降频为 60 秒一次，降低服务器无效请求。', 'wp-china-yes' ), $heartbeat, $locked );
+		echo self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部慢请求', 'wp-china-yes' ), __( '阻止仪表盘加载官方英文新闻与活动源，加快后台首页打开速度。', 'wp-china-yes' ), $feeds, $locked );
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+		\Wenpai_Admin_UI::card_close();
+		echo '</form>';
+		echo '</div>';
+	}
+
+	/**
+	 * Feature module detail: Suite-wide White-Label (?page=wpcy-features&module=whitelabel).
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are locked.
+	 */
+	private static function render_feature_whitelabel( array $settings, bool $locked ): void {
+		$back_url  = self::page_url( 'wpcy-features' );
+		$profile   = (string) ( $settings['profile'] ?? 'domestic' );
+		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror    = (string) ( $conn['wporg_mirror'] ?? 'auto' );
+		$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		$scope     = isset( $settings['public_assets']['scope'] ) ? (string) $settings['public_assets']['scope'] : 'both';
+		$wl        = WhiteLabel::resolve( $settings );
+		$wl_locked = $locked || $wl['locked'];
+
+		$actions = \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '返回功能列表', 'wp-china-yes' ),
+				'href'    => $back_url,
+				'variant' => 'ghost',
+			)
+		);
+		if ( ! $wl_locked ) {
+			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '保存白标设置', 'wp-china-yes' ),
+					'type'    => 'submit',
+					'variant' => 'primary',
+					'form'    => 'wpcy-settings-form',
+				)
+			);
+		}
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '全套白标', 'wp-china-yes' ),
+			__( '一次配置，通过 wenpai_plugin_display 统一覆盖文派叶子及全站文派独立插件的品牌名、帮助/反馈/文档地址与插件列表作者。', 'wp-china-yes' ),
+			$actions
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-whitelabel">';
+		if ( $wl['locked'] ) {
+			\Wenpai_Admin_UI::notice(
+				array(
+					'tone' => 'info',
+					'text' => __( '已通过 wp-config.php 中的 WPCY_WHITELABEL 常量锁定生效，当前页面只读。', 'wp-china-yes' ),
+				)
+			);
+		}
+		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
+		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
+		echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
+		echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
+		echo '<input type="hidden" name="avatar_source" value="' . esc_attr( $avatar ) . '">';
+		if ( $heartbeat ) {
+			echo '<input type="hidden" name="heartbeat" value="1">';
+		}
+		if ( $feeds ) {
+			echo '<input type="hidden" name="dashboard_feeds" value="1">';
+		}
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '品牌与外链覆盖', 'wp-china-yes' ),
+				'sub'   => __( '不修改插件文件头、文本域与 Update URI；留空字段自动保持各插件默认值。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -578,7 +806,7 @@ final class KitRenderer {
 				'icon'         => 'sparkle',
 				'state'        => $wl['enabled'] ? 'ok' : '',
 				'title'        => __( '启用全套白标模式', 'wp-china-yes' ),
-				'desc'         => __( '开启后可配置品牌名与外链；支持通过 wp-config.php 定义 WPCY_WHITELABEL 交付锁定。', 'wp-china-yes' ),
+				'desc'         => __( '开启后按下方配置生效；可在 wp-config.php 定义 WPCY_WHITELABEL 交付锁定。', 'wp-china-yes' ),
 				'control_html' => self::switch_control( 'wl_enabled', $wl['enabled'], $wl_locked, array( 'data-wpcy-wl-toggle' => '1' ) ),
 			)
 		);
@@ -667,7 +895,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '服务', 'wp-china-yes' ),
-			__( '文派叶子内置 4 项基础加速，并按站点环境智能推荐可联动的文派独立插件。', 'wp-china-yes' ),
+			__( '文派云服务通道与生态独立插件联动中心；本体治理工具请前往「功能」标签页。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '绑定本站', 'wp-china-yes' ),
@@ -679,8 +907,8 @@ final class KitRenderer {
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="services">';
 
-		// Section 1: 2x2 featured grid for the 4 built-in core services.
-		echo '<div class="wpcy-core-grid">';
+		// Section 1: 3-column featured row for the 3 built-in cloud services.
+		echo '<div class="wpcy-core-grid wpcy-core-grid--3">';
 		foreach ( $catalog as $id => $spec ) {
 			if ( 'builtin' !== ( $spec['group'] ?? 'ext' ) ) {
 				continue;
@@ -817,8 +1045,15 @@ final class KitRenderer {
 		$dis_attr = $locked ? ' disabled' : '';
 
 		\Wenpai_Admin_Shell::page_head(
-			__( '外链', 'wp-china-yes' ),
-			__( '集中管理出站请求拦截表、实时检测任意 URL 命中策略，并查看三层数据驻留规则。', 'wp-china-yes' )
+			__( '外链治理', 'wp-china-yes' ),
+			__( '集中管理出站请求拦截表、实时检测任意 URL 命中策略，并查看三层数据驻留规则。', 'wp-china-yes' ),
+			\Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '返回功能列表', 'wp-china-yes' ),
+					'href'    => self::page_url( 'wpcy-features' ),
+					'variant' => 'ghost',
+				)
+			)
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="outbound">';
@@ -1090,11 +1325,11 @@ final class KitRenderer {
 				'takeover_desc' => __( '高级头像生成、本地上传与缓存策略已由文派头像 (WPAvatar) 联动接管。', 'wp-china-yes' ),
 			),
 			'noise'      => array(
-				'group'         => 'builtin',
-				'title'         => __( '后台减噪', 'wp-china-yes' ),
-				'icon'          => 'settings',
-				'short_desc'    => __( '心跳降频与屏蔽外部慢源 · WPComments', 'wp-china-yes' ),
-				'desc'          => __( '降低后台心跳频率、屏蔽仪表盘外部慢请求，并可联动评论治理。', 'wp-china-yes' ),
+				'group'         => 'ext',
+				'title'         => __( '评论治理', 'wp-china-yes' ),
+				'icon'          => 'feedback',
+				'short_desc'    => __( '评论审核、常用回复与反垃圾治理 · WPComments', 'wp-china-yes' ),
+				'desc'          => __( '为 WordPress 评论区提供审核工作流、常用回复与反垃圾治理。', 'wp-china-yes' ),
 				'plugin_name'   => __( '文派评论 (WPComments)', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpcomments',
 				'plugin_file'   => 'wpcomments/wpcomments.php',

@@ -66,8 +66,8 @@ final class AdminModule implements Module {
 	public const APP_PAGES = array(
 		'wpcy',
 		'wpcy-connect',
+		'wpcy-features',
 		'wpcy-services',
-		'wpcy-outbound',
 		'wpcy-diagnose',
 		'wpcy-onboarding',
 	);
@@ -198,19 +198,19 @@ final class AdminModule implements Module {
 
 		add_submenu_page(
 			self::SLUG,
-			__( '服务', 'wp-china-yes' ),
-			__( '服务', 'wp-china-yes' ),
+			__( '功能', 'wp-china-yes' ),
+			__( '功能', 'wp-china-yes' ),
 			$cap,
-			'wpcy-services',
+			'wpcy-features',
 			array( $this, 'render' )
 		);
 
 		add_submenu_page(
 			self::SLUG,
-			__( '外链', 'wp-china-yes' ),
-			__( '外链', 'wp-china-yes' ),
+			__( '服务', 'wp-china-yes' ),
+			__( '服务', 'wp-china-yes' ),
 			$cap,
-			'wpcy-outbound',
+			'wpcy-services',
 			array( $this, 'render' )
 		);
 
