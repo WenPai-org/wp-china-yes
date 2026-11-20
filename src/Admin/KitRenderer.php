@@ -79,19 +79,14 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Build an admin page URL via Wenpai_Admin_Menu::url when available.
+	 * Build an admin page URL for top-level wpcy menu pages.
 	 *
 	 * @param string $slug    Admin page slug.
 	 * @param bool   $network Whether this is a network admin page.
 	 * @return string
 	 */
 	private static function page_url( string $slug, bool $network = false ): string {
-		if ( ! $network && class_exists( '\Wenpai_Admin_Menu', false ) ) {
-			return (string) \Wenpai_Admin_Menu::url( $slug );
-		}
-		if ( $network && function_exists( 'network_admin_url' ) && function_exists( 'add_query_arg' ) ) {
-			return (string) add_query_arg( array( 'page' => $slug ), network_admin_url( 'admin.php' ) );
-		}
+		unset( $network );
 		return '?page=' . rawurlencode( $slug );
 	}
 
