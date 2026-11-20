@@ -600,12 +600,14 @@ final class KitRenderer {
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="services">';
 		foreach ( $groups as $group_key => $group_meta ) {
+			echo '<div>';
 			\Wenpai_Admin_UI::section_title(
 				array(
 					'title' => $group_meta['title'],
 					'desc'  => $group_meta['desc'],
 				)
 			);
+			echo '</div>';
 			echo '<div class="wenpai-grid-3">';
 			foreach ( $catalog as $id => $spec ) {
 				if ( ( $spec['group'] ?? 'core' ) !== $group_key ) {
