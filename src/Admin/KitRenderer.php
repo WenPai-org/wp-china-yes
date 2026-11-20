@@ -685,47 +685,92 @@ final class KitRenderer {
 			),
 		);
 
-		echo '<div class="wenpai-stack" data-wpcy-screen="features">';
-		echo '<div class="wpcy-core-grid">';
+		$active_mods   = array();
+		$inactive_mods = array();
 		foreach ( $modules as $mod ) {
-			$is_ok      = ! empty( $mod['active'] );
-			$pill_state = $is_ok ? 'ok' : 'mute';
-			echo '<div class="wpcy-core-card" data-wpcy-core-card="' . esc_attr( $mod['id'] ) . '">';
-			echo '<div class="wpcy-core-card__top">';
-			echo '<span class="wpcy-core-card__icon' . ( $is_ok ? ' is-ok' : '' ) . '">';
-			echo \Wenpai_Admin_Icons::svg( $mod['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
-			echo '</span>';
-			echo '<div class="wpcy-core-card__head">';
-			echo '<h3 class="wpcy-core-card__title">' . esc_html( $mod['title'] ) . '</h3>';
-			echo '<p class="wpcy-core-card__desc">' . esc_html( $mod['desc'] ) . '</p>';
-			echo '</div>';
-			if ( ! empty( $mod['toggle'] ) ) {
-				$sw_html = self::switch_control(
-					(string) $mod['toggle'],
-					$is_ok,
-					$locked,
-					array( 'data-wpcy-instant' => '1' )
-				);
-				echo $sw_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside switch_control.
+			if ( ! empty( $mod['active'] ) ) {
+				$active_mods[] = $mod;
 			} else {
-				echo '<span class="pill ' . esc_attr( $pill_state ) . '"><span class="dot" aria-hidden="true"></span>' . esc_html( $mod['pill'] ) . '</span>';
+				$inactive_mods[] = $mod;
+			}
+		}
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="features">';
+
+		// Top zone: Enabled feature modules in the same 3-per-row grid as Services.
+		if ( ! empty( $active_mods ) ) {
+			echo '<div class="wpcy-core-grid wpcy-core-grid--3">';
+			foreach ( $active_mods as $mod ) {
+				echo '<div class="wpcy-core-card" data-wpcy-core-card="' . esc_attr( $mod['id'] ) . '">';
+				echo '<div class="wpcy-core-card__top">';
+				echo '<span class="wpcy-core-card__icon is-ok">';
+				echo \Wenpai_Admin_Icons::svg( $mod['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
+				echo '</span>';
+				echo '<div class="wpcy-core-card__head">';
+				echo '<h3 class="wpcy-core-card__title">' . esc_html( $mod['title'] ) . '</h3>';
+				echo '<p class="wpcy-core-card__desc">' . esc_html( $mod['desc'] ) . '</p>';
+				echo '</div>';
+				if ( ! empty( $mod['toggle'] ) ) {
+					$sw_html = self::switch_control(
+						(string) $mod['toggle'],
+						true,
+						$locked,
+						array( 'data-wpcy-instant' => '1' )
+					);
+					echo $sw_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside switch_control.
+				} else {
+					echo '<span class="pill ok"><span class="dot" aria-hidden="true"></span>' . esc_html( $mod['pill'] ) . '</span>';
+				}
+				echo '</div>';
+				echo '<div class="wpcy-core-card__foot">';
+				echo '<span class="wpcy-core-card__metric">' . esc_html( $mod['metric'] ) . '</span>';
+				$btn_html = \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
+						'href'    => $mod['url'],
+						'variant' => 'secondary',
+						'size'    => 'sm',
+					)
+				);
+				echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
+				echo '</div>';
+				echo '</div>';
 			}
 			echo '</div>';
-			echo '<div class="wpcy-core-card__foot">';
-			echo '<span class="wpcy-core-card__metric">' . esc_html( $mod['metric'] ) . '</span>';
-			$btn_html = \Wenpai_Admin_UI::button_html(
+		}
+
+		// Bottom zone: Unenabled / optional feature modules in the same list card pattern as Services.
+		if ( ! empty( $inactive_mods ) ) {
+			\Wenpai_Admin_UI::card_open(
 				array(
-					'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
-					'href'    => $mod['url'],
-					'variant' => 'secondary',
-					'size'    => 'sm',
+					'title' => __( '更多内置功能', 'wp-china-yes' ),
+					'sub'   => __( '启用后将自动置顶到上方已启用功能区（三列排布）。', 'wp-china-yes' ),
+					'tile'  => false,
 				)
 			);
-			echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
-			echo '</div>';
-			echo '</div>';
+			foreach ( $inactive_mods as $mod ) {
+				\Wenpai_Admin_UI::row(
+					array(
+						'icon'         => $mod['icon'],
+						'title'        => $mod['title'],
+						'desc'         => $mod['desc'],
+						'pill'         => array(
+							'text'  => $mod['pill'],
+							'state' => 'mute',
+						),
+						'control_html' => \Wenpai_Admin_UI::button_html(
+							array(
+								'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
+								'href'    => $mod['url'],
+								'variant' => 'secondary',
+								'size'    => 'sm',
+							)
+						),
+					)
+				);
+			}
+			\Wenpai_Admin_UI::card_close();
 		}
-		echo '</div>';
 		echo '</div>';
 	}
 
