@@ -2947,6 +2947,14 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 							'html' => isset( $item['logo_html'] ) ? (string) $item['logo_html'] : '',
 						)
 					);
+				} elseif ( ( isset( $item['icon_html'] ) && '' !== (string) $item['icon_html'] ) || ( isset( $item['icon'] ) && '' !== (string) $item['icon'] ) ) {
+					$html .= self::tile_html(
+						array(
+							'icon'  => isset( $item['icon'] ) ? (string) $item['icon'] : '',
+							'html'  => isset( $item['icon_html'] ) ? (string) $item['icon_html'] : '',
+							'state' => isset( $item['state'] ) ? (string) $item['state'] : '',
+						)
+					);
 				}
 				$html .= '<span class="wenpai-fold__text"><span class="wenpai-fold__title">' . esc_html( isset( $item['title'] ) ? (string) $item['title'] : '' ) . '</span>';
 				if ( isset( $item['desc'] ) && '' !== (string) $item['desc'] ) {

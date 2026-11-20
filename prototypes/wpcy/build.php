@@ -261,6 +261,7 @@ Wenpai_Admin_UI::fold_list(
 	array(
 		'items' => array(
 			array(
+				'icon'      => 'info',
 				'title'     => '最近事件记录',
 				'desc'      => '今日 1 条 · 全部正常（点击展开）',
 				'body_html' => Wenpai_Admin_UI::log_list_html(
@@ -359,6 +360,7 @@ Wenpai_Admin_UI::fold_list(
 	array(
 		'items' => array(
 			array(
+				'icon'      => 'settings',
 				'title'     => '高级线路与后台体验',
 				'desc'      => '镜像自动回退 · 前后台加速 · Cravatar 国内节点 · 心跳与外部请求已优化',
 				'body_html' => $adv,

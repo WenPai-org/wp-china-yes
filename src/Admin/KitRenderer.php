@@ -271,6 +271,7 @@ final class KitRenderer {
 			array(
 				'items' => array(
 					array(
+						'icon'      => 'info',
 						'title'     => __( '最近事件记录', 'wp-china-yes' ),
 						'desc'      => __( '展开查看最近加速与巡检记录', 'wp-china-yes' ),
 						'body_html' => '<div data-wpcy-events="1"><p class="meta">' . esc_html__( '正在加载最近记录…', 'wp-china-yes' ) . '</p></div>',
@@ -446,6 +447,7 @@ final class KitRenderer {
 			array(
 				'items' => array(
 					array(
+						'icon'      => 'settings',
 						'title'     => __( '高级线路与后台体验', 'wp-china-yes' ),
 						'desc'      => $summary,
 						'body_html' => $adv_html,
