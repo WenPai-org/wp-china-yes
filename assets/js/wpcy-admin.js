@@ -166,6 +166,24 @@
 
 		const eventsEl = document.querySelector('[data-wpcy-events]');
 		if (eventsEl) {
+			const eventLabels = {
+				first_check: '首次连通性巡检',
+				profile_set: '站点场景已更新',
+				settings_saved: '加速设置已保存',
+				diagnostics_run: '双端连通性诊断',
+				recovery_entered: '进入安全恢复模式',
+				recovery_exited: '退出安全恢复模式',
+				fallback: '镜像异常自动回退官方源',
+				binding_started: '发起站点绑定',
+				binding_revoked: '解除站点绑定'
+			};
+			function formatEventTime(raw) {
+				if (!raw) return '';
+				const d = new Date(raw);
+				if (isNaN(d.getTime())) return String(raw);
+				const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+				return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+			}
 			api('/events?per_page=5').then(function (data) {
 				const list = Array.isArray(data && data.events) ? data.events : [];
 				if (!list.length) {
@@ -173,12 +191,18 @@
 					return;
 				}
 				const ul = document.createElement('ul');
-				ul.className = 'wenpai-log';
+				ul.className = 'wpcy-event-list';
 				list.slice(0, 5).forEach(function (ev) {
 					const li = document.createElement('li');
-					const when = ev.at || ev.when || '';
-					const label = ev.type || ev.summary || '事件';
-					li.textContent = (when ? when + ' · ' : '') + label;
+					li.className = 'wpcy-event-item';
+					const left = document.createElement('span');
+					const rawType = ev.type || ev.summary || '';
+					left.textContent = eventLabels[rawType] || ev.summary || rawType || '加速巡检事件';
+					const right = document.createElement('span');
+					right.className = 'wpcy-event-item__time';
+					right.textContent = formatEventTime(ev.at || ev.when || '');
+					li.appendChild(left);
+					li.appendChild(right);
 					ul.appendChild(li);
 				});
 				eventsEl.innerHTML = '';
@@ -475,6 +499,46 @@
 					.finally(function () { el.classList.remove('is-busy'); });
 			});
 		});
+
+		document.querySelectorAll('[data-wpcy-service-toggle]').forEach(function (input) {
+			input.addEventListener('change', function () {
+				const id = input.getAttribute('data-wpcy-service-toggle');
+				const on = input.checked;
+				const card = input.closest('[data-wpcy-core-card]');
+				const iconEl = card && card.querySelector('.wpcy-core-card__icon');
+				const metricEl = card && card.querySelector('[data-wpcy-core-metric]');
+				const labelEl = input.parentElement && input.parentElement.querySelector('.wenpai-switch__label');
+
+				let patch = {};
+				let nextMetric = '';
+				if (id === 'wporg') {
+					patch = { connectivity: { wporg_mirror: on ? 'auto' : 'off' } };
+					nextMetric = on ? 'WenPai.org 镜像 · 异常自动回退' : '直连 WordPress.org 官方源';
+				} else if (id === 'admincdn') {
+					patch = { public_assets: { scope: on ? 'both' : 'off' } };
+					nextMetric = on ? '前台与后台全量加速' : '当前未开启';
+				} else if (id === 'cravatar') {
+					patch = { connectivity: { avatar: on ? 'cravatar_cn' : 'off' } };
+					nextMetric = on ? 'Cravatar 中国节点' : '使用默认 Gravatar';
+				} else if (id === 'noise') {
+					patch = { connectivity: { heartbeat: on ? 'on' : 'off', dashboard_feeds: on ? 'block' : 'allow' } };
+					nextMetric = on ? '已启用心跳降频与外部源屏蔽' : '默认保持原样，可按需开启';
+				}
+
+				if (labelEl) labelEl.textContent = on ? '已开启' : '未开启';
+				if (iconEl) iconEl.classList.toggle('is-ok', on);
+				if (metricEl && nextMetric) metricEl.textContent = nextMetric;
+
+				api('/settings', { method: 'PUT', body: patch })
+					.then(function () { notify('ok', on ? '服务已开启。' : '服务已关闭。'); })
+					.catch(function (err) {
+						input.checked = !on;
+						if (labelEl) labelEl.textContent = input.checked ? '已开启' : '未开启';
+						if (iconEl) iconEl.classList.toggle('is-ok', input.checked);
+						notify('bad', err.message || '保存失败');
+					});
+			});
+		});
 	}
 
 	// 3b. Site Blocklist (GET/PUT /site-blocklist).
@@ -591,6 +655,14 @@
 				if (noteInput) noteInput.value = '';
 			});
 		}
+
+		root.querySelectorAll('[data-wpcy-bl-preset]').forEach(function (chip) {
+			chip.addEventListener('click', function () {
+				if (hostInput) hostInput.value = chip.getAttribute('data-wpcy-bl-preset') || '';
+				if (noteInput) noteInput.value = chip.getAttribute('data-wpcy-bl-preset-note') || '';
+				if (hostInput) hostInput.focus();
+			});
+		});
 	}
 
 	// 3c. Outbound URL routing tester (POST /residency/test).
@@ -655,6 +727,14 @@
 				}
 			});
 		}
+		root.querySelectorAll('[data-wpcy-url-sample]').forEach(function (chip) {
+			chip.addEventListener('click', function () {
+				if (input) {
+					input.value = chip.getAttribute('data-wpcy-url-sample') || '';
+					runTest();
+				}
+			});
+		});
 	}
 
 	// 3d. Outbound screen rules snapshot & B-tier log.

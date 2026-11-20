@@ -706,7 +706,7 @@ final class KitRenderer {
 				? (string) $report['summary']
 				: ( $builtin_metrics[ $id ] ?? '' );
 
-			echo '<div class="wpcy-core-card">';
+			echo '<div class="wpcy-core-card" data-wpcy-core-card="' . esc_attr( $id ) . '">';
 			echo '<div class="wpcy-core-card__top">';
 			echo '<span class="wpcy-core-card__icon' . ( $is_ok ? ' is-ok' : '' ) . '">';
 			echo \Wenpai_Admin_Icons::svg( $spec['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
@@ -715,10 +715,20 @@ final class KitRenderer {
 			echo '<h3 class="wpcy-core-card__title">' . esc_html( $spec['title'] ) . '</h3>';
 			echo '<p class="wpcy-core-card__desc">' . esc_html( $spec['short_desc'] ) . '</p>';
 			echo '</div>';
-			echo '<span class="pill ' . esc_attr( $pill_state ) . '"><span class="dot" aria-hidden="true"></span>' . esc_html( $pill_text ) . '</span>';
+			if ( $plugin_state['active'] ) {
+				echo '<span class="pill ' . esc_attr( $pill_state ) . '"><span class="dot" aria-hidden="true"></span>' . esc_html( $pill_text ) . '</span>';
+			} else {
+				$sw_html = self::switch_control(
+					'core_' . $id,
+					$is_on,
+					$locked,
+					array( 'data-wpcy-service-toggle' => $id )
+				);
+				echo $sw_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside switch_control.
+			}
 			echo '</div>';
 			echo '<div class="wpcy-core-card__foot">';
-			echo '<span class="wpcy-core-card__metric">' . esc_html( $metric_text ) . '</span>';
+			echo '<span class="wpcy-core-card__metric" data-wpcy-core-metric="' . esc_attr( $id ) . '">' . esc_html( $metric_text ) . '</span>';
 			$btn_html = \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '设置', 'wp-china-yes' ),
@@ -849,6 +859,14 @@ final class KitRenderer {
 		);
 		echo $add_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
 		echo '</div>';
+		if ( ! $locked ) {
+			echo '<div class="wpcy-chips">';
+			echo '<span>' . esc_html__( '常见慢源快填：', 'wp-china-yes' ) . '</span>';
+			echo '<button type="button" class="wpcy-chip" data-wpcy-bl-preset="stats.wp.com" data-wpcy-bl-preset-note="' . esc_attr__( 'WP.com 统计', 'wp-china-yes' ) . '">stats.wp.com</button>';
+			echo '<button type="button" class="wpcy-chip" data-wpcy-bl-preset="pixel.wp.com" data-wpcy-bl-preset-note="' . esc_attr__( 'WP.com 像素追踪', 'wp-china-yes' ) . '">pixel.wp.com</button>';
+			echo '<button type="button" class="wpcy-chip" data-wpcy-bl-preset="jetpack.wordpress.com" data-wpcy-bl-preset-note="' . esc_attr__( 'Jetpack 遥测', 'wp-china-yes' ) . '">jetpack.wordpress.com</button>';
+			echo '</div>';
+		}
 		echo '<ul class="wpcy-host-list" data-wpcy-bl-list="1"></ul>';
 		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
@@ -873,6 +891,12 @@ final class KitRenderer {
 			)
 		);
 		echo $test_btn; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
+		echo '</div>';
+		echo '<div class="wpcy-chips">';
+		echo '<span>' . esc_html__( '示例网址：', 'wp-china-yes' ) . '</span>';
+		echo '<button type="button" class="wpcy-chip" data-wpcy-url-sample="https://api.wordpress.org/core/version-check/1.7/">api.wordpress.org</button>';
+		echo '<button type="button" class="wpcy-chip" data-wpcy-url-sample="https://fonts.googleapis.com/css2?family=Inter">fonts.googleapis.com</button>';
+		echo '<button type="button" class="wpcy-chip" data-wpcy-url-sample="https://stats.wp.com/e-2026.js">stats.wp.com</button>';
 		echo '</div>';
 		echo '<div class="wpcy-test-result" data-wpcy-url-output="1" hidden></div>';
 		echo '</div>';
