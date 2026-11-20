@@ -527,6 +527,21 @@
 			});
 		});
 
+		document.querySelectorAll('[data-wpcy-catalog-filter]').forEach(function (box) {
+			const chips = box.querySelectorAll('[data-wpcy-cat]');
+			const items = box.querySelectorAll('[data-wpcy-cat-item]');
+			chips.forEach(function (chip) {
+				chip.addEventListener('click', function () {
+					const cat = chip.getAttribute('data-wpcy-cat') || 'all';
+					chips.forEach(function (c) { c.classList.toggle('is-active', c === chip); });
+					items.forEach(function (it) {
+						const match = cat === 'all' || it.getAttribute('data-wpcy-cat-item') === cat;
+						it.hidden = !match;
+					});
+				});
+			});
+		});
+
 		document.querySelectorAll('[data-wpcy-service-toggle]').forEach(function (input) {
 			input.addEventListener('change', function () {
 				const id = input.getAttribute('data-wpcy-service-toggle');

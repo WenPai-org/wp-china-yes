@@ -237,9 +237,11 @@
 	transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.wpcy-chip:hover {
+.wpcy-chip:hover,
+.wpcy-chip.is-active {
 	border-color: var(--wenpai-accent, #3858e9);
 	color: var(--wenpai-accent, #3858e9);
+	background: var(--wenpai-accent-soft, #eef2ff);
 }
 
 .wpcy-event-list {
