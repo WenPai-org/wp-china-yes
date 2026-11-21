@@ -630,11 +630,12 @@ final class KitRenderer {
 		}
 		\Wenpai_Admin_UI::card_close();
 
-		// Row 4: Reversed Split — Left 20rem Cloud / White-Label Agency Promo Slot (never closed on Overview) + Right 1fr Reserved Toolbox.
+		// Row 4: Reversed Split — Left 20rem Cloud / White-Label Agency Promo Slot (never closed on Overview) + Right 1fr 5x2 Quick Tools / WenPai Components Switcher.
 		$ad_args   = self::overview_ad_slot_args( $wl, $svc_url );
 		$split_r4  = null === $ad_args ? 'wenpai-split wenpai-split--reverse wenpai-split--equal is-single' : 'wenpai-split wenpai-split--reverse wenpai-split--equal';
+		$hide_eco  = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
 		$foot_acts = array();
-		if ( ! ( $wl['enabled'] && $wl['hide_links'] ) ) {
+		if ( ! $hide_eco ) {
 			$foot_acts[] = array(
 				'label'   => __( '文派生态目录', 'wp-china-yes' ),
 				'href'    => $svc_url,
@@ -642,6 +643,30 @@ final class KitRenderer {
 				'size'    => 'sm',
 			);
 		}
+
+		$tools_head_ctl = $hide_eco
+			? '<span class="meta">' . esc_html__( '工具箱预留位', 'wp-china-yes' ) . '</span>'
+			: \Wenpai_Admin_UI::view_tabs_html(
+				array(
+					'group'      => 'wpcy-tools',
+					'aria_label' => __( '快捷工具与文派组件切换', 'wp-china-yes' ),
+					'items'      => array(
+						array(
+							'id'         => 'quick',
+							'label'      => __( '快捷工具', 'wp-china-yes' ),
+							'active'     => true,
+							'card_title' => __( '快捷工具', 'wp-china-yes' ),
+							'foot_meta'  => __( '内建维护动作 · 工具箱预留位', 'wp-china-yes' ),
+						),
+						array(
+							'id'         => 'suite',
+							'label'      => __( '文派组件', 'wp-china-yes' ),
+							'card_title' => __( '文派组件', 'wp-china-yes' ),
+							'foot_meta'  => __( '已安装直达组件设置 · 未安装点击提示安装', 'wp-china-yes' ),
+						),
+					),
+				)
+			);
 
 		echo '<div class="' . esc_attr( $split_r4 ) . '">';
 		if ( null !== $ad_args ) {
@@ -653,20 +678,47 @@ final class KitRenderer {
 				'title'             => __( '快捷工具', 'wp-china-yes' ),
 				'tile'              => false,
 				'class'             => 'wenpai-card--equal',
-				'head_control_html' => '<span class="meta">' . esc_html__( '工具箱预留位', 'wp-china-yes' ) . '</span>',
+				'head_control_html' => $tools_head_ctl,
+			)
+		);
+		$quick_grid = \Wenpai_Admin_UI::icon_grid_html(
+			array(
+				'columns' => 5,
+				'items'   => self::overview_quick_tools( $wl, $svc_url ),
 			)
 		);
 		echo '<div class="wenpai-card__body">';
-		\Wenpai_Admin_UI::icon_grid(
-			array(
-				'items' => self::overview_quick_tools( $wl, $svc_url ),
-			)
-		);
+		if ( $hide_eco ) {
+			echo $quick_grid; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit icon_grid_html escapes output.
+		} else {
+			$suite_grid = \Wenpai_Admin_UI::icon_grid_html(
+				array(
+					'columns' => 5,
+					'items'   => self::overview_suite_components( $settings ),
+				)
+			);
+			\Wenpai_Admin_UI::view_panes(
+				array(
+					'group' => 'wpcy-tools',
+					'panes' => array(
+						array(
+							'id'     => 'quick',
+							'active' => true,
+							'html'   => $quick_grid,
+						),
+						array(
+							'id'   => 'suite',
+							'html' => $suite_grid,
+						),
+					),
+				)
+			);
+		}
 		echo '</div>';
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'meta'    => __( '内建维护动作 · 后续接入文派轻便小工具', 'wp-china-yes' ),
+				'meta'    => __( '内建维护动作 · 工具箱预留位', 'wp-china-yes' ),
 				'actions' => $foot_acts,
 			)
 		);
@@ -962,14 +1014,14 @@ final class KitRenderer {
 			}
 		}
 
-		foreach ( array_slice( $extra, 0, 4 ) as $slot ) {
+		foreach ( array_slice( $extra, 0, 6 ) as $slot ) {
 			if ( is_array( $slot ) && ! empty( $slot['label'] ) ) {
 				$items[] = $slot;
 			}
 		}
 
 		$hide_eco = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
-		$pad_cap  = $hide_eco ? 8 : 7;
+		$pad_cap  = $hide_eco ? 10 : 9;
 		for ( $cur = count( $items ); $cur < $pad_cap; ++$cur ) {
 			$items[] = array(
 				'label'  => __( '工具预留', 'wp-china-yes' ),
@@ -978,7 +1030,7 @@ final class KitRenderer {
 				'attrs'  => array( 'data-wpcy-quick' => 'reserved-slot' ),
 			);
 		}
-		if ( count( $items ) < 8 && ! $hide_eco ) {
+		if ( count( $items ) < 10 && ! $hide_eco ) {
 			$items[] = array(
 				'label'  => __( '生态目录', 'wp-china-yes' ),
 				'icon'   => 'link',
@@ -987,7 +1039,158 @@ final class KitRenderer {
 			);
 		}
 
-		return array_slice( $items, 0, 8 );
+		return array_slice( $items, 0, 10 );
+	}
+
+	/**
+	 * Build the 5x2 (10-item) WenPai companion plugin launcher grid (`文派组件`).
+	 *
+	 * Installed & active plugins navigate straight to their settings screen;
+	 * inactive or uninstalled plugins prompt via the native kit dialog with one-click
+	 * navigation to activate/install plus an optional product page link.
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function overview_suite_components( array $settings ): array {
+		$catalog     = self::service_catalog();
+		$reports     = self::service_status_reports( $settings );
+		$can_install = ! function_exists( 'current_user_can' ) || current_user_can( 'install_plugins' );
+		$can_act     = ! function_exists( 'current_user_can' ) || current_user_can( 'activate_plugins' );
+		$defs        = array(
+			array(
+				'svc'   => 'cravatar',
+				'label' => __( '文派头像', 'wp-china-yes' ),
+				'icon'  => 'user',
+			),
+			array(
+				'svc'   => 'windfonts',
+				'label' => __( '文派字库', 'wp-china-yes' ),
+				'icon'  => 'feather',
+			),
+			array(
+				'svc'   => 'storage',
+				'label' => __( '文派智储', 'wp-china-yes' ),
+				'icon'  => 'server',
+			),
+			array(
+				'svc'   => 'slug',
+				'label' => __( '文派素格', 'wp-china-yes' ),
+				'icon'  => 'equalizer',
+			),
+			array(
+				'svc'   => 'ai',
+				'label' => __( '文派心思', 'wp-china-yes' ),
+				'icon'  => 'sparkle',
+			),
+			array(
+				'svc'   => 'wporg',
+				'label' => __( '文派云桥', 'wp-china-yes' ),
+				'icon'  => 'cloud',
+			),
+			array(
+				'svc'   => 'noise',
+				'label' => __( '文派评论', 'wp-china-yes' ),
+				'icon'  => 'feedback',
+			),
+			array(
+				'svc'   => 'converter',
+				'label' => __( '文派译词', 'wp-china-yes' ),
+				'icon'  => 'map',
+			),
+			array(
+				'svc'   => 'motucloud',
+				'label' => __( '墨图图库', 'wp-china-yes' ),
+				'icon'  => 'image',
+			),
+			array(
+				'svc'   => 'compliance',
+				'label' => __( '文派备案', 'wp-china-yes' ),
+				'icon'  => 'shield-check',
+			),
+		);
+
+		$items = array();
+		foreach ( $defs as $def ) {
+			$svc_id = $def['svc'];
+			if ( ! isset( $catalog[ $svc_id ] ) ) {
+				continue;
+			}
+			$spec   = $catalog[ $svc_id ];
+			$report = isset( $reports[ $svc_id ] ) ? $reports[ $svc_id ] : array();
+			$pstate = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
+
+			if ( $pstate['active'] ) {
+				$settings_href = ! empty( $report['action_url'] )
+					? $report['action_url']
+					: self::wp_admin_link( $spec['plugin_admin'] );
+				$items[]       = array(
+					'label' => $def['label'],
+					'icon'  => $def['icon'],
+					'state' => 'ok',
+					'href'  => $settings_href,
+					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已启用，点击进入设置', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'attrs' => array(
+						'data-wpcy-suite-slug'  => $spec['plugin_slug'],
+						'data-wpcy-suite-state' => 'active',
+					),
+				);
+			} elseif ( $pstate['installed'] ) {
+				$plugins_base = self::wp_admin_link( 'plugins.php' );
+				$act_href     = $can_act && function_exists( 'add_query_arg' )
+					? (string) add_query_arg( array( 's' => $spec['plugin_slug'] ), $plugins_base )
+					: self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
+				$items[]      = array(
+					'label' => $def['label'],
+					'icon'  => $def['icon'],
+					'state' => 'warn',
+					'href'  => $act_href,
+					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'attrs' => array(
+						'data-wpcy-suite-slug'           => $spec['plugin_slug'],
+						'data-wpcy-suite-state'          => 'installed',
+						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'data-wenpai-confirm'            => $spec['plugin_pitch'],
+						'data-wenpai-confirm-ok'         => $can_act ? __( '前往启用', 'wp-china-yes' ) : __( '查看详情', 'wp-china-yes' ),
+						'data-wenpai-confirm-cancel'     => __( '取消', 'wp-china-yes' ),
+						'data-wenpai-confirm-primary'    => '1',
+						'data-wenpai-confirm-more-label' => __( '组件主页', 'wp-china-yes' ),
+						'data-wenpai-confirm-more-url'   => $spec['plugin_url'],
+					),
+				);
+			} else {
+				$install_base = self::wp_admin_link( 'plugin-install.php' );
+				$inst_href    = $can_install && function_exists( 'add_query_arg' )
+					? (string) add_query_arg(
+						array(
+							's'    => $spec['plugin_slug'],
+							'tab'  => 'search',
+							'type' => 'term',
+						),
+						$install_base
+					)
+					: self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
+				$items[]      = array(
+					'label' => $def['label'],
+					'icon'  => $def['icon'],
+					'href'  => $inst_href,
+					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 未安装，点击提示安装', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'attrs' => array(
+						'data-wpcy-suite-slug'           => $spec['plugin_slug'],
+						'data-wpcy-suite-state'          => 'missing',
+						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '安装%s', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'data-wenpai-confirm'            => $spec['plugin_pitch'],
+						'data-wenpai-confirm-ok'         => $can_install ? __( '前往安装', 'wp-china-yes' ) : __( '查看详情', 'wp-china-yes' ),
+						'data-wenpai-confirm-cancel'     => __( '取消', 'wp-china-yes' ),
+						'data-wenpai-confirm-primary'    => '1',
+						'data-wenpai-confirm-more-label' => __( '组件主页', 'wp-china-yes' ),
+						'data-wenpai-confirm-more-url'   => $spec['plugin_url'],
+					),
+				);
+			}
+		}
+
+		return $items;
 	}
 
 	/**

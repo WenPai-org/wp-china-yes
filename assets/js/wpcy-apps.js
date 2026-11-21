@@ -169,7 +169,7 @@
 			var disabled = getDisabledSet();
 			var enabledApps = apps.filter(function (app) {
 				return app && typeof app.id === 'string' && app.id !== '' && !disabled[app.id];
-			}).slice(0, 4);
+			}).slice(0, slots.length);
 
 			enabledApps.forEach(function (app, idx) {
 				var btn = slots[idx];

@@ -9,8 +9,8 @@
 /* --- 基础 --- */
 
 .wenpai-app { font-family: var(--wenpai-font); color: var(--wenpai-ink); -webkit-font-smoothing: antialiased; font-size: var(--wenpai-text-body); line-height: var(--wenpai-leading-body); }
-.wenpai-app a { text-decoration: none; }
-.wenpai-app [hidden] { display: none !important; } /* stylelint-disable-line declaration-no-important */
+.wenpai-app a, .wenpai-native a { text-decoration: none; }
+.wenpai-app [hidden], .wenpai-native [hidden] { display: none !important; } /* stylelint-disable-line declaration-no-important */
 .wenpai-app h1, .wenpai-app h2, .wenpai-app h3, .wenpai-app h4, .wenpai-app h5, .wenpai-app h6 { color: var(--wenpai-ink); font-weight: var(--wenpai-weight-regular); }
 .wenpai-app strong, .wenpai-app b { font-weight: var(--wenpai-weight-regular); }
 /* 兜底：没写尺寸的内联图标（只有 viewBox）会撑满容器，这里压到 24px。
@@ -1098,7 +1098,7 @@ pre.wenpai-code code {
 .wenpai-native-bulk .btn { height: var(--wenpai-size-control); border-radius: var(--wenpai-radius-sm); font-size: var(--wenpai-text-body); flex: none; }
 body.wenpai-ui-page .wenpai-native-bulk select { width: auto; min-width: 10em; max-width: 18em; border: 1px solid var(--wenpai-control-line); background: var(--wenpai-card); padding: 0 var(--wenpai-space-2); }
 .wenpai-native-bulk .meta { margin-inline-start: auto; white-space: nowrap; }
-.wenpai-dialog { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-lg); background: var(--wenpai-card); color: var(--wenpai-ink); box-shadow: var(--wenpai-shadow); padding: var(--wenpai-space-5); max-width: 460px; }
+.wenpai-dialog { border: 1px solid var(--wenpai-line-card); border-radius: var(--wenpai-radius-lg); background: var(--wenpai-card); color: var(--wenpai-ink); font-family: var(--wenpai-font); box-shadow: var(--wenpai-shadow); padding: var(--wenpai-space-5); min-inline-size: min(380px, 90vw); max-width: 460px; }
 .wenpai-dialog::backdrop { background: var(--wenpai-ink); opacity: 0.45; }
 .wenpai-dialog h3 { margin: 0 0 var(--wenpai-space-1-5); font-size: var(--wenpai-text-title); line-height: var(--wenpai-leading-title); font-weight: var(--wenpai-weight-regular); }
 .wenpai-dialog p { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); }
@@ -2628,6 +2628,9 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: var(--wenpai-space-2-5);
 }
+.wenpai-app .wenpai-icon-grid--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
 .wenpai-app .wenpai-icon-grid--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -2635,12 +2638,15 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 @media (max-width: 782px) {
-  .wenpai-app .wenpai-icon-grid {
+  .wenpai-app .wenpai-icon-grid,
+  .wenpai-app .wenpai-icon-grid--5,
+  .wenpai-app .wenpai-icon-grid--3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     block-size: auto;
   }
 }
 .wenpai-app .wenpai-icon-box {
+  position: relative;
   appearance: none;
   border: 1px solid transparent;
   border-radius: var(--wenpai-radius-lg);
@@ -2663,6 +2669,24 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   background: var(--wenpai-accent-soft);
   border-color: var(--wenpai-accent-line);
   color: var(--wenpai-accent);
+}
+.wenpai-app .wenpai-icon-box__dot {
+  position: absolute;
+  inset-block-start: var(--wenpai-space-2);
+  inset-inline-end: var(--wenpai-space-2);
+  inline-size: var(--wenpai-space-1-5);
+  block-size: var(--wenpai-space-1-5);
+  border-radius: var(--wenpai-radius-xl);
+  background: var(--wenpai-ok);
+}
+.wenpai-app .wenpai-icon-box__dot.is-warn {
+  background: var(--wenpai-warn);
+}
+.wenpai-app .wenpai-icon-box__label {
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wenpai-app .wenpai-icon-box__glyph {
   inline-size: var(--wenpai-space-8);

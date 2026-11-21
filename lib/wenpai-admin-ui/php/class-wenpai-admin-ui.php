@@ -710,7 +710,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * Attributes that wire an element to the kit confirm dialog (0.5.3).
 		 *
 		 * @param string $text Confirmation sentence shown in the dialog body.
-		 * @param array  $args Optional. title / gate / danger / ok_label / cancel_label.
+		 * @param array  $args Optional. title / gate / danger / primary / ok_label / cancel_label / more_label / more_url.
 		 * @return string Escaped attribute string with a leading space.
 		 */
 		public static function confirm_attrs( $text, $args = array() ) {
@@ -725,11 +725,18 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			if ( ! empty( $args['danger'] ) ) {
 				$out .= ' data-wenpai-confirm-danger="1"';
 			}
+			if ( ! empty( $args['primary'] ) ) {
+				$out .= ' data-wenpai-confirm-primary="1"';
+			}
 			if ( ! empty( $args['ok_label'] ) ) {
 				$out .= ' data-wenpai-confirm-ok="' . esc_attr( (string) $args['ok_label'] ) . '"';
 			}
 			if ( ! empty( $args['cancel_label'] ) ) {
 				$out .= ' data-wenpai-confirm-cancel="' . esc_attr( (string) $args['cancel_label'] ) . '"';
+			}
+			if ( ! empty( $args['more_label'] ) && ! empty( $args['more_url'] ) ) {
+				$out .= ' data-wenpai-confirm-more-label="' . esc_attr( (string) $args['more_label'] ) . '"';
+				$out .= ' data-wenpai-confirm-more-url="' . esc_url( (string) $args['more_url'] ) . '"';
 			}
 			return $out;
 		}
@@ -4031,8 +4038,8 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * @param array $args {
 		 *     Helper arguments.
 		 *
-		 *     @type array  $items   Array of array{ label, icon?: string, icon_html?: string, href?: string, target?: string, dashed?: bool, attrs?: array }.
-		 *     @type int    $columns Grid columns on desktop (2, 3, or 4; default 4).
+		 *     @type array  $items   Array of array{ label, icon?: string, icon_html?: string, href?: string, target?: string, dashed?: bool, state?: string, title?: string, attrs?: array }.
+		 *     @type int    $columns Grid columns on desktop (2, 3, 4, or 5; default 4).
 		 *     @type string $class   Extra classes.
 		 *     @type array  $attrs   Extra attributes.
 		 * }
@@ -4042,7 +4049,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$args  = self::args( $args, 'Wenpai_Admin_UI::icon_grid' );
 			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
 			$cols  = isset( $args['columns'] ) ? (int) $args['columns'] : 4;
-			if ( ! in_array( $cols, array( 2, 3, 4 ), true ) ) {
+			if ( ! in_array( $cols, array( 2, 3, 4, 5 ), true ) ) {
 				$cols = 4;
 			}
 			$cls  = self::classes( array( 'wenpai-icon-grid', 4 !== $cols ? 'wenpai-icon-grid--' . $cols : '', self::extra_class( $args ) ) );
@@ -4057,15 +4064,18 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				} elseif ( isset( $item['icon'] ) && '' !== (string) $item['icon'] && class_exists( 'Wenpai_Admin_Icons', false ) ) {
 					$glyph = Wenpai_Admin_Icons::svg( (string) $item['icon'] );
 				}
+				$state  = isset( $item['state'] ) && in_array( (string) $item['state'], array( 'ok', 'warn' ), true ) ? (string) $item['state'] : '';
+				$dot    = '' !== $state ? '<span class="wenpai-icon-box__dot is-' . esc_attr( $state ) . '" aria-hidden="true"></span>' : '';
 				$bcls   = self::classes( array( 'wenpai-icon-box', ! empty( $item['dashed'] ) ? 'is-more' : '' ) );
 				$iattrs = isset( $item['attrs'] ) && is_array( $item['attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['attrs'] ) ) : '';
+				$tattr  = isset( $item['title'] ) && '' !== (string) $item['title'] ? ' title="' . esc_attr( (string) $item['title'] ) . '"' : '';
 				$label  = isset( $item['label'] ) ? (string) $item['label'] : '';
-				$inner  = '<span class="wenpai-icon-box__glyph" aria-hidden="true">' . $glyph . '</span><span class="wenpai-icon-box__label">' . esc_html( $label ) . '</span>';
+				$inner  = $dot . '<span class="wenpai-icon-box__glyph" aria-hidden="true">' . $glyph . '</span><span class="wenpai-icon-box__label">' . esc_html( $label ) . '</span>';
 				if ( isset( $item['href'] ) && '' !== (string) $item['href'] ) {
 					$tgt   = ! empty( $item['target'] ) ? ' target="' . esc_attr( (string) $item['target'] ) . '" rel="noopener noreferrer"' : '';
-					$html .= '<a class="' . esc_attr( $bcls ) . '" href="' . esc_url( (string) $item['href'] ) . '"' . $tgt . $iattrs . '>' . $inner . '</a>';
+					$html .= '<a class="' . esc_attr( $bcls ) . '" href="' . esc_url( (string) $item['href'] ) . '"' . $tgt . $tattr . $iattrs . '>' . $inner . '</a>';
 				} else {
-					$html .= '<button type="button" class="' . esc_attr( $bcls ) . '"' . $iattrs . '>' . $inner . '</button>';
+					$html .= '<button type="button" class="' . esc_attr( $bcls ) . '"' . $tattr . $iattrs . '>' . $inner . '</button>';
 				}
 			}
 			return $html . '</div>';
