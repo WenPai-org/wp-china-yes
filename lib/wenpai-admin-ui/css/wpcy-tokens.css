@@ -42,6 +42,8 @@
   --wpcy-bad-ink-strong: #8a2424;
   --wpcy-mute: #646970;
   --wpcy-mute-soft: #f0f0f1;
+  --wpcy-surface-soft: #f6f7f9;
+  --wpcy-ad-soft: #f6f8ff;
 
   /* focus */
   --wpcy-focus-color: var(--wpcy-accent);

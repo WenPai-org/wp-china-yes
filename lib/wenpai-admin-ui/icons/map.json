@@ -22,5 +22,12 @@
   "upload": "upload-line",
   "arrow-up": "arrow-up-line",
   "arrow-down": "arrow-down-line",
-  "arrow-left": "arrow-left-line"
+  "arrow-left": "arrow-left-line",
+  "refresh": "refresh-line",
+  "shield-check": "shield-check-line",
+  "search": "search-line",
+  "copy": "file-copy-line",
+  "link": "link",
+  "user": "user-3-line",
+  "add": "add-line"
 }

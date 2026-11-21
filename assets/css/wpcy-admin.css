@@ -12,19 +12,6 @@
 	margin: 0;
 }
 
-.wenpai-app [data-wpcy-screen="overview"] .wenpai-split {
-	align-items: stretch;
-}
-
-.wenpai-app [data-wpcy-screen="overview"] .wenpai-split > .card {
-	display: flex;
-	flex-direction: column;
-}
-
-.wenpai-app [data-wpcy-screen="overview"] .wenpai-split > .card > .card-foot {
-	margin-block-start: auto;
-}
-
 .wenpai-app .wenpai-status-list__row dd {
 	justify-content: flex-end;
 	font-variant-numeric: tabular-nums;
@@ -133,31 +120,4 @@
 	border-color: var(--wenpai-accent);
 	color: var(--wenpai-accent);
 	background: var(--wenpai-accent-soft);
-}
-
-.wpcy-event-list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.wpcy-event-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--wenpai-space-3);
-	padding: var(--wenpai-space-2-5) 0;
-	border-bottom: 1px solid var(--wenpai-line-soft);
-	font-size: var(--wenpai-text-body);
-}
-
-.wpcy-event-item:last-child {
-	border-bottom: 0;
-}
-
-.wpcy-event-item__time {
-	font-size: var(--wenpai-text-caption);
-	color: var(--wenpai-ink-3);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
 }

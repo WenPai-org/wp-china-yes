@@ -170,10 +170,10 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				return wp_kses( $html, $svg );
 			}
 			$allowed = 'svg' === $context ? $svg : array_merge( wp_kses_allowed_html( 'post' ), $svg );
-			if ( 'control' === $context ) {
+			if ( 'control' === $context || 'pane' === $context ) {
 				$allowed = array_merge( $allowed, self::control_tags() );
 			}
-			if ( 'chart' === $context ) {
+			if ( 'chart' === $context || 'pane' === $context ) {
 				$allowed = array_merge( $allowed, self::chart_tags( $paint ) );
 				foreach ( array( 'path', 'line', 'polyline', 'polygon', 'circle', 'ellipse', 'rect' ) as $tag ) {
 					$allowed[ $tag ]['vector-effect'] = true;
@@ -190,7 +190,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 */
 		private static function control_tags() {
 			$common = array_fill_keys(
-				array( 'class', 'id', 'role', 'hidden', 'inert', 'title', 'dir', 'lang', 'tabindex', 'data-*', 'aria-label', 'aria-labelledby', 'aria-describedby', 'aria-hidden', 'aria-invalid', 'aria-checked', 'aria-disabled', 'aria-expanded', 'aria-controls', 'aria-live', 'aria-busy', 'aria-required', 'aria-pressed', 'aria-valuenow', 'aria-valuemin', 'aria-valuemax', 'aria-valuetext' ),
+				array( 'class', 'id', 'role', 'hidden', 'inert', 'title', 'dir', 'lang', 'tabindex', 'style', 'data-*', 'aria-label', 'aria-labelledby', 'aria-describedby', 'aria-hidden', 'aria-invalid', 'aria-checked', 'aria-selected', 'aria-disabled', 'aria-expanded', 'aria-controls', 'aria-live', 'aria-busy', 'aria-required', 'aria-pressed', 'aria-valuenow', 'aria-valuemin', 'aria-valuemax', 'aria-valuetext' ),
 				true
 			);
 			$tags   = array(
@@ -3015,12 +3015,13 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				if ( ! is_array( $item ) ) {
 					continue;
 				}
-				$html .= '<div class="wenpai-statbar__item"><dt>' . esc_html( isset( $item['label'] ) ? (string) $item['label'] : '' ) . '</dt>';
+				$html     .= '<div class="wenpai-statbar__item"><dt>' . esc_html( isset( $item['label'] ) ? (string) $item['label'] : '' ) . '</dt>';
+				$val_attrs = isset( $item['value_attrs'] ) && is_array( $item['value_attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['value_attrs'] ) ) : '';
 				if ( ! empty( $item['empty'] ) ) {
 					$text  = isset( $item['empty_text'] ) && '' !== (string) $item['empty_text'] ? (string) $item['empty_text'] : $none;
-					$html .= '<dd class="is-none">' . esc_html( $text ) . '</dd>';
+					$html .= '<dd class="is-none"' . $val_attrs . '>' . esc_html( $text ) . '</dd>';
 				} else {
-					$html .= '<dd>' . esc_html( isset( $item['value'] ) ? (string) $item['value'] : '' );
+					$html .= '<dd' . $val_attrs . '>' . esc_html( isset( $item['value'] ) ? (string) $item['value'] : '' );
 					if ( isset( $item['unit'] ) && '' !== (string) $item['unit'] ) {
 						$html .= ' <small>' . esc_html( (string) $item['unit'] ) . '</small>';
 					}
@@ -3452,6 +3453,614 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$html .= self::button_html( $btn_args );
 			$html .= '</div></div>';
 			return $html;
+		}
+
+		/**
+		 * Echo an inline lede drawer trigger button for stat_hub() (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function drawer_toggle( $args = array() ) {
+			self::emit( self::drawer_toggle_html( $args ) );
+		}
+
+		/**
+		 * Return an inline lede drawer trigger button (e.g. 「通道详情 ▾」) wired to stat_hub() (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $target      Target drawer id (matches stat_hub drawer_id).
+		 *     @type string $label       Closed label (default 「通道详情」).
+		 *     @type string $open_label  Expanded label (default 「收起通道」).
+		 *     @type bool   $open        Initial expanded state. Default false.
+		 *     @type string $class       Extra classes.
+		 *     @type array  $attrs       Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function drawer_toggle_html( $args = array() ) {
+			$args       = self::args( $args, 'Wenpai_Admin_UI::drawer_toggle' );
+			$target     = isset( $args['target'] ) ? sanitize_html_class( (string) $args['target'] ) : '';
+			$label      = isset( $args['label'] ) && '' !== (string) $args['label'] ? (string) $args['label'] : '通道详情';
+			$open_label = isset( $args['open_label'] ) && '' !== (string) $args['open_label'] ? (string) $args['open_label'] : '收起通道';
+			$open       = ! empty( $args['open'] );
+			$chevron    = class_exists( 'Wenpai_Admin_Icons', false ) ? Wenpai_Admin_Icons::svg( 'chevron-down' ) : '';
+			$cls        = self::classes( array( 'wenpai-lede-toggle', $open ? 'is-open' : '', self::extra_class( $args ) ) );
+			$html       = '<button type="button" class="' . esc_attr( $cls ) . '"';
+			if ( '' !== $target ) {
+				$html .= ' data-wenpai-drawer-toggle="' . esc_attr( $target ) . '" aria-controls="' . esc_attr( $target ) . '"';
+			}
+			$html .= ' aria-expanded="' . ( $open ? 'true' : 'false' ) . '"';
+			$html .= ' data-wenpai-label-closed="' . esc_attr( $label ) . '" data-wenpai-label-open="' . esc_attr( $open_label ) . '"';
+			$html .= self::extra_attrs( $args );
+			$html .= '><span data-wenpai-toggle-text>' . esc_html( $open ? $open_label : $label ) . '</span>' . $chevron . '</button>';
+			return $html;
+		}
+
+		/**
+		 * Echo a silent-when-healthy statbar hub card with anomaly alert strip and flush channel drawer (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function stat_hub( $args = array() ) {
+			self::emit( self::stat_hub_html( $args ) );
+		}
+
+		/**
+		 * Return stat_hub markup: 4-col numeric statbar + optional warm fallback strip + flush expandable channel grid (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $stats          Items passed to statbar_html().
+		 *     @type string $drawer_id      DOM id for the expandable drawer (default 'wenpai-stat-drawer').
+		 *     @type array  $alert          Optional array{ visible?: bool, text?: string, action_label?: string }.
+		 *     @type array  $channels       Channel cells: array of array{ label, value, tone?, attrs?, value_attrs? }.
+		 *     @type string $collapse_label Collapse button text in the last channel cell (default 「收起」).
+		 *     @type bool   $open           Initial open state for the channel drawer. Default false.
+		 *     @type string $class          Extra classes on section.card.
+		 *     @type array  $attrs          Extra attributes on section.card.
+		 * }
+		 * @return string
+		 */
+		public static function stat_hub_html( $args = array() ) {
+			$args           = self::args( $args, 'Wenpai_Admin_UI::stat_hub' );
+			$stats          = isset( $args['stats'] ) && is_array( $args['stats'] ) ? $args['stats'] : array();
+			$drawer_id      = isset( $args['drawer_id'] ) && '' !== (string) $args['drawer_id'] ? sanitize_html_class( (string) $args['drawer_id'] ) : 'wenpai-stat-drawer';
+			$channels       = isset( $args['channels'] ) && is_array( $args['channels'] ) ? array_values( $args['channels'] ) : array();
+			$open           = ! empty( $args['open'] );
+			$alert          = isset( $args['alert'] ) && is_array( $args['alert'] ) ? $args['alert'] : array();
+			$alert_visible  = ! empty( $alert['visible'] );
+			$alert_text     = isset( $alert['text'] ) ? (string) $alert['text'] : '';
+			$alert_act      = isset( $alert['action_label'] ) && '' !== (string) $alert['action_label'] ? (string) $alert['action_label'] : '展开查看';
+			$collapse_label = isset( $args['collapse_label'] ) && '' !== (string) $args['collapse_label'] ? (string) $args['collapse_label'] : '收起';
+			$chevron        = class_exists( 'Wenpai_Admin_Icons', false ) ? Wenpai_Admin_Icons::svg( 'chevron-down' ) : '';
+			$has_bottom     = $open || ( $alert_visible && '' !== $alert_text );
+
+			$cls   = self::classes( array( 'card', 'wenpai-stat-hub', $has_bottom ? 'has-drawer-visible' : '', self::extra_class( $args ) ) );
+			$html  = '<section class="' . esc_attr( $cls ) . '" data-wenpai-stat-hub="' . esc_attr( $drawer_id ) . '"' . self::extra_attrs( $args ) . '>';
+			$html .= self::statbar_html( array( 'items' => $stats ) );
+
+			if ( '' !== $alert_text || $alert_visible ) {
+				$show_bar = $alert_visible && ! $open;
+				$acls     = self::classes( array( 'wenpai-stat-hub__alert', $show_bar ? 'is-visible' : '' ) );
+				$html    .= '<button type="button" class="' . esc_attr( $acls ) . '" data-wenpai-drawer-open="' . esc_attr( $drawer_id ) . '" data-wenpai-has-issue="' . ( $alert_visible ? '1' : '0' ) . '">';
+				$html    .= '<span class="wenpai-stat-hub__alert-lead"><i class="wenpai-stat-hub__dot" aria-hidden="true"></i><span data-wenpai-alert-text>' . esc_html( $alert_text ) . '</span></span>';
+				$html    .= '<span class="wenpai-stat-hub__alert-act">' . esc_html( $alert_act ) . $chevron . '</span>';
+				$html    .= '</button>';
+			}
+
+			if ( array() !== $channels ) {
+				$dcls  = self::classes( array( 'wenpai-stat-hub__drawer', $open ? 'is-open' : '' ) );
+				$html .= '<div class="' . esc_attr( $dcls ) . '" id="' . esc_attr( $drawer_id ) . '" data-wenpai-drawer' . ( $open ? '' : ' hidden' ) . '>';
+				$last  = count( $channels ) - 1;
+				foreach ( $channels as $idx => $ch ) {
+					if ( ! is_array( $ch ) ) {
+						continue;
+					}
+					$tone   = isset( $ch['tone'] ) ? (string) $ch['tone'] : '';
+					$ccls   = self::classes( array( 'wenpai-stat-hub__cell', ( 'warn' === $tone || 'bad' === $tone ) ? 'is-' . $tone : '' ) );
+					$cattrs = isset( $ch['attrs'] ) && is_array( $ch['attrs'] ) ? self::extra_attrs( array( 'attrs' => $ch['attrs'] ) ) : '';
+					$vattrs = isset( $ch['value_attrs'] ) && is_array( $ch['value_attrs'] ) ? self::extra_attrs( array( 'attrs' => $ch['value_attrs'] ) ) : '';
+					$html  .= '<div class="' . esc_attr( $ccls ) . '"' . $cattrs . '>';
+					$html  .= '<div class="wenpai-stat-hub__cell-head">';
+					$html  .= '<span class="wenpai-stat-hub__k"><i aria-hidden="true"></i>' . esc_html( isset( $ch['label'] ) ? (string) $ch['label'] : '' ) . '</span>';
+					if ( $idx === $last ) {
+						$html .= '<button type="button" class="wenpai-stat-hub__collapse" data-wenpai-drawer-close="' . esc_attr( $drawer_id ) . '">' . esc_html( $collapse_label ) . ' &#9652;</button>';
+					}
+					$html .= '</div>';
+					$html .= '<span class="wenpai-stat-hub__v"' . $vattrs . '>' . esc_html( isset( $ch['value'] ) ? (string) $ch['value'] : '' ) . '</span>';
+					$html .= '</div>';
+				}
+				$html .= '</div>';
+			}
+
+			return $html . '</section>';
+		}
+
+		/**
+		 * Echo card-header segmented view tabs wired to view_panes() (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function view_tabs( $args = array() ) {
+			self::emit( self::view_tabs_html( $args ) );
+		}
+
+		/**
+		 * Return card-header segmented view tabs markup (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $group      Shared group name matching view_panes() group.
+		 *     @type string $aria_label Accessible tablist label.
+		 *     @type array  $items      Array of array{ id, label, active?: bool, card_title?: string, foot_meta?: string, foot_label?: string, foot_href?: string }.
+		 *     @type string $class      Extra classes.
+		 *     @type array  $attrs      Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function view_tabs_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::view_tabs' );
+			$group = isset( $args['group'] ) ? sanitize_key( (string) $args['group'] ) : 'default';
+			$label = isset( $args['aria_label'] ) ? (string) $args['aria_label'] : '';
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$cls   = self::classes( array( 'wenpai-seg-tabs', self::extra_class( $args ) ) );
+			$html  = '<div class="' . esc_attr( $cls ) . '" role="tablist" data-wenpai-tabs="' . esc_attr( $group ) . '"';
+			if ( '' !== $label ) {
+				$html .= ' aria-label="' . esc_attr( $label ) . '"';
+			}
+			$html .= self::extra_attrs( $args ) . '>';
+			foreach ( $items as $idx => $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$id     = isset( $item['id'] ) ? sanitize_key( (string) $item['id'] ) : 'tab-' . (int) $idx;
+				$active = ! empty( $item['active'] );
+				$html  .= '<button type="button" role="tab" class="' . ( $active ? 'is-active' : '' ) . '" aria-selected="' . ( $active ? 'true' : 'false' ) . '" data-wenpai-tab="' . esc_attr( $id ) . '"';
+				if ( isset( $item['card_title'] ) && '' !== (string) $item['card_title'] ) {
+					$html .= ' data-wenpai-card-title="' . esc_attr( (string) $item['card_title'] ) . '"';
+				}
+				if ( isset( $item['foot_meta'] ) ) {
+					$html .= ' data-wenpai-foot-meta="' . esc_attr( (string) $item['foot_meta'] ) . '"';
+				}
+				if ( isset( $item['foot_label'] ) ) {
+					$html .= ' data-wenpai-foot-label="' . esc_attr( (string) $item['foot_label'] ) . '"';
+				}
+				if ( isset( $item['foot_href'] ) ) {
+					$html .= ' data-wenpai-foot-href="' . esc_url( (string) $item['foot_href'] ) . '"';
+				}
+				$html .= '>' . esc_html( isset( $item['label'] ) ? (string) $item['label'] : '' ) . '</button>';
+			}
+			return $html . '</div>';
+		}
+
+		/**
+		 * Echo zero-jump overlapping view panes (grid-area: 1/1) paired with view_tabs() (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function view_panes( $args = array() ) {
+			self::emit( self::view_panes_html( $args ) );
+		}
+
+		/**
+		 * Return zero-jump overlapping view panes markup (kit 0.13.0).
+		 *
+		 * Inactive panes stay in the same CSS Grid cell with visibility:hidden so switching
+		 * tabs never alters card height or page scroll position.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $group Shared group name matching view_tabs() group.
+		 *     @type array  $panes Array of array{ id, html, active?: bool }.
+		 *     @type string $class Extra classes on .wenpai-view-panes.
+		 *     @type array  $attrs Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function view_panes_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::view_panes' );
+			$group = isset( $args['group'] ) ? sanitize_key( (string) $args['group'] ) : 'default';
+			$panes = isset( $args['panes'] ) && is_array( $args['panes'] ) ? $args['panes'] : array();
+			$cls   = self::classes( array( 'wenpai-view-panes', self::extra_class( $args ) ) );
+			$html  = '<div class="' . esc_attr( $cls ) . '" data-wenpai-panes="' . esc_attr( $group ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $panes as $idx => $pane ) {
+				if ( ! is_array( $pane ) ) {
+					continue;
+				}
+				$id     = isset( $pane['id'] ) ? sanitize_key( (string) $pane['id'] ) : 'pane-' . (int) $idx;
+				$active = ! empty( $pane['active'] );
+				$pcls   = self::classes( array( 'wenpai-view-pane', $active ? '' : 'is-inactive' ) );
+				$html  .= '<div class="' . esc_attr( $pcls ) . '" role="tabpanel" data-wenpai-pane="' . esc_attr( $id ) . '"' . ( $active ? '' : ' inert' ) . '>';
+				$html  .= isset( $pane['html'] ) ? self::kses( (string) $pane['html'], 'pane' ) : '';
+				$html  .= '</div>';
+			}
+			return $html . '</div>';
+		}
+
+		/**
+		 * Echo a 2x2 soft-surface metric tile grid (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function metric_tiles( $args = array() ) {
+			self::emit( self::metric_tiles_html( $args ) );
+		}
+
+		/**
+		 * Return 2x2 soft-surface metric tile grid markup (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items Array of array{ label, badge?: string, value, unit?: string, sub?: string, tone?: string, attrs?: array, value_attrs?: array, sub_attrs?: array }.
+		 *     @type string $class Extra classes.
+		 *     @type array  $attrs Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function metric_tiles_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::metric_tiles' );
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$cls   = self::classes( array( 'wenpai-metric-tiles', self::extra_class( $args ) ) );
+			$html  = '<div class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$tone   = isset( $item['tone'] ) ? (string) $item['tone'] : '';
+				$tcls   = self::classes( array( 'wenpai-metric-tile', ( 'warn' === $tone || 'bad' === $tone ) ? 'is-' . $tone : '' ) );
+				$iattrs = isset( $item['attrs'] ) && is_array( $item['attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['attrs'] ) ) : '';
+				$vattrs = isset( $item['value_attrs'] ) && is_array( $item['value_attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['value_attrs'] ) ) : '';
+				$sattrs = isset( $item['sub_attrs'] ) && is_array( $item['sub_attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['sub_attrs'] ) ) : '';
+				$html  .= '<div class="' . esc_attr( $tcls ) . '"' . $iattrs . '>';
+				$html  .= '<div class="wenpai-metric-tile__head">';
+				$html  .= '<span class="wenpai-metric-tile__name">' . esc_html( isset( $item['label'] ) ? (string) $item['label'] : '' ) . '</span>';
+				if ( isset( $item['badge'] ) && '' !== (string) $item['badge'] ) {
+					$html .= '<span class="wenpai-metric-tile__badge">' . esc_html( (string) $item['badge'] ) . '</span>';
+				}
+				$html .= '</div>';
+				$html .= '<div class="wenpai-metric-tile__val"' . $vattrs . '>' . esc_html( isset( $item['value'] ) ? (string) $item['value'] : '' );
+				if ( isset( $item['unit'] ) && '' !== (string) $item['unit'] ) {
+					$html .= '<small>' . esc_html( (string) $item['unit'] ) . '</small>';
+				}
+				$html .= '</div>';
+				if ( isset( $item['sub'] ) && '' !== (string) $item['sub'] ) {
+					$html .= '<span class="wenpai-metric-tile__sub"' . $sattrs . '><i aria-hidden="true"></i><span>' . esc_html( (string) $item['sub'] ) . '</span></span>';
+				}
+				$html .= '</div>';
+			}
+			return $html . '</div>';
+		}
+
+		/**
+		 * Echo an auto-sorted scrollable service quota list (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function quota_list( $args = array() ) {
+			self::emit( self::quota_list_html( $args ) );
+		}
+
+		/**
+		 * Return auto-sorted scrollable service quota list markup (kit 0.13.0).
+		 *
+		 * High-consumption services automatically float to the top (when auto_sort is true),
+		 * while unlimited / permanently-free items stay at the bottom without progress bars.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items     Array of array{ name, usage, percent?: int|null, note?: string, tone?: string, action_label?: string, action_url?: string }.
+		 *     @type bool   $auto_sort Sort descending by percent (null/unlimited last). Default true.
+		 *     @type string $class     Extra classes.
+		 *     @type array  $attrs     Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function quota_list_html( $args = array() ) {
+			$args      = self::args( $args, 'Wenpai_Admin_UI::quota_list' );
+			$raw_items = isset( $args['items'] ) && is_array( $args['items'] ) ? array_values( $args['items'] ) : array();
+			$auto_sort = ! isset( $args['auto_sort'] ) || (bool) $args['auto_sort'];
+			if ( $auto_sort && count( $raw_items ) > 1 ) {
+				$indexed = array();
+				foreach ( $raw_items as $i => $row ) {
+					if ( is_array( $row ) ) {
+						$row['_idx'] = $i;
+						$indexed[]   = $row;
+					}
+				}
+				usort(
+					$indexed,
+					function ( $a, $b ) {
+						$pa = isset( $a['percent'] ) && null !== $a['percent'] ? (int) $a['percent'] : -1;
+						$pb = isset( $b['percent'] ) && null !== $b['percent'] ? (int) $b['percent'] : -1;
+						if ( $pa !== $pb ) {
+							return $pb <=> $pa;
+						}
+						return (int) $a['_idx'] <=> (int) $b['_idx'];
+					}
+				);
+				$raw_items = $indexed;
+			}
+
+			$cls  = self::classes( array( 'wenpai-quota-scroll', self::extra_class( $args ) ) );
+			$html = '<div class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '><ul class="wenpai-quota-list">';
+			foreach ( $raw_items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$has_pct = isset( $item['percent'] ) && null !== $item['percent'] && '' !== (string) $item['percent'];
+				$pct     = $has_pct ? max( 0, min( 100, (int) $item['percent'] ) ) : 0;
+				$tone    = isset( $item['tone'] ) ? (string) $item['tone'] : '';
+				if ( '' === $tone && $has_pct && $pct >= 85 ) {
+					$tone = 'warn';
+				}
+				$icls  = self::classes( array( 'wenpai-quota-item', ( 'warn' === $tone || 'bad' === $tone ) ? 'is-' . $tone : '', ( $has_pct && $pct >= 100 ) ? 'is-full' : '' ) );
+				$html .= '<li class="' . esc_attr( $icls ) . '">';
+				$html .= '<div class="wenpai-quota-item__head">';
+				$html .= '<span class="wenpai-quota-item__name">' . esc_html( isset( $item['name'] ) ? (string) $item['name'] : '' ) . '</span>';
+				$html .= '<span class="wenpai-quota-item__num">' . esc_html( isset( $item['usage'] ) ? (string) $item['usage'] : '' ) . '</span>';
+				$html .= '</div>';
+				if ( $has_pct ) {
+					$html .= '<div class="wenpai-quota-item__rail" aria-hidden="true"><i style="inline-size:' . (int) $pct . '%"></i></div>';
+				}
+				$note = isset( $item['note'] ) ? (string) $item['note'] : '';
+				$albl = isset( $item['action_label'] ) ? (string) $item['action_label'] : '';
+				$aurl = isset( $item['action_url'] ) ? (string) $item['action_url'] : '';
+				if ( '' !== $note || ( '' !== $albl && '' !== $aurl ) ) {
+					$html .= '<div class="wenpai-quota-item__foot">';
+					$html .= '<span>' . esc_html( $note ) . '</span>';
+					if ( '' !== $albl && '' !== $aurl ) {
+						$html .= '<a class="wenpai-quota-item__act" href="' . esc_url( $aurl ) . '">' . esc_html( $albl ) . '</a>';
+					}
+					$html .= '</div>';
+				}
+				$html .= '</li>';
+			}
+			return $html . '</ul></div>';
+		}
+
+		/**
+		 * Echo a single-line micro-tag timeline / notice / suggestion list (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function tag_feed( $args = array() ) {
+			self::emit( self::tag_feed_html( $args ) );
+		}
+
+		/**
+		 * Return single-line micro-tag timeline / feed / suggestion list markup (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items Array of array{ tag, tone?: string, title, url?: string, target?: string, note?: string, when?: string, action_html?: string, action_label?: string, action_url?: string, action_variant?: string, attrs?: array }.
+		 *     @type array  $empty Optional empty_state() args when items is empty.
+		 *     @type string $class Extra classes.
+		 *     @type array  $attrs Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function tag_feed_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::tag_feed' );
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			if ( array() === $items ) {
+				return isset( $args['empty'] ) && is_array( $args['empty'] ) ? self::empty_state_html( $args['empty'] ) : '';
+			}
+			$cls  = self::classes( array( 'wenpai-tag-feed', self::extra_class( $args ) ) );
+			$html = '<ul class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$tone   = isset( $item['tone'] ) ? (string) $item['tone'] : '';
+				$tcls   = self::classes( array( 'wenpai-micro-tag', in_array( $tone, array( 'accent', 'warn', 'ok', 'bad' ), true ) ? 'is-' . $tone : '' ) );
+				$iattrs = isset( $item['attrs'] ) && is_array( $item['attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['attrs'] ) ) : '';
+				$html  .= '<li' . $iattrs . '>';
+				$html  .= '<span class="' . esc_attr( $tcls ) . '">' . esc_html( isset( $item['tag'] ) ? (string) $item['tag'] : '' ) . '</span>';
+				$html  .= '<span class="wenpai-tag-feed__text">';
+				$title  = isset( $item['title'] ) ? (string) $item['title'] : '';
+				if ( isset( $item['url'] ) && '' !== (string) $item['url'] ) {
+					$tgt   = ! empty( $item['target'] ) ? ' target="' . esc_attr( (string) $item['target'] ) . '" rel="noopener noreferrer"' : '';
+					$html .= '<a href="' . esc_url( (string) $item['url'] ) . '"' . $tgt . '>' . esc_html( $title ) . '</a>';
+				} else {
+					$html .= '<span>' . esc_html( $title ) . '</span>';
+				}
+				if ( isset( $item['note'] ) && '' !== (string) $item['note'] ) {
+					$html .= '<small>' . esc_html( (string) $item['note'] ) . '</small>';
+				}
+				$html .= '</span>';
+				$html .= '<span class="wenpai-tag-feed__side">';
+				if ( isset( $item['when'] ) && '' !== (string) $item['when'] ) {
+					$html .= '<span>' . esc_html( (string) $item['when'] ) . '</span>';
+				}
+				if ( isset( $item['action_html'] ) && '' !== (string) $item['action_html'] ) {
+					$html .= self::kses( (string) $item['action_html'], 'control' );
+				} elseif ( isset( $item['action_label'], $item['action_url'] ) && '' !== (string) $item['action_label'] && '' !== (string) $item['action_url'] ) {
+					$html .= self::button_html(
+						array(
+							'label'   => (string) $item['action_label'],
+							'href'    => (string) $item['action_url'],
+							'variant' => isset( $item['action_variant'] ) ? (string) $item['action_variant'] : 'secondary',
+							'size'    => 'sm',
+						)
+					);
+				}
+				$html .= '</span></li>';
+			}
+			return $html . '</ul>';
+		}
+
+		/**
+		 * Echo a compact 20rem cloud ad / white-label agency support slot card (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function ad_slot( $args = array() ) {
+			self::emit( self::ad_slot_html( $args ) );
+		}
+
+		/**
+		 * Return compact cloud ad / white-label agency support slot card markup (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $title         Card header title (default 「精选推荐」).
+		 *     @type bool   $agency        True renders neutral white-label support card without pager or close button.
+		 *     @type bool   $dismissible   Show × close button (default true when not agency).
+		 *     @type string $dismiss_label Accessible title for close button (default 「隐藏推荐位」).
+		 *     @type array  $slides        Array of array{ badge?: string, sub?: string, title, desc?: string, pills?: string[], foot_meta?: string, cta_label?: string, cta_url?: string, cta_target?: string }.
+		 *     @type string $class         Extra classes on section.card.
+		 *     @type array  $attrs         Extra attributes on section.card.
+		 * }
+		 * @return string
+		 */
+		public static function ad_slot_html( $args = array() ) {
+			$args   = self::args( $args, 'Wenpai_Admin_UI::ad_slot' );
+			$slides = isset( $args['slides'] ) && is_array( $args['slides'] ) ? array_values( $args['slides'] ) : array();
+			if ( array() === $slides ) {
+				return '';
+			}
+			$agency      = ! empty( $args['agency'] );
+			$dismissible = ! $agency && ( ! isset( $args['dismissible'] ) || (bool) $args['dismissible'] );
+			$title       = isset( $args['title'] ) && '' !== (string) $args['title'] ? (string) $args['title'] : ( $agency ? '技术支持与维护' : '精选推荐' );
+			$close_lbl   = isset( $args['dismiss_label'] ) && '' !== (string) $args['dismiss_label'] ? (string) $args['dismiss_label'] : '隐藏推荐位';
+			$count       = count( $slides );
+			$first       = is_array( $slides[0] ) ? $slides[0] : array();
+
+			$cls   = self::classes( array( 'card', 'wenpai-card--equal', 'wenpai-ad-slot', self::extra_class( $args ) ) );
+			$html  = '<section class="' . esc_attr( $cls ) . '" data-wenpai-ad-slot' . self::extra_attrs( $args ) . '>';
+			$html .= '<div class="card-head"><div><h2 class="card-title">' . esc_html( $title ) . '</h2></div>';
+			if ( ( ! $agency && $count > 1 ) || $dismissible ) {
+				$html .= '<div class="head-actions">';
+				if ( ! $agency && $count > 1 ) {
+					$html .= '<div class="wenpai-ad-pager">';
+					$html .= '<button type="button" data-wenpai-ad-step="-1" aria-label="上一条">&#8249;</button>';
+					$html .= '<span data-wenpai-ad-index>1 / ' . (int) $count . '</span>';
+					$html .= '<button type="button" data-wenpai-ad-step="1" aria-label="下一条">&#8250;</button>';
+					$html .= '</div>';
+				}
+				if ( $dismissible ) {
+					$html .= '<button type="button" class="wenpai-ad-close" data-wenpai-ad-dismiss aria-label="' . esc_attr( $close_lbl ) . '" title="' . esc_attr( $close_lbl ) . '">&times;</button>';
+				}
+				$html .= '</div>';
+			}
+			$html .= '</div>';
+
+			$html .= '<div class="wenpai-card__body"><div class="wenpai-view-panes">';
+			foreach ( $slides as $idx => $slide ) {
+				if ( ! is_array( $slide ) ) {
+					continue;
+				}
+				$active = 0 === $idx;
+				$pcls   = self::classes( array( 'wenpai-view-pane', $active ? '' : 'is-inactive' ) );
+				$scls   = self::classes( array( 'wenpai-ad-stage', $agency ? 'is-neutral' : '' ) );
+				$fmeta  = isset( $slide['foot_meta'] ) ? (string) $slide['foot_meta'] : '';
+				$clbl   = isset( $slide['cta_label'] ) ? (string) $slide['cta_label'] : '';
+				$curl   = isset( $slide['cta_url'] ) ? (string) $slide['cta_url'] : '';
+				$html  .= '<div class="' . esc_attr( $pcls ) . '" data-wenpai-ad-slide="' . (int) $idx . '" data-wenpai-foot-meta="' . esc_attr( $fmeta ) . '" data-wenpai-cta-label="' . esc_attr( $clbl ) . '" data-wenpai-cta-url="' . esc_url( $curl ) . '"' . ( $active ? '' : ' inert' ) . '>';
+				$html  .= '<div class="' . esc_attr( $scls ) . '">';
+				$html  .= '<div class="wenpai-ad-stage__top">';
+				if ( isset( $slide['badge'] ) && '' !== (string) $slide['badge'] ) {
+					$bcls  = self::classes( array( 'wenpai-micro-tag', $agency ? '' : 'is-accent' ) );
+					$html .= '<span class="' . esc_attr( $bcls ) . '">' . esc_html( (string) $slide['badge'] ) . '</span>';
+				}
+				if ( isset( $slide['sub'] ) && '' !== (string) $slide['sub'] ) {
+					$html .= '<span class="wenpai-ad-stage__sub">' . esc_html( (string) $slide['sub'] ) . '</span>';
+				}
+				$html .= '</div>';
+				$html .= '<div class="wenpai-ad-stage__body">';
+				$html .= '<h3 class="wenpai-ad-stage__title">' . esc_html( isset( $slide['title'] ) ? (string) $slide['title'] : '' ) . '</h3>';
+				if ( isset( $slide['desc'] ) && '' !== (string) $slide['desc'] ) {
+					$html .= '<p class="wenpai-ad-stage__desc">' . esc_html( (string) $slide['desc'] ) . '</p>';
+				}
+				$html .= '</div>';
+				if ( isset( $slide['pills'] ) && is_array( $slide['pills'] ) && array() !== $slide['pills'] ) {
+					$html .= '<div class="wenpai-ad-stage__pills">';
+					foreach ( $slide['pills'] as $pill ) {
+						if ( is_scalar( $pill ) && '' !== (string) $pill ) {
+							$html .= '<span class="wenpai-ad-pill">' . esc_html( (string) $pill ) . '</span>';
+						}
+					}
+					$html .= '</div>';
+				}
+				$html .= '</div></div>';
+			}
+			$html .= '</div></div>';
+
+			$first_meta = isset( $first['foot_meta'] ) ? (string) $first['foot_meta'] : '';
+			$first_lbl  = isset( $first['cta_label'] ) ? (string) $first['cta_label'] : '';
+			$first_url  = isset( $first['cta_url'] ) ? (string) $first['cta_url'] : '';
+			$first_tgt  = ! empty( $first['cta_target'] ) ? ' target="' . esc_attr( (string) $first['cta_target'] ) . '" rel="noopener noreferrer"' : '';
+			$html      .= '<div class="card-foot start">';
+			$html      .= '<span class="meta" data-wenpai-ad-foot-meta>' . esc_html( $first_meta ) . '</span>';
+			if ( '' !== $first_lbl && '' !== $first_url ) {
+				$html .= '<a class="btn btn-ghost btn-sm" href="' . esc_url( $first_url ) . '"' . $first_tgt . ' data-wenpai-ad-foot-cta>' . esc_html( $first_lbl ) . '</a>';
+			}
+			$html .= '</div></section>';
+			return $html;
+		}
+
+		/**
+		 * Echo an icon-box launcher grid for lightweight tools and ecosystem mini-apps (kit 0.13.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function icon_grid( $args = array() ) {
+			self::emit( self::icon_grid_html( $args ) );
+		}
+
+		/**
+		 * Return icon-box launcher grid markup (kit 0.13.0).
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items   Array of array{ label, icon?: string, icon_html?: string, href?: string, target?: string, dashed?: bool, attrs?: array }.
+		 *     @type int    $columns Grid columns on desktop (2, 3, or 4; default 4).
+		 *     @type string $class   Extra classes.
+		 *     @type array  $attrs   Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function icon_grid_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::icon_grid' );
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			$cols  = isset( $args['columns'] ) ? (int) $args['columns'] : 4;
+			if ( ! in_array( $cols, array( 2, 3, 4 ), true ) ) {
+				$cols = 4;
+			}
+			$cls  = self::classes( array( 'wenpai-icon-grid', 4 !== $cols ? 'wenpai-icon-grid--' . $cols : '', self::extra_class( $args ) ) );
+			$html = '<div class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '>';
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$glyph = '';
+				if ( isset( $item['icon_html'] ) && '' !== (string) $item['icon_html'] ) {
+					$glyph = self::kses( (string) $item['icon_html'], 'svg' );
+				} elseif ( isset( $item['icon'] ) && '' !== (string) $item['icon'] && class_exists( 'Wenpai_Admin_Icons', false ) ) {
+					$glyph = Wenpai_Admin_Icons::svg( (string) $item['icon'] );
+				}
+				$bcls   = self::classes( array( 'wenpai-icon-box', ! empty( $item['dashed'] ) ? 'is-more' : '' ) );
+				$iattrs = isset( $item['attrs'] ) && is_array( $item['attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['attrs'] ) ) : '';
+				$label  = isset( $item['label'] ) ? (string) $item['label'] : '';
+				$inner  = '<span class="wenpai-icon-box__glyph" aria-hidden="true">' . $glyph . '</span><span class="wenpai-icon-box__label">' . esc_html( $label ) . '</span>';
+				if ( isset( $item['href'] ) && '' !== (string) $item['href'] ) {
+					$tgt   = ! empty( $item['target'] ) ? ' target="' . esc_attr( (string) $item['target'] ) . '" rel="noopener noreferrer"' : '';
+					$html .= '<a class="' . esc_attr( $bcls ) . '" href="' . esc_url( (string) $item['href'] ) . '"' . $tgt . $iattrs . '>' . $inner . '</a>';
+				} else {
+					$html .= '<button type="button" class="' . esc_attr( $bcls ) . '"' . $iattrs . '>' . $inner . '</button>';
+				}
+			}
+			return $html . '</div>';
 		}
 
 		/**

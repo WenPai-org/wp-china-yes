@@ -42,6 +42,8 @@
   --wenpai-bad-ink-strong: #8a2424;
   --wenpai-mute: #646970;
   --wenpai-mute-soft: #f0f0f1;
+  --wenpai-surface-soft: #f6f7f9;
+  --wenpai-ad-soft: #f6f8ff;
 
   /* focus */
   --wenpai-focus-color: var(--wenpai-accent);

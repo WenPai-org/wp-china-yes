@@ -100,10 +100,17 @@ class KitRendererTest extends TestCase {
 	public function test_five_tabs_wizard_and_help_render_cleanly(): void {
 		$overview = $this->render_page( 'wpcy' );
 		$this->assertStringContainsString( 'data-wpcy-screen="overview"', $overview );
-		$this->assertStringContainsString( '近 7 日加速趋势', $overview );
-		$this->assertStringContainsString( '核心节点延迟', $overview );
+		$this->assertStringContainsString( '通道详情', $overview );
+		$this->assertStringContainsString( '调整设置', $overview );
 		$this->assertStringContainsString( '立即测速', $overview );
+		$this->assertStringContainsString( '近 7 日加速趋势', $overview );
+		$this->assertStringContainsString( '核心节点测速', $overview );
+		$this->assertStringContainsString( '服务用量额度', $overview );
 		$this->assertStringContainsString( '近期运行记录', $overview );
+		$this->assertStringContainsString( '茶馆动态', $overview );
+		$this->assertStringContainsString( '精选推荐', $overview );
+		$this->assertStringContainsString( '快捷工具', $overview );
+		$this->assertStringContainsString( '站点建议', $overview );
 		$this->assertStringContainsString( 'wpcy-features', $overview );
 		$overview_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $overview );
 		$this->assertStringNotContainsString( 'style="', $overview_no_meter );
@@ -235,11 +242,12 @@ class KitRendererTest extends TestCase {
 		);
 
 		$hydrated = $this->render_page( 'wpcy' );
-		$this->assertStringContainsString( '38ms', $hydrated );
-		$this->assertStringContainsString( '24ms', $hydrated );
-		$this->assertStringContainsString( '112ms', $hydrated );
+		$this->assertStringContainsString( '38<small>ms</small>', $hydrated );
+		$this->assertStringContainsString( '24<small>ms</small>', $hydrated );
+		$this->assertStringContainsString( '112<small>ms</small>', $hydrated );
 		$this->assertStringContainsString( '58 <small>ms</small>', $hydrated );
-		$this->assertStringContainsString( '检测于 11-21 11:30', $hydrated );
+		$this->assertStringContainsString( '11-21 11:30 更新', $hydrated );
+		$this->assertStringContainsString( '1 项通道发生自动回退', $hydrated );
 
 		$recovery = $this->render_page( 'wpcy', array( 'recovery_mode' => true ) );
 		$this->assertStringContainsString( '恢复模式生效中，镜像与静态加速已暂停', $recovery );

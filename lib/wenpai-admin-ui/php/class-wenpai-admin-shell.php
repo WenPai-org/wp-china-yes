@@ -166,16 +166,24 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 		/**
 		 * Page heading inside main.
 		 *
-		 * @param string $title Already translated.
-		 * @param string $lede  Already translated. Optional.
-		 * @param string $aside Optional HTML for .mode (escaped by caller).
+		 * @param string $title           Already translated.
+		 * @param string $lede            Already translated. Optional.
+		 * @param string $aside           Optional HTML for .mode (escaped by caller).
+		 * @param string $lede_extra_html Optional inline HTML appended inside .wenpai-lede (e.g. drawer_toggle_html(); escaped by caller).
 		 */
-		public static function page_head( $title, $lede = '', $aside = '' ) {
+		public static function page_head( $title, $lede = '', $aside = '', $lede_extra_html = '' ) {
 			echo '<div class="wenpai-page-head">';
 			echo '<div>';
 			echo '<h1 class="wenpai-h1">' . esc_html( $title ) . '</h1>';
-			if ( '' !== $lede ) {
-				echo '<p class="wenpai-lede">' . esc_html( $lede ) . '</p>';
+			if ( '' !== $lede || '' !== $lede_extra_html ) {
+				echo '<p class="wenpai-lede">';
+				if ( '' !== $lede ) {
+					echo esc_html( $lede );
+				}
+				if ( '' !== $lede_extra_html ) {
+					echo $lede_extra_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- caller HTML (e.g. Wenpai_Admin_UI::drawer_toggle_html).
+				}
+				echo '</p>';
 			}
 			echo '</div>';
 			if ( '' !== $aside ) {

@@ -117,28 +117,54 @@
 			+ '</g></svg>';
 	}
 
-	function setMeterRow(meterEl, idx, text, ms) {
-		if (!meterEl) return;
-		const rows = meterEl.querySelectorAll('.wenpai-meter__row');
-		const row = rows[idx];
-		if (!row) return;
-		const valEl = row.querySelector('.wenpai-meter__value');
-		const barEl = row.querySelector('.wenpai-meter__bar > i');
-		if (valEl) valEl.textContent = text;
-		if (barEl && ms != null) {
-			const pct = Math.max(6, Math.min(100, Math.round((ms / 800) * 100)));
-			barEl.style.inlineSize = pct + '%';
+	function setMetricTile(tilesEl, key, ms, state, subText) {
+		if (!tilesEl) return;
+		const tile = tilesEl.querySelector('[data-wpcy-tile="' + key + '"]');
+		const valEl = tilesEl.querySelector('[data-wpcy-tile-val="' + key + '"]');
+		const subEl = tilesEl.querySelector('[data-wpcy-tile-sub="' + key + '"] span');
+		if (tile) {
+			tile.classList.toggle('is-warn', state === 'warn');
+			tile.classList.toggle('is-bad', state === 'bad');
+		}
+		if (valEl) {
+			valEl.innerHTML = '';
+			if (ms != null) {
+				valEl.appendChild(document.createTextNode(String(ms)));
+				const sm = document.createElement('small');
+				sm.textContent = 'ms';
+				valEl.appendChild(sm);
+			} else {
+				valEl.textContent = state === 'bad' ? '超时' : '—';
+			}
+		}
+		if (subEl && subText) {
+			subEl.textContent = subText;
 		}
 	}
 
-	function applyTargetsToOverview(targets, statsEl, meterEl, checkedAtEl) {
+	function setChannelCell(key, isIssue, okLabel) {
+		const cell = document.querySelector('[data-wpcy-channel="' + key + '"]');
+		const val = document.querySelector('[data-wpcy-channel-val="' + key + '"]');
+		if (cell) {
+			cell.classList.toggle('is-warn', !!isIssue);
+		}
+		if (val && okLabel) {
+			val.textContent = isIssue ? '探测波动 · 已自动回退' : okLabel;
+		}
+	}
+
+	function applyTargetsToOverview(targets, statsEl, tilesEl, checkedAtEl) {
 		if (!Array.isArray(targets) || !targets.length) return;
 		const byTarget = {};
 		const latencies = [];
+		let issueCount = 0;
 		targets.forEach(function (t) {
 			if (t && t.target) byTarget[t.target] = t;
 			if (t && typeof t.latency_ms === 'number' && t.latency_ms > 0) {
 				latencies.push(t.latency_ms);
+			}
+			if (t && (t.result === 'fallback' || t.result === 'down')) {
+				issueCount += 1;
 			}
 		});
 		if (statsEl && latencies.length) {
@@ -148,24 +174,36 @@
 		const wporg = byTarget['api.wenpai.net'] || byTarget['downloads.wenpai.net'];
 		const pub = byTarget['cdnjs.admincdn.com'] || byTarget['jsd.admincdn.com'];
 		const ava = byTarget['cravatar.com'] || byTarget['cn.cravatar.com'] || targets.find(function (t) { return t && /cravatar/i.test(t.target); });
-		if (meterEl) {
-			[wporg, pub, ava].forEach(function (item, idx) {
-				if (!item) return;
-				const ms = item.latency_ms != null ? item.latency_ms : null;
-				const text = ms != null ? (ms + 'ms') : (item.result === 'down' ? '未连接' : '正常');
-				setMeterRow(meterEl, idx, text, ms);
+		if (tilesEl) {
+			const defs = [
+				{ key: 'wporg', item: wporg, okSub: '国内镜像', chOk: 'WenPai.org 国内源（免费）' },
+				{ key: 'cravatar', item: ava, okSub: '中国线路', chOk: '中国大陆节点（免费）' },
+				{ key: 'admincdn', item: pub, okSub: '前后台加速', chOk: 'adminCDN 前后台加速' }
+			];
+			defs.forEach(function (d) {
+				if (!d.item) return;
+				const ms = d.item.latency_ms != null ? d.item.latency_ms : null;
+				const isWarn = d.item.result === 'fallback' || d.item.result === 'down';
+				setMetricTile(tilesEl, d.key, ms, isWarn ? 'warn' : '', isWarn ? '已自动回退' : d.okSub);
+				setChannelCell(d.key, isWarn, d.chOk);
+			});
+		}
+		if (typeof window.wenpaiSyncStatHub === 'function') {
+			window.wenpaiSyncStatHub('wpcy-channel-drawer', {
+				hasIssue: issueCount > 0,
+				alertText: issueCount + ' 项通道发生自动回退，系统正定期自动复检'
 			});
 		}
 		if (checkedAtEl) {
 			const stamp = formatShortTime((wporg && wporg.checked_at) || (targets[0] && targets[0].checked_at));
 			if (stamp) {
-				checkedAtEl.textContent = '检测于 ' + stamp;
+				checkedAtEl.textContent = stamp + ' 更新 · 自动回退';
 			}
 		}
 	}
 
-	async function measureOverviewBrowser(meterEl) {
-		if (!meterEl) return;
+	async function measureOverviewBrowser(tilesEl) {
+		if (!tilesEl) return;
 		const urls = [
 			'https://cn.cravatar.com/avatar/00000000000000000000000000000000?d=mp&s=16',
 			'https://cdnjs.admincdn.com/ajax/libs/jquery/3.7.1/jquery.min.js'
@@ -180,35 +218,54 @@
 		}
 		if (samples.length) {
 			const avg = Math.round(samples.reduce(function (a, b) { return a + b; }, 0) / samples.length);
-			setMeterRow(meterEl, 3, avg + 'ms', avg);
+			setMetricTile(tilesEl, 'browser', avg, '', '访客侧可达');
 		} else {
-			setMeterRow(meterEl, 3, '超时', 0);
+			setMetricTile(tilesEl, 'browser', null, 'warn', '连接波动');
 		}
 	}
 
-	// 1. Overview: hydrate statbar, trend chart, latency meter, announcements, and recent events.
+	// 1. Overview: hydrate stat_hub, trend chart, metric_tiles, tag_feed (events + news), ad_slot, and quick tools.
 	function initOverview() {
 		const statsEl = document.querySelector('[data-wpcy-stats]');
 		const trendEl = document.querySelector('[data-wpcy-trend]');
 		const trendSumEl = document.querySelector('[data-wpcy-trend-summary]');
-		const meterEl = document.querySelector('[data-wpcy-latency]');
+		const trendLegendEl = document.querySelector('[data-wpcy-trend-legend]');
+		const tilesEl = document.querySelector('[data-wpcy-latency]');
+		const quotasEl = document.querySelector('[data-wpcy-quotas]');
 		const checkedAtEl = document.querySelector('[data-wpcy-checked-at]');
 		const probeBtn = document.querySelector('[data-wpcy-overview-probe]');
 		const eventsEl = document.querySelector('[data-wpcy-events]');
-		const annEl = document.querySelector('[data-wpcy-announcements]');
+		const newsEl = document.querySelector('[data-wpcy-news]');
+		const feedCardEl = document.querySelector('[data-wpcy-feed-card]');
+		const newsManageEl = document.querySelector('[data-wpcy-news-manage]');
 		const migEl = document.querySelector('[data-wpcy-migration-banner]');
+
+		let cachedEvents = [];
+		let cachedNotices = [];
 
 		if (statsEl || trendEl) {
 			api('/stats?days=7').then(function (data) {
 				const totals = (data && data.totals) ? data.totals : {};
-				const totalAcc = (Number(totals.wporg_rewrites) || 0) + (Number(totals.public_asset_rewrites) || 0) + (Number(totals.avatar_rewrites) || 0);
+				const wporgCnt = Number(totals.wporg_rewrites) || 0;
+				const pubCnt = Number(totals.public_asset_rewrites) || 0;
+				const avaCnt = Number(totals.avatar_rewrites) || 0;
+				const totalAcc = wporgCnt + pubCnt + avaCnt;
 				if (statsEl) {
 					setStatbarCell(statsEl, 0, totalAcc, '次');
-					setStatbarCell(statsEl, 2, Number(totals.avatar_rewrites) || 0, '次');
+					setStatbarCell(statsEl, 2, avaCnt, '次');
 					setStatbarCell(statsEl, 3, Number(totals.blocked_outbound) || 0, '次');
 				}
 				if (trendSumEl) {
-					trendSumEl.textContent = '近 7 日累计 ' + totalAcc + ' 次';
+					trendSumEl.textContent = '累计 ' + totalAcc + ' 次请求';
+				}
+				if (trendLegendEl) {
+					trendLegendEl.textContent = '静态库 ' + pubCnt + ' 次 · Cravatar 头像 ' + avaCnt + ' 次 · 更新镜像 ' + wporgCnt + ' 次';
+				}
+				if (quotasEl && pubCnt > 0) {
+					const firstNum = quotasEl.querySelector('.wenpai-quota-item__num');
+					if (firstNum && /基础免费额度/.test(firstNum.textContent || '')) {
+						firstNum.textContent = '近 7 日 ' + pubCnt + ' 次加速';
+					}
 				}
 				if (trendEl) {
 					const plot = trendEl.querySelector('.wenpai-chart__plot') || trendEl;
@@ -217,79 +274,241 @@
 			}).catch(function () {});
 		}
 
-		const eventLabels = {
-			first_check: '完成首次连通性检测',
-			route_recovered: '上游加速节点恢复正常',
-			mirror_fallback: '镜像波动自动回退至官方源',
-			route_fallback: '上游线路自动切换备用源',
-			route_down: '上游节点不可达（已自动回退官方源）',
-			update_check: '完成系统与插件更新检查',
-			migrated: '已完成旧版配置平滑导入',
-			profile_set: '更新站点场景设置',
-			settings_saved: '保存加速设置',
-			diagnostics_run: '执行双端连通性检测',
-			recovery_entered: '进入安全恢复模式',
-			recovery_exited: '恢复正常加速运行',
-			fallback: '镜像波动自动回退至官方源',
-			route_up: '上游加速节点恢复正常',
-			binding_started: '发起站点绑定请求',
-			binding_revoked: '解除站点绑定'
+		const eventMeta = {
+			first_check: { tag: '巡检', tone: '', text: '完成首次连通性检测' },
+			route_recovered: { tag: '恢复', tone: '', text: '上游加速节点恢复正常' },
+			mirror_fallback: { tag: '回退', tone: 'warn', text: '镜像波动自动回退至官方源' },
+			route_fallback: { tag: '回退', tone: 'warn', text: '上游线路自动切换备用源' },
+			route_down: { tag: '回退', tone: 'warn', text: '上游节点不可达，已回退官方源' },
+			update_check: { tag: '巡检', tone: '', text: '完成系统与插件更新检查' },
+			migrated: { tag: '迁移', tone: 'accent', text: '已完成旧版配置平滑导入' },
+			profile_set: { tag: '配置', tone: '', text: '更新站点场景设置' },
+			settings_saved: { tag: '配置', tone: '', text: '保存加速设置' },
+			diagnostics_run: { tag: '巡检', tone: '', text: '执行双端连通性检测' },
+			recovery_entered: { tag: '恢复', tone: 'warn', text: '进入安全恢复模式' },
+			recovery_exited: { tag: '恢复', tone: '', text: '恢复正常加速运行' },
+			fallback: { tag: '回退', tone: 'warn', text: '镜像波动自动回退至官方源' },
+			route_up: { tag: '恢复', tone: '', text: '上游加速节点恢复正常' },
+			binding_started: { tag: '站点', tone: 'accent', text: '发起站点通行证绑定请求' },
+			binding_revoked: { tag: '站点', tone: '', text: '解除当前站点绑定' }
 		};
 
-		function formatEventTime(raw) {
-			if (!raw) return '';
-			const d = new Date(raw);
-			if (isNaN(d.getTime())) return String(raw);
-			const pad = function (n) { return n < 10 ? '0' + n : String(n); };
-			return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+		function buildTagFeedRow(tag, tone, title, url, note, when, onDismiss) {
+			const li = document.createElement('li');
+			const badge = document.createElement('span');
+			badge.className = 'wenpai-micro-tag' + (tone ? ' is-' + tone : '');
+			badge.textContent = tag;
+
+			const textWrap = document.createElement('span');
+			textWrap.className = 'wenpai-tag-feed__text';
+			if (url && /^https:\/\//i.test(url)) {
+				const a = document.createElement('a');
+				a.href = url;
+				a.target = '_blank';
+				a.rel = 'noopener noreferrer';
+				a.textContent = title;
+				textWrap.appendChild(a);
+			} else {
+				const sp = document.createElement('span');
+				sp.textContent = title;
+				textWrap.appendChild(sp);
+			}
+			if (note) {
+				const sm = document.createElement('small');
+				sm.textContent = note;
+				textWrap.appendChild(sm);
+			}
+
+			const side = document.createElement('span');
+			side.className = 'wenpai-tag-feed__side';
+			if (when) {
+				const tm = document.createElement('span');
+				tm.textContent = when;
+				side.appendChild(tm);
+			}
+			if (typeof onDismiss === 'function') {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn btn-ghost btn-sm';
+				btn.textContent = '已读';
+				btn.addEventListener('click', function () { onDismiss(li); });
+				side.appendChild(btn);
+			}
+
+			li.appendChild(badge);
+			li.appendChild(textWrap);
+			li.appendChild(side);
+			return li;
 		}
 
-		const emptyEventsHtml = '<p class="meta">当前尚未产生新的线路切换或检测记录，系统发生自动回退或配置更新时会在此展示。</p>';
+		function renderEventsAndNews() {
+			if (eventsEl) {
+				const ul = document.createElement('ul');
+				ul.className = 'wenpai-tag-feed';
+				const pinned = cachedNotices.length ? cachedNotices[0] : null;
+				if (pinned) {
+					ul.appendChild(buildTagFeedRow(
+						'通知',
+						pinned.tone === 'warn' ? 'warn' : 'accent',
+						pinned.title || pinned.message || '重要维护通知',
+						pinned.url || '',
+						pinned.summary || pinned.body || '重要消息置顶提醒，读后自动收起',
+						formatShortTime(pinned.published_at || pinned.date || ''),
+						function () {
+							api('/announcements/' + encodeURIComponent(pinned.id) + '/dismiss', { method: 'POST' })
+								.finally(function () {
+									cachedNotices = cachedNotices.filter(function (n) { return n.id !== pinned.id; });
+									renderEventsAndNews();
+								});
+						}
+					));
+				}
+				cachedEvents.slice(0, 5).forEach(function (ev) {
+					const rawType = ev.type || '';
+					const meta = eventMeta[rawType] || { tag: '记录', tone: '', text: '运行状态记录' };
+					ul.appendChild(buildTagFeedRow(
+						meta.tag,
+						meta.tone,
+						ev.title || meta.text || ev.summary || rawType,
+						'',
+						ev.detail || ev.target || '',
+						formatShortTime(ev.at || ev.when || ''),
+						null
+					));
+				});
+				if (!ul.children.length) {
+					ul.appendChild(buildTagFeedRow('就绪', '', '各加速通道正按当前站点策略平稳运行', '', '发生节点切换或巡检时自动记录', '', null));
+				}
+				eventsEl.innerHTML = '';
+				eventsEl.appendChild(ul);
+			}
+
+			if (newsEl) {
+				const ul = document.createElement('ul');
+				ul.className = 'wenpai-tag-feed';
+				if (!cachedNotices.length) {
+					ul.appendChild(buildTagFeedRow('动态', '', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同时已在仪表盘替换慢速默认新闻源', '', null));
+				} else {
+					cachedNotices.slice(0, 5).forEach(function (item) {
+						const tag = item.category === 'release' ? '版本' : (item.tone === 'warn' ? '公告' : '动态');
+						const tone = item.tone === 'warn' ? 'warn' : (tag === '版本' ? 'accent' : '');
+						ul.appendChild(buildTagFeedRow(
+							tag,
+							tone,
+							item.title || item.message || '社区更新动态',
+							item.url || '',
+							item.summary || item.body || '',
+							formatShortTime(item.published_at || item.date || ''),
+							item.id ? function () {
+								api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
+									.finally(function () {
+										cachedNotices = cachedNotices.filter(function (n) { return n.id !== item.id; });
+										renderEventsAndNews();
+									});
+							} : null
+						));
+					});
+				}
+				newsEl.innerHTML = '';
+				newsEl.appendChild(ul);
+			}
+		}
 
 		function loadEvents() {
 			if (!eventsEl) return;
 			api('/events?per_page=5').then(function (data) {
-				const list = Array.isArray(data && data.events) ? data.events : [];
-				if (!list.length) {
-					eventsEl.innerHTML = emptyEventsHtml;
-					return;
-				}
-				const ul = document.createElement('ul');
-				ul.className = 'wpcy-event-list';
-				list.slice(0, 5).forEach(function (ev) {
-					const li = document.createElement('li');
-					li.className = 'wpcy-event-item';
-					const left = document.createElement('span');
-					const rawType = ev.type || '';
-					left.textContent = ev.title || eventLabels[rawType] || ev.summary || rawType || '运行状态记录';
-					const right = document.createElement('span');
-					right.className = 'wpcy-event-item__time';
-					right.textContent = formatEventTime(ev.at || ev.when || '');
-					li.appendChild(left);
-					li.appendChild(right);
-					ul.appendChild(li);
-				});
-				eventsEl.innerHTML = '';
-				eventsEl.appendChild(ul);
+				cachedEvents = Array.isArray(data && data.events) ? data.events : [];
+				renderEventsAndNews();
 			}).catch(function () {
-				eventsEl.innerHTML = emptyEventsHtml;
+				renderEventsAndNews();
 			});
 		}
 
 		loadEvents();
 
-		if (meterEl) {
-			measureOverviewBrowser(meterEl);
+		if (feedCardEl && feedCardEl.getAttribute('data-wpcy-news-enabled') !== '0') {
+			api('/announcements').then(function (data) {
+				cachedNotices = Array.isArray(data && data.items) ? data.items : [];
+				renderEventsAndNews();
+			}).catch(function () {
+				renderEventsAndNews();
+			});
 		}
 
-		if (statsEl || meterEl) {
+		document.addEventListener('wenpai:tab-change', function (e) {
+			if (newsManageEl && e.detail && e.detail.group === 'wpcy-feed') {
+				newsManageEl.hidden = e.detail.tab !== 'news';
+			}
+		});
+
+		const adSlotEl = document.querySelector('[data-wenpai-ad-slot]');
+		if (adSlotEl && !adSlotEl.querySelector('.wenpai-ad-stage.is-neutral')) {
+			try {
+				if (window.localStorage && window.localStorage.getItem('wpcy_overview_ad_dismissed') === '1') {
+					adSlotEl.hidden = true;
+					const split = adSlotEl.closest('.wenpai-split--reverse');
+					if (split) split.classList.add('is-single');
+				}
+			} catch (e) {}
+		}
+
+		document.addEventListener('wenpai:ad-dismiss', function () {
+			try {
+				if (window.localStorage) {
+					window.localStorage.setItem('wpcy_overview_ad_dismissed', '1');
+				}
+			} catch (e) {}
+			if (typeof window.wenpaiToast === 'function') {
+				window.wenpaiToast('已隐藏推荐位', 'ok');
+			}
+		});
+
+		function triggerOverviewProbe(toastMsg) {
+			if (probeBtn) {
+				probeBtn.classList.add('is-busy');
+				probeBtn.setAttribute('aria-busy', 'true');
+				probeBtn.disabled = true;
+			}
+			if (checkedAtEl) checkedAtEl.textContent = '测速中…';
+			setMetricTile(tilesEl, 'browser', null, '', '测速中…');
+			return Promise.all([
+				api('/diagnostics/run', { method: 'POST' }),
+				measureOverviewBrowser(tilesEl)
+			]).then(function (res) {
+				const fresh = res[0];
+				applyTargetsToOverview(fresh && fresh.targets, statsEl, tilesEl, checkedAtEl);
+				if (checkedAtEl) checkedAtEl.textContent = '刚刚更新 · 自动回退';
+				loadEvents();
+				if (toastMsg) {
+					if (typeof window.wenpaiToast === 'function') {
+						window.wenpaiToast(toastMsg, 'ok');
+					} else {
+						notify('ok', toastMsg);
+					}
+				}
+			}).catch(function (err) {
+				notify('bad', err.message || '节点测速未完成，请稍后重试。');
+			}).finally(function () {
+				if (probeBtn) {
+					probeBtn.classList.remove('is-busy');
+					probeBtn.removeAttribute('aria-busy');
+					probeBtn.disabled = false;
+				}
+			});
+		}
+
+		if (tilesEl) {
+			measureOverviewBrowser(tilesEl);
+		}
+
+		if (statsEl || tilesEl) {
 			api('/diagnostics').then(function (data) {
 				const targets = Array.isArray(data && data.targets) ? data.targets : [];
 				if (targets.length) {
-					applyTargetsToOverview(targets, statsEl, meterEl, checkedAtEl);
+					applyTargetsToOverview(targets, statsEl, tilesEl, checkedAtEl);
 				} else {
 					api('/diagnostics/run', { method: 'POST' }).then(function (fresh) {
-						applyTargetsToOverview(fresh && fresh.targets, statsEl, meterEl, checkedAtEl);
+						applyTargetsToOverview(fresh && fresh.targets, statsEl, tilesEl, checkedAtEl);
 						loadEvents();
 					}).catch(function () {});
 				}
@@ -298,71 +517,39 @@
 
 		if (probeBtn) {
 			probeBtn.addEventListener('click', function () {
-				probeBtn.classList.add('is-busy');
-				probeBtn.setAttribute('aria-busy', 'true');
-				probeBtn.disabled = true;
-				if (checkedAtEl) checkedAtEl.textContent = '测速中…';
-				setMeterRow(meterEl, 3, '测速中…', 8);
-				Promise.all([
-					api('/diagnostics/run', { method: 'POST' }),
-					measureOverviewBrowser(meterEl)
-				]).then(function (res) {
-					const fresh = res[0];
-					applyTargetsToOverview(fresh && fresh.targets, statsEl, meterEl, checkedAtEl);
-					if (checkedAtEl) checkedAtEl.textContent = '刚刚更新';
-					loadEvents();
-					if (typeof window.wenpaiToast === 'function') {
-						window.wenpaiToast('节点测速已更新', 'ok');
-					} else {
-						notify('ok', '节点测速已更新。');
-					}
-				}).catch(function (err) {
-					notify('bad', err.message || '节点测速未完成，请稍后重试。');
-				}).finally(function () {
-					probeBtn.classList.remove('is-busy');
-					probeBtn.removeAttribute('aria-busy');
-					probeBtn.disabled = false;
-				});
+				triggerOverviewProbe('节点测速已更新');
 			});
 		}
 
-		if (annEl && annEl.getAttribute('data-wpcy-news-enabled') !== '0') {
-			api('/announcements').then(function (data) {
-				const items = Array.isArray(data && data.items) ? data.items : [];
-				if (!items.length) return;
-				annEl.hidden = false;
-				items.forEach(function (item) {
-					const div = document.createElement('div');
-					div.className = 'notice ' + (item.tone === 'warn' ? 'warn' : 'info');
-					const text = document.createElement('span');
-					const body = item.summary || item.body || item.message || '';
-					text.textContent = (item.title ? item.title + (body ? '：' : '') : '') + body;
-					if (item.url && /^https:\/\//i.test(item.url)) {
-						text.appendChild(document.createTextNode(' '));
-						const link = document.createElement('a');
-						link.href = item.url;
-						link.target = '_blank';
-						link.rel = 'noopener noreferrer';
-						link.textContent = '查看详情';
-						text.appendChild(link);
-					}
-					const btn = document.createElement('button');
-					btn.type = 'button';
-					btn.className = 'btn btn-ghost btn-sm';
-					btn.textContent = '关闭通知';
-					btn.addEventListener('click', function () {
-						api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
-							.finally(function () {
-								div.remove();
-								if (!annEl.children.length) annEl.hidden = true;
-							});
+		document.querySelectorAll('[data-wpcy-quick]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				const kind = btn.getAttribute('data-wpcy-quick');
+				if (kind === 'flush-updates') {
+					triggerOverviewProbe('更新与镜像检测缓存已刷新');
+				} else if (kind === 'reset-fallback') {
+					triggerOverviewProbe('回退锁定已重置并完成重测');
+				} else if (kind === 'scan-outbound') {
+					measureOverviewBrowser(tilesEl).then(function () {
+						if (typeof window.wenpaiToast === 'function') {
+							window.wenpaiToast('静态源与访客侧可达性检测完成', 'ok');
+						}
 					});
-					div.appendChild(text);
-					div.appendChild(btn);
-					annEl.appendChild(div);
-				});
-			}).catch(function () {});
-		}
+				} else if (kind === 'copy-report') {
+					const summary = [
+						'Plugin: WenPai Leaf 4.0',
+						'Stats: ' + (trendSumEl ? trendSumEl.textContent : ''),
+						'Status: ' + (checkedAtEl ? checkedAtEl.textContent : '')
+					].join('\n');
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(summary).then(function () {
+							if (typeof window.wenpaiToast === 'function') {
+								window.wenpaiToast('脱敏诊断摘要已复制', 'ok');
+							}
+						}).catch(function () {});
+					}
+				}
+			});
+		});
 
 		if (migEl) {
 			api('/migration/report').then(function (rep) {
