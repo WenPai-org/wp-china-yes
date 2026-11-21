@@ -57,7 +57,7 @@
 		const dd = dds[idx];
 		if (!dd) return;
 		dd.classList.remove('is-none');
-		dd.textContent = String(numStr) + ' ';
+		dd.textContent = unitStr ? (String(numStr) + ' ') : String(numStr);
 		if (unitStr) {
 			const sm = document.createElement('small');
 			sm.textContent = unitStr;
@@ -65,144 +65,123 @@
 		}
 	}
 
-	function renderTrendSvg(series) {
-		const days = Array.isArray(series) && series.length ? series.slice(-7) : [];
-		const pts = days.length ? days.map(function (r) {
-			const total = (Number(r.wporg_rewrites) || 0) + (Number(r.public_asset_rewrites) || 0) + (Number(r.avatar_rewrites) || 0);
-			return { label: String(r.date || '').slice(5) || '—', val: total };
-		}) : [
-			{ label: '6天前', val: 0 }, { label: '5天前', val: 0 }, { label: '4天前', val: 0 },
-			{ label: '3天前', val: 0 }, { label: '前天', val: 0 }, { label: '昨天', val: 0 }, { label: '今天', val: 0 }
-		];
-		const maxVal = Math.max(10, Math.max.apply(null, pts.map(function (p) { return p.val; })));
-		const x0 = 44;
-		const x1 = 612;
-		const yTop = 26;
-		const yBot = 148;
-		const step = pts.length > 1 ? (x1 - x0) / (pts.length - 1) : 0;
-		const coords = pts.map(function (p, i) {
-			const x = Math.round(x0 + i * step);
-			const y = Math.round(yBot - (p.val / maxVal) * (yBot - yTop));
-			return { x: x, y: y, label: p.label, val: p.val };
-		});
-		const poly = coords.map(function (c) { return c.x + ',' + c.y; }).join(' ');
-		const area = 'M ' + coords[0].x + ' ' + yBot + ' L ' + coords.map(function (c) { return c.x + ' ' + c.y; }).join(' L ') + ' L ' + coords[coords.length - 1].x + ' ' + yBot + ' Z';
-		let circles = '';
-		let labels = '';
-		coords.forEach(function (c) {
-			circles += '<circle cx="' + c.x + '" cy="' + c.y + '" r="3.5" fill="var(--wenpai-accent)"/>';
-			labels += '<text x="' + c.x + '" y="168" text-anchor="middle">' + c.label + '</text>';
-		});
-		return '<svg data-wenpai-art viewBox="0 0 640 180" width="100%" height="180" role="img" aria-label="近 7 日加速趋势">'
-			+ '<defs><linearGradient id="wpcy-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--wenpai-accent)" stop-opacity="0.18"/><stop offset="100%" stop-color="var(--wenpai-accent)" stop-opacity="0.0"/></linearGradient></defs>'
-			+ '<g stroke="var(--wenpai-line-soft)" stroke-width="1">'
-			+ '<line x1="44" y1="26" x2="612" y2="26"/><line x1="44" y1="87" x2="612" y2="87"/><line x1="44" y1="148" x2="612" y2="148"/>'
-			+ '</g>'
-			+ '<path d="' + area + '" fill="url(#wpcy-g)"/>'
-			+ '<polyline fill="none" stroke="var(--wenpai-accent)" stroke-width="2" points="' + poly + '"/>'
-			+ circles
-			+ '<g fill="var(--wenpai-ink-3)" font-size="12">'
-			+ '<text x="36" y="30" text-anchor="end">' + maxVal + '</text>'
-			+ '<text x="36" y="91" text-anchor="end">' + Math.round(maxVal / 2) + '</text>'
-			+ '<text x="36" y="152" text-anchor="end">0</text>'
-			+ labels
-			+ '</g></svg>';
+	function setStatbarDesc(statsEl, idx, descText) {
+		const items = statsEl.querySelectorAll('.wenpai-statbar__item');
+		const item = items[idx];
+		if (!item) return;
+		let p = item.querySelector('p');
+		if (!p) {
+			p = document.createElement('p');
+			item.appendChild(p);
+		}
+		p.textContent = descText;
 	}
 
-	function applyTargetsToOverview(targets, statsEl, meterEl) {
+	function formatShortTime(raw) {
+		if (!raw) return '';
+		const d = new Date(raw);
+		if (isNaN(d.getTime())) return '';
+		const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+		return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+	}
+
+	function applyOverviewDiagnostics(targets, statsEl, ovSrvEl, checkedAtEl) {
 		if (!Array.isArray(targets) || !targets.length) return;
 		const byTarget = {};
-		const latencies = [];
 		targets.forEach(function (t) {
 			if (t && t.target) byTarget[t.target] = t;
-			if (t && typeof t.latency_ms === 'number' && t.latency_ms > 0) {
-				latencies.push(t.latency_ms);
-			}
 		});
-		if (statsEl && latencies.length) {
-			const avg = Math.round(latencies.reduce(function (a, b) { return a + b; }, 0) / latencies.length);
-			setStatbarCell(statsEl, 1, avg, 'ms');
-		}
-		if (meterEl) {
-			const wporg = byTarget['api.wenpai.net'] || byTarget['downloads.wenpai.net'];
-			const pub = byTarget['cdnjs.admincdn.com'] || byTarget['jsd.admincdn.com'];
-			const ava = byTarget['cravatar.com'] || byTarget['cn.cravatar.com'] || targets.find(function (t) { return t && /cravatar/i.test(t.target); });
-			const rows = meterEl.querySelectorAll('.wenpai-meter__row');
+		const wporg = byTarget['api.wenpai.net'] || byTarget['downloads.wenpai.net'];
+		const pub = byTarget['cdnjs.admincdn.com'] || byTarget['jsd.admincdn.com'];
+		const ava = byTarget['cravatar.com'] || byTarget['cn.cravatar.com'] || targets.find(function (t) { return t && /cravatar/i.test(t.target); });
+
+		if (ovSrvEl) {
 			[wporg, pub, ava].forEach(function (item, idx) {
-				const row = rows[idx];
-				if (!row || !item) return;
-				const valEl = row.querySelector('.wenpai-meter__value');
-				const barEl = row.querySelector('.wenpai-meter__bar > i');
-				const ms = item.latency_ms != null ? item.latency_ms : null;
-				if (valEl) valEl.textContent = ms != null ? (ms + 'ms') : (item.result === 'down' ? '未连接' : '正常');
-				if (barEl && ms != null) {
-					const pct = Math.max(6, Math.min(100, Math.round((ms / 800) * 100)));
-					barEl.style.inlineSize = pct + '%';
-				}
+				if (!item) return;
+				const ms = item.latency_ms != null ? (item.latency_ms + 'ms') : '—';
+				const state = item.result === 'ok' ? 'ok' : (item.result === 'fallback' ? 'warn' : 'bad');
+				const label = item.result === 'ok' ? '已连接' : (item.result === 'fallback' ? '已回退' : '未连接');
+				updateStatusListRow(ovSrvEl, idx, ms, state, label);
 			});
+		}
+
+		if (checkedAtEl) {
+			const stamp = formatShortTime((wporg && wporg.checked_at) || (targets[0] && targets[0].checked_at));
+			if (stamp) {
+				checkedAtEl.textContent = '检测于 ' + stamp;
+			}
+		}
+
+		if (statsEl && wporg) {
+			const firstDd = statsEl.querySelector('.wenpai-statbar__item dd');
+			const cur = firstDd ? firstDd.textContent.trim() : '';
+			if (wporg.result === 'fallback' && cur === '已开启') {
+				setStatbarCell(statsEl, 0, '已回退', '');
+			} else if (wporg.result === 'ok' && cur === '已回退') {
+				setStatbarCell(statsEl, 0, '已开启', '');
+			}
 		}
 	}
 
-	// 1. Overview: hydrate statbar, trend chart, latency meter, announcements, and recent events.
+	// 1. Overview: hydrate core statbar, dual server/browser probe, news feed, and recent events.
 	function initOverview() {
 		const statsEl = document.querySelector('[data-wpcy-stats]');
-		const trendEl = document.querySelector('[data-wpcy-trend]');
-		const meterEl = document.querySelector('[data-wpcy-latency]');
-		if (statsEl || trendEl) {
+		const ovSrvEl = document.querySelector('[data-wpcy-ov-server]');
+		const ovBrowserEl = document.querySelector('[data-wpcy-ov-browser]');
+		const checkedAtEl = document.querySelector('[data-wpcy-checked-at]');
+		const browserCheckedEl = document.querySelector('[data-wpcy-browser-checked]');
+		const probeBtn = document.querySelector('[data-wpcy-overview-probe]');
+		const eventsEl = document.querySelector('[data-wpcy-events]');
+		const alertsEl = document.querySelector('[data-wpcy-alerts]');
+		const newsEl = document.querySelector('[data-wpcy-news-list]');
+		const migEl = document.querySelector('[data-wpcy-migration-banner]');
+
+		if (statsEl) {
 			api('/stats?days=7').then(function (data) {
 				const totals = (data && data.totals) ? data.totals : {};
 				const totalAcc = (Number(totals.wporg_rewrites) || 0) + (Number(totals.public_asset_rewrites) || 0) + (Number(totals.avatar_rewrites) || 0);
-				if (statsEl) {
-					setStatbarCell(statsEl, 0, totalAcc, '次');
-					setStatbarCell(statsEl, 2, Number(totals.avatar_rewrites) || 0, '次');
-					setStatbarCell(statsEl, 3, Number(totals.blocked_outbound) || 0, '次');
-				}
-				if (trendEl) {
-					const plot = trendEl.querySelector('.wenpai-chart__plot') || trendEl;
-					plot.innerHTML = renderTrendSvg(data && data.series);
-				}
+				const avatarCount = Number(totals.avatar_rewrites) || 0;
+				const blockedCount = Number(totals.blocked_outbound) || 0;
+				setStatbarCell(statsEl, 3, totalAcc, '次');
+				setStatbarDesc(statsEl, 3, '头像 ' + avatarCount + ' 次 · 拦截慢外链 ' + blockedCount + ' 次');
 			}).catch(function () {});
 		}
 
-		if (statsEl || meterEl) {
-			api('/diagnostics').then(function (data) {
-				const targets = Array.isArray(data && data.targets) ? data.targets : [];
-				if (targets.length) {
-					applyTargetsToOverview(targets, statsEl, meterEl);
-				} else {
-					api('/diagnostics/run', { method: 'POST' }).then(function (fresh) {
-						applyTargetsToOverview(fresh && fresh.targets, statsEl, meterEl);
-					}).catch(function () {});
-				}
-			}).catch(function () {});
+		const eventLabels = {
+			first_check: '完成首次连通性检测',
+			route_recovered: '上游加速节点恢复正常',
+			mirror_fallback: '镜像波动自动回退至官方源',
+			route_fallback: '上游线路自动切换备用源',
+			route_down: '上游节点不可达（已自动回退官方源）',
+			update_check: '完成系统与插件更新检查',
+			migrated: '已完成旧版配置平滑导入',
+			profile_set: '更新站点场景设置',
+			settings_saved: '保存加速设置',
+			diagnostics_run: '执行双端连通性检测',
+			recovery_entered: '进入安全恢复模式',
+			recovery_exited: '恢复正常加速运行',
+			fallback: '镜像波动自动回退至官方源',
+			route_up: '上游加速节点恢复正常',
+			binding_started: '发起站点绑定请求',
+			binding_revoked: '解除站点绑定'
+		};
+
+		function formatEventTime(raw) {
+			if (!raw) return '';
+			const d = new Date(raw);
+			if (isNaN(d.getTime())) return String(raw);
+			const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+			return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 		}
 
-		const eventsEl = document.querySelector('[data-wpcy-events]');
-		if (eventsEl) {
-			const eventLabels = {
-				first_check: '完成首次连通性检测',
-				profile_set: '更新站点场景设置',
-				settings_saved: '保存加速设置',
-				diagnostics_run: '执行双端连通性检测',
-				recovery_entered: '进入安全恢复模式',
-				recovery_exited: '恢复正常加速运行',
-				fallback: '镜像波动自动回退至官方源',
-				route_down: '上游节点不可达（已自动回退官方源）',
-				route_up: '上游加速节点恢复正常',
-				binding_started: '发起站点绑定请求',
-				binding_revoked: '解除站点绑定'
-			};
-			function formatEventTime(raw) {
-				if (!raw) return '';
-				const d = new Date(raw);
-				if (isNaN(d.getTime())) return String(raw);
-				const pad = function (n) { return n < 10 ? '0' + n : String(n); };
-				return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-			}
+		const emptyEventsHtml = '<p class="meta">尚未产生线路切换或巡检记录，执行连通检测或发生自动回退时会在此记录。</p>';
+
+		function loadEvents() {
+			if (!eventsEl) return;
 			api('/events?per_page=5').then(function (data) {
 				const list = Array.isArray(data && data.events) ? data.events : [];
 				if (!list.length) {
-					eventsEl.innerHTML = '<p class="meta">当前尚未产生新的线路切换或检测记录，系统发生自动回退或配置更新时会在此展示。</p>';
+					eventsEl.innerHTML = emptyEventsHtml;
 					return;
 				}
 				const ul = document.createElement('ul');
@@ -211,8 +190,8 @@
 					const li = document.createElement('li');
 					li.className = 'wpcy-event-item';
 					const left = document.createElement('span');
-					const rawType = ev.type || ev.summary || '';
-					left.textContent = eventLabels[rawType] || ev.summary || rawType || '运行状态记录';
+					const rawType = ev.type || '';
+					left.textContent = ev.title || eventLabels[rawType] || ev.summary || rawType || '运行状态记录';
 					const right = document.createElement('span');
 					right.className = 'wpcy-event-item__time';
 					right.textContent = formatEventTime(ev.at || ev.when || '');
@@ -223,50 +202,145 @@
 				eventsEl.innerHTML = '';
 				eventsEl.appendChild(ul);
 			}).catch(function () {
-				eventsEl.innerHTML = '<p class="meta">当前尚未产生新的线路切换或检测记录，系统发生自动回退或配置更新时会在此展示。</p>';
+				eventsEl.innerHTML = emptyEventsHtml;
 			});
 		}
 
-		const annEl = document.querySelector('[data-wpcy-announcements]');
-		if (annEl) {
-			api('/announcements').then(function (data) {
-				const items = Array.isArray(data && data.items) ? data.items : [];
-				if (!items.length) return;
-				annEl.hidden = false;
-				items.forEach(function (item) {
-					const div = document.createElement('div');
-					div.className = 'notice ' + (item.tone === 'warn' ? 'warn' : 'info');
-					const text = document.createElement('span');
-					const body = item.summary || item.body || item.message || '';
-					text.textContent = (item.title ? item.title + (body ? '：' : '') : '') + body;
-					if (item.url && /^https:\/\//i.test(item.url)) {
-						text.appendChild(document.createTextNode(' '));
-						const link = document.createElement('a');
-						link.href = item.url;
-						link.target = '_blank';
-						link.rel = 'noopener noreferrer';
-						link.textContent = '查看详情';
-						text.appendChild(link);
-					}
-					const btn = document.createElement('button');
-					btn.type = 'button';
-					btn.className = 'btn btn-ghost btn-sm';
-					btn.textContent = '关闭通知';
-					btn.addEventListener('click', function () {
-						api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
-							.finally(function () {
-								div.remove();
-								if (!annEl.children.length) annEl.hidden = true;
-							});
-					});
-					div.appendChild(text);
-					div.appendChild(btn);
-					annEl.appendChild(div);
-				});
+		loadEvents();
+
+		function probeBrowserWithStamp() {
+			if (!ovBrowserEl) return Promise.resolve();
+			return runBrowserProbes(ovBrowserEl).then(function () {
+				if (browserCheckedEl) {
+					browserCheckedEl.textContent = '实时直测 · 已完成';
+				}
+			});
+		}
+
+		if (ovBrowserEl) {
+			probeBrowserWithStamp();
+		}
+
+		if (ovSrvEl) {
+			api('/diagnostics').then(function (data) {
+				const targets = Array.isArray(data && data.targets) ? data.targets : [];
+				if (targets.length) {
+					applyOverviewDiagnostics(targets, statsEl, ovSrvEl, checkedAtEl);
+				} else {
+					api('/diagnostics/run', { method: 'POST' }).then(function (fresh) {
+						applyOverviewDiagnostics(fresh && fresh.targets, statsEl, ovSrvEl, checkedAtEl);
+						loadEvents();
+					}).catch(function () {});
+				}
 			}).catch(function () {});
 		}
 
-		const migEl = document.querySelector('[data-wpcy-migration-banner]');
+		if (probeBtn) {
+			probeBtn.addEventListener('click', function () {
+				probeBtn.classList.add('is-busy');
+				probeBtn.setAttribute('aria-busy', 'true');
+				probeBtn.disabled = true;
+				if (checkedAtEl) checkedAtEl.textContent = '检测中…';
+				if (browserCheckedEl) browserCheckedEl.textContent = '测速中…';
+				if (ovBrowserEl) {
+					for (let i = 0; i < 3; i++) {
+						updateStatusListRow(ovBrowserEl, i, '测速中…', '', '');
+					}
+				}
+				Promise.all([
+					api('/diagnostics/run', { method: 'POST' }),
+					probeBrowserWithStamp()
+				]).then(function (res) {
+					const fresh = res[0];
+					applyOverviewDiagnostics(fresh && fresh.targets, statsEl, ovSrvEl, checkedAtEl);
+					if (checkedAtEl) checkedAtEl.textContent = '刚刚检测';
+					loadEvents();
+					if (typeof window.wenpaiToast === 'function') {
+						window.wenpaiToast('双端连通检测已完成', 'ok');
+					} else {
+						notify('ok', '双端连通检测已完成。');
+					}
+				}).catch(function (err) {
+					notify('bad', err.message || '连通性检测未完成，请稍后重试。');
+				}).finally(function () {
+					probeBtn.classList.remove('is-busy');
+					probeBtn.removeAttribute('aria-busy');
+					probeBtn.disabled = false;
+				});
+			});
+		}
+
+		if (newsEl && newsEl.getAttribute('data-wpcy-news-enabled') === '1') {
+			const emptyNewsHtml = '<p class="meta">当前没有未读社区动态与维护通知，每日定时同步后将在此展示。</p>';
+			api('/announcements').then(function (data) {
+				const items = Array.isArray(data && data.items) ? data.items : [];
+				if (!items.length) {
+					newsEl.innerHTML = emptyNewsHtml;
+					return;
+				}
+				const ul = document.createElement('ul');
+				ul.className = 'wpcy-event-list';
+				items.slice(0, 5).forEach(function (item) {
+					const body = item.summary || item.body || item.message || '';
+					const labelText = (item.title ? item.title + (body ? '：' : '') : '') + body;
+
+					if (alertsEl && item.tone === 'warn') {
+						alertsEl.hidden = false;
+						const banner = document.createElement('div');
+						banner.className = 'notice warn';
+						const sp = document.createElement('span');
+						sp.textContent = labelText;
+						if (item.url && /^https:\/\//i.test(item.url)) {
+							sp.appendChild(document.createTextNode(' '));
+							const al = document.createElement('a');
+							al.href = item.url;
+							al.target = '_blank';
+							al.rel = 'noopener noreferrer';
+							al.textContent = '查看详情';
+							sp.appendChild(al);
+						}
+						banner.appendChild(sp);
+						alertsEl.appendChild(banner);
+					}
+
+					const li = document.createElement('li');
+					li.className = 'wpcy-event-item';
+					let titleNode;
+					if (item.url && /^https:\/\//i.test(item.url)) {
+						titleNode = document.createElement('a');
+						titleNode.href = item.url;
+						titleNode.target = '_blank';
+						titleNode.rel = 'noopener noreferrer';
+						titleNode.textContent = item.title || labelText || '社区动态';
+					} else {
+						titleNode = document.createElement('span');
+						titleNode.textContent = labelText || '社区动态';
+					}
+
+					const btn = document.createElement('button');
+					btn.type = 'button';
+					btn.className = 'btn btn-ghost btn-sm';
+					btn.textContent = '已读';
+					btn.addEventListener('click', function () {
+						api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
+							.finally(function () {
+								li.remove();
+								if (!ul.children.length) {
+									newsEl.innerHTML = emptyNewsHtml;
+								}
+							});
+					});
+					li.appendChild(titleNode);
+					li.appendChild(btn);
+					ul.appendChild(li);
+				});
+				newsEl.innerHTML = '';
+				newsEl.appendChild(ul);
+			}).catch(function () {
+				newsEl.innerHTML = emptyNewsHtml;
+			});
+		}
+
 		if (migEl) {
 			api('/migration/report').then(function (rep) {
 				if (!rep || rep.status === 'none') return;

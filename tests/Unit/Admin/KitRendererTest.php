@@ -100,9 +100,14 @@ class KitRendererTest extends TestCase {
 	public function test_five_tabs_wizard_and_help_render_cleanly(): void {
 		$overview = $this->render_page( 'wpcy' );
 		$this->assertStringContainsString( 'data-wpcy-screen="overview"', $overview );
+		$this->assertStringContainsString( '核心加速通道运行正常', $overview );
+		$this->assertStringContainsString( '服务器出站连通', $overview );
+		$this->assertStringContainsString( '当前浏览器连通', $overview );
+		$this->assertStringContainsString( '重新检测', $overview );
+		$this->assertStringContainsString( '文派茶馆动态', $overview );
+		$this->assertStringContainsString( '近期运行记录', $overview );
 		$this->assertStringContainsString( 'wpcy-features', $overview );
-		$overview_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $overview );
-		$this->assertStringNotContainsString( 'style="', $overview_no_meter );
+		$this->assertStringNotContainsString( 'style="', $overview );
 
 		$settings = $this->render_page( 'wpcy-connect', array( 'profile' => 'crossborder' ) );
 		$this->assertStringContainsString( 'data-wpcy-screen="settings"', $settings );
@@ -199,5 +204,48 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '保存白标设置', $unlocked );
 		$this->assertStringContainsString( '星云建站', $unlocked );
 		$this->assertStringNotContainsString( '开通商业白标授权', $unlocked );
+	}
+
+	/**
+	 * Overview SSR hydrates cached server probe results and switches cleanly in recovery mode.
+	 */
+	public function test_overview_hydrates_cached_probes_and_recovery_mode(): void {
+		set_transient(
+			'wpcy_diagnostics_results',
+			array(
+				array(
+					'target'     => 'api.wenpai.net',
+					'result'     => 'ok',
+					'latency_ms' => 38,
+					'checked_at' => '2026-11-21T03:30:00Z',
+				),
+				array(
+					'target'     => 'cdnjs.admincdn.com',
+					'result'     => 'ok',
+					'latency_ms' => 24,
+					'checked_at' => '2026-11-21T03:30:00Z',
+				),
+				array(
+					'target'     => 'cn.cravatar.com',
+					'result'     => 'fallback',
+					'latency_ms' => 112,
+					'checked_at' => '2026-11-21T03:30:00Z',
+				),
+			),
+			3600
+		);
+
+		$hydrated = $this->render_page( 'wpcy' );
+		$this->assertStringContainsString( '38ms', $hydrated );
+		$this->assertStringContainsString( '24ms', $hydrated );
+		$this->assertStringContainsString( '112ms', $hydrated );
+		$this->assertStringContainsString( '已连接', $hydrated );
+		$this->assertStringContainsString( '已回退', $hydrated );
+		$this->assertStringContainsString( '检测于 11-21 11:30', $hydrated );
+
+		$recovery = $this->render_page( 'wpcy', array( 'recovery_mode' => true ) );
+		$this->assertStringContainsString( '安全恢复模式生效中', $recovery );
+		$this->assertStringContainsString( '已暂停', $recovery );
+		$this->assertStringNotContainsString( 'style="', $recovery );
 	}
 }

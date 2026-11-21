@@ -8,6 +8,15 @@
 	border-radius: var(--wenpai-radius-sm);
 }
 
+.wenpai-app .card-head .head-actions .meta {
+	margin: 0;
+}
+
+.wenpai-app .wenpai-status-list__row dd {
+	justify-content: flex-end;
+	font-variant-numeric: tabular-nums;
+}
+
 .wpcy-inline-bar {
 	display: flex;
 	flex-wrap: wrap;

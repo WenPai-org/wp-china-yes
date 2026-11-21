@@ -275,30 +275,73 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Overview screen (`?page=wpcy`): statbar + 7d SVG trend & latency split + recent events.
+	 * Overview screen (`?page=wpcy`): core channel status + dual server/browser probe + news/events split.
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
 	 */
 	private static function render_overview( array $settings ): void {
-		$profile  = self::profile_label( (string) ( $settings['profile'] ?? 'domestic' ) );
-		$recovery = ! empty( $settings['recovery_mode'] );
-		$diag_url = self::page_url( 'wpcy-diagnose' );
-		$set_url  = self::page_url( 'wpcy-connect' );
+		$profile      = self::profile_label( (string) ( $settings['profile'] ?? 'domestic' ) );
+		$recovery     = ! empty( $settings['recovery_mode'] );
+		$diag_url     = self::page_url( 'wpcy-diagnose' );
+		$set_url      = self::page_url( 'wpcy-connect' );
+		$news_url     = self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) );
+		$conn         = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror       = self::conn_mirror( $conn );
+		$scope        = self::conn_scope( $settings, $conn );
+		$avatar       = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+		$news_enabled = ! isset( $settings['admin']['news_enabled'] ) || (bool) $settings['admin']['news_enabled'];
+		$wl           = WhiteLabel::resolve( $settings );
+
+		$active_count = ( 'off' !== $mirror ? 1 : 0 ) + ( 'off' !== $scope ? 1 : 0 ) + ( 'off' !== $avatar ? 1 : 0 );
+		$scope_map    = array(
+			'both'     => __( '后台与前台同时加速', 'wp-china-yes' ),
+			'admin'    => __( '仅后台加速', 'wp-china-yes' ),
+			'frontend' => __( '仅前台加速', 'wp-china-yes' ),
+			'off'      => __( '保持原始静态源', 'wp-china-yes' ),
+		);
+		$avatar_map   = array(
+			'cravatar_cn'     => __( 'Cravatar 中国线路', 'wp-china-yes' ),
+			'cravatar_global' => __( 'Cravatar 国际线路', 'wp-china-yes' ),
+			'off'             => __( '使用原始 Gravatar', 'wp-china-yes' ),
+		);
+
+		// Read cached server probe snapshot (render-safe local transient, zero remote HTTP).
+		$cached_targets = array();
+		if ( function_exists( 'get_transient' ) ) {
+			$raw_diag = get_transient( 'wpcy_diagnostics_results' );
+			if ( is_array( $raw_diag ) ) {
+				foreach ( $raw_diag as $row ) {
+					if ( is_array( $row ) && ! empty( $row['target'] ) ) {
+						$cached_targets[ (string) $row['target'] ] = $row;
+					}
+				}
+			}
+		}
+
+		$wporg_probe  = $cached_targets['api.wenpai.net'] ?? $cached_targets['downloads.wenpai.net'] ?? null;
+		$pub_probe    = $cached_targets['cdnjs.admincdn.com'] ?? $cached_targets['jsd.admincdn.com'] ?? null;
+		$ava_probe    = $cached_targets['cravatar.com'] ?? $cached_targets['cn.cravatar.com'] ?? null;
+		$checked_text = __( '等待检测', 'wp-china-yes' );
+		if ( is_array( $wporg_probe ) && ! empty( $wporg_probe['checked_at'] ) && is_string( $wporg_probe['checked_at'] ) ) {
+			$ts = strtotime( $wporg_probe['checked_at'] );
+			if ( false !== $ts ) {
+				$checked_text = sprintf( /* translators: %s: formatted check time */ __( '检测于 %s', 'wp-china-yes' ), gmdate( 'm-d H:i', $ts + 8 * 3600 ) );
+			}
+		}
+
+		$wporg_status = $recovery
+			? __( '已暂停', 'wp-china-yes' )
+			: ( 'off' === $mirror
+				? __( '直连官方源', 'wp-china-yes' )
+				: ( ( is_array( $wporg_probe ) && 'fallback' === ( $wporg_probe['result'] ?? '' ) ) ? __( '已回退', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ) ) );
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '概览', 'wp-china-yes' ),
-			sprintf( /* translators: %s: site profile label */ __( '当前场景：%s', 'wp-china-yes' ), $profile ),
-			\Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => __( '立即诊断', 'wp-china-yes' ),
-					'href'    => $diag_url,
-					'variant' => 'primary',
-				)
-			)
+			sprintf( /* translators: %s: site profile label */ __( '当前站点场景：%s', 'wp-china-yes' ), $profile )
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="overview">';
-		echo '<div class="wenpai-stack" data-wpcy-announcements="1" hidden></div>';
+		echo '<div class="wenpai-stack" data-wpcy-alerts="1" hidden></div>';
 		echo '<div data-wpcy-migration-banner="1" hidden></div>';
 
 		if ( $recovery ) {
@@ -319,76 +362,115 @@ final class KitRenderer {
 			);
 		}
 
-		\Wenpai_Admin_UI::card_open();
+		$hero_title = $recovery
+			? __( '安全恢复模式生效中', 'wp-china-yes' )
+			: ( $active_count > 0 ? __( '核心加速通道运行正常', 'wp-china-yes' ) : __( '当前使用默认直连', 'wp-china-yes' ) );
+
+		$hero_head_ctl = \Wenpai_Admin_UI::pill_html(
+			array(
+				'text'  => sprintf( /* translators: %s: profile name */ __( '场景：%s', 'wp-china-yes' ), $profile ),
+				'state' => $recovery ? 'warn' : ( $active_count > 0 ? 'ok' : 'mute' ),
+			)
+		) . \Wenpai_Admin_UI::button_html(
+			array(
+				'label'   => __( '调整设置', 'wp-china-yes' ),
+				'href'    => $set_url,
+				'variant' => 'ghost',
+				'size'    => 'sm',
+			)
+		);
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'icon'              => $recovery ? 'info' : 'flash',
+				'state'             => $recovery ? 'warn' : ( $active_count > 0 ? 'ok' : '' ),
+				'title'             => $hero_title,
+				'head_control_html' => $hero_head_ctl,
+			)
+		);
 		\Wenpai_Admin_UI::statbar(
 			array(
 				'attrs' => array( 'data-wpcy-stats' => '1' ),
 				'items' => array(
 					array(
-						'label' => __( '7 日加速请求', 'wp-china-yes' ),
-						'value' => '—',
-						'unit'  => __( '次', 'wp-china-yes' ),
+						'label' => __( 'WP.org 更新镜像', 'wp-china-yes' ),
+						'value' => $wporg_status,
+						'desc'  => 'off' === $mirror ? __( '核心与插件直连 WordPress.org', 'wp-china-yes' ) : __( 'WenPai.org 镜像 · 异常自动回退', 'wp-china-yes' ),
 					),
 					array(
-						'label' => __( '节点平均延迟', 'wp-china-yes' ),
-						'value' => '—',
-						'unit'  => 'ms',
+						'label' => __( 'adminCDN 前端库', 'wp-china-yes' ),
+						'value' => $recovery ? __( '已暂停', 'wp-china-yes' ) : ( 'off' === $scope ? __( '未开启', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ) ),
+						'desc'  => $scope_map[ $scope ] ?? $scope_map['both'],
 					),
 					array(
-						'label' => __( '头像加速次数', 'wp-china-yes' ),
-						'value' => '—',
-						'unit'  => __( '次', 'wp-china-yes' ),
+						'label' => __( 'Cravatar 公共头像', 'wp-china-yes' ),
+						'value' => $recovery ? __( '已暂停', 'wp-china-yes' ) : ( 'off' === $avatar ? __( '未开启', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ) ),
+						'desc'  => $avatar_map[ $avatar ] ?? $avatar_map['cravatar_cn'],
 					),
 					array(
-						'label' => __( '已拦截慢外链', 'wp-china-yes' ),
-						'value' => '—',
+						'label' => __( '7 日累计加速', 'wp-china-yes' ),
+						'value' => '0',
 						'unit'  => __( '次', 'wp-china-yes' ),
+						'desc'  => __( '头像 0 次 · 拦截慢外链 0 次', 'wp-china-yes' ),
 					),
 				),
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
 
-		echo '<div class="wenpai-split">';
+		$srv_head_ctl = '<span class="meta" data-wpcy-checked-at="1">' . esc_html( $checked_text ) . '</span>'
+			. \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '重新检测', 'wp-china-yes' ),
+					'type'    => 'button',
+					'variant' => $recovery ? 'secondary' : 'primary',
+					'size'    => 'sm',
+					'attrs'   => array( 'data-wpcy-overview-probe' => '1' ),
+				)
+			);
+
+		echo '<div class="wenpai-grid-2">';
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '近 7 日加速趋势', 'wp-china-yes' ),
-				'tile'  => false,
+				'title'             => __( '服务器出站连通', 'wp-china-yes' ),
+				'icon'              => 'server',
+				'head_control_html' => $srv_head_ctl,
 			)
 		);
-		\Wenpai_Admin_UI::chart_frame(
+		\Wenpai_Admin_UI::status_list(
 			array(
-				'attrs'      => array( 'data-wpcy-trend' => '1' ),
-				'plot_html'  => self::empty_trend_svg(),
-				'aria_label' => __( '近 7 日加速趋势', 'wp-china-yes' ),
+				'attrs' => array( 'data-wpcy-ov-server' => '1' ),
+				'items' => array(
+					self::probe_status_row( __( 'WP.org 更新镜像', 'wp-china-yes' ), $wporg_probe ),
+					self::probe_status_row( __( 'adminCDN 前端库', 'wp-china-yes' ), $pub_probe ),
+					self::probe_status_row( __( 'Cravatar 头像源', 'wp-china-yes' ), $ava_probe ),
+				),
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
 
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '核心节点延迟', 'wp-china-yes' ),
-				'tile'  => false,
+				'title'             => __( '当前浏览器连通', 'wp-china-yes' ),
+				'icon'              => 'eye',
+				'head_control_html' => '<span class="meta" data-wpcy-browser-checked="1">' . esc_html__( '浏览器实时直测', 'wp-china-yes' ) . '</span>',
 			)
 		);
-		\Wenpai_Admin_UI::meter(
+		\Wenpai_Admin_UI::status_list(
 			array(
-				'attrs' => array( 'data-wpcy-latency' => '1' ),
+				'attrs' => array( 'data-wpcy-ov-browser' => '1' ),
 				'items' => array(
 					array(
-						'name'    => __( 'WP.org 国内镜像', 'wp-china-yes' ),
-						'value'   => '—',
-						'percent' => 15,
+						'label' => __( 'Cravatar 头像节点', 'wp-china-yes' ),
+						'value' => __( '测速中…', 'wp-china-yes' ),
 					),
 					array(
-						'name'    => __( 'adminCDN 前端库', 'wp-china-yes' ),
-						'value'   => '—',
-						'percent' => 15,
+						'label' => __( 'adminCDN 前端库', 'wp-china-yes' ),
+						'value' => __( '测速中…', 'wp-china-yes' ),
 					),
 					array(
-						'name'    => __( 'Cravatar 头像源', 'wp-china-yes' ),
-						'value'   => '—',
-						'percent' => 15,
+						'label' => __( 'Windfonts 中文字体源', 'wp-china-yes' ),
+						'value' => __( '测速中…', 'wp-china-yes' ),
 					),
 				),
 			)
@@ -396,28 +478,76 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
 
+		$news_title = ( $wl['enabled'] && '' !== $wl['news_feed_url'] )
+			? __( '服务通知与动态', 'wp-china-yes' )
+			: __( '文派茶馆动态', 'wp-china-yes' );
+
+		echo '<div class="wenpai-grid-2">';
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '近期运行记录', 'wp-china-yes' ),
-				'tile'  => false,
+				'title'             => $news_title,
+				'tile'              => false,
+				'head_control_html' => \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '管理订阅', 'wp-china-yes' ),
+						'href'    => $news_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					)
+				),
+			)
+		);
+		$news_placeholder = $news_enabled
+			? __( '正在读取近期动态…', 'wp-china-yes' )
+			: __( '已关闭资讯与公告推送，可在右上角「管理订阅」中重新开启。', 'wp-china-yes' );
+		echo '<div data-wpcy-news-list="1" data-wpcy-news-enabled="' . ( $news_enabled ? '1' : '0' ) . '"><p class="meta">' . esc_html( $news_placeholder ) . '</p></div>';
+		\Wenpai_Admin_UI::card_close();
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title'             => __( '近期运行记录', 'wp-china-yes' ),
+				'tile'              => false,
+				'head_control_html' => \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '完整诊断', 'wp-china-yes' ),
+						'href'    => $diag_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					)
+				),
 			)
 		);
 		echo '<div data-wpcy-events="1"><p class="meta">' . esc_html__( '正在读取近期运行记录…', 'wp-china-yes' ) . '</p></div>';
-		\Wenpai_Admin_UI::card_foot(
-			array(
-				'start'   => true,
-				'meta'    => __( '各项线路已按当前站点场景自动配置。', 'wp-china-yes' ),
-				'actions' => array(
-					array(
-						'label'   => __( '调整设置', 'wp-china-yes' ),
-						'href'    => $set_url,
-						'variant' => 'secondary',
-					),
-				),
-			)
-		);
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
+		echo '</div>';
+	}
+
+	/**
+	 * Build a `Wenpai_Admin_UI::status_list` item from a cached probe row (if present).
+	 *
+	 * @param string                    $label Row label.
+	 * @param array<string, mixed>|null $probe Cached target row or null.
+	 * @return array<string, string>
+	 */
+	private static function probe_status_row( string $label, ?array $probe ): array {
+		if ( ! is_array( $probe ) ) {
+			return array(
+				'label' => $label,
+				'value' => __( '等待检测', 'wp-china-yes' ),
+			);
+		}
+		$ms          = isset( $probe['latency_ms'] ) && is_numeric( $probe['latency_ms'] ) ? ( (int) $probe['latency_ms'] ) . 'ms' : '—';
+		$result      = isset( $probe['result'] ) ? (string) $probe['result'] : '';
+		$state       = 'ok' === $result ? 'ok' : ( 'fallback' === $result ? 'warn' : 'bad' );
+		$state_label = 'ok' === $result ? __( '已连接', 'wp-china-yes' ) : ( 'fallback' === $result ? __( '已回退', 'wp-china-yes' ) : __( '未连接', 'wp-china-yes' ) );
+
+		return array(
+			'label'       => $label,
+			'value'       => $ms,
+			'state'       => $state,
+			'state_label' => $state_label,
+		);
 	}
 
 	/**
@@ -2628,18 +2758,5 @@ final class KitRenderer {
 		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
 		$h  .= '<div class="field-ctl"><label class="opt"><input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="1"' . $chk . $dis . '><span>' . esc_html( $desc ) . '</span></label></div></div>';
 		return $h;
-	}
-
-	/**
-	 * Initial SVG chart frame using kit CSS tokens (updated by JS once `/stats` loads).
-	 */
-	private static function empty_trend_svg(): string {
-		return '<svg data-wenpai-art viewBox="0 0 640 180" width="100%" height="180" role="img" aria-label="' . esc_attr__( '近 7 日加速趋势', 'wp-china-yes' ) . '">'
-			. '<g stroke="var(--wenpai-line)" stroke-width="1">'
-			. '<line x1="36" y1="24" x2="620" y2="24"/><line x1="36" y1="74" x2="620" y2="74"/>'
-			. '<line x1="36" y1="124" x2="620" y2="124"/><line x1="36" y1="164" x2="620" y2="164"/>'
-			. '</g>'
-			. '<text x="320" y="98" text-anchor="middle" fill="var(--wenpai-ink-3)" font-size="13">' . esc_html__( '正在读取近 7 日加速统计…', 'wp-china-yes' ) . '</text>'
-			. '</svg>';
 	}
 }
