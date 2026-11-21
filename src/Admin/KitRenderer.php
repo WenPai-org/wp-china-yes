@@ -630,9 +630,9 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_close();
 
 		// Row 4: Reversed Split — Left 20rem Cloud Ad / White-Label Support Card + Right 1fr Icon-Box Quick Tools & Slim Site Suggestions.
-		$ad_args   = self::overview_ad_slot_args( $wl, $ad_dismissed, $feat_url, $svc_url );
-		$split_r4  = null === $ad_args ? 'wenpai-split wenpai-split--reverse wenpai-split--equal is-single' : 'wenpai-split wenpai-split--reverse wenpai-split--equal';
-		$ops_tabs  = \Wenpai_Admin_UI::view_tabs_html(
+		$ad_args  = self::overview_ad_slot_args( $wl, $ad_dismissed, $feat_url, $svc_url );
+		$split_r4 = null === $ad_args ? 'wenpai-split wenpai-split--reverse wenpai-split--equal is-single' : 'wenpai-split wenpai-split--reverse wenpai-split--equal';
+		$ops_tabs = \Wenpai_Admin_UI::view_tabs_html(
 			array(
 				'group'      => 'wpcy-ops',
 				'aria_label' => __( '快捷工具与站点建议切换', 'wp-china-yes' ),
@@ -642,6 +642,7 @@ final class KitRenderer {
 						'label'      => __( '快捷工具', 'wp-china-yes' ),
 						'active'     => true,
 						'card_title' => __( '快捷工具', 'wp-china-yes' ),
+						'foot_meta'  => __( '常用排障与轻便生态小工具', 'wp-china-yes' ),
 						'foot_label' => __( '服务与工具目录', 'wp-china-yes' ),
 						'foot_href'  => $svc_url,
 					),
@@ -649,13 +650,13 @@ final class KitRenderer {
 						'id'         => 'audit',
 						'label'      => __( '站点建议', 'wp-china-yes' ),
 						'card_title' => __( '站点建议', 'wp-china-yes' ),
+						'foot_meta'  => __( '按当前站点场景检测建议项', 'wp-china-yes' ),
 						'foot_label' => __( '前往环境诊断', 'wp-china-yes' ),
 						'foot_href'  => $diag_url,
 					),
 				),
 			)
 		);
-		$php_short = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
 
 		echo '<div class="' . esc_attr( $split_r4 ) . '">';
 		if ( null !== $ad_args ) {
@@ -700,7 +701,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'meta'    => sprintf( /* translators: %s: PHP major.minor version */ __( '环境状态：PHP %s · WordPress 运行正常', 'wp-china-yes' ), $php_short ),
+				'meta'    => __( '常用排障与轻便生态小工具', 'wp-china-yes' ),
 				'actions' => array(
 					array(
 						'label'   => __( '服务与工具目录', 'wp-china-yes' ),
