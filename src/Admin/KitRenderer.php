@@ -113,10 +113,15 @@ final class KitRenderer {
 	/**
 	 * Resolve companion plugin admin URL without hardcoding admin entry filenames at call sites.
 	 *
-	 * @param string $relative Relative wp-admin path.
+	 * Guards against double-prefixing when `$relative` is already a full `http(s)://` admin URL.
+	 *
+	 * @param string $relative Relative wp-admin path or full URL.
 	 * @return string
 	 */
 	private static function wp_admin_link( string $relative ): string {
+		if ( 0 === strpos( $relative, 'https://' ) || 0 === strpos( $relative, 'http://' ) ) {
+			return $relative;
+		}
 		return function_exists( 'admin_url' ) ? (string) admin_url( $relative ) : $relative;
 	}
 
@@ -772,7 +777,12 @@ final class KitRenderer {
 					: ( 'off' === $avatar ? __( '原始 Gravatar', 'wp-china-yes' ) : ( $ava_warn ? __( '探测波动 · 已自动回退', 'wp-china-yes' ) : __( '中国大陆节点', 'wp-china-yes' ) ) ),
 				'tone'        => ( ! ConflictDetector::is_companion_active( 'wpavatar' ) && $ava_warn ) ? 'warn' : '',
 				'attrs'       => array( 'data-wpcy-channel' => 'cravatar' ),
-				'value_attrs' => array( 'data-wpcy-channel-val' => 'cravatar' ),
+				'value_attrs' => ConflictDetector::is_companion_active( 'wpavatar' )
+					? array(
+						'data-wpcy-channel-val' => 'cravatar',
+						'data-wpcy-takeover'    => '1',
+					)
+					: array( 'data-wpcy-channel-val' => 'cravatar' ),
 			),
 			array(
 				'label' => __( '后台减噪与语言', 'wp-china-yes' ),
@@ -1127,7 +1137,7 @@ final class KitRenderer {
 			if ( $pstate['active'] ) {
 				$settings_href = ! empty( $report['action_url'] )
 					? $report['action_url']
-					: self::wp_admin_link( $spec['plugin_admin'] );
+					: ConflictDetector::resolve_companion_admin_url( $spec['plugin_slug'], $spec['plugin_file'] );
 				$items[]       = array(
 					'label' => $def['label'],
 					'icon'  => $def['icon'],
@@ -1140,22 +1150,52 @@ final class KitRenderer {
 					),
 				);
 			} elseif ( $pstate['installed'] ) {
-				$plugins_base = self::wp_admin_link( 'plugins.php' );
-				$act_href     = $can_act && function_exists( 'add_query_arg' )
-					? (string) add_query_arg( array( 's' => $spec['plugin_slug'] ), $plugins_base )
-					: self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
-				$items[]      = array(
+				if ( $can_act ) {
+					$items[] = array(
+						'label' => $def['label'],
+						'icon'  => $def['icon'],
+						'state' => 'warn',
+						'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用，点击一键启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'attrs' => array(
+							'data-wpcy-suite-slug'         => $spec['plugin_slug'],
+							'data-wpcy-suite-state'        => 'installed',
+							'data-wpcy-provision-slug'     => $spec['plugin_slug'],
+							'data-wpcy-provision-name'     => $spec['plugin_name'],
+							'data-wenpai-confirm-title'    => sprintf( /* translators: %s: companion plugin full name */ __( '启用%s', 'wp-china-yes' ), $spec['plugin_name'] ),
+							'data-wenpai-confirm'          => $spec['plugin_pitch'],
+							'data-wenpai-confirm-ok'       => __( '立即启用', 'wp-china-yes' ),
+							'data-wenpai-confirm-cancel'   => __( '取消', 'wp-china-yes' ),
+							'data-wenpai-confirm-primary'  => '1',
+							'data-wenpai-confirm-more-label' => __( '组件主页', 'wp-china-yes' ),
+							'data-wenpai-confirm-more-url' => $spec['plugin_url'],
+						),
+					);
+				} else {
+					$items[] = array(
+						'label' => $def['label'],
+						'icon'  => $def['icon'],
+						'state' => 'warn',
+						'href'  => self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) ),
+						'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'attrs' => array(
+							'data-wpcy-suite-slug'  => $spec['plugin_slug'],
+							'data-wpcy-suite-state' => 'installed',
+						),
+					);
+				}
+			} elseif ( $can_install && $can_act && ConflictDetector::is_companion_installable( $spec['plugin_slug'] ) ) {
+				$items[] = array(
 					'label' => $def['label'],
 					'icon'  => $def['icon'],
-					'state' => 'warn',
-					'href'  => $act_href,
-					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 未安装，点击一键安装并启用', 'wp-china-yes' ), $spec['plugin_name'] ),
 					'attrs' => array(
 						'data-wpcy-suite-slug'           => $spec['plugin_slug'],
-						'data-wpcy-suite-state'          => 'installed',
-						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'data-wpcy-suite-state'          => 'missing',
+						'data-wpcy-provision-slug'       => $spec['plugin_slug'],
+						'data-wpcy-provision-name'       => $spec['plugin_name'],
+						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '安装%s', 'wp-china-yes' ), $spec['plugin_name'] ),
 						'data-wenpai-confirm'            => $spec['plugin_pitch'],
-						'data-wenpai-confirm-ok'         => $can_act ? __( '前往启用', 'wp-china-yes' ) : __( '查看详情', 'wp-china-yes' ),
+						'data-wenpai-confirm-ok'         => __( '一键安装并启用', 'wp-china-yes' ),
 						'data-wenpai-confirm-cancel'     => __( '取消', 'wp-china-yes' ),
 						'data-wenpai-confirm-primary'    => '1',
 						'data-wenpai-confirm-more-label' => __( '组件主页', 'wp-china-yes' ),
@@ -1163,28 +1203,18 @@ final class KitRenderer {
 					),
 				);
 			} else {
-				$install_base = self::wp_admin_link( 'plugin-install.php' );
-				$inst_href    = $can_install && function_exists( 'add_query_arg' )
-					? (string) add_query_arg(
-						array(
-							's'    => $spec['plugin_slug'],
-							'tab'  => 'search',
-							'type' => 'term',
-						),
-						$install_base
-					)
-					: self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
-				$items[]      = array(
+				$detail_href = self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
+				$items[]     = array(
 					'label' => $def['label'],
 					'icon'  => $def['icon'],
-					'href'  => $inst_href,
-					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 未安装，点击提示安装', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'href'  => $detail_href,
+					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 查看组件详情与获取方式', 'wp-china-yes' ), $spec['plugin_name'] ),
 					'attrs' => array(
 						'data-wpcy-suite-slug'           => $spec['plugin_slug'],
 						'data-wpcy-suite-state'          => 'missing',
-						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '安装%s', 'wp-china-yes' ), $spec['plugin_name'] ),
+						'data-wenpai-confirm-title'      => $spec['plugin_name'],
 						'data-wenpai-confirm'            => $spec['plugin_pitch'],
-						'data-wenpai-confirm-ok'         => $can_install ? __( '前往安装', 'wp-china-yes' ) : __( '查看详情', 'wp-china-yes' ),
+						'data-wenpai-confirm-ok'         => __( '查看详情', 'wp-china-yes' ),
 						'data-wenpai-confirm-cancel'     => __( '取消', 'wp-china-yes' ),
 						'data-wenpai-confirm-primary'    => '1',
 						'data-wenpai-confirm-more-label' => __( '组件主页', 'wp-china-yes' ),
@@ -1241,7 +1271,6 @@ final class KitRenderer {
 		$scope    = self::conn_scope( $settings, $conn );
 		$feeds    = (string) ( $conn['dashboard_feeds'] ?? 'allow' );
 		$wl       = WhiteLabel::resolve( $settings );
-		$set_url  = self::page_url( 'wpcy-connect' );
 		$diag_url = self::page_url( 'wpcy-diagnose' );
 		$scan     = ConflictDetector::scan();
 		$out      = array();
@@ -1267,8 +1296,8 @@ final class KitRenderer {
 				'tag'       => __( '待处理', 'wp-china-yes' ),
 				'tone'      => 'warn',
 				'title'     => __( '核心与插件国内更新镜像当前已关闭', 'wp-china-yes' ),
-				'fix_url'   => $set_url,
-				'fix_label' => __( '去开启', 'wp-china-yes' ),
+				'fix_kind'  => 'wporg_mirror',
+				'fix_label' => __( '一键开启', 'wp-china-yes' ),
 			);
 		}
 		if ( 'domestic' === $profile && 'off' === $scope && ! isset( $dismissed['sug.assets'] ) ) {
@@ -1277,8 +1306,8 @@ final class KitRenderer {
 				'tag'       => __( '待处理', 'wp-china-yes' ),
 				'tone'      => 'warn',
 				'title'     => __( '公共静态库与慢外链加速当前未启用', 'wp-china-yes' ),
-				'fix_url'   => $set_url,
-				'fix_label' => __( '去开启', 'wp-china-yes' ),
+				'fix_kind'  => 'public_assets',
+				'fix_label' => __( '一键开启', 'wp-china-yes' ),
 			);
 		}
 		if ( 'domestic' === $profile && 'block' !== $feeds && ! isset( $dismissed['sug.feeds'] ) ) {
@@ -1551,14 +1580,11 @@ final class KitRenderer {
 		);
 		\Wenpai_Admin_UI::row(
 			array(
-				'icon'  => 'cloud',
-				'state' => 'off' === $mirror ? '' : 'ok',
-				'title' => __( 'WordPress.org 镜像与中文语言包', 'wp-china-yes' ),
-				'desc'  => __( '加速核心、插件、主题更新与简体中文语言包，异常自动回退。', 'wp-china-yes' ),
-				'pill'  => array(
-					'text'  => 'off' === $mirror ? __( '直连官方源', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ),
-					'state' => 'off' === $mirror ? 'mute' : 'ok',
-				),
+				'icon'         => 'cloud',
+				'state'        => 'off' === $mirror ? '' : 'ok',
+				'title'        => __( 'WordPress.org 镜像与中文语言包', 'wp-china-yes' ),
+				'desc'         => __( '加速核心、插件、主题更新与简体中文语言包，异常自动回退。', 'wp-china-yes' ),
+				'control_html' => self::toggle_control( 'wporg_enabled', 'off' !== $mirror, $locked ),
 			)
 		);
 		\Wenpai_Admin_UI::row(
@@ -2420,7 +2446,7 @@ final class KitRenderer {
 
 			$metric_text = ! empty( $report['summary'] )
 				? (string) $report['summary']
-				: ( $is_builtin ? ( $builtin_metrics[ $id ] ?? '' ) : $spec['takeover_desc'] );
+				: ( $plugin_state['active'] ? $spec['takeover_desc'] : ( $is_builtin ? ( $builtin_metrics[ $id ] ?? '' ) : $spec['takeover_desc'] ) );
 
 			$ctl_html = ( ! $is_builtin || $plugin_state['active'] )
 				? \Wenpai_Admin_UI::pill_html(
@@ -2822,7 +2848,7 @@ final class KitRenderer {
 				'plugin_name'   => __( '文派头像（WPAvatar）', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpavatar',
 				'plugin_file'   => 'wpavatar/wpavatar.php',
-				'plugin_admin'  => $opt_entry . 'wpavatar',
+				'plugin_admin'  => $opt_entry . 'wpavatar-settings',
 				'plugin_url'    => 'https://wpcy.com/avatar',
 				'plugin_pitch'  => __( '开启用户本地上传头像、中文首字头像生成、默认矢量头像与本地缓存管理。', 'wp-china-yes' ),
 				'takeover_desc' => __( '本地头像上传、首字头像生成与缓存策略已由文派头像（WPAvatar）接管。', 'wp-china-yes' ),
@@ -2837,7 +2863,7 @@ final class KitRenderer {
 				'plugin_name'   => __( '文派评论（WPComments）', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpcomments',
 				'plugin_file'   => 'wpcomments/wpcomments.php',
-				'plugin_admin'  => $opt_entry . 'wpcomments',
+				'plugin_admin'  => $opt_entry . 'wpcomments-settings',
 				'plugin_url'    => 'https://wpcy.com/comments',
 				'plugin_pitch'  => __( '提供常用回复短语、评论者身份标识与自动化垃圾评论拦截能力。', 'wp-china-yes' ),
 				'takeover_desc' => __( '评论审核与常用回复工作流已由文派评论（WPComments）接管。', 'wp-china-yes' ),
@@ -2897,7 +2923,7 @@ final class KitRenderer {
 				'plugin_name'   => __( '文派字库（WPFonts）', 'wp-china-yes' ),
 				'plugin_slug'   => 'wpfonts',
 				'plugin_file'   => 'wpfonts/wpfonts.php',
-				'plugin_admin'  => $adm_entry . 'wpfonts',
+				'plugin_admin'  => $opt_entry . 'wpfonts',
 				'plugin_url'    => 'https://wpcy.com/webfonts',
 				'plugin_pitch'  => __( '检索免费商用中文字体，接入区块编辑器字体库并按标题、正文精细指定字族。', 'wp-china-yes' ),
 				'takeover_desc' => __( '中文字库选择、区块字体库与样式绑定已由文派字库（WPFonts）接管。', 'wp-china-yes' ),
@@ -3191,11 +3217,13 @@ final class KitRenderer {
 			)
 		);
 
+		$can_install = ! function_exists( 'current_user_can' ) || current_user_can( 'install_plugins' );
+		$can_act     = ! function_exists( 'current_user_can' ) || current_user_can( 'activate_plugins' );
 		if ( $plugin_state['active'] ) {
 			$ver_label    = '' !== $plugin_state['version'] ? ' v' . $plugin_state['version'] : '';
 			$admin_link   = ! empty( $report['action_url'] )
 				? $report['action_url']
-				: self::wp_admin_link( $spec['plugin_admin'] );
+				: ConflictDetector::resolve_companion_admin_url( $spec['plugin_slug'], $spec['plugin_file'] );
 			$action_label = ! empty( $report['action_label'] ) ? $report['action_label'] : __( '打开插件设置', 'wp-china-yes' );
 			$active_desc  = ! empty( $report['summary'] ) ? $report['summary'] : $spec['takeover_desc'];
 			\Wenpai_Admin_UI::row(
@@ -3220,6 +3248,27 @@ final class KitRenderer {
 			);
 		} elseif ( $plugin_state['installed'] ) {
 			$plugins_url = self::wp_admin_link( 'plugins.php' );
+			$act_btn     = $can_act
+				? \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '立即启用插件', 'wp-china-yes' ),
+						'type'    => 'button',
+						'variant' => 'primary',
+						'size'    => 'sm',
+						'attrs'   => array(
+							'data-wpcy-provision-slug' => $spec['plugin_slug'],
+							'data-wpcy-provision-name' => $spec['plugin_name'],
+						),
+					)
+				)
+				: \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '前往插件列表', 'wp-china-yes' ),
+						'href'    => $plugins_url,
+						'variant' => 'secondary',
+						'size'    => 'sm',
+					)
+				);
 			\Wenpai_Admin_UI::row(
 				array(
 					'icon'         => 'plug',
@@ -3230,28 +3279,10 @@ final class KitRenderer {
 						'text'  => __( '已安装未启用', 'wp-china-yes' ),
 						'state' => 'warn',
 					),
-					'control_html' => \Wenpai_Admin_UI::button_html(
-						array(
-							'label'   => __( '前往启用插件', 'wp-china-yes' ),
-							'href'    => $plugins_url,
-							'variant' => 'primary',
-							'size'    => 'sm',
-						)
-					),
+					'control_html' => $act_btn,
 				)
 			);
-		} else {
-			$install_base = self::wp_admin_link( 'plugin-install.php' );
-			$install_url  = function_exists( 'add_query_arg' )
-				? (string) add_query_arg(
-					array(
-						's'    => $spec['plugin_slug'],
-						'tab'  => 'search',
-						'type' => 'term',
-					),
-					$install_base
-				)
-				: $install_base;
+		} elseif ( $can_install && $can_act && ConflictDetector::is_companion_installable( $spec['plugin_slug'] ) ) {
 			\Wenpai_Admin_UI::row(
 				array(
 					'icon'         => 'download',
@@ -3271,12 +3302,51 @@ final class KitRenderer {
 						)
 					) . ' ' . \Wenpai_Admin_UI::button_html(
 						array(
-							'label'   => __( '安装独立插件', 'wp-china-yes' ),
-							'href'    => $install_url,
-							'variant' => 'secondary',
+							'label'   => __( '一键安装并启用', 'wp-china-yes' ),
+							'type'    => 'button',
+							'variant' => 'primary',
 							'size'    => 'sm',
+							'attrs'   => array(
+								'data-wpcy-provision-slug' => $spec['plugin_slug'],
+								'data-wpcy-provision-name' => $spec['plugin_name'],
+							),
 						)
 					),
+				)
+			);
+		} else {
+			$upload_base = self::wp_admin_link( 'plugin-install.php' );
+			$upload_url  = function_exists( 'add_query_arg' )
+				? (string) add_query_arg( array( 'tab' => 'upload' ), $upload_base )
+				: $upload_base;
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => 'download',
+					'title'        => $spec['plugin_name'],
+					'desc'         => $spec['plugin_pitch'],
+					'pill'         => array(
+						'text'  => __( '未安装', 'wp-china-yes' ),
+						'state' => 'mute',
+					),
+					'control_html' => ( $can_install
+						? \Wenpai_Admin_UI::button_html(
+							array(
+								'label'   => __( '上传安装包', 'wp-china-yes' ),
+								'href'    => $upload_url,
+								'variant' => 'ghost',
+								'size'    => 'sm',
+							)
+						) . ' '
+						: '' )
+						. \Wenpai_Admin_UI::button_html(
+							array(
+								'label'   => __( '前往官网获取 ↗', 'wp-china-yes' ),
+								'href'    => $plugin_url,
+								'variant' => 'secondary',
+								'size'    => 'sm',
+								'target'  => '_blank',
+							)
+						),
 				)
 			);
 		}
@@ -3715,9 +3785,9 @@ final class KitRenderer {
 						)
 					);
 				} else {
-					$rec_dom   = in_array( $slug, array( 'wpavatar', 'wpslug', 'wpfonts', 'wpicp' ), true ) ? '1' : '0';
+					$rec_dom   = in_array( $slug, array( 'wpavatar', 'wpslug', 'wpbridge' ), true ) ? '1' : '0';
 					$rec_cross = in_array( $slug, array( 'wpslug', 'wp-chinese-converter' ), true ) ? '1' : '0';
-					$rec_mixed = in_array( $slug, array( 'wpavatar', 'wpslug' ), true ) ? '1' : '0';
+					$rec_mixed = in_array( $slug, array( 'wpavatar', 'wpslug', 'wpbridge' ), true ) ? '1' : '0';
 					$checked   = $pstate['installed'] || $starter['recommended'];
 					$pill      = $pstate['installed']
 						? array(

@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Diagnostics\RouteGroups;
 use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
@@ -197,9 +198,12 @@ final class AdminModule implements Module {
 			'wpslug',
 			'wpsss',
 			'wpavatar',
+			'wpavatar-settings',
 			'wpcomments',
+			'wpcomments-settings',
 			'wp-chinese-converter',
 			'wpicp',
+			'wpicp_license_settings',
 			'wpstatic',
 			'wpfonts',
 			'wpphoto',
@@ -248,7 +252,8 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Redirect top-level pages opened under options-general.php so the left menu highlights 文派叶子.
+	 * Redirect top-level pages opened under options-general.php (or companion pages opened under
+	 * the wrong parent script / alias slug) so links never 403 or render the wrong screen.
 	 *
 	 * @since 4.0.0
 	 */
@@ -257,14 +262,16 @@ final class AdminModule implements Module {
 		if ( '' === $script && isset( $_SERVER['SCRIPT_NAME'] ) ) {
 			$script = basename( sanitize_text_field( wp_unslash( (string) $_SERVER['SCRIPT_NAME'] ) ) );
 		}
-		if ( 'options-general.php' !== $script ) {
+		if ( 'options-general.php' === $script && ( 'wp-china-yes' === $this->current_page() || $this->is_app_screen() ) ) {
+			$this->redirect_legacy_options_url();
 			return;
 		}
-		$this->redirect_legacy_options_url();
+		$this->rescue_companion_page_url( $script );
 	}
 
 	/**
-	 * Redirect legacy 3.x ?page=wp-china-yes or options-general.php?page=wpcy* links to canonical top-level URLs.
+	 * Redirect legacy 3.x ?page=wp-china-yes, options-general.php?page=wpcy* links, or companion
+	 * alias URLs (e.g. options-general.php?page=wpavatar -> ?page=wpavatar-settings) on access denied.
 	 *
 	 * @since 4.0.0
 	 */
@@ -279,8 +286,58 @@ final class AdminModule implements Module {
 		if ( 'wp-china-yes' === $slug ) {
 			$slug = self::SLUG;
 		} elseif ( ! $this->is_app_screen() || '' === $slug ) {
+			$this->rescue_companion_page_url( '' );
 			return;
 		}
+		$extra = $this->preserved_query_args();
+		wp_safe_redirect( self::app_url( $slug, $extra ) );
+		exit;
+	}
+
+	/**
+	 * Redirect a companion plugin settings request when opened with an alias slug (e.g. `wpavatar`
+	 * instead of `wpavatar-settings`) or under the wrong parent script (`options-general.php` vs top-level).
+	 *
+	 * @param string $current_script Current `pagenow` basename, or `''` when triggered from `admin_page_access_denied`.
+	 */
+	private function rescue_companion_page_url( string $current_script ): void {
+		if ( $this->in_network_admin() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$slug = $this->current_page();
+		if ( '' === $slug || $this->is_app_screen() ) {
+			return;
+		}
+		$live_url = ConflictDetector::resolve_live_url_for_page_slug( $slug );
+		if ( '' === $live_url ) {
+			return;
+		}
+		if ( '' !== $current_script ) {
+			$parts       = function_exists( 'wp_parse_url' ) ? wp_parse_url( $live_url ) : parse_url( $live_url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- fallback for standalone unit tests.
+			$target_file = is_array( $parts ) && isset( $parts['path'] ) ? basename( (string) $parts['path'] ) : '';
+			$query_vars  = array();
+			if ( is_array( $parts ) && isset( $parts['query'] ) ) {
+				parse_str( (string) $parts['query'], $query_vars );
+			}
+			$target_page = isset( $query_vars['page'] ) && is_string( $query_vars['page'] ) ? $query_vars['page'] : '';
+			if ( $target_file === $current_script && $target_page === $slug ) {
+				return;
+			}
+		}
+		$extra = $this->preserved_query_args();
+		if ( array() !== $extra && function_exists( 'add_query_arg' ) ) {
+			$live_url = (string) add_query_arg( $extra, $live_url );
+		}
+		wp_safe_redirect( $live_url );
+		exit;
+	}
+
+	/**
+	 * Collect safe scalar query parameters (excluding `page`) to preserve across canonical 302 redirects.
+	 *
+	 * @return array<string, string>
+	 */
+	private function preserved_query_args(): array {
 		$extra = array();
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- preserving safe read-only navigation query args across 302.
 		foreach ( $_GET as $key => $val ) {
@@ -290,8 +347,7 @@ final class AdminModule implements Module {
 			}
 			$extra[ $clean_key ] = sanitize_text_field( wp_unslash( (string) $val ) );
 		}
-		wp_safe_redirect( self::app_url( $slug, $extra ) );
-		exit;
+		return $extra;
 	}
 
 	/**

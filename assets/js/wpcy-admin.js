@@ -22,6 +22,35 @@
 		return sp;
 	}
 
+	function toast(level, text) {
+		if (!text) return;
+		if (typeof window.wenpaiToast === 'function') {
+			window.wenpaiToast(text, level === 'bad' || level === 'warn' ? 'bad' : 'ok');
+			return;
+		}
+		notify(level, text);
+	}
+
+	function stashFlashToast(level, text) {
+		try {
+			window.sessionStorage.setItem('wpcy_flash_toast', JSON.stringify({ level: level, text: text }));
+		} catch (e) {}
+	}
+
+	function consumeFlashToast() {
+		try {
+			const raw = window.sessionStorage.getItem('wpcy_flash_toast');
+			if (!raw) return;
+			window.sessionStorage.removeItem('wpcy_flash_toast');
+			const item = JSON.parse(raw);
+			if (item && item.text) {
+				setTimeout(function () {
+					toast(item.level || 'ok', String(item.text));
+				}, 120);
+			}
+		} catch (e) {}
+	}
+
 	function notify(level, text) {
 		if (window.wenpaiAdmin && typeof window.wenpaiAdmin.notice === 'function') {
 			window.wenpaiAdmin.notice({ level: level, text: text, fade: true });
@@ -153,6 +182,12 @@
 	function setChannelCell(key, isIssue, okLabel) {
 		const cell = document.querySelector('[data-wpcy-channel="' + key + '"]');
 		const val = document.querySelector('[data-wpcy-channel-val="' + key + '"]');
+		if (val && val.getAttribute('data-wpcy-takeover') === '1') {
+			if (cell) {
+				cell.classList.remove('is-warn');
+			}
+			return;
+		}
 		if (cell) {
 			cell.classList.toggle('is-warn', !!isIssue);
 		}
@@ -358,17 +393,25 @@
 			if (fixBtn) {
 				fixBtn.addEventListener('click', function () {
 					const fixKind = fixBtn.getAttribute('data-wpcy-fix-sug');
+					let patch = null;
+					let okMsg = '已开启';
 					if (fixKind === 'dashboard_feeds') {
+						patch = { connectivity: { dashboard_feeds: 'block' } };
+						okMsg = '已开启仪表盘高速动态小工具替换';
+					} else if (fixKind === 'wporg_mirror') {
+						patch = { connectivity: { wordpress_org: 'auto' } };
+						okMsg = '已开启国内更新镜像加速';
+					} else if (fixKind === 'public_assets') {
+						patch = { connectivity: { public_assets: { scope: 'both' } } };
+						okMsg = '已开启公共静态库国内加速';
+					}
+					if (patch) {
 						fixBtn.disabled = true;
-						api('/settings', { method: 'PUT', body: { connectivity: { dashboard_feeds: 'block' } } })
+						api('/settings', { method: 'PUT', body: patch })
 							.then(function () {
 								ssrSugNodes = ssrSugNodes.filter(function (n) { return n !== li; });
 								renderEventsAndNews();
-								if (typeof window.wenpaiToast === 'function') {
-									window.wenpaiToast('已开启仪表盘高速动态小工具替换', 'ok');
-								} else {
-									notify('ok', '已开启仪表盘高速动态小工具替换');
-								}
+								toast('ok', okMsg);
 							})
 							.catch(function (err) {
 								fixBtn.disabled = false;
@@ -667,12 +710,22 @@
 				if (labelEl) labelEl.textContent = checked ? '已开启' : '未开启';
 
 				const patch = {};
-				if (input.name === 'public_assets_enabled') {
+				if (input.name === 'wporg_enabled') {
+					patch.connectivity = { wordpress_org: checked ? 'auto' : 'off' };
+					const sel = form && form.querySelector('select[name="wporg_mirror"]');
+					if (sel) sel.value = checked ? 'auto' : 'off';
+				} else if (input.name === 'public_assets_enabled') {
 					patch.connectivity = { public_assets: { scope: checked ? 'both' : 'off' } };
+					const sel = form && form.querySelector('select[name="public_assets_scope"]');
+					if (sel) sel.value = checked ? 'both' : 'off';
 				} else if (input.name === 'avatar_enabled') {
 					patch.connectivity = { avatar: checked ? 'cravatar_cn' : 'off' };
+					const sel = form && form.querySelector('select[name="avatar_source"]');
+					if (sel) sel.value = checked ? 'cravatar_cn' : 'off';
 				} else if (input.name === 'icon_photos_enabled') {
 					patch.connectivity = { icon_photos: { enabled: checked ? 'on' : 'off' } };
+					const sel = form && form.querySelector('select[name="icon_photos_mode"]');
+					if (sel) sel.value = checked ? 'on' : 'off';
 				} else if (input.name === 'admin_locale_follow') {
 					patch.connectivity = { admin_locale_follow: checked };
 					const card = input.closest('[data-wpcy-core-card]');
@@ -888,7 +941,7 @@
 		document.querySelectorAll('[data-wpcy-action="recovery-on"], [data-wpcy-action="recovery-off"]').forEach(function (el) {
 			el.addEventListener('click', function () {
 				const enable = el.getAttribute('data-wpcy-action') === 'recovery-on';
-				if (enable && el.hasAttribute('data-wenpai-confirm') && el.dataset.wenpaiConfirmed !== '1') {
+				if (enable && el.hasAttribute('data-wenpai-confirm') && !el.hasAttribute('data-wenpai-confirm-bypass')) {
 					return;
 				}
 				api('/recovery', { method: 'POST', body: { action: enable ? 'disable_rewrites' : 'exit' } })
@@ -971,7 +1024,7 @@
 					if (!m || typeof t.latency_ms !== 'number' || t.latency_ms <= 0) return;
 					const el = svcScreen.querySelector('[data-wpcy-core-metric-text="' + m[0] + '"]');
 					const sw = svcScreen.querySelector('[data-wpcy-service-toggle="' + m[0] + '"]');
-					if (el && (!sw || sw.checked)) {
+					if (el && sw && sw.checked) {
 						el.textContent = Math.round(t.latency_ms) + ' ms · ' + m[1];
 					}
 				});
@@ -1375,9 +1428,33 @@
 						return null;
 					}
 					return api('/suite/provision', { method: 'POST', body: { slugs: selectedSlugs } })
-						.catch(function () { return null; });
+						.catch(function (err) {
+							return { error: err && err.message ? err.message : '组件安装超时' };
+						});
 				})
-				.then(function () {
+				.then(function (provRes) {
+					if (provRes && Array.isArray(provRes.results) && provRes.results.length) {
+						let okCount = 0;
+						let manualCount = 0;
+						provRes.results.forEach(function (item) {
+							if (item && (item.status === 'activated' || item.status === 'active')) {
+								okCount += 1;
+							} else {
+								manualCount += 1;
+							}
+						});
+						if (okCount > 0 && manualCount === 0) {
+							stashFlashToast('ok', '场景配置已生效，已启用 ' + okCount + ' 款文派组件');
+						} else if (okCount > 0 && manualCount > 0) {
+							stashFlashToast('warn', '已启用 ' + okCount + ' 款组件；另有 ' + manualCount + ' 款请前往服务目录查看');
+						} else if (manualCount > 0) {
+							stashFlashToast('warn', '场景配置已保存，所选组件暂需前往服务目录手动安装');
+						}
+					} else if (provRes && provRes.error) {
+						stashFlashToast('warn', '场景配置已保存，组件自动安装未完成：' + provRes.error);
+					} else {
+						stashFlashToast('ok', '站点加速场景配置已生效');
+					}
 					window.location.href = homeUrl;
 				})
 				.catch(function (err) {
@@ -1403,7 +1480,56 @@
 		});
 	}
 
+	// 5. Companion 1-click install / activate buttons (`[data-wpcy-provision-slug]`).
+	function initCompanionProvisioning() {
+		document.querySelectorAll('[data-wpcy-provision-slug]').forEach(function (btn) {
+			btn.addEventListener('click', function (e) {
+				if (btn.hasAttribute('data-wenpai-confirm') && !btn.hasAttribute('data-wenpai-confirm-bypass')) {
+					return;
+				}
+				e.preventDefault();
+				if (btn.disabled || btn.classList.contains('is-busy')) {
+					return;
+				}
+				const slug = btn.getAttribute('data-wpcy-provision-slug') || '';
+				const name = btn.getAttribute('data-wpcy-provision-name') || slug;
+				const isInstalled = btn.getAttribute('data-wpcy-suite-state') === 'installed';
+				if (!slug) return;
+
+				btn.disabled = true;
+				btn.classList.add('is-busy');
+				btn.setAttribute('aria-busy', 'true');
+				toast('ok', (isInstalled ? '正在启用 ' : '正在安装并启用 ') + name + '…');
+
+				api('/suite/provision', { method: 'POST', body: { slugs: [slug] } })
+					.then(function (res) {
+						const item = (res && Array.isArray(res.results) && res.results[0]) ? res.results[0] : null;
+						if (item && (item.status === 'activated' || item.status === 'active')) {
+							stashFlashToast('ok', '已启用 ' + name);
+							if (item.settings_url) {
+								window.location.href = item.settings_url;
+							} else {
+								window.location.reload();
+							}
+							return;
+						}
+						btn.disabled = false;
+						btn.classList.remove('is-busy');
+						btn.removeAttribute('aria-busy');
+						toast('warn', '未能在线拉取安装包，请前往组件官网下载后上传安装。');
+					})
+					.catch(function (err) {
+						btn.disabled = false;
+						btn.classList.remove('is-busy');
+						btn.removeAttribute('aria-busy');
+						toast('bad', (err && err.message) ? err.message : '操作未完成，请稍后重试。');
+					});
+			});
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
+		consumeFlashToast();
 		initOverview();
 		initSettings();
 		initDiagnoseAndServices();
@@ -1411,5 +1537,6 @@
 		initUrlTester();
 		initOutboundOverview();
 		initWizard();
+		initCompanionProvisioning();
 	});
 })();

@@ -22,96 +22,118 @@ final class ConflictDetector {
 	/**
 	 * Allowlisted WenPai companion plugin metadata keyed by plugin slug.
 	 *
-	 * @var array<string, array{file: string, const: string, name: string, top: bool, url: string, synergy: string}>
+	 * @var array<string, array{file: string, const: string, name: string, top: bool, pages: list<string>, installable: bool, url: string, synergy: string}>
 	 */
 	public const COMPANIONS = array(
 		'wpavatar'             => array(
-			'file'    => 'wpavatar/wpavatar.php',
-			'const'   => 'WPAVATAR_VERSION',
-			'name'    => '文派头像（WPAvatar）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/avatar',
-			'synergy' => '头像源切换、首字头像生成与本地缓存已自动交由文派头像接管，避免双重过滤。',
+			'file'        => 'wpavatar/wpavatar.php',
+			'const'       => 'WPAVATAR_VERSION',
+			'name'        => '文派头像（WPAvatar）',
+			'top'         => false,
+			'pages'       => array( 'wpavatar-settings', 'wpavatar' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/avatar',
+			'synergy'     => '头像源切换、首字头像生成与本地缓存已自动交由文派头像接管，避免双重过滤。',
 		),
 		'wpfonts'              => array(
-			'file'    => 'wpfonts/wpfonts.php',
-			'const'   => 'WPFONTS_VERSION',
-			'name'    => '文派字库（WPFonts）',
-			'top'     => true,
-			'url'     => 'https://wpcy.com/webfonts',
-			'synergy' => '中文字体切片与区块编辑器字体库已与文派字库协同工作。',
+			'file'        => 'wpfonts/wpfonts.php',
+			'const'       => 'WPFONTS_VERSION',
+			'name'        => '文派字库（WPFonts）',
+			'top'         => false,
+			'pages'       => array( 'wpfonts' ),
+			'installable' => false,
+			'url'         => 'https://wpcy.com/webfonts',
+			'synergy'     => '中文字体切片与区块编辑器字体库已与文派字库协同工作。',
 		),
 		'wpsss'                => array(
-			'file'    => 'wpsss/wpsss.php',
-			'const'   => 'WPSSS_VERSION',
-			'name'    => '文派智储（WPSSS）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/wpsss',
-			'synergy' => '媒体库对象存储同步与自定义加速域名已由文派智储接管。',
+			'file'        => 'wpsss/wpsss.php',
+			'const'       => 'WPSSS_VERSION',
+			'name'        => '文派智储（WPSSS）',
+			'top'         => true,
+			'pages'       => array( 'wpsss' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/wpsss',
+			'synergy'     => '媒体库对象存储同步与自定义加速域名已由文派智储接管。',
 		),
 		'wpslug'               => array(
-			'file'    => 'wpslug/wpslug.php',
-			'const'   => 'WPSLUG_VERSION',
-			'name'    => '文派素格（WPSlug）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/slug',
-			'synergy' => '中文标题与媒体文件名转别名已由文派素格协同管理。',
+			'file'        => 'wpslug/wpslug.php',
+			'const'       => 'WPSLUG_VERSION',
+			'name'        => '文派素格（WPSlug）',
+			'top'         => false,
+			'pages'       => array( 'wpslug' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/slug',
+			'synergy'     => '中文标题与媒体文件名转别名已由文派素格协同管理。',
 		),
 		'wpmind'               => array(
-			'file'    => 'wpmind/wpmind.php',
-			'const'   => 'WPMIND_VERSION',
-			'name'    => '文派心思（WPMind）',
-			'top'     => true,
-			'url'     => 'https://wpcy.com/mind',
-			'synergy' => '多模型 AI 接口路由与 GEO 搜索优化已由文派心思接管。',
+			'file'        => 'wpmind/wpmind.php',
+			'const'       => 'WPMIND_VERSION',
+			'name'        => '文派心思（WPMind）',
+			'top'         => true,
+			'pages'       => array( 'wpmind' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/mind',
+			'synergy'     => '多模型 AI 接口路由与 GEO 搜索优化已由文派心思接管。',
 		),
 		'wpbridge'             => array(
-			'file'    => 'wpbridge/wpbridge.php',
-			'const'   => 'WPBRIDGE_VERSION',
-			'name'    => '文派云桥（WPBridge）',
-			'top'     => true,
-			'url'     => 'https://wpcy.com/bridge',
-			'synergy' => '生态插件目录浏览与商业更新通道已与文派云桥协同联动。',
+			'file'        => 'wpbridge/wpbridge.php',
+			'const'       => 'WPBRIDGE_VERSION',
+			'name'        => '文派云桥（WPBridge）',
+			'top'         => true,
+			'pages'       => array( 'wpbridge' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/bridge',
+			'synergy'     => '生态插件目录浏览与商业更新通道已与文派云桥协同联动。',
 		),
 		'wpstatic'             => array(
-			'file'    => 'wpstatic/wpstatic.php',
-			'const'   => 'WPSTATIC_VERSION',
-			'name'    => '萌芽静态加速（WPStatic）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/static',
-			'synergy' => '核心静态文件托管与公共库白名单已由萌芽静态加速接管。',
+			'file'        => 'wpstatic/wpstatic.php',
+			'const'       => 'WPSTATIC_VERSION',
+			'name'        => '萌芽静态加速（WPStatic）',
+			'top'         => false,
+			'pages'       => array( 'wpstatic' ),
+			'installable' => false,
+			'url'         => 'https://wpcy.com/static',
+			'synergy'     => '核心静态文件托管与公共库白名单已由萌芽静态加速接管。',
 		),
 		'wpcomments'           => array(
-			'file'    => 'wpcomments/wpcomments.php',
-			'const'   => 'WPCOMMENTS_VERSION',
-			'name'    => '文派评论（WPComments）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/comments',
-			'synergy' => '评论审核流转与快捷回复模板已由文派评论接管。',
+			'file'        => 'wpcomments/wpcomments.php',
+			'const'       => 'WPCOMMENTS_VERSION',
+			'name'        => '文派评论（WPComments）',
+			'top'         => false,
+			'pages'       => array( 'wpcomments-settings', 'wpcomments' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/comments',
+			'synergy'     => '评论审核流转与快捷回复模板已由文派评论接管。',
 		),
 		'wp-chinese-converter' => array(
-			'file'    => 'wp-chinese-converter/wp-chinese-converter.php',
-			'const'   => 'WPCC_VERSION',
-			'name'    => '文派译词（WPCC）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/chinese-converter',
-			'synergy' => '多地区中文简繁转换与语言切换标记已由文派译词接管。',
+			'file'        => 'wp-chinese-converter/wp-chinese-converter.php',
+			'const'       => 'WPCC_VERSION',
+			'name'        => '文派译词（WPCC）',
+			'top'         => false,
+			'pages'       => array( 'wp-chinese-converter' ),
+			'installable' => true,
+			'url'         => 'https://wpcy.com/chinese-converter',
+			'synergy'     => '多地区中文简繁转换与语言切换标记已由文派译词接管。',
 		),
 		'wpphoto'              => array(
-			'file'    => 'wpphoto/wpphoto.php',
-			'const'   => 'WPPHOTO_VERSION',
-			'name'    => '墨图图库（WPPhoto）',
-			'top'     => true,
-			'url'     => 'https://wpcy.com/photo',
-			'synergy' => '矢量图标检索与免版权配图插入已由墨图图库接管。',
+			'file'        => 'wpphoto/wpphoto.php',
+			'const'       => 'WPPHOTO_VERSION',
+			'name'        => '墨图图库（WPPhoto）',
+			'top'         => true,
+			'pages'       => array( 'wpphoto' ),
+			'installable' => false,
+			'url'         => 'https://wpcy.com/photo',
+			'synergy'     => '矢量图标检索与免版权配图插入已由墨图图库接管。',
 		),
 		'wpicp'                => array(
-			'file'    => 'wpicp/wpicp.php',
-			'const'   => 'WPICP_VERSION',
-			'name'    => '文派备案（WPICP）',
-			'top'     => false,
-			'url'     => 'https://wpcy.com/icp',
-			'synergy' => '前台页脚工信部 ICP 与公安联网备案标识已由文派备案接管。',
+			'file'        => 'wpicp/wpicp.php',
+			'const'       => 'WPICP_VERSION',
+			'name'        => '文派备案（WPICP）',
+			'top'         => false,
+			'pages'       => array( 'wpicp', 'wpicp_license_settings' ),
+			'installable' => false,
+			'url'         => 'https://wpcy.com/icp',
+			'synergy'     => '前台页脚工信部 ICP 与公安联网备案标识已由文派备案接管。',
 		),
 	);
 
@@ -247,6 +269,134 @@ final class ConflictDetector {
 	}
 
 	/**
+	 * Whether a companion plugin currently has a public package available for one-click remote install.
+	 *
+	 * @param string $slug Companion plugin slug.
+	 * @return bool
+	 */
+	public static function is_companion_installable( string $slug ): bool {
+		return ! empty( self::COMPANIONS[ $slug ]['installable'] );
+	}
+
+	/**
+	 * Resolve the live, guaranteed-accessible settings URL for an active companion plugin.
+	 *
+	 * Checks `Wenpai_Admin_Menu`, WordPress live `$_parent_pages` (across all candidate slugs such as
+	 * `wpavatar-settings` vs `wpavatar` and `wpcomments-settings` vs `wpcomments`), and the plugin's
+	 * own `plugin_action_links_*` filter before falling back safely.
+	 *
+	 * @param string $slug        Companion directory slug.
+	 * @param string $plugin_file Optional relative plugin file path.
+	 * @return string
+	 */
+	public static function resolve_companion_admin_url( string $slug, string $plugin_file = '' ): string {
+		$adm_script = 'admin';
+		$adm_file   = $adm_script . '.php';
+		$meta       = self::COMPANIONS[ $slug ] ?? null;
+		$candidates = null !== $meta ? $meta['pages'] : array( $slug );
+		if ( ! in_array( $slug, $candidates, true ) ) {
+			$candidates[] = $slug;
+		}
+
+		foreach ( $candidates as $cand ) {
+			if ( class_exists( '\Wenpai_Admin_Menu', false ) && \Wenpai_Admin_Menu::owns_page( $cand ) ) {
+				return (string) \Wenpai_Admin_Menu::url( $cand );
+			}
+		}
+
+		$has_live_menu = isset( $GLOBALS['_parent_pages'] ) && is_array( $GLOBALS['_parent_pages'] ) && array() !== $GLOBALS['_parent_pages'];
+		if ( $has_live_menu ) {
+			$parents = $GLOBALS['_parent_pages'];
+			foreach ( $candidates as $cand ) {
+				if ( array_key_exists( $cand, $parents ) ) {
+					$parent = (string) $parents[ $cand ];
+					$entry  = ( '' !== $parent && ! array_key_exists( $parent, $parents ) ) ? $parent : $adm_file;
+					$rel    = $entry . '?page=' . rawurlencode( $cand );
+					return function_exists( 'admin_url' ) ? (string) admin_url( $rel ) : $rel;
+				}
+			}
+		}
+
+		$effective_file = '' !== $plugin_file ? $plugin_file : ( null !== $meta ? $meta['file'] : $slug . '/' . $slug . '.php' );
+		if ( function_exists( 'apply_filters' ) ) {
+			$links = apply_filters( 'plugin_action_links_' . $effective_file, array() );
+			if ( is_array( $links ) ) {
+				foreach ( $links as $html ) {
+					if ( is_string( $html ) && preg_match( '/href=["\']([^"\']*page=[^"\']+)["\']/i', $html, $m ) ) {
+						return html_entity_decode( $m[1], ENT_QUOTES, 'UTF-8' );
+					}
+				}
+			}
+		}
+
+		if ( $has_live_menu ) {
+			$fallback_rel = 'plugins.php?s=' . rawurlencode( $slug );
+			return function_exists( 'admin_url' ) ? (string) admin_url( $fallback_rel ) : $fallback_rel;
+		}
+
+		$primary_page = $candidates[0];
+		$is_top       = null !== $meta && $meta['top'];
+		$default_rel  = ( $is_top ? $adm_file : 'options-general.php' ) . '?page=' . rawurlencode( $primary_page );
+		return function_exists( 'admin_url' ) ? (string) admin_url( $default_rel ) : $default_rel;
+	}
+
+	/**
+	 * Resolve the live registered admin URL when a user visits a legacy/alias `?page=` slug
+	 * or opens a companion page under the wrong parent script (`options-general.php` vs top-level).
+	 *
+	 * Returns `''` when `$requested_page` does not belong to any known WenPai companion or no live
+	 * menu page is registered for that companion.
+	 *
+	 * @param string $requested_page Requested `$_GET['page']` value.
+	 * @return string
+	 */
+	public static function resolve_live_url_for_page_slug( string $requested_page ): string {
+		$clean = strtolower( trim( $requested_page ) );
+		if ( '' === $clean ) {
+			return '';
+		}
+
+		$matched_slug = '';
+		foreach ( self::COMPANIONS as $slug => $meta ) {
+			if ( $clean === $slug || in_array( $clean, $meta['pages'], true ) ) {
+				$matched_slug = $slug;
+				break;
+			}
+		}
+		if ( '' === $matched_slug ) {
+			return '';
+		}
+
+		$adm_script = 'admin';
+		$adm_file   = $adm_script . '.php';
+		$meta       = self::COMPANIONS[ $matched_slug ];
+		$candidates = $meta['pages'];
+		if ( ! in_array( $matched_slug, $candidates, true ) ) {
+			$candidates[] = $matched_slug;
+		}
+
+		foreach ( $candidates as $cand ) {
+			if ( class_exists( '\Wenpai_Admin_Menu', false ) && \Wenpai_Admin_Menu::owns_page( $cand ) ) {
+				return (string) \Wenpai_Admin_Menu::url( $cand );
+			}
+		}
+
+		if ( isset( $GLOBALS['_parent_pages'] ) && is_array( $GLOBALS['_parent_pages'] ) ) {
+			$parents = $GLOBALS['_parent_pages'];
+			foreach ( $candidates as $cand ) {
+				if ( array_key_exists( $cand, $parents ) ) {
+					$parent = (string) $parents[ $cand ];
+					$entry  = ( '' !== $parent && ! array_key_exists( $parent, $parents ) ) ? $parent : $adm_file;
+					$rel    = $entry . '?page=' . rawurlencode( $cand );
+					return function_exists( 'admin_url' ) ? (string) admin_url( $rel ) : $rel;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Scan active plugins for WenPai companion synergies and third-party conflicts.
 	 *
 	 * @param list<string>|null $active_files Optional explicit list of active plugin basenames (for testing).
@@ -256,21 +406,18 @@ final class ConflictDetector {
 	 * }
 	 */
 	public static function scan( ?array $active_files = null ): array {
-		$adm_script = 'admin';
-		$adm_entry  = $adm_script . '.php?page=';
-		$slug_map   = self::active_plugin_slugs( $active_files );
-		$synergies  = array();
+		$slug_map  = self::active_plugin_slugs( $active_files );
+		$synergies = array();
 		foreach ( self::COMPANIONS as $slug => $meta ) {
 			$is_on = isset( $slug_map[ $slug ] ) || ( null === $active_files && defined( $meta['const'] ) );
 			if ( ! $is_on ) {
 				continue;
 			}
-			$admin_rel   = ( class_exists( '\Wenpai_Admin_Menu', false ) && \Wenpai_Admin_Menu::owns_page( $slug ) )
-				? \Wenpai_Admin_Menu::url( $slug )
-				: ( ( $meta['top'] ? $adm_entry : 'options-general.php?page=' ) . $slug );
+			$file        = $slug_map[ $slug ] ?? $meta['file'];
+			$admin_rel   = self::resolve_companion_admin_url( $slug, $file );
 			$synergies[] = array(
 				'slug'    => $slug,
-				'file'    => $slug_map[ $slug ] ?? $meta['file'],
+				'file'    => $file,
 				'name'    => $meta['name'],
 				'admin'   => $admin_rel,
 				'url'     => $meta['url'],
@@ -331,6 +478,9 @@ final class ConflictDetector {
 	/**
 	 * Starter bundle recommendations for the Onboarding Wizard Step 3, ordered by priority.
 	 *
+	 * Every starter item listed here has a verified public release package on WenPai Bridge / WordPress.org
+	 * so toggling it on in Wizard Step 3 installs and activates cleanly in one click.
+	 *
 	 * @param string $profile Current site profile (`domestic`, `crossborder`, `mixed`).
 	 * @return list<array{slug: string, file: string, icon: string, name: string, short_desc: string, recommended: bool}>
 	 */
@@ -354,11 +504,11 @@ final class ConflictDetector {
 				'recommended' => true,
 			),
 			array(
-				'slug'        => 'wpfonts',
-				'file'        => 'wpfonts/wpfonts.php',
-				'icon'        => 'feather',
-				'name'        => '文派字库（WPFonts）',
-				'short_desc'  => '为区块编辑器补充标准中英日韩系统字栈，并可按需接入中文字体切片',
+				'slug'        => 'wpbridge',
+				'file'        => 'wpbridge/wpbridge.php',
+				'icon'        => 'cloud',
+				'name'        => '文派云桥（WPBridge）',
+				'short_desc'  => '在后台直接浏览、安装文派生态独立插件目录并同步国内更新通道',
 				'recommended' => ! $is_cross,
 			),
 			array(
@@ -370,20 +520,20 @@ final class ConflictDetector {
 				'recommended' => false,
 			),
 			array(
+				'slug'        => 'wpmind',
+				'file'        => 'wpmind/wpmind.php',
+				'icon'        => 'sparkle',
+				'name'        => '文派心思（WPMind）',
+				'short_desc'  => '统一管理多模型 AI 接口路由、故障自动切换与生成式搜索优化（GEO）',
+				'recommended' => false,
+			),
+			array(
 				'slug'        => 'wp-chinese-converter',
 				'file'        => 'wp-chinese-converter/wp-chinese-converter.php',
 				'icon'        => 'map',
 				'name'        => '文派译词（WPCC）',
 				'short_desc'  => '面向港澳台与海外华语访客提供多地区简繁词汇转换与搜索引擎语言标记',
 				'recommended' => $is_cross,
-			),
-			array(
-				'slug'        => 'wpicp',
-				'file'        => 'wpicp/wpicp.php',
-				'icon'        => 'shield-check',
-				'name'        => '文派备案（WPICP）',
-				'short_desc'  => '在站点页脚规范输出工信部 ICP 备案号与公安联网备案标识',
-				'recommended' => 'domestic' === $profile,
 			),
 		);
 	}

@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Admin;
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Admin\KitRenderer;
 use WenPai\ChinaYes\Config\Defaults;
+use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
 
@@ -386,5 +387,51 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( 'data-wpcy-screen="wizard"', $wizard );
 		$this->assertStringContainsString( '360 前端公共库替换（Useso）', $wizard );
 		$this->assertStringContainsString( '装机组件推荐', $wizard );
+	}
+
+	/**
+	 * Companion menu resolver maps alias slugs (`wpavatar` -> `wpavatar-settings`), honors live
+	 * `$_parent_pages`, and guarantees every Wizard Step 3 starter item is online-installable.
+	 */
+	public function test_companion_menu_resolution_and_starter_installability(): void {
+		$this->assertStringContainsString(
+			'options-general.php?page=wpavatar-settings',
+			ConflictDetector::resolve_companion_admin_url( 'wpavatar' )
+		);
+		$this->assertStringContainsString(
+			'options-general.php?page=wpcomments-settings',
+			ConflictDetector::resolve_companion_admin_url( 'wpcomments' )
+		);
+
+		$prev_parents = $GLOBALS['_parent_pages'] ?? null;
+		try {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- testing live WP menu table lookup.
+			$GLOBALS['_parent_pages'] = array(
+				'wpavatar-settings' => 'options-general.php',
+				'wpsss'             => '',
+			);
+			$this->assertStringContainsString(
+				'options-general.php?page=wpavatar-settings',
+				ConflictDetector::resolve_live_url_for_page_slug( 'wpavatar' )
+			);
+			$this->assertStringContainsString(
+				'?page=wpsss',
+				ConflictDetector::resolve_live_url_for_page_slug( 'wpsss' )
+			);
+		} finally {
+			if ( null === $prev_parents ) {
+				unset( $GLOBALS['_parent_pages'] );
+			} else {
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- restoring test state.
+				$GLOBALS['_parent_pages'] = $prev_parents;
+			}
+		}
+
+		foreach ( ConflictDetector::wizard_starter_items( 'domestic' ) as $starter ) {
+			$this->assertTrue(
+				ConflictDetector::is_companion_installable( $starter['slug'] ),
+				'Wizard starter slug must have a public installable package: ' . $starter['slug']
+			);
+		}
 	}
 }

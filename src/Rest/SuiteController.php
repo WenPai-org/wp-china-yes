@@ -99,19 +99,38 @@ final class SuiteController {
 	}
 
 	/**
+	 * Official WenPai Bridge plugin metadata endpoint prefix.
+	 */
+	private const BRIDGE_API_PREFIX = 'https://updates.wenpai.net/api/v1/plugins/';
+
+	/**
+	 * Strict host allowlist for companion zip downloads returned by WenPai Bridge or WordPress.org.
+	 *
+	 * @var list<string>
+	 */
+	private const ALLOWED_PACKAGE_HOSTS = array(
+		'downloads.feicode.com',
+		'downloads.wenpai.net',
+		'downloads.wordpress.org',
+		'feicode.com',
+	);
+
+	/**
 	 * Provision a single allowlisted WenPai companion plugin.
 	 *
-	 * @param string                                                                                    $slug Companion slug.
-	 * @param array{file: string, const: string, name: string, top: bool, url: string, synergy: string} $meta Companion metadata.
-	 * @return array{slug: string, name: string, status: string, url: string}
+	 * @param string               $slug Companion slug.
+	 * @param array<string, mixed> $meta Companion metadata from `ConflictDetector::COMPANIONS`.
+	 * @phpstan-param array{file: string, const: string, name: string, top: bool, pages: list<string>, installable: bool, url: string, synergy: string} $meta
+	 * @return array{slug: string, name: string, status: string, url: string, settings_url: string}
 	 */
 	private function provision_one( string $slug, array $meta ): array {
 		if ( ConflictDetector::is_companion_active( $slug ) ) {
 			return array(
-				'slug'   => $slug,
-				'name'   => $meta['name'],
-				'status' => 'active',
-				'url'    => $meta['url'],
+				'slug'         => $slug,
+				'name'         => $meta['name'],
+				'status'       => 'active',
+				'url'          => $meta['url'],
+				'settings_url' => ConflictDetector::resolve_companion_admin_url( $slug, $meta['file'] ),
 			);
 		}
 
@@ -132,19 +151,21 @@ final class SuiteController {
 			$act = activate_plugin( $installed_file, '', false, true );
 			if ( ! ( $act instanceof WP_Error ) ) {
 				return array(
-					'slug'   => $slug,
-					'name'   => $meta['name'],
-					'status' => 'activated',
-					'url'    => $meta['url'],
+					'slug'         => $slug,
+					'name'         => $meta['name'],
+					'status'       => 'activated',
+					'url'          => $meta['url'],
+					'settings_url' => ConflictDetector::resolve_companion_admin_url( $slug, $installed_file ),
 				);
 			}
 		}
 
 		return array(
-			'slug'   => $slug,
-			'name'   => $meta['name'],
-			'status' => 'manual',
-			'url'    => $meta['url'],
+			'slug'         => $slug,
+			'name'         => $meta['name'],
+			'status'       => 'manual',
+			'url'          => $meta['url'],
+			'settings_url' => '',
 		);
 	}
 
@@ -176,7 +197,8 @@ final class SuiteController {
 	}
 
 	/**
-	 * Attempt silent download & unpack via WordPress core `Plugin_Upgrader` (accelerated by WPCY mirror).
+	 * Attempt silent download & unpack via WenPai Cloud Bridge (`updates.wenpai.net`) first,
+	 * falling back to WordPress.org `plugins_api()` + `Plugin_Upgrader`.
 	 *
 	 * @param string $slug         Plugin slug.
 	 * @param string $default_file Expected relative file.
@@ -192,30 +214,91 @@ final class SuiteController {
 				require_once $path;
 			}
 		}
-		if ( ! function_exists( 'plugins_api' ) || ! class_exists( '\Plugin_Upgrader' ) || ! class_exists( '\Automatic_Upgrader_Skin' ) ) {
+		if ( ! class_exists( '\Plugin_Upgrader' ) || ! class_exists( '\Automatic_Upgrader_Skin' ) ) {
 			return '';
 		}
 
-		$api = plugins_api(
-			'plugin_information',
-			array(
-				'slug'   => $slug,
-				'fields' => array(
-					'sections' => false,
-				),
-			)
-		);
-		if ( $api instanceof WP_Error || ! is_object( $api ) || empty( $api->download_link ) || ! is_string( $api->download_link ) ) {
+		$package_url = $this->resolve_wenpai_bridge_package( $slug );
+		if ( '' === $package_url && function_exists( 'plugins_api' ) ) {
+			$api = plugins_api(
+				'plugin_information',
+				array(
+					'slug'   => $slug,
+					'fields' => array(
+						'sections' => false,
+					),
+				)
+			);
+			if ( ! ( $api instanceof WP_Error ) && is_object( $api ) && ! empty( $api->download_link ) && is_string( $api->download_link ) ) {
+				$cand = trim( $api->download_link );
+				if ( $this->is_allowed_package_url( $cand ) ) {
+					$package_url = $cand;
+				}
+			}
+		}
+
+		if ( '' === $package_url ) {
 			return '';
 		}
 
 		$skin     = new \Automatic_Upgrader_Skin();
 		$upgrader = new \Plugin_Upgrader( $skin );
-		$res      = $upgrader->install( $api->download_link );
+		$res      = $upgrader->install( $package_url );
 		if ( true !== $res ) {
 			return '';
 		}
 
 		return $this->find_installed_file( $slug, $default_file );
+	}
+
+	/**
+	 * Query WenPai Cloud Bridge (`updates.wenpai.net`) for an allowlisted companion zip URL.
+	 *
+	 * @param string $slug Companion slug.
+	 * @return string Validated HTTPS package URL, or `''` if unavailable.
+	 */
+	private function resolve_wenpai_bridge_package( string $slug ): string {
+		if ( ! function_exists( 'wp_remote_get' ) || ! function_exists( 'wp_remote_retrieve_response_code' ) || ! function_exists( 'wp_remote_retrieve_body' ) ) {
+			return '';
+		}
+		$resp = wp_remote_get(
+			self::BRIDGE_API_PREFIX . rawurlencode( $slug ),
+			array(
+				'timeout'   => 10,
+				'sslverify' => true,
+			)
+		);
+		if ( $resp instanceof WP_Error || 200 !== (int) wp_remote_retrieve_response_code( $resp ) ) {
+			return '';
+		}
+		$body = json_decode( (string) wp_remote_retrieve_body( $resp ), true );
+		if ( ! is_array( $body ) ) {
+			return '';
+		}
+		$cand = '';
+		if ( ! empty( $body['download_link'] ) && is_string( $body['download_link'] ) ) {
+			$cand = trim( $body['download_link'] );
+		} elseif ( ! empty( $body['package'] ) && is_string( $body['package'] ) ) {
+			$cand = trim( $body['package'] );
+		}
+		return $this->is_allowed_package_url( $cand ) ? $cand : '';
+	}
+
+	/**
+	 * Verify that a package download URL uses HTTPS and an allowlisted WenPai / WordPress.org host.
+	 *
+	 * @param string $url Candidate zip URL.
+	 * @return bool
+	 */
+	private function is_allowed_package_url( string $url ): bool {
+		if ( '' === $url ) {
+			return false;
+		}
+		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $url ) : parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- fallback for standalone unit tests.
+		if ( ! is_array( $parts ) || 'https' !== strtolower( (string) ( $parts['scheme'] ?? '' ) ) ) {
+			return false;
+		}
+		$host = strtolower( (string) ( $parts['host'] ?? '' ) );
+		return in_array( $host, self::ALLOWED_PACKAGE_HOSTS, true );
 	}
 }
