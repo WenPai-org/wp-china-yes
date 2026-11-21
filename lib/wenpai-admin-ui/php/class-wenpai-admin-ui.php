@@ -4038,8 +4038,8 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * @param array $args {
 		 *     Helper arguments.
 		 *
-		 *     @type array  $items   Array of array{ label, icon?: string, icon_html?: string, href?: string, target?: string, dashed?: bool, state?: string, title?: string, attrs?: array }.
-		 *     @type int    $columns Grid columns on desktop (2, 3, 4, or 5; default 4).
+		 *     @type array  $items   Array of array{ label, icon?: string, icon_html?: string, href?: string, target?: string, dashed?: bool, state?: string, badge?: string, badge_tone?: string, title?: string, attrs?: array }.
+		 *     @type int    $columns Grid columns on desktop (2, 3, 4, 5, or 6; default 4).
 		 *     @type string $class   Extra classes.
 		 *     @type array  $attrs   Extra attributes.
 		 * }
@@ -4049,7 +4049,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			$args  = self::args( $args, 'Wenpai_Admin_UI::icon_grid' );
 			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
 			$cols  = isset( $args['columns'] ) ? (int) $args['columns'] : 4;
-			if ( ! in_array( $cols, array( 2, 3, 4, 5 ), true ) ) {
+			if ( ! in_array( $cols, array( 2, 3, 4, 5, 6 ), true ) ) {
 				$cols = 4;
 			}
 			$cls  = self::classes( array( 'wenpai-icon-grid', 4 !== $cols ? 'wenpai-icon-grid--' . $cols : '', self::extra_class( $args ) ) );
@@ -4064,13 +4064,20 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				} elseif ( isset( $item['icon'] ) && '' !== (string) $item['icon'] && class_exists( 'Wenpai_Admin_Icons', false ) ) {
 					$glyph = Wenpai_Admin_Icons::svg( (string) $item['icon'] );
 				}
-				$state  = isset( $item['state'] ) && in_array( (string) $item['state'], array( 'ok', 'warn' ), true ) ? (string) $item['state'] : '';
-				$dot    = '' !== $state ? '<span class="wenpai-icon-box__dot is-' . esc_attr( $state ) . '" aria-hidden="true"></span>' : '';
+				$badge = isset( $item['badge'] ) ? trim( (string) $item['badge'] ) : '';
+				$btone = isset( $item['badge_tone'] ) && in_array( (string) $item['badge_tone'], array( 'ok', 'warn', 'accent' ), true ) ? (string) $item['badge_tone'] : '';
+				$state = isset( $item['state'] ) && in_array( (string) $item['state'], array( 'ok', 'warn' ), true ) ? (string) $item['state'] : '';
+				$mark  = '';
+				if ( '' !== $badge ) {
+					$mark = '<span class="' . esc_attr( self::classes( array( 'wenpai-icon-box__badge', '' !== $btone ? 'is-' . $btone : '' ) ) ) . '">' . esc_html( $badge ) . '</span>';
+				} elseif ( '' !== $state ) {
+					$mark = '<span class="wenpai-icon-box__dot is-' . esc_attr( $state ) . '" aria-hidden="true"></span>';
+				}
 				$bcls   = self::classes( array( 'wenpai-icon-box', ! empty( $item['dashed'] ) ? 'is-more' : '' ) );
 				$iattrs = isset( $item['attrs'] ) && is_array( $item['attrs'] ) ? self::extra_attrs( array( 'attrs' => $item['attrs'] ) ) : '';
 				$tattr  = isset( $item['title'] ) && '' !== (string) $item['title'] ? ' title="' . esc_attr( (string) $item['title'] ) . '"' : '';
 				$label  = isset( $item['label'] ) ? (string) $item['label'] : '';
-				$inner  = $dot . '<span class="wenpai-icon-box__glyph" aria-hidden="true">' . $glyph . '</span><span class="wenpai-icon-box__label">' . esc_html( $label ) . '</span>';
+				$inner  = $mark . '<span class="wenpai-icon-box__glyph" aria-hidden="true">' . $glyph . '</span><span class="wenpai-icon-box__label">' . esc_html( $label ) . '</span>';
 				if ( isset( $item['href'] ) && '' !== (string) $item['href'] ) {
 					$tgt   = ! empty( $item['target'] ) ? ' target="' . esc_attr( (string) $item['target'] ) . '" rel="noopener noreferrer"' : '';
 					$html .= '<a class="' . esc_attr( $bcls ) . '" href="' . esc_url( (string) $item['href'] ) . '"' . $tgt . $tattr . $iattrs . '>' . $inner . '</a>';

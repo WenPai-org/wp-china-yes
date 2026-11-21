@@ -1062,51 +1062,61 @@ final class KitRenderer {
 				'svc'   => 'cravatar',
 				'label' => __( '文派头像', 'wp-china-yes' ),
 				'icon'  => 'user',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'windfonts',
 				'label' => __( '文派字库', 'wp-china-yes' ),
 				'icon'  => 'feather',
+				'free'  => false,
 			),
 			array(
 				'svc'   => 'storage',
 				'label' => __( '文派智储', 'wp-china-yes' ),
 				'icon'  => 'server',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'slug',
 				'label' => __( '文派素格', 'wp-china-yes' ),
 				'icon'  => 'equalizer',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'ai',
 				'label' => __( '文派心思', 'wp-china-yes' ),
 				'icon'  => 'sparkle',
+				'free'  => false,
 			),
 			array(
 				'svc'   => 'wporg',
 				'label' => __( '文派云桥', 'wp-china-yes' ),
 				'icon'  => 'cloud',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'noise',
 				'label' => __( '文派评论', 'wp-china-yes' ),
 				'icon'  => 'feedback',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'converter',
 				'label' => __( '文派译词', 'wp-china-yes' ),
 				'icon'  => 'map',
+				'free'  => true,
 			),
 			array(
 				'svc'   => 'motucloud',
 				'label' => __( '墨图图库', 'wp-china-yes' ),
 				'icon'  => 'image',
+				'free'  => false,
 			),
 			array(
 				'svc'   => 'compliance',
 				'label' => __( '文派备案', 'wp-china-yes' ),
 				'icon'  => 'shield-check',
+				'free'  => true,
 			),
 		);
 
@@ -1116,21 +1126,23 @@ final class KitRenderer {
 			if ( ! isset( $catalog[ $svc_id ] ) ) {
 				continue;
 			}
-			$spec   = $catalog[ $svc_id ];
-			$report = isset( $reports[ $svc_id ] ) ? $reports[ $svc_id ] : array();
-			$pstate = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
+			$spec    = $catalog[ $svc_id ];
+			$report  = isset( $reports[ $svc_id ] ) ? $reports[ $svc_id ] : array();
+			$pstate  = self::detect_companion_plugin( $spec['plugin_file'], $spec['plugin_slug'] );
+			$is_free = isset( $spec['free'] ) ? ( '1' === (string) $spec['free'] ) : ! empty( $def['free'] );
 
 			if ( $pstate['active'] ) {
 				$settings_href = ! empty( $report['action_url'] )
 					? $report['action_url']
 					: self::wp_admin_link( $spec['plugin_admin'] );
 				$items[]       = array(
-					'label' => $def['label'],
-					'icon'  => $def['icon'],
-					'state' => 'ok',
-					'href'  => $settings_href,
-					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已启用，点击进入设置', 'wp-china-yes' ), $spec['plugin_name'] ),
-					'attrs' => array(
+					'label'      => $def['label'],
+					'icon'       => $def['icon'],
+					'badge'      => __( '已启用', 'wp-china-yes' ),
+					'badge_tone' => 'ok',
+					'href'       => $settings_href,
+					'title'      => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已启用，点击进入设置', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'attrs'      => array(
 						'data-wpcy-suite-slug'  => $spec['plugin_slug'],
 						'data-wpcy-suite-state' => 'active',
 					),
@@ -1141,12 +1153,13 @@ final class KitRenderer {
 					? (string) add_query_arg( array( 's' => $spec['plugin_slug'] ), $plugins_base )
 					: self::page_url( 'wpcy-services', false, array( 'service' => $svc_id ) );
 				$items[]      = array(
-					'label' => $def['label'],
-					'icon'  => $def['icon'],
-					'state' => 'warn',
-					'href'  => $act_href,
-					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
-					'attrs' => array(
+					'label'      => $def['label'],
+					'icon'       => $def['icon'],
+					'badge'      => __( '待启用', 'wp-china-yes' ),
+					'badge_tone' => 'warn',
+					'href'       => $act_href,
+					'title'      => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
+					'attrs'      => array(
 						'data-wpcy-suite-slug'           => $spec['plugin_slug'],
 						'data-wpcy-suite-state'          => 'installed',
 						'data-wenpai-confirm-title'      => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 已安装未启用', 'wp-china-yes' ), $spec['plugin_name'] ),
@@ -1173,6 +1186,7 @@ final class KitRenderer {
 				$items[]      = array(
 					'label' => $def['label'],
 					'icon'  => $def['icon'],
+					'badge' => $is_free ? __( '免费', 'wp-china-yes' ) : '',
 					'href'  => $inst_href,
 					'title' => sprintf( /* translators: %s: companion plugin full name */ __( '%s · 未安装，点击提示安装', 'wp-china-yes' ), $spec['plugin_name'] ),
 					'attrs' => array(

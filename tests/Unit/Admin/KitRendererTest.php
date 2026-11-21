@@ -113,6 +113,7 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '快捷工具', $overview );
 		$this->assertStringContainsString( '文派组件', $overview );
 		$this->assertStringContainsString( 'wenpai-icon-grid--5', $overview );
+		$this->assertStringContainsString( 'wenpai-icon-box__badge', $overview );
 		$this->assertStringContainsString( 'data-wpcy-suite-slug="wpavatar"', $overview );
 		$this->assertStringContainsString( 'data-wpcy-suite-slug="wpfonts"', $overview );
 		$this->assertStringContainsString( '工具箱预留位', $overview );

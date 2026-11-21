@@ -2628,6 +2628,9 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: var(--wenpai-space-2-5);
 }
+.wenpai-app .wenpai-icon-grid--6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
 .wenpai-app .wenpai-icon-grid--5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -2637,8 +2640,15 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 .wenpai-app .wenpai-icon-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+@media (max-width: 960px) {
+  .wenpai-app .wenpai-icon-grid--6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    block-size: auto;
+  }
+}
 @media (max-width: 782px) {
   .wenpai-app .wenpai-icon-grid,
+  .wenpai-app .wenpai-icon-grid--6,
   .wenpai-app .wenpai-icon-grid--5,
   .wenpai-app .wenpai-icon-grid--3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2668,6 +2678,42 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 .wenpai-app .wenpai-icon-box:hover {
   background: var(--wenpai-accent-soft);
   border-color: var(--wenpai-accent-line);
+  color: var(--wenpai-accent);
+}
+.wenpai-app .wenpai-icon-box__badge {
+  position: absolute;
+  inset-block-start: var(--wenpai-space-1-5);
+  inset-inline-end: var(--wenpai-space-1-5);
+  padding: 0 var(--wenpai-space-1);
+  border-radius: var(--wenpai-radius-sm);
+  background: var(--wenpai-card);
+  border: 1px solid var(--wenpai-line-soft);
+  color: var(--wenpai-ink-3);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.wenpai-app .wenpai-icon-box:hover .wenpai-icon-box__badge {
+  border-color: var(--wenpai-accent-line);
+  color: var(--wenpai-accent);
+}
+.wenpai-app .wenpai-icon-box__badge.is-ok,
+.wenpai-app .wenpai-icon-box:hover .wenpai-icon-box__badge.is-ok {
+  background: var(--wenpai-ok-soft);
+  border-color: transparent;
+  color: var(--wenpai-ok-ink);
+}
+.wenpai-app .wenpai-icon-box__badge.is-warn,
+.wenpai-app .wenpai-icon-box:hover .wenpai-icon-box__badge.is-warn {
+  background: var(--wenpai-warn-soft);
+  border-color: transparent;
+  color: var(--wenpai-warn-ink);
+}
+.wenpai-app .wenpai-icon-box__badge.is-accent,
+.wenpai-app .wenpai-icon-box:hover .wenpai-icon-box__badge.is-accent {
+  background: var(--wenpai-accent-soft);
+  border-color: transparent;
   color: var(--wenpai-accent);
 }
 .wenpai-app .wenpai-icon-box__dot {
