@@ -155,6 +155,66 @@ final class EntitlementsModule implements Module {
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_filter( 'wpcy_entitlement_allows', array( $this, 'filter_allows' ), 10, 2 );
+		add_filter( 'wenpai_site_entitlements', array( $this, 'filter_suite_entitlements' ) );
+		add_filter( 'wenpai_has_entitlement', array( $this, 'filter_has_entitlement' ), 10, 2 );
+	}
+
+	/**
+	 * Cached suite-wide entitlement list (1h fresh + 72h offline fallback, render-safe without remote HTTP).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public function cached_items(): array {
+		$fresh = $this->read_list( self::TRANSIENT_FRESH );
+		if ( is_array( $fresh ) ) {
+			return $fresh;
+		}
+		$stale = $this->read_list( self::TRANSIENT_STALE );
+		if ( is_array( $stale ) ) {
+			return $stale;
+		}
+		return array();
+	}
+
+	/**
+	 * Expose cached entitlement rows across the WenPai plugin suite.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $items Default items from caller.
+	 * @return list<array<string, mixed>>
+	 */
+	public function filter_suite_entitlements( $items = array() ): array {
+		unset( $items );
+		return $this->cached_items();
+	}
+
+	/**
+	 * Check whether an active entitlement exists in the 1h fresh / 72h stale suite cache.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $active  Default flag from caller.
+	 * @param mixed $service Target service slug (e.g. 'oem', 'wpmind-pro', 'windfonts').
+	 */
+	public function filter_has_entitlement( $active, $service = '' ): bool {
+		if ( (bool) $active ) {
+			return true;
+		}
+		$target = is_string( $service ) ? strtolower( trim( $service ) ) : '';
+		if ( '' === $target ) {
+			return false;
+		}
+		foreach ( $this->cached_items() as $row ) {
+			$slug   = isset( $row['service'] ) && is_string( $row['service'] ) ? strtolower( trim( $row['service'] ) ) : '';
+			$status = isset( $row['status'] ) && is_string( $row['status'] ) ? strtolower( trim( $row['status'] ) ) : '';
+			if ( $slug === $target && in_array( $status, array( 'active', 'ok', 'granted' ), true ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -286,12 +346,18 @@ final class EntitlementsModule implements Module {
 	 */
 	private function read_list( string $key ) {
 		$stored = call_user_func( $this->get_transient, $key );
-		if ( ! is_array( $stored ) || ! isset( $stored['entitlements'] ) || ! is_array( $stored['entitlements'] ) ) {
+		if ( ! is_array( $stored ) ) {
+			return null;
+		}
+		$source = isset( $stored['entitlements'] ) && is_array( $stored['entitlements'] )
+			? $stored['entitlements']
+			: ( array_key_exists( 'entitlements', $stored ) ? null : $stored );
+		if ( ! is_array( $source ) ) {
 			return null;
 		}
 
 		$items = array();
-		foreach ( $stored['entitlements'] as $row ) {
+		foreach ( $source as $row ) {
 			if ( is_array( $row ) ) {
 				$items[] = $row;
 			}

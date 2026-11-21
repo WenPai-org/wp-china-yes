@@ -244,6 +244,39 @@ class StateMachineTest extends TestCase {
 	}
 
 	/**
+	 * Suite-wide entitlement filters read fresh/stale cache without issuing remote HTTP calls.
+	 */
+	public function test_suite_entitlement_filters_are_render_safe_and_honor_stale_cache(): void {
+		$module = $this->bound_module( null );
+		$this->assertSame( array(), $module->filter_suite_entitlements() );
+		$this->assertFalse( $module->filter_has_entitlement( false, 'oem' ) );
+		$this->assertSame( 0, count( EntitlementsStore::$requests ) );
+
+		EntitlementsStore::set_transient(
+			EntitlementsModule::TRANSIENT_STALE,
+			array(
+				'fetched_at'   => '2026-11-21T00:00:00Z',
+				'entitlements' => array(
+					array(
+						'service' => 'oem',
+						'status'  => 'active',
+					),
+					array(
+						'service' => 'wpmind-pro',
+						'status'  => 'expired',
+					),
+				),
+			),
+			EntitlementsModule::TTL_STALE
+		);
+
+		$this->assertCount( 2, $module->filter_suite_entitlements() );
+		$this->assertTrue( $module->filter_has_entitlement( false, 'oem' ) );
+		$this->assertFalse( $module->filter_has_entitlement( false, 'wpmind-pro' ) );
+		$this->assertSame( 0, count( EntitlementsStore::$requests ) );
+	}
+
+	/**
 	 * Bound module that optionally queues a fixture as the next HTTP 200.
 	 *
 	 * HTTP, API base, and transients are injected so --filter StateMachine

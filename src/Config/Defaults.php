@@ -51,9 +51,10 @@ final class Defaults {
 				),
 			),
 			'admin'                => array(
-				'hide_promo'   => true,
-				'news_enabled' => true,
-				'whitelabel'   => array(
+				'hide_promo'        => true,
+				'news_enabled'      => true,
+				'group_suite_menus' => false,
+				'whitelabel'        => array(
 					'enabled'       => false,
 					'brand_name'    => '',
 					'help_url'      => '',

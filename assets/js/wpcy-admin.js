@@ -321,6 +321,8 @@
 					const card = input.closest('[data-wpcy-core-card]');
 					const iconEl = card && card.querySelector('.tile');
 					if (iconEl) iconEl.classList.toggle('ok', checked);
+				} else if (input.name === 'admin_group_suite_menus') {
+					patch.admin = { group_suite_menus: checked };
 				}
 				api(settingsEndpoint(isNetwork), { method: 'PUT', body: patch })
 					.then(function () {
@@ -328,6 +330,9 @@
 							window.wenpaiToast('已保存', 'ok');
 						} else {
 							notify('ok', '已保存');
+						}
+						if (input.name === 'admin_group_suite_menus') {
+							setTimeout(function () { window.location.reload(); }, 350);
 						}
 					})
 					.catch(function (err) {

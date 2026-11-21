@@ -306,6 +306,29 @@ class ChallengeFlowTest extends TestCase {
 	}
 
 	/**
+	 * Suite-wide site binding filter reports managed state and never leaks sealed credentials.
+	 */
+	public function test_suite_binding_filter_reports_state_without_credential() {
+		$module  = $this->module();
+		$unbound = $module->filter_suite_binding();
+		$this->assertTrue( $unbound['managed'] );
+		$this->assertSame( 'wp-china-yes', $unbound['provider'] );
+		$this->assertFalse( $unbound['bound'] );
+		$this->assertArrayNotHasKey( 'credential', $unbound );
+
+		$this->queue_json( $this->start_fixture );
+		$this->queue_json( $this->confirm_fixture );
+		$module->start();
+
+		$bound = $module->filter_suite_binding();
+		$this->assertTrue( $bound['bound'] );
+		$this->assertSame( 'bound', $bound['status'] );
+		$this->assertNotEmpty( $bound['site_hash'] );
+		$this->assertStringContainsString( 'wpcy-services', $bound['manage_url'] );
+		$this->assertArrayNotHasKey( 'credential', $bound );
+	}
+
+	/**
 	 * Module under test with a capturing logger.
 	 *
 	 * @param Logger|null $logger Logger.

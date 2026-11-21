@@ -174,4 +174,20 @@ class AdminModuleTest extends TestCase {
 		$this->assertNotFalse( $src );
 		$this->assertNotFalse( strpos( $src, 'current_user_can( \'edit_user\', (int) $object_id )' ) );
 	}
+
+	/**
+	 * Optional suite menu grouping defaults to off and nests companion slugs under wpcy when enabled.
+	 */
+	public function test_suite_menu_grouping_filter_respects_setting() {
+		$repo   = new Repository();
+		$module = new AdminModule( $repo );
+
+		$this->assertSame( '', $module->filter_suite_parent_slug( '', 'wpslug' ) );
+
+		$repo->set( 'admin.group_suite_menus', true );
+		$this->assertSame( 'wpcy', $module->filter_suite_parent_slug( '', 'wpslug' ) );
+		$this->assertSame( 'wpcy', $module->filter_suite_parent_slug( '', 'wpsss' ) );
+		$this->assertSame( '', $module->filter_suite_parent_slug( '', 'wpcy' ) );
+		$this->assertSame( '', $module->filter_suite_parent_slug( '', 'wpcy-features' ) );
+	}
 }

@@ -129,7 +129,8 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function register(): void {
-		add_action( 'admin_menu', array( $this, 'add_pages' ) );
+		add_action( 'admin_menu', array( $this, 'add_pages' ), 5 );
+		add_action( 'admin_menu', array( $this, 'append_legacy_suite_submenus' ), 999 );
 		add_action( 'network_admin_menu', array( $this, 'add_network_pages' ) );
 		add_action( 'admin_page_access_denied', array( $this, 'redirect_legacy_options_url' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_wrong_parent' ), 1 );
@@ -137,7 +138,89 @@ final class AdminModule implements Module {
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
+		add_filter( 'wenpai_admin_ui_suite_parent_slug', array( $this, 'filter_suite_parent_slug' ), 10, 2 );
 		WhiteLabel::register( $this->repository );
+	}
+
+	/**
+	 * Return `wpcy` as parent menu slug for WenPai companion plugins when suite menu grouping is enabled.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $parent_slug Default parent slug ('').
+	 * @param mixed $slug        Companion plugin menu slug.
+	 */
+	public function filter_suite_parent_slug( $parent_slug, $slug = '' ): string {
+		if ( $this->in_network_admin() ) {
+			return is_string( $parent_slug ) ? $parent_slug : '';
+		}
+		$clean = is_string( $slug ) ? sanitize_key( $slug ) : '';
+		if ( '' === $clean || self::SLUG === $clean || 0 === strpos( $clean, self::SLUG . '-' ) ) {
+			return is_string( $parent_slug ) ? $parent_slug : '';
+		}
+		$settings = $this->repository->all();
+		$grouped  = ! empty( $settings['admin']['group_suite_menus'] );
+		return $grouped ? self::SLUG : ( is_string( $parent_slug ) ? $parent_slug : '' );
+	}
+
+	/**
+	 * Append submenu shortcuts under 文派叶子 for active companion plugins not yet using kit 0.12.2+ menu hook.
+	 *
+	 * Keeps WordPress `$_parent_pages` intact so `settings_page_<slug>` callbacks never 403.
+	 *
+	 * @since 4.0.0
+	 */
+	public function append_legacy_suite_submenus(): void {
+		if ( $this->in_network_admin() ) {
+			return;
+		}
+		$settings = $this->repository->all();
+		if ( empty( $settings['admin']['group_suite_menus'] ) ) {
+			return;
+		}
+		if ( ! isset( $GLOBALS['submenu'][ self::SLUG ] ) || ! is_array( $GLOBALS['submenu'][ self::SLUG ] ) ) {
+			return;
+		}
+
+		$existing = array();
+		foreach ( $GLOBALS['submenu'][ self::SLUG ] as $entry ) {
+			if ( is_array( $entry ) && isset( $entry[2] ) ) {
+				$existing[ (string) $entry[2] ] = true;
+			}
+		}
+
+		$suite_slugs = array(
+			'wpslug',
+			'wpsss',
+			'wpavatar',
+			'wpcomments',
+			'wp-chinese-converter',
+			'wpicp',
+			'wpstatic',
+			'wpfonts',
+			'wpphoto',
+			'wpmind',
+			'wpbridge',
+		);
+
+		if ( isset( $GLOBALS['submenu']['options-general.php'] ) && is_array( $GLOBALS['submenu']['options-general.php'] ) ) {
+			foreach ( $GLOBALS['submenu']['options-general.php'] as $item ) {
+				if ( ! is_array( $item ) || ! isset( $item[0], $item[1], $item[2] ) ) {
+					continue;
+				}
+				$item_slug = (string) $item[2];
+				if ( ! in_array( $item_slug, $suite_slugs, true ) ) {
+					continue;
+				}
+				$target = 'options-general.php?page=' . $item_slug;
+				if ( isset( $existing[ $item_slug ] ) || isset( $existing[ $target ] ) ) {
+					continue;
+				}
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- appending opt-in suite shortcut to own submenu.
+				$GLOBALS['submenu'][ self::SLUG ][] = array( (string) $item[0], (string) $item[1], $target );
+				$existing[ $target ]                = true;
+			}
+		}
 	}
 
 	/**

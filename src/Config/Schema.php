@@ -479,9 +479,10 @@ final class Schema {
 			'additionalProperties' => false,
 			'required'             => array( 'hide_promo' ),
 			'default'              => array(
-				'hide_promo'   => true,
-				'news_enabled' => true,
-				'whitelabel'   => array(
+				'hide_promo'        => true,
+				'news_enabled'      => true,
+				'group_suite_menus' => false,
+				'whitelabel'        => array(
 					'enabled'       => false,
 					'brand_name'    => '',
 					'help_url'      => '',
@@ -494,15 +495,19 @@ final class Schema {
 				),
 			),
 			'properties'           => array(
-				'hide_promo'   => array(
+				'hide_promo'        => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
-				'news_enabled' => array(
+				'news_enabled'      => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
-				'whitelabel'   => array(
+				'group_suite_menus' => array(
+					'type'    => 'boolean',
+					'default' => false,
+				),
+				'whitelabel'        => array(
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'default'              => array(

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Services\SiteBinding;
 
+use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Logger;
@@ -132,10 +133,41 @@ final class SiteBindingModule implements Module {
 	 */
 	public function register(): void {
 		add_action( self::CRON_HOOK, array( $this, 'cron_confirm' ) );
+		if ( function_exists( 'add_filter' ) ) {
+			add_filter( 'wenpai_site_binding', array( $this, 'filter_suite_binding' ) );
+		}
 		if ( ! function_exists( 'update_option' ) ) {
 			return;
 		}
 		$this->repository->get_identity();
+	}
+
+	/**
+	 * Suite-wide read-only site binding snapshot for companion WenPai plugins.
+	 *
+	 * Never exposes the sealed credential; standalone plugins inspect `managed`
+	 * and `bound` so they do not render duplicate site-binding prompts when WPCY is active.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $binding Default binding payload from caller.
+	 * @return array{managed: bool, provider: string, status: string, bound: bool, site_uuid: string, site_hash: string|null, bound_at: string|null, manage_url: string}
+	 */
+	public function filter_suite_binding( $binding = array() ): array {
+		unset( $binding );
+		$identity = $this->repository->get_identity();
+		$snap     = $this->snapshot();
+
+		return array(
+			'managed'    => true,
+			'provider'   => 'wp-china-yes',
+			'status'     => $snap['status'],
+			'bound'      => 'bound' === $snap['status'],
+			'site_uuid'  => isset( $identity['site_uuid'] ) && is_string( $identity['site_uuid'] ) ? $identity['site_uuid'] : '',
+			'site_hash'  => $snap['site_hash'],
+			'bound_at'   => $snap['bound_at'],
+			'manage_url' => AdminModule::app_url( 'wpcy-services' ),
+		);
 	}
 
 	/**

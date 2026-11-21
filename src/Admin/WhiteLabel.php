@@ -170,20 +170,28 @@ final class WhiteLabel {
 		if ( defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' ) ) {
 			return true;
 		}
-		if ( function_exists( 'apply_filters' ) && (bool) apply_filters( 'wpcy_whitelabel_entitled', false ) ) {
-			return true;
+		if ( function_exists( 'apply_filters' ) ) {
+			if ( (bool) apply_filters( 'wpcy_whitelabel_entitled', false ) ) {
+				return true;
+			}
+			foreach ( self::ENTITLEMENT_SLUGS as $slug ) {
+				if ( (bool) apply_filters( 'wenpai_has_entitlement', false, $slug ) ) {
+					return true;
+				}
+			}
 		}
 		if ( ! function_exists( 'get_transient' ) ) {
 			return false;
 		}
 
-		$items = get_transient( EntitlementsModule::TRANSIENT_FRESH );
-		if ( ! is_array( $items ) ) {
-			$items = get_transient( EntitlementsModule::TRANSIENT_STALE );
+		$stored = get_transient( EntitlementsModule::TRANSIENT_FRESH );
+		if ( ! is_array( $stored ) ) {
+			$stored = get_transient( EntitlementsModule::TRANSIENT_STALE );
 		}
-		if ( ! is_array( $items ) ) {
+		if ( ! is_array( $stored ) ) {
 			return false;
 		}
+		$items = isset( $stored['entitlements'] ) && is_array( $stored['entitlements'] ) ? $stored['entitlements'] : $stored;
 
 		foreach ( $items as $row ) {
 			if ( ! is_array( $row ) ) {

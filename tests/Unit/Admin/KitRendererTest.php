@@ -106,7 +106,9 @@ class KitRendererTest extends TestCase {
 
 		$settings = $this->render_page( 'wpcy-connect', array( 'profile' => 'crossborder' ) );
 		$this->assertStringContainsString( 'data-wpcy-screen="settings"', $settings );
+		$this->assertStringContainsString( 'wenpai-measure-wide', $settings );
 		$this->assertStringContainsString( 'WordPress.org 镜像与中文语言包', $settings );
+		$this->assertStringContainsString( 'admin_group_suite_menus', $settings );
 		$this->assertStringNotContainsString( 'style="', $settings );
 
 		$features = $this->render_page( 'wpcy-features' );
@@ -167,13 +169,16 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '开通商业白标授权', $gated );
 		$this->assertStringContainsString( 'https://wpcy.com/go/oem', $gated );
 
-		// Entitled white-label view unlocks save button and custom news feed input.
+		// Entitled white-label view unlocks save button and custom news feed input (wrapped transient format).
 		set_transient(
 			EntitlementsModule::TRANSIENT_FRESH,
 			array(
-				array(
-					'service' => 'oem',
-					'status'  => 'active',
+				'fetched_at'   => '2026-11-21T00:00:00Z',
+				'entitlements' => array(
+					array(
+						'service' => 'oem',
+						'status'  => 'active',
+					),
 				),
 			),
 			3600

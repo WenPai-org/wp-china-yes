@@ -243,13 +243,14 @@ final class KitRenderer {
 		}
 
 		$args = array(
-			'slug'      => 'wpcy',
-			'name'      => $brand_name,
-			'mark_html' => $mark_html,
-			'home_url'  => $admin_url( $network ? 'wpcy-connect' : 'wpcy' ),
-			'current'   => $current,
-			'tabs'      => $tabs,
-			'version'   => $brand_name . ' ' . $version,
+			'slug'       => 'wpcy',
+			'name'       => $brand_name,
+			'mark_html'  => $mark_html,
+			'home_url'   => $admin_url( $network ? 'wpcy-connect' : 'wpcy' ),
+			'current'    => $current,
+			'tabs'       => $tabs,
+			'version'    => $brand_name . ' ' . $version,
+			'main_class' => 'wenpai-measure-wide',
 		);
 
 		$show_links = ! ( $wl['enabled'] && $wl['hide_links'] ) || '' !== $wl['help_url'] || '' !== $wl['feedback_url'] || '' !== $wl['docs_url'];
@@ -286,7 +287,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '概览', 'wp-china-yes' ),
-			sprintf( /* translators: %s: site profile label */ __( '当前站点场景：%s。查看近期加速统计、节点响应延迟与运行记录。', 'wp-china-yes' ), $profile ),
+			sprintf( /* translators: %s: site profile label */ __( '当前场景：%s', 'wp-china-yes' ), $profile ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '立即诊断', 'wp-china-yes' ),
@@ -305,8 +306,8 @@ final class KitRenderer {
 				array(
 					'state'   => 'warn',
 					'icon'    => 'info',
-					'title'   => __( '当前处于恢复模式，镜像与静态加速已暂停', 'wp-china-yes' ),
-					'desc'    => __( '站点已临时切换回 WordPress 默认直连；排查完成后可在诊断页恢复加速。', 'wp-china-yes' ),
+					'title'   => __( '恢复模式生效中，镜像与静态加速已暂停', 'wp-china-yes' ),
+					'desc'    => __( '当前使用 WordPress 默认直连；排查完成后可在诊断页恢复。', 'wp-china-yes' ),
 					'actions' => array(
 						array(
 							'label'   => __( '前往诊断页', 'wp-china-yes' ),
@@ -352,7 +353,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '近 7 日加速趋势', 'wp-china-yes' ),
-				'desc'  => __( '每日经由镜像、公共前端库与头像通道处理的请求量', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -368,7 +368,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '核心节点延迟', 'wp-china-yes' ),
-				'desc'  => __( '数值越低响应越快，取自最近一次连通性检测', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -400,7 +399,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '近期运行记录', 'wp-china-yes' ),
-				'sub'   => __( '记录线路切换、连通性检测与场景变更事件。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -408,7 +406,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'meta'    => __( '各项线路已按当前站点场景自动配置，日常无需手动干预。', 'wp-china-yes' ),
+				'meta'    => __( '各项线路已按当前站点场景自动配置。', 'wp-china-yes' ),
 				'actions' => array(
 					array(
 						'label'   => __( '调整设置', 'wp-china-yes' ),
@@ -430,20 +428,21 @@ final class KitRenderer {
 	 * @param bool                 $network  Network admin screen.
 	 */
 	private static function render_settings( array $settings, bool $locked, bool $network ): void {
-		$profile   = (string) ( $settings['profile'] ?? 'domestic' );
-		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
-		$mirror    = self::conn_mirror( $conn );
-		$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
-		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
-		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
-		$scope     = self::conn_scope( $settings, $conn );
-		$icon_mode = isset( $conn['icon_photos']['enabled'] ) ? (string) $conn['icon_photos']['enabled'] : 'off';
+		$profile     = (string) ( $settings['profile'] ?? 'domestic' );
+		$conn        = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror      = self::conn_mirror( $conn );
+		$avatar      = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+		$heartbeat   = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+		$feeds       = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		$scope       = self::conn_scope( $settings, $conn );
+		$icon_mode   = isset( $conn['icon_photos']['enabled'] ) ? (string) $conn['icon_photos']['enabled'] : 'off';
+		$group_menus = ! empty( $settings['admin']['group_suite_menus'] );
 
 		$lede = $locked
-			? __( '当前站点继承多站点网络设置，仅支持查看。', 'wp-china-yes' )
+			? __( '当前站点继承网络设置，仅支持查看。', 'wp-china-yes' )
 			: ( $network
-				? __( '设置全网子站的默认加速方案，并控制是否允许子站单独调整。', 'wp-china-yes' )
-				: __( '常用加速开关拨动即生效；修改站点场景或高级线路后请点击右上角「保存设置」。', 'wp-china-yes' ) );
+				? __( '设置子站默认加速策略与覆盖权限。', 'wp-china-yes' )
+				: __( '常用开关即时生效；切换场景或高级参数后点击右上角保存。', 'wp-china-yes' ) );
 
 		$aside = $locked
 			? ''
@@ -463,7 +462,7 @@ final class KitRenderer {
 			\Wenpai_Admin_UI::notice(
 				array(
 					'tone' => 'info',
-					'text' => __( '当前加速策略由多站点网络管理员统一管理。如需为本站单独调整，请在网络管理后台开启「允许子站覆盖」。', 'wp-china-yes' ),
+					'text' => __( '当前加速策略由网络管理员统一配置；如需单独调整，请在网络后台开启「允许子站覆盖」。', 'wp-china-yes' ),
 				)
 			);
 		}
@@ -474,7 +473,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::section_title(
 			array(
 				'title' => __( '站点场景', 'wp-china-yes' ),
-				'desc'  => __( '按服务器位置与主要访客地区选择场景，自动匹配稳妥的默认加速范围。', 'wp-china-yes' ),
 			)
 		);
 		echo '<div class="choice-cards">';
@@ -494,7 +492,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::section_title(
 			array(
 				'title' => __( '核心加速', 'wp-china-yes' ),
-				'desc'  => __( '覆盖更新镜像、前端公共静态库、头像与媒体图库；细分线路可在下方展开调整。', 'wp-china-yes' ),
 			)
 		);
 		\Wenpai_Admin_UI::row(
@@ -502,7 +499,7 @@ final class KitRenderer {
 				'icon'  => 'cloud',
 				'state' => 'off' === $mirror ? '' : 'ok',
 				'title' => __( 'WordPress.org 镜像与中文语言包', 'wp-china-yes' ),
-				'desc'  => __( '加速核心、插件、主题更新及简体中文语言包下载，包含后台商店图标与截图镜像，故障时自动回退官方源。', 'wp-china-yes' ),
+				'desc'  => __( '加速核心、插件、主题更新与简体中文语言包，异常自动回退。', 'wp-china-yes' ),
 				'pill'  => array(
 					'text'  => 'off' === $mirror ? __( '直连官方源', 'wp-china-yes' ) : __( '已开启', 'wp-china-yes' ),
 					'state' => 'off' === $mirror ? 'mute' : 'ok',
@@ -514,7 +511,7 @@ final class KitRenderer {
 				'icon'         => 'flash',
 				'state'        => 'off' === $scope ? '' : 'ok',
 				'title'        => __( '公共前端库加速（adminCDN）', 'wp-china-yes' ),
-				'desc'         => __( '将 Google Fonts、CDNJS、jsDelivr 与 Emoji 静态资源切换至高速节点。', 'wp-china-yes' ),
+				'desc'         => __( '加速 Google Fonts、CDNJS、jsDelivr 与 Emoji 静态资源。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'public_assets_enabled', 'off' !== $scope, $locked ),
 			)
 		);
@@ -523,7 +520,7 @@ final class KitRenderer {
 				'icon'         => 'image',
 				'state'        => 'off' === $avatar ? '' : 'ok',
 				'title'        => __( 'Cravatar 公共头像加速', 'wp-china-yes' ),
-				'desc'         => __( '无缝替代 Gravatar，支持默认头像回退与现代图片格式，改善评论区与后台头像加载。', 'wp-china-yes' ),
+				'desc'         => __( '替代 Gravatar，提升评论区与后台头像加载速度。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'avatar_enabled', 'off' !== $avatar, $locked ),
 			)
 		);
@@ -532,7 +529,7 @@ final class KitRenderer {
 				'icon'         => 'sparkle',
 				'state'        => 'off' === $icon_mode ? '' : 'ok',
 				'title'        => __( '图标与免版权图库镜像', 'wp-china-yes' ),
-				'desc'         => __( '加速 WordPress 图标与免版权图库检索接口，支持在高级线路中分别控制前后台范围。', 'wp-china-yes' ),
+				'desc'         => __( '加速编辑器矢量图标与免版权图库检索接口。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'icon_photos_enabled', 'off' !== $icon_mode, $locked ),
 			)
 		);
@@ -540,7 +537,7 @@ final class KitRenderer {
 		$adv_html  = self::field_row_select(
 			'wporg_mirror',
 			__( 'WordPress.org 下载源', 'wp-china-yes' ),
-			__( '控制核心、插件、主题与中文翻译包的更新源；国内镜像异常时自动回退至官方源。', 'wp-china-yes' ),
+			'',
 			array(
 				'auto' => __( '国内镜像（异常自动回退）', 'wp-china-yes' ),
 				'off'  => __( '直连 WordPress.org 官方源', 'wp-china-yes' ),
@@ -551,7 +548,7 @@ final class KitRenderer {
 		$adv_html .= self::field_row_select(
 			'public_assets_scope',
 			__( '公共前端库生效范围', 'wp-china-yes' ),
-			__( '跨境站点建议选择「仅后台」，避免改写海外访客看到的前台静态资源地址。', 'wp-china-yes' ),
+			__( '跨境站建议选「仅后台」，避免改写海外访客前台资源。', 'wp-china-yes' ),
 			array(
 				'both'     => __( '后台与前台同时加速', 'wp-china-yes' ),
 				'admin'    => __( '仅后台加速', 'wp-china-yes' ),
@@ -564,7 +561,7 @@ final class KitRenderer {
 		$adv_html .= self::field_row_select(
 			'avatar_source',
 			__( 'Cravatar 头像线路', 'wp-china-yes' ),
-			__( '按主要访客所在地区选择中国大陆节点或全球节点。', 'wp-china-yes' ),
+			'',
 			array(
 				'cravatar_cn'     => __( 'Cravatar 中国线路', 'wp-china-yes' ),
 				'cravatar_global' => __( 'Cravatar 国际线路', 'wp-china-yes' ),
@@ -576,7 +573,7 @@ final class KitRenderer {
 		$adv_html .= self::field_row_select(
 			'icon_photos_mode',
 			__( '图标与图库镜像范围', 'wp-china-yes' ),
-			__( '控制墨图云集图标与图库接口镜像的生效位置。', 'wp-china-yes' ),
+			'',
 			array(
 				'on'    => __( '后台与前台同时加速', 'wp-china-yes' ),
 				'admin' => __( '仅后台加速', 'wp-china-yes' ),
@@ -585,8 +582,8 @@ final class KitRenderer {
 			$icon_mode,
 			$locked
 		);
-		$adv_html .= self::field_row_checkbox( 'heartbeat', __( '降低后台心跳频率', 'wp-china-yes' ), __( '停用仪表盘自动轮询，并将编辑器自动保存心跳放宽至 60 秒一次。', 'wp-china-yes' ), $heartbeat, $locked );
-		$adv_html .= self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部资讯请求', 'wp-china-yes' ), __( '阻止后台首页连接海外官方活动与英文新闻源，缩短仪表盘首屏等待时间。', 'wp-china-yes' ), $feeds, $locked );
+		$adv_html .= self::field_row_checkbox( 'heartbeat', __( '降低后台心跳频率', 'wp-china-yes' ), __( '停用仪表盘轮询，编辑器自动保存间隔调整为 60 秒', 'wp-china-yes' ), $heartbeat, $locked );
+		$adv_html .= self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部资讯', 'wp-china-yes' ), __( '跳过后台首页对海外官方活动与英文新闻源的连接', 'wp-china-yes' ), $feeds, $locked );
 
 		$summary = ( 'off' === $mirror ? __( '直连官方源', 'wp-china-yes' ) : __( '国内镜像', 'wp-china-yes' ) )
 			. ' · ' . ( 'off' === $scope ? __( '前端库未开启', 'wp-china-yes' ) : __( '前端库已开启', 'wp-china-yes' ) )
@@ -605,6 +602,25 @@ final class KitRenderer {
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
+
+		if ( ! $network ) {
+			\Wenpai_Admin_UI::card_open(
+				array(
+					'title' => __( '后台菜单整理', 'wp-china-yes' ),
+					'tile'  => false,
+				)
+			);
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => 'equalizer',
+					'state'        => $group_menus ? 'ok' : '',
+					'title'        => __( '将文派系列插件收纳到「文派叶子」菜单下', 'wp-china-yes' ),
+					'desc'         => __( '开启后，已安装的文派独立插件统一归入左侧「文派叶子」子菜单。', 'wp-china-yes' ),
+					'control_html' => self::toggle_control( 'admin_group_suite_menus', $group_menus, $locked ),
+				)
+			);
+			\Wenpai_Admin_UI::card_close();
+		}
 		if ( ! $locked ) {
 			\Wenpai_Admin_UI::savebar(
 				array(
@@ -660,7 +676,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '功能', 'wp-china-yes' ),
-			__( '文派叶子自带的本地治理与品牌交付模块，无需额外安装插件，按需独立启用。', 'wp-china-yes' )
+			__( '内置本地治理与品牌交付模块，按需独立启用。', 'wp-china-yes' )
 		);
 
 		$modules = array(
@@ -668,10 +684,10 @@ final class KitRenderer {
 				'id'     => 'locale',
 				'icon'   => 'map',
 				'title'  => __( '前后台语言分离', 'wp-china-yes' ),
-				'desc'   => __( '站点前台保持访客语言（如英文外贸站），管理后台自动跟随当前登录管理员的个人语言。', 'wp-china-yes' ),
+				'desc'   => __( '前台保持访客语言，管理后台跟随当前管理员语言。', 'wp-china-yes' ),
 				'active' => $locale_follow,
 				'pill'   => $locale_follow ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
-				'metric' => $locale_follow ? __( '后台跟随管理员个人语言', 'wp-china-yes' ) : __( '前后台使用同一站点语言', 'wp-china-yes' ),
+				'metric' => $locale_follow ? __( '跟随管理员语言', 'wp-china-yes' ) : __( '前后台同一语言', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'locale' ) ),
 				'toggle' => 'admin_locale_follow',
 			),
@@ -679,24 +695,24 @@ final class KitRenderer {
 				'id'     => 'noise',
 				'icon'   => 'settings',
 				'title'  => __( '后台减噪与通知治理', 'wp-china-yes' ),
-				'desc'   => __( '集中收纳非关键插件通知、隐藏第三方营销横幅，并减少后台心跳与外部慢请求。', 'wp-china-yes' ),
+				'desc'   => __( '收纳非关键通知、隐藏营销横幅并减少后台慢请求。', 'wp-china-yes' ),
 				'active' => $noise_on,
 				'pill'   => $noise_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
 				'metric' => ( $notice_ctrl || $hide_promo )
-					? __( '通知收纳与营销横幅过滤已生效', 'wp-china-yes' )
-					: __( '按需开启通知收纳与请求减噪', 'wp-china-yes' ),
+					? __( '通知收纳已生效', 'wp-china-yes' )
+					: __( '按需开启减噪', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'noise' ) ),
 			),
 			array(
 				'id'     => 'news',
 				'icon'   => 'feedback',
 				'title'  => __( '资讯与公告源', 'wp-china-yes' ),
-				'desc'   => __( '订阅 WordPress 中文社区动态与重要维护通知；开通全套白标后可替换为自有品牌公告源。', 'wp-china-yes' ),
+				'desc'   => __( '订阅中文社区动态与维护通知，白标可换自有源。', 'wp-china-yes' ),
 				'active' => $news_enabled,
 				'pill'   => $news_enabled ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
 				'metric' => ( $wl['enabled'] && '' !== $wl['news_feed_url'] )
-					? __( '当前使用白标自定义公告源', 'wp-china-yes' )
-					: __( '默认源：文派茶馆 wptea.com', 'wp-china-yes' ),
+					? __( '白标自定义公告源', 'wp-china-yes' )
+					: __( '默认源 wptea.com', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) ),
 				'toggle' => 'admin_news_enabled',
 			),
@@ -704,28 +720,28 @@ final class KitRenderer {
 				'id'     => 'outbound',
 				'icon'   => 'info',
 				'title'  => __( '外链治理', 'wp-china-yes' ),
-				'desc'   => __( '按域名屏蔽拖慢后台的外部请求，支持实时检测任意外部网址的放行、镜像改写或拦截策略。', 'wp-china-yes' ),
+				'desc'   => __( '按域名阻断慢请求，支持实时检测外部网址连接策略。', 'wp-china-yes' ),
 				'active' => $bl_on,
 				'pill'   => $bl_on ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
 				'metric' => $bl_count > 0
-					? sprintf( /* translators: %d: host count */ __( '已配置 %d 个自定义拦截域名', 'wp-china-yes' ), $bl_count )
-					: __( '内置核心白名单与连接保护生效中', 'wp-china-yes' ),
+					? sprintf( /* translators: %d: host count */ __( '已设 %d 个拦截域名', 'wp-china-yes' ), $bl_count )
+					: __( '核心白名单生效中', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'outbound' ) ),
 			),
 			array(
 				'id'     => 'whitelabel',
 				'icon'   => 'sparkle',
 				'title'  => __( '全套白标', 'wp-china-yes' ),
-				'desc'   => __( '面向建站服务商与企业交付：一次设置即可将全站文派系列插件统一替换为自有品牌名称与支持链接。', 'wp-china-yes' ),
+				'desc'   => __( '一次设置即可将全站文派插件统一替换为自有品牌与支持入口。', 'wp-china-yes' ),
 				'active' => $wl['enabled'],
 				'pill'   => ! $wl['entitled']
 					? __( '需授权', 'wp-china-yes' )
 					: ( $wl['locked'] ? __( '常量锁定', 'wp-china-yes' ) : ( $wl['enabled'] ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ) ) ),
 				'metric' => ! $wl['entitled']
-					? __( '商业交付功能 · 需开通白标授权', 'wp-china-yes' )
+					? __( '商业交付 · 需授权', 'wp-china-yes' )
 					: ( $wl['enabled']
-						? ( '' !== $wl['brand_name'] ? sprintf( /* translators: %s: brand name */ __( '当前显示品牌：%s', 'wp-china-yes' ), $wl['brand_name'] ) : __( '全套白标已生效', 'wp-china-yes' ) )
-						: __( '已获得授权，开启后立即生效', 'wp-china-yes' ) ),
+						? ( '' !== $wl['brand_name'] ? sprintf( /* translators: %s: brand name */ __( '当前品牌：%s', 'wp-china-yes' ), $wl['brand_name'] ) : __( '全套白标已生效', 'wp-china-yes' ) )
+						: __( '已获授权，开启即生效', 'wp-china-yes' ) ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) ),
 				'btn'    => ! $wl['entitled'] ? __( '了解与开通', 'wp-china-yes' ) : __( '配置', 'wp-china-yes' ),
 			),
@@ -835,7 +851,7 @@ final class KitRenderer {
 				'title'      => __( '资讯与公告源', 'wp-china-yes' ),
 				'back_url'   => $back_url,
 				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
-				'lede'       => __( '管理概览页展示的 WordPress 中文社区资讯与维护通知；已授权白标客户可替换为自有品牌公告接口。', 'wp-china-yes' ),
+				'lede'       => __( '管理概览页展示的社区动态与版本维护通知。', 'wp-china-yes' ),
 				'aside_html' => $aside_html,
 			)
 		);
@@ -843,7 +859,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '文派茶馆与官方通知', 'wp-china-yes' ),
-				'sub'   => __( '每日定时同步一次并缓存在本地，最多展示 5 条未读通知，可随时逐条关闭。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -852,7 +867,7 @@ final class KitRenderer {
 				'icon'         => 'feedback',
 				'state'        => $news_enabled ? 'ok' : '',
 				'title'        => __( '启用资讯与公告推送', 'wp-china-yes' ),
-				'desc'         => __( '聚合文派茶馆（wptea.com）精选资讯与版本维护公告，替代缓慢的默认英文活动源。', 'wp-china-yes' ),
+				'desc'         => __( '每日同步一次文派茶馆（wptea.com）精选资讯，最多展示 5 条未读通知。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'admin_news_enabled', $news_enabled, $locked ),
 			)
 		);
@@ -861,8 +876,7 @@ final class KitRenderer {
 		if ( ! $wl['entitled'] ) {
 			\Wenpai_Admin_UI::card_open(
 				array(
-					'title' => __( '自有品牌新闻源（白标能力）', 'wp-china-yes' ),
-					'sub'   => __( '面向建站服务商与企业交付：可将概览页默认资讯源替换为自有客户服务公告地址。', 'wp-china-yes' ),
+					'title' => __( '自有品牌新闻源', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -870,7 +884,7 @@ final class KitRenderer {
 				array(
 					'icon'         => 'sparkle',
 					'title'        => __( '自定义 HTTPS 公告接口', 'wp-china-yes' ),
-					'desc'         => __( '开通商业白标授权后即可配置自有公告列表地址，或通过 wp-config.php 中的 WPCY_WHITELABEL_NEWS_URL 常量固定。', 'wp-china-yes' ),
+					'desc'         => __( '开通白标授权后，可将默认资讯源替换为团队自有的客户公告地址。', 'wp-china-yes' ),
 					'pill'         => array(
 						'text'  => __( '需授权', 'wp-china-yes' ),
 						'state' => 'mute',
@@ -922,8 +936,7 @@ final class KitRenderer {
 
 			\Wenpai_Admin_UI::card_open(
 				array(
-					'title' => __( '自有品牌新闻源（白标能力）', 'wp-china-yes' ),
-					'sub'   => __( '填写自有 HTTPS 公告接口地址后，启用全套白标时将自动向客户站点推送你的服务通知；留空则保持默认源。', 'wp-china-yes' ),
+					'title' => __( '自有品牌新闻源', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -932,7 +945,7 @@ final class KitRenderer {
 				'wl_news_feed_url',
 				'url',
 				__( '自定义新闻源地址', 'wp-china-yes' ),
-				__( '需使用 HTTPS 地址并返回包含标题、链接与摘要的公告列表；也可在 wp-config.php 中定义 WPCY_WHITELABEL_NEWS_URL 固定。', 'wp-china-yes' ),
+				__( '需返回包含标题、链接与摘要的 HTTPS 公告列表；留空保持默认源。', 'wp-china-yes' ),
 				$wl['news_feed_url'],
 				'https://example.com/wp-json/agency/v1/news',
 				300,
@@ -969,7 +982,7 @@ final class KitRenderer {
 				'title'      => __( '前后台语言分离', 'wp-china-yes' ),
 				'back_url'   => $back_url,
 				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
-				'lede'       => __( '专为跨境独立站与多语种协作团队设计：前台保持面向访客的站点语言，后台界面按管理员个人偏好显示中文。', 'wp-china-yes' ),
+				'lede'       => __( '前台保持访客语言，管理后台按当前管理员偏好独立显示。', 'wp-china-yes' ),
 			)
 		);
 		echo '<div class="wenpai-stack" data-wpcy-screen="feature-locale">';
@@ -978,7 +991,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '后台语言策略', 'wp-china-yes' ),
-				'sub'   => __( '开启后立即生效，每位管理员均可在「用户 → 个人资料」中单独选择熟悉的后台界面语言。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -987,14 +999,14 @@ final class KitRenderer {
 				'icon'         => 'map',
 				'state'        => $locale_follow ? 'ok' : '',
 				'title'        => __( '后台语言跟随当前管理员', 'wp-china-yes' ),
-				'desc'         => __( '站点常规语言设为英文或其他外语时，国内运营人员将个人资料语言设为简体中文即可全中文管理后台。', 'wp-china-yes' ),
+				'desc'         => __( '站点设为外语时，管理员在「个人资料」选择简体中文即可中文管理后台。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'admin_locale_follow', $locale_follow, $locked ),
 			)
 		);
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'meta'    => __( '前台页面输出、主题语言包与搜索引擎多语言标记均保持站点原始设置。', 'wp-china-yes' ),
+				'meta'    => __( '前台页面与搜索引擎语言标记保持站点原始设置。', 'wp-china-yes' ),
 				'actions' => array(
 					array(
 						'label'   => __( '设置个人资料语言', 'wp-china-yes' ),
@@ -1044,7 +1056,7 @@ final class KitRenderer {
 				'title'      => __( '后台减噪与通知治理', 'wp-china-yes' ),
 				'back_url'   => $back_url,
 				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
-				'lede'       => __( '收纳杂乱的插件横幅通知、过滤第三方营销推广，并减少拖慢后台的轮询与外部源请求。', 'wp-china-yes' ),
+				'lede'       => __( '收纳插件通知横幅，减少拖慢后台的轮询与外部请求。', 'wp-china-yes' ),
 				'aside_html' => $aside_html,
 			)
 		);
@@ -1059,15 +1071,14 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '通知收纳与请求减负', 'wp-china-yes' ),
-				'sub'   => __( 'WordPress 核心升级提示、安全告警与站点健康异常始终正常展示。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
-		echo self::field_row_checkbox( 'notice_control', __( '后台通知集中收纳', 'wp-china-yes' ), __( '折叠散落在页面顶部的非关键插件提示，还内容编辑区清爽视野。', 'wp-china-yes' ), $notice_ctrl, $locked );
-		echo self::field_row_checkbox( 'hide_promo', __( '隐藏第三方营销横幅', 'wp-china-yes' ), __( '过滤第三方插件常驻的付费升级广告条、打分弹窗与跨插件推销卡片。', 'wp-china-yes' ), $hide_promo, $locked );
-		echo self::field_row_checkbox( 'heartbeat', __( '降低后台心跳频率', 'wp-china-yes' ), __( '停用仪表盘心跳轮询，编辑器自动保存间隔调整为 60 秒，减轻服务器并发负担。', 'wp-china-yes' ), $heartbeat, $locked );
-		echo self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部资讯请求', 'wp-china-yes' ), __( '跳过仪表盘对海外官方新闻与活动接口的同步请求，提升后台首页加载速度。', 'wp-china-yes' ), $feeds, $locked );
+		echo self::field_row_checkbox( 'notice_control', __( '后台通知集中收纳', 'wp-china-yes' ), __( '折叠页面顶部的非关键插件提示（保留系统与安全告警）', 'wp-china-yes' ), $notice_ctrl, $locked );
+		echo self::field_row_checkbox( 'hide_promo', __( '隐藏第三方营销横幅', 'wp-china-yes' ), __( '过滤第三方插件常驻的付费广告条与打分弹窗', 'wp-china-yes' ), $hide_promo, $locked );
+		echo self::field_row_checkbox( 'heartbeat', __( '降低后台心跳频率', 'wp-china-yes' ), __( '停用仪表盘轮询，编辑器自动保存间隔调整为 60 秒', 'wp-china-yes' ), $heartbeat, $locked );
+		echo self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部资讯', 'wp-china-yes' ), __( '跳过后台首页对海外官方新闻与活动接口的同步请求', 'wp-china-yes' ), $feeds, $locked );
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::card_close();
 		if ( ! $locked ) {
@@ -1117,7 +1128,7 @@ final class KitRenderer {
 				'title'      => __( '全套白标', 'wp-china-yes' ),
 				'back_url'   => $back_url,
 				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
-				'lede'       => __( '一次配置，即可将文派叶子及全站已安装的文派系列插件统一替换为你的自有服务品牌、支持入口与插件列表署名。', 'wp-china-yes' ),
+				'lede'       => __( '将全站文派系列插件统一替换为自有品牌名称与支持入口。', 'wp-china-yes' ),
 				'aside_html' => $aside_html,
 			)
 		);
@@ -1126,7 +1137,6 @@ final class KitRenderer {
 			\Wenpai_Admin_UI::card_open(
 				array(
 					'title' => __( '开通商业白标授权（Agency / OEM）', 'wp-china-yes' ),
-					'sub'   => __( '专为建站服务商、代运维机构与企业内部平台打造；授权绑定后原地解锁，内置 72 小时离线缓存保障客户站品牌稳定。', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -1134,7 +1144,7 @@ final class KitRenderer {
 				array(
 					'icon'         => 'sparkle',
 					'title'        => __( '当前站点尚未关联白标授权', 'wp-china-yes' ),
-					'desc'         => __( '已购买授权的用户请点击「绑定本站同步授权」；首次使用可前往了解权益并开通。', 'wp-china-yes' ),
+					'desc'         => __( '面向建站服务商与企业交付，支持 72 小时离线缓存保护。', 'wp-china-yes' ),
 					'pill'         => array(
 						'text'  => __( '未授权', 'wp-china-yes' ),
 						'state' => 'mute',
@@ -1166,7 +1176,7 @@ final class KitRenderer {
 			\Wenpai_Admin_UI::notice(
 				array(
 					'tone' => 'info',
-					'text' => __( '当前白标参数已通过 wp-config.php 中的 WPCY_WHITELABEL 常量固定，后台界面处于只读保护状态。', 'wp-china-yes' ),
+					'text' => __( '当前白标参数已通过 wp-config.php 常量锁定，后台处于只读保护状态。', 'wp-china-yes' ),
 				)
 			);
 		}
@@ -1185,7 +1195,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => $entitled ? __( '品牌署名与服务链接', 'wp-china-yes' ) : __( '白标定制项一览（开通授权后可编辑）', 'wp-china-yes' ),
-				'sub'   => __( '仅替换后台界面品牌展示与插件列表作者署名，保留原有更新通道；未填写的项自动沿用默认设置。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -1194,21 +1203,33 @@ final class KitRenderer {
 				'icon'         => 'sparkle',
 				'state'        => $wl['enabled'] ? 'ok' : '',
 				'title'        => __( '启用全套白标模式', 'wp-china-yes' ),
-				'desc'         => __( '开启后向全站文派系列插件同步下方品牌配置；交付客户站时可在 wp-config.php 定义 WPCY_WHITELABEL 锁定。', 'wp-china-yes' ),
+				'desc'         => __( '向全站文派插件同步下方品牌设置，留空项保留默认，不影响更新通道。', 'wp-china-yes' ),
 				'control_html' => self::switch_control( 'wl_enabled', $wl['enabled'], $wl_locked, array( 'data-wpcy-wl-toggle' => '1' ) ),
 			)
 		);
 		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( ( $wl['enabled'] || ! $entitled ) ? '' : ' hidden' ) . '>';
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
-		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名称', 'wp-china-yes' ), __( '替换全站文派插件顶栏品牌名与「插件」列表中的作者名称（左侧菜单功能名保持不变）。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：某某数字建站', 'wp-china-yes' ), 64, $wl_locked );
-		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助中心地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏右上角「帮助」入口链接；留空保持默认。', 'wp-china-yes' ), $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
-		echo self::field_row_input( 'wl_feedback_url', 'url', __( '工单与反馈地址', 'wp-china-yes' ), __( '替换全站文派插件顶栏右上角「反馈」入口链接；留空保持默认。', 'wp-china-yes' ), $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
-		echo self::field_row_input( 'wl_docs_url', 'url', __( '产品文档地址', 'wp-china-yes' ), __( '替换页脚「文档与支持」及插件列表中的访问链接；留空保持默认。', 'wp-china-yes' ), $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
-		echo self::field_row_input( 'wl_news_feed_url', 'url', __( '自定义新闻源地址', 'wp-china-yes' ), __( '将概览页公告推送替换为自有 HTTPS 公告列表地址；留空保持文派茶馆默认源。', 'wp-china-yes' ), $wl['news_feed_url'], 'https://example.com/wp-json/agency/v1/news', 300, $wl_locked );
-		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义图标地址', 'wp-china-yes' ), __( '替换顶栏左侧品牌图标，建议使用 44×44 正方形透明背景 PNG 或 SVG。', 'wp-china-yes' ), $wl['logo_url'], 'https://example.com/logo.svg', 300, $wl_locked );
-		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏顶栏品牌图标', 'wp-china-yes' ), __( '不展示顶栏左侧图形标志，仅显示纯文字品牌名称。', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
-		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏未安装扩展推荐与默认外链', 'wp-china-yes' ), __( '隐藏「服务」页尚未安装的生态插件推荐，以及未配置自定义地址的默认文派链接。', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
+		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名称', 'wp-china-yes' ), __( '替换插件顶栏品牌名与插件列表作者署名。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：某某数字建站', 'wp-china-yes' ), 64, $wl_locked );
+		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助中心地址', 'wp-china-yes' ), '', $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
+		echo self::field_row_input( 'wl_feedback_url', 'url', __( '工单与反馈地址', 'wp-china-yes' ), '', $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
+		echo self::field_row_input( 'wl_docs_url', 'url', __( '产品文档地址', 'wp-china-yes' ), '', $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
+		echo self::field_row_input( 'wl_news_feed_url', 'url', __( '自定义新闻源地址', 'wp-china-yes' ), __( '概览页 HTTPS 公告列表接口地址，留空保持默认源。', 'wp-china-yes' ), $wl['news_feed_url'], 'https://example.com/wp-json/agency/v1/news', 300, $wl_locked );
+		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义图标地址', 'wp-china-yes' ), __( '建议使用 44×44 正方形透明背景 PNG 或 SVG。', 'wp-china-yes' ), $wl['logo_url'], 'https://example.com/logo.svg', 300, $wl_locked );
+		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏顶栏品牌图标', 'wp-china-yes' ), __( '仅显示纯文字品牌名称', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
+		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏未安装扩展与默认外链', 'wp-china-yes' ), __( '隐藏「服务」页未安装插件推荐及未自定义地址的默认链接', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+		\Wenpai_Admin_UI::fold_list(
+			array(
+				'items' => array(
+					array(
+						'icon'      => 'info',
+						'title'     => __( '部署锁定说明（wp-config.php）', 'wp-china-yes' ),
+						'desc'      => __( '交付客户站时可通过 PHP 常量固定白标参数，防止后台误改', 'wp-china-yes' ),
+						'body_html' => '<p class="meta">' . esc_html__( '在 wp-config.php 中定义 WPCY_WHITELABEL 为 true 可锁定白标开关，并支持 WPCY_WHITELABEL_NAME、WPCY_WHITELABEL_NEWS_URL 等常量覆盖对应字段。', 'wp-china-yes' ) . '</p>',
+					),
+				),
+			)
+		);
 		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
 		if ( ! $wl_locked ) {
@@ -1285,7 +1306,7 @@ final class KitRenderer {
 
 		\Wenpai_Admin_Shell::page_head(
 			__( '服务', 'wp-china-yes' ),
-			__( '管理文派云服务通道，并与已安装的文派生态独立插件自动协同。', 'wp-china-yes' ),
+			__( '管理云端加速通道，并与已安装的文派独立插件协同。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '绑定本站', 'wp-china-yes' ),
@@ -1379,7 +1400,6 @@ final class KitRenderer {
 					'title' => $hide_unlinked
 						? __( '已安装待启用的生态插件', 'wp-china-yes' )
 						: sprintf( /* translators: %s: site scene label */ __( '文派生态目录 · 适合「%s」', 'wp-china-yes' ), $profile_label ),
-					'sub'   => __( '已启用的独立插件会自动归入上方服务区并显示实时状态。', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -1455,7 +1475,7 @@ final class KitRenderer {
 				'title'      => __( '外链治理', 'wp-china-yes' ),
 				'back_url'   => self::page_url( 'wpcy-features' ),
 				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
-				'lede'       => __( '管理自定义外部域名屏蔽表、检测外部网址连接策略，并查看核心白名单与请求记录。', 'wp-china-yes' ),
+				'lede'       => __( '按域名屏蔽慢请求，并实时检测外部网址连接策略。', 'wp-china-yes' ),
 			)
 		);
 
@@ -1464,7 +1484,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '自定义外链拦截表', 'wp-china-yes' ),
-				'sub'   => __( '按域名阻断拖慢后台响应的第三方外部请求（最多 20 条）；支付、验证等受保护的核心业务域名始终放行。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -1473,7 +1492,7 @@ final class KitRenderer {
 			array(
 				'icon'         => 'map',
 				'title'        => __( '启用自定义外链拦截表', 'wp-china-yes' ),
-				'desc'         => __( '开启后立即阻断命中下方列表的服务器出站请求。', 'wp-china-yes' ),
+				'desc'         => __( '阻断命中列表的出站请求（最多 20 条，支付与验证核心域名始终放行）。', 'wp-china-yes' ),
 				'control_html' => self::switch_control( 'bl_enabled', false, $locked, array( 'data-wpcy-bl-enabled' => '1' ) ),
 			)
 		);
@@ -1511,7 +1530,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '出站网址策略检测', 'wp-china-yes' ),
-				'sub'   => __( '输入任意外部网址，即时查看当前配置下对该请求的放行、镜像改写或阻断结果。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -1541,7 +1559,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '保护规则与出站记录', 'wp-china-yes' ),
-				'sub'   => __( '展示受保护核心域名白名单、内置连接规则与近期外部主机请求统计。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -2090,9 +2107,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => $saveable ? __( '进阶能力与独立插件协同', 'wp-china-yes' ) : __( '独立插件协同', 'wp-china-yes' ),
-				'sub'   => $plugin_state['active']
-					? __( '已检测到对应独立插件处于启用状态，底层网络通道与高级设置已自动衔接。', 'wp-china-yes' )
-					: __( '需要更深入的专业自定义设置时，可按需安装对应的文派独立插件。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -2284,7 +2298,7 @@ final class KitRenderer {
 		$recovery = ! empty( $settings['recovery_mode'] );
 		\Wenpai_Admin_Shell::page_head(
 			__( '诊断', 'wp-china-yes' ),
-			__( '左右比对服务器出站与当前浏览器的实际连通延迟，快速区分机房网络问题与本地网络问题。', 'wp-china-yes' ),
+			__( '对比服务器出站与当前浏览器的实际连通延迟。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '开始检测', 'wp-china-yes' ),
@@ -2358,7 +2372,6 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '安全恢复模式', 'wp-china-yes' ),
-				'sub'   => __( '排查资源加载冲突时，可一键暂停所有镜像与静态地址改写；已有配置完整保留，随时可恢复。', 'wp-china-yes' ),
 				'tile'  => false,
 			)
 		);
@@ -2369,7 +2382,7 @@ final class KitRenderer {
 				'title'        => $recovery ? __( '恢复正常加速', 'wp-china-yes' ) : __( '临时暂停全部加速规则', 'wp-china-yes' ),
 				'desc'         => $recovery
 					? __( '退出恢复模式并重新应用已保存的镜像与加速设置。', 'wp-china-yes' )
-					: __( '立即将站点切换回 WordPress 默认直连状态，方便定位网络或插件冲突。', 'wp-china-yes' ),
+					: __( '切回 WordPress 默认直连以排查冲突，原有配置完整保留。', 'wp-china-yes' ),
 				'control_html' => \Wenpai_Admin_UI::button_html(
 					array(
 						'label'   => $recovery ? __( '恢复正常运行', 'wp-china-yes' ) : __( '进入恢复模式', 'wp-china-yes' ),
@@ -2469,15 +2482,15 @@ final class KitRenderer {
 		return array(
 			'domestic'    => array(
 				__( '国内站', 'wp-china-yes' ),
-				__( '服务器与主要访客均在中国大陆：前后台全量加速，默认启用国内镜像、adminCDN 与 Cravatar 中国线路。', 'wp-china-yes' ),
+				__( '服务器与访客均在大陆，前后台全量启用国内加速。', 'wp-china-yes' ),
 			),
 			'crossborder' => array(
 				__( '跨境站', 'wp-china-yes' ),
-				__( '海外服务器面向海外访客、国内团队管理后台：前台保持原始直连确保支付与物流顺畅，仅加速后台并默认开启减噪。', 'wp-china-yes' ),
+				__( '海外访客保持直连保障支付顺畅，仅加速国内运营后台。', 'wp-china-yes' ),
 			),
 			'mixed'       => array(
 				__( '混合站', 'wp-china-yes' ),
-				__( '兼顾海内外访客：默认开启国内镜像、后台加速与减噪，可按访客占比灵活调整前台静态库与双线头像。', 'wp-china-yes' ),
+				__( '兼顾海内外访客，默认加速更新与后台，可按需细分线路。', 'wp-china-yes' ),
 			),
 		);
 	}
@@ -2558,7 +2571,10 @@ final class KitRenderer {
 		$h   = '<div class="' . $cls . '">';
 		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
 		$h  .= '<div class="field-ctl"><input id="' . esc_attr( $id ) . '" type="' . esc_attr( $type ) . '" name="' . esc_attr( $name ) . '" maxlength="' . (int) $max_length . '" value="' . esc_attr( $value ) . '" placeholder="' . esc_attr( $placeholder ) . '"' . $dis . '>';
-		$h  .= '<p class="wenpai-field__desc">' . esc_html( $desc ) . '</p></div></div>';
+		if ( '' !== $desc ) {
+			$h .= '<p class="wenpai-field__desc">' . esc_html( $desc ) . '</p>';
+		}
+		$h .= '</div></div>';
 		return $h;
 	}
 
@@ -2584,7 +2600,11 @@ final class KitRenderer {
 			$sel = $current === $val ? ' selected' : '';
 			$h  .= '<option value="' . esc_attr( $val ) . '"' . $sel . '>' . esc_html( $text ) . '</option>';
 		}
-		$h .= '</select><p class="wenpai-field__desc">' . esc_html( $desc ) . '</p></div></div>';
+		$h .= '</select>';
+		if ( '' !== $desc ) {
+			$h .= '<p class="wenpai-field__desc">' . esc_html( $desc ) . '</p>';
+		}
+		$h .= '</div></div>';
 		return $h;
 	}
 

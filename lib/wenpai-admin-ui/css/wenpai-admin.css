@@ -312,7 +312,8 @@ a.btn-danger:is(:hover, :active) { color: var(--wenpai-bad); }
 .simple-row > div:nth-child(2) { min-width: 0; flex: 1; }
 .simple-row .tile { width: var(--wenpai-size-tile); height: var(--wenpai-size-tile); }
 .simple-row .t { font-weight: var(--wenpai-weight-regular); font-size: var(--wenpai-text-body); }
-.simple-row .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); max-width: 46ch; }
+.simple-row .d { color: var(--wenpai-ink-3); font-size: var(--wenpai-text-meta); line-height: var(--wenpai-leading-meta); max-width: var(--wenpai-row-desc-max, 46ch); }
+.wenpai-app.wenpai-measure-wide, .wenpai-app .wenpai-measure-wide { --wenpai-row-desc-max: 64ch; }
 .simple-row .r { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-3-5); flex: none; }
 
 .wenpai-app input[type="text"],
@@ -1792,19 +1793,19 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 .wenpai-app .card.wenpai-module-card {
   display: flex;
   flex-direction: column;
-  gap: var(--wenpai-space-3-5);
+  gap: var(--wenpai-space-3);
   padding: var(--wenpai-space-5);
   margin: 0;
 }
 .wenpai-module-card__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--wenpai-space-3);
 }
 .wenpai-module-card__lead {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--wenpai-space-3);
   min-inline-size: 0;
   flex: 1 1 auto;

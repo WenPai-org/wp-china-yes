@@ -42,6 +42,13 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 		private static $legacy_aliases = array();
 
 		/**
+		 * Registered WordPress hook suffixes per slug (kit 0.12.2).
+		 *
+		 * @var array<string, string>
+		 */
+		private static $hooks = array();
+
+		/**
 		 * Whether canonical redirect hooks have been attached.
 		 *
 		 * @var bool
@@ -108,6 +115,9 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 				$icon = isset( $args['icon'] ) ? (string) $args['icon'] : '';
 				$pos  = isset( $args['position'] ) ? $args['position'] : null;
 				$hook = function_exists( 'add_menu_page' ) ? add_menu_page( $title, $label, $cap, $slug, $cb, $icon, $pos ) : false;
+				if ( is_string( $hook ) && '' !== $hook ) {
+					self::$hooks[ $slug ] = $hook;
+				}
 				if ( ! empty( $args['submenus'] ) && is_array( $args['submenus'] ) && function_exists( 'add_submenu_page' ) ) {
 					foreach ( $args['submenus'] as $sub ) {
 						if ( ! is_array( $sub ) || empty( $sub['slug'] ) ) {
@@ -124,13 +134,34 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 						}
 						self::$pages[ $sub_slug ]     = true;
 						self::$top_pages[ $sub_slug ] = $sub_cap;
-						add_submenu_page( $parent, $sub_title, $sub_label, $sub_cap, $sub_slug, $sub_cb );
+						$sub_hook                     = add_submenu_page( $parent, $sub_title, $sub_label, $sub_cap, $sub_slug, $sub_cb );
+						if ( is_string( $sub_hook ) && '' !== $sub_hook ) {
+							self::$hooks[ $sub_slug ] = $sub_hook;
+						}
 					}
 				}
 				return $hook;
 			}
 
-			return add_options_page( $title, $label, $cap, $slug, $cb );
+			$suite_parent = '';
+			if ( function_exists( 'apply_filters' ) ) {
+				$suite_parent = sanitize_key( (string) apply_filters( 'wenpai_admin_ui_suite_parent_slug', '', $slug, $args ) );
+			}
+			if ( '' !== $suite_parent && $suite_parent !== $slug && function_exists( 'add_submenu_page' ) ) {
+				self::$top_pages[ $slug ] = $cap;
+				self::ensure_redirect_hooks();
+				$hook = add_submenu_page( $suite_parent, $title, $label, $cap, $slug, $cb );
+				if ( is_string( $hook ) && '' !== $hook ) {
+					self::$hooks[ $slug ] = $hook;
+				}
+				return $hook;
+			}
+
+			$hook = add_options_page( $title, $label, $cap, $slug, $cb );
+			if ( is_string( $hook ) && '' !== $hook ) {
+				self::$hooks[ $slug ] = $hook;
+			}
+			return $hook;
 		}
 
 		/**
@@ -199,7 +230,10 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 		 */
 		public static function hook( $slug ) {
 			$clean = sanitize_key( (string) $slug );
-			$pref  = self::is_top_level( $clean ) ? 'toplevel_page_' : 'settings_page_';
+			if ( isset( self::$hooks[ $clean ] ) && '' !== self::$hooks[ $clean ] ) {
+				return self::$hooks[ $clean ];
+			}
+			$pref = self::is_top_level( $clean ) ? 'toplevel_page_' : 'settings_page_';
 			return $pref . $clean;
 		}
 
@@ -262,6 +296,7 @@ if ( ! class_exists( 'Wenpai_Admin_Menu', false ) ) {
 			self::$pages           = array();
 			self::$top_pages       = array();
 			self::$legacy_aliases  = array();
+			self::$hooks           = array();
 			self::$redirect_hooked = false;
 		}
 

@@ -3370,14 +3370,14 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$html .= '<div class="wenpai-module-card__head">';
 				$html .= '<div class="wenpai-module-card__lead">' . $mark . '<div class="wenpai-module-card__body">';
 				$html .= '<h3 class="wenpai-module-card__title">' . esc_html( $title ) . '</h3>';
-				if ( '' !== $desc ) {
-					$html .= '<p class="wenpai-module-card__desc">' . esc_html( $desc ) . '</p>';
-				}
 				$html .= '</div></div>';
 				if ( '' !== $ctl ) {
 					$html .= '<div class="wenpai-module-card__ctl">' . $ctl . '</div>';
 				}
 				$html .= '</div>';
+				if ( '' !== $desc ) {
+					$html .= '<p class="wenpai-module-card__desc">' . esc_html( $desc ) . '</p>';
+				}
 
 				if ( '' !== $status || '' !== $act ) {
 					$html .= '<div class="wenpai-module-card__foot">';
