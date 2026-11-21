@@ -136,8 +136,10 @@ final class AdminModule implements Module {
 		add_action( 'admin_init', array( $this, 'maybe_redirect_wrong_parent' ), 1 );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_onboarding' ) );
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
+		add_action( 'admin_head', array( $this, 'collapse_internal_submenus' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
+		add_filter( 'submenu_file', array( $this, 'highlight_parent_submenu_for_tabs' ) );
 		add_filter( 'wenpai_admin_ui_suite_parent_slug', array( $this, 'filter_suite_parent_slug' ), 10, 2 );
 		WhiteLabel::register( $this->repository );
 	}
@@ -221,6 +223,26 @@ final class AdminModule implements Module {
 				$existing[ $target ]                = true;
 			}
 		}
+
+		if ( isset( $GLOBALS['menu'] ) && is_array( $GLOBALS['menu'] ) ) {
+			$adm_script = 'admin';
+			$adm_entry  = $adm_script . '.php?page=';
+			foreach ( $GLOBALS['menu'] as $top_item ) {
+				if ( ! is_array( $top_item ) || ! isset( $top_item[0], $top_item[1], $top_item[2] ) ) {
+					continue;
+				}
+				$top_slug = (string) $top_item[2];
+				if ( ! in_array( $top_slug, $suite_slugs, true ) ) {
+					continue;
+				}
+				$target = $adm_entry . $top_slug;
+				if ( ! isset( $existing[ $top_slug ] ) && ! isset( $existing[ $target ] ) ) {
+					// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- appending opt-in suite shortcut to own submenu.
+					$GLOBALS['submenu'][ self::SLUG ][] = array( (string) $top_item[0], (string) $top_item[1], $target );
+					$existing[ $target ]                = true;
+				}
+			}
+		}
 	}
 
 	/**
@@ -277,13 +299,15 @@ final class AdminModule implements Module {
 	 */
 	public function add_pages(): void {
 		$cap        = 'manage_options';
-		$brand_name = WhiteLabel::brand_name( $this->repository->all() );
+		$settings   = $this->repository->all();
+		$menu_name  = WhiteLabel::menu_name( $settings );
+		$brand_name = WhiteLabel::brand_name( $settings );
 		$cb         = array( $this, 'render' );
 
 		\Wenpai_Admin_Menu::register(
 			array(
 				'slug'         => self::SLUG,
-				'label'        => $brand_name,
+				'label'        => $menu_name,
 				'title'        => __( '概览', 'wp-china-yes' ),
 				'capability'   => $cap,
 				'render'       => $cb,
@@ -294,7 +318,7 @@ final class AdminModule implements Module {
 				'submenus'     => array(
 					array(
 						'slug'   => self::SLUG,
-						'label'  => __( '概览', 'wp-china-yes' ),
+						'label'  => $brand_name,
 						'render' => $cb,
 					),
 					array(
@@ -344,7 +368,54 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Network admin: 文派叶子 → settings only (CO-06 network view).
+	 * Hide WPCY's own horizontal-tab pages from the WP left sidebar after access checks pass,
+	 * and collapse the submenu completely unless companion WenPai plugins are grouped under it.
+	 *
+	 * @since 4.0.0
+	 */
+	public function collapse_internal_submenus(): void {
+		$internal_tabs = array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' );
+		if ( function_exists( 'remove_submenu_page' ) ) {
+			foreach ( array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose' ) as $tab_slug ) {
+				remove_submenu_page( self::SLUG, $tab_slug );
+			}
+		}
+		if ( ! isset( $GLOBALS['submenu'][ self::SLUG ] ) || ! is_array( $GLOBALS['submenu'][ self::SLUG ] ) ) {
+			return;
+		}
+		foreach ( $GLOBALS['submenu'][ self::SLUG ] as $idx => $entry ) {
+			if ( is_array( $entry ) && isset( $entry[2] ) && in_array( (string) $entry[2], $internal_tabs, true ) ) {
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- pruning own horizontal-tab slugs from sidebar submenu.
+				unset( $GLOBALS['submenu'][ self::SLUG ][ $idx ] );
+			}
+		}
+		if ( 1 === count( $GLOBALS['submenu'][ self::SLUG ] ) ) {
+			$only = reset( $GLOBALS['submenu'][ self::SLUG ] );
+			if ( is_array( $only ) && isset( $only[2] ) && self::SLUG === (string) $only[2] ) {
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- mirrors wp-admin/includes/menu.php single-item submenu collapse so no empty dropdown renders.
+				unset( $GLOBALS['submenu'][ self::SLUG ] );
+			}
+		}
+	}
+
+	/**
+	 * Keep the first submenu entry (`wpcy`) highlighted when viewing WPCY's internal tabs
+	 * while companion plugins are grouped into the submenu.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $submenu_file Current submenu slug.
+	 * @return mixed
+	 */
+	public function highlight_parent_submenu_for_tabs( $submenu_file ) {
+		if ( in_array( $this->current_page(), array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose' ), true ) ) {
+			return self::SLUG;
+		}
+		return $submenu_file;
+	}
+
+	/**
+	 * Network admin: 叶子 / 文派 / custom brand → settings only (CO-06 network view).
 	 *
 	 * Reads and writes wpcy_network_settings through /network-settings.
 	 *
@@ -354,7 +425,7 @@ final class AdminModule implements Module {
 		\Wenpai_Admin_Menu::register(
 			array(
 				'slug'       => self::NETWORK_SLUG,
-				'label'      => __( '文派叶子', 'wp-china-yes' ),
+				'label'      => WhiteLabel::menu_name( $this->repository->all() ),
 				'title'      => __( '设置', 'wp-china-yes' ),
 				'capability' => 'manage_network_options',
 				'render'     => array( $this, 'render' ),

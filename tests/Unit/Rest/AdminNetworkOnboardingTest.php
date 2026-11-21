@@ -51,7 +51,7 @@ class AdminNetworkOnboardingTest extends TestCase {
 		$menu = RestStore::$menus[0];
 		$this->assertSame( 'wpcy-connect', $menu['menu_slug'] );
 		$this->assertSame( 'manage_network_options', $menu['capability'] );
-		$this->assertSame( '文派叶子', $menu['menu_title'] );
+		$this->assertSame( '叶子', $menu['menu_title'] );
 	}
 
 	/**

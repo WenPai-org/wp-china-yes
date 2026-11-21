@@ -280,6 +280,25 @@ final class WhiteLabel {
 	}
 
 	/**
+	 * Left wp-admin sidebar menu label:
+	 * - Default (white-label off): 叶子
+	 * - White-label enabled without custom brand name: 文派
+	 * - White-label enabled with custom brand name: custom brand_name
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 */
+	public static function menu_name( array $settings ): string {
+		$wl = self::resolve( $settings );
+		if ( ! $wl['enabled'] ) {
+			return __( '叶子', 'wp-china-yes' );
+		}
+		if ( '' !== $wl['brand_name'] ) {
+			return $wl['brand_name'];
+		}
+		return __( '文派', 'wp-china-yes' );
+	}
+
+	/**
 	 * Read a trimmed string from settings with optional wp-config.php constant override.
 	 *
 	 * @param array<string, mixed> $raw      Settings array.

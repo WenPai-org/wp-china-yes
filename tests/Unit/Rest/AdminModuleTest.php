@@ -44,7 +44,7 @@ class AdminModuleTest extends TestCase {
 		foreach ( RestStore::$menus as $menu ) {
 			$slugs[] = $menu['menu_slug'];
 			$this->assertSame( 'manage_options', $menu['capability'] );
-			$this->assertSame( '文派叶子', $menu['menu_title'] );
+			$this->assertSame( '叶子', $menu['menu_title'] );
 		}
 		$this->assertSame( array( AdminModule::SLUG ), $slugs );
 
@@ -189,5 +189,36 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 'wpcy', $module->filter_suite_parent_slug( '', 'wpsss' ) );
 		$this->assertSame( '', $module->filter_suite_parent_slug( '', 'wpcy' ) );
 		$this->assertSame( '', $module->filter_suite_parent_slug( '', 'wpcy-features' ) );
+	}
+
+	/**
+	 * Sidebar submenu collapses completely when no companion plugins are grouped, and stays open when grouped.
+	 */
+	public function test_collapse_internal_submenus_hides_tabs_unless_companions_grouped() {
+		$module = new AdminModule( new Repository() );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- isolated submenu fixture for unit test.
+		$GLOBALS['submenu']['wpcy'] = array(
+			array( '文派叶子', 'manage_options', 'wpcy' ),
+			array( '设置', 'manage_options', 'wpcy-connect' ),
+			array( '功能', 'manage_options', 'wpcy-features' ),
+			array( '服务', 'manage_options', 'wpcy-services' ),
+			array( '诊断', 'manage_options', 'wpcy-diagnose' ),
+		);
+		$module->collapse_internal_submenus();
+		$this->assertArrayNotHasKey( 'wpcy', $GLOBALS['submenu'] );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- isolated submenu fixture for unit test.
+		$GLOBALS['submenu']['wpcy'] = array(
+			array( '文派叶子', 'manage_options', 'wpcy' ),
+			array( '设置', 'manage_options', 'wpcy-connect' ),
+			array( '文派素格', 'manage_options', 'wpslug' ),
+		);
+		$module->collapse_internal_submenus();
+		$this->assertArrayHasKey( 'wpcy', $GLOBALS['submenu'] );
+		$remaining = array_values( $GLOBALS['submenu']['wpcy'] );
+		$this->assertCount( 2, $remaining );
+		$this->assertSame( 'wpcy', $remaining[0][2] );
+		$this->assertSame( 'wpslug', $remaining[1][2] );
 	}
 }

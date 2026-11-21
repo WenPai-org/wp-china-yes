@@ -59,6 +59,7 @@ class WhiteLabelTest extends TestCase {
 		$this->assertFalse( $resolved['entitled'] );
 		$this->assertFalse( $resolved['enabled'] );
 		$this->assertSame( '文派叶子', WhiteLabel::brand_name( $repo->all() ) );
+		$this->assertSame( '叶子', WhiteLabel::menu_name( $repo->all() ) );
 
 		$defaults = array(
 			'brand'        => '文派素格',
@@ -116,6 +117,12 @@ class WhiteLabelTest extends TestCase {
 		);
 		$this->assertTrue( WhiteLabel::is_entitled() );
 		$this->assertSame( '星云数字', WhiteLabel::brand_name( $repo->all() ) );
+		$this->assertSame( '星云数字', WhiteLabel::menu_name( $repo->all() ) );
+
+		// Empty custom brand_name while white-label is enabled defaults sidebar menu name to 文派.
+		$blank_brand                                      = $repo->all();
+		$blank_brand['admin']['whitelabel']['brand_name'] = '';
+		$this->assertSame( '文派', WhiteLabel::menu_name( $blank_brand ) );
 
 		WhiteLabel::register( $repo );
 		$this->assertArrayHasKey( 'wenpai_plugin_display', AdminStore::$hooks );

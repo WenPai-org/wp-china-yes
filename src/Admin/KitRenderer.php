@@ -604,6 +604,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_close();
 
 		if ( ! $network ) {
+			$menu_name = WhiteLabel::menu_name( $settings );
 			\Wenpai_Admin_UI::card_open(
 				array(
 					'title' => __( '后台菜单整理', 'wp-china-yes' ),
@@ -614,8 +615,8 @@ final class KitRenderer {
 				array(
 					'icon'         => 'equalizer',
 					'state'        => $group_menus ? 'ok' : '',
-					'title'        => __( '将文派系列插件收纳到「文派叶子」菜单下', 'wp-china-yes' ),
-					'desc'         => __( '开启后，已安装的文派独立插件统一归入左侧「文派叶子」子菜单。', 'wp-china-yes' ),
+					'title'        => sprintf( /* translators: %s: left sidebar menu name */ __( '将文派系列插件收纳到「%s」菜单下', 'wp-china-yes' ), $menu_name ),
+					'desc'         => __( '仅在收纳了其他已启用插件时展开左侧子菜单，默认保持单入口。', 'wp-china-yes' ),
 					'control_html' => self::toggle_control( 'admin_group_suite_menus', $group_menus, $locked ),
 				)
 			);
@@ -1209,7 +1210,7 @@ final class KitRenderer {
 		);
 		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( ( $wl['enabled'] || ! $entitled ) ? '' : ' hidden' ) . '>';
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
-		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名称', 'wp-china-yes' ), __( '替换插件顶栏品牌名与插件列表作者署名。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：某某数字建站', 'wp-china-yes' ), 64, $wl_locked );
+		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名称', 'wp-china-yes' ), __( '替换顶栏品牌名、左侧菜单名与插件列表署名；留空时左侧菜单默认显示「文派」。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：某某数字建站', 'wp-china-yes' ), 64, $wl_locked );
 		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助中心地址', 'wp-china-yes' ), '', $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
 		echo self::field_row_input( 'wl_feedback_url', 'url', __( '工单与反馈地址', 'wp-china-yes' ), '', $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
 		echo self::field_row_input( 'wl_docs_url', 'url', __( '产品文档地址', 'wp-china-yes' ), '', $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
