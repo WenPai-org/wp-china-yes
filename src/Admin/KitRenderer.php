@@ -587,7 +587,6 @@ final class KitRenderer {
 				array(
 					'tag'   => __( '配置', 'wp-china-yes' ),
 					'title' => sprintf( /* translators: %s: profile label */ __( '已按「%s」场景启用加速策略', 'wp-china-yes' ), $profile ),
-					'note'  => __( '正在读取近期切换与检测记录…', 'wp-china-yes' ),
 				),
 			)
 		);
@@ -1044,7 +1043,6 @@ final class KitRenderer {
 				'tag'       => __( '待处理', 'wp-china-yes' ),
 				'tone'      => 'warn',
 				'title'     => __( '核心与插件国内更新镜像当前已关闭', 'wp-china-yes' ),
-				'note'      => __( '国内服务器直连官方源易超时，可前往设置重新开启', 'wp-china-yes' ),
 				'fix_url'   => $set_url,
 				'fix_label' => __( '去开启', 'wp-china-yes' ),
 			);
@@ -1055,7 +1053,6 @@ final class KitRenderer {
 				'tag'       => __( '待处理', 'wp-china-yes' ),
 				'tone'      => 'warn',
 				'title'     => __( '公共静态库与慢外链加速当前未启用', 'wp-china-yes' ),
-				'note'      => __( '开启后可避免海外字体与公共前端库阻塞首屏', 'wp-china-yes' ),
 				'fix_url'   => $set_url,
 				'fix_label' => __( '去开启', 'wp-china-yes' ),
 			);
@@ -1066,7 +1063,6 @@ final class KitRenderer {
 				'tag'       => __( '建议', 'wp-china-yes' ),
 				'tone'      => 'warn',
 				'title'     => __( 'WordPress 仪表盘默认慢速海外新闻源尚未替换', 'wp-china-yes' ),
-				'note'      => __( '开启后在 WP 仪表盘替换为国内高速社区动态小工具', 'wp-china-yes' ),
 				'fix_kind'  => 'dashboard_feeds',
 				'fix_label' => __( '一键开启', 'wp-china-yes' ),
 			);
@@ -1077,7 +1073,6 @@ final class KitRenderer {
 				'tag'       => __( '待绑定', 'wp-china-yes' ),
 				'tone'      => 'accent',
 				'title'     => __( '尚未关联文派云通行证', 'wp-china-yes' ),
-				'note'      => __( '免费绑定后可同步跨站基础额度与节点回退提醒', 'wp-china-yes' ),
 				'fix_kind'  => 'bind',
 				'fix_label' => __( '绑定本站', 'wp-china-yes' ),
 			);

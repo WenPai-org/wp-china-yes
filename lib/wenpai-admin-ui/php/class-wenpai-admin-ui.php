@@ -3573,7 +3573,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 					$html  .= '<div class="wenpai-stat-hub__cell-head">';
 					$html  .= '<span class="wenpai-stat-hub__k"><i aria-hidden="true"></i>' . esc_html( isset( $ch['label'] ) ? (string) $ch['label'] : '' ) . '</span>';
 					if ( $idx === $last ) {
-						$html .= '<button type="button" class="wenpai-stat-hub__collapse" data-wenpai-drawer-close="' . esc_attr( $drawer_id ) . '">' . esc_html( $collapse_label ) . ' &#9652;</button>';
+						$html .= '<button type="button" class="wenpai-stat-hub__collapse" data-wenpai-drawer-close="' . esc_attr( $drawer_id ) . '">' . esc_html( $collapse_label ) . $chevron . '</button>';
 					}
 					$html .= '</div>';
 					$html .= '<span class="wenpai-stat-hub__v"' . $vattrs . '>' . esc_html( isset( $ch['value'] ) ? (string) $ch['value'] : '' ) . '</span>';

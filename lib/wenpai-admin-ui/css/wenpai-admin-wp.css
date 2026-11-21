@@ -410,15 +410,27 @@ body.wenpai-ui-page .wenpai-app .card.wenpai-stat-hub.has-drawer-visible {
   padding-block-end: 0;
 }
 
+body.wenpai-ui-page .wenpai-app .card.wenpai-stat-hub .wenpai-statbar {
+  margin: 0 calc(var(--wenpai-space-6) * -1);
+}
+
+body.wenpai-ui-page .wenpai-app .card.wenpai-stat-hub .wenpai-statbar__item {
+  padding: 0 var(--wenpai-space-6);
+}
+
 body.wenpai-ui-page .wenpai-app .wenpai-stat-hub__alert {
   inline-size: calc(100% + var(--wenpai-space-6) * 2);
-  margin: var(--wenpai-space-4) calc(var(--wenpai-space-6) * -1) 0;
+  margin: var(--wenpai-space-5) calc(var(--wenpai-space-6) * -1) 0;
   padding: var(--wenpai-space-2-5) var(--wenpai-space-6);
 }
 
 body.wenpai-ui-page .wenpai-app .wenpai-stat-hub__drawer {
-  margin: var(--wenpai-space-4) calc(var(--wenpai-space-6) * -1) 0;
-  padding: 0 var(--wenpai-space-1);
+  margin: var(--wenpai-space-5) calc(var(--wenpai-space-6) * -1) 0;
+  padding: 0;
+}
+
+body.wenpai-ui-page .wenpai-app .wenpai-stat-hub__cell {
+  padding: var(--wenpai-space-3-5) var(--wenpai-space-6);
 }
 
 body.wenpai-ui-page .wenpai-app input[type="number"]::-webkit-outer-spin-button,

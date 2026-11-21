@@ -2041,6 +2041,12 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 .wenpai-app .card.wenpai-stat-hub {
   overflow: hidden;
 }
+.wenpai-app .card.wenpai-stat-hub .wenpai-statbar {
+  margin: 0 calc(var(--wenpai-space-7) * -1);
+}
+.wenpai-app .card.wenpai-stat-hub .wenpai-statbar__item {
+  padding: 0 var(--wenpai-space-7);
+}
 .wenpai-app .card.wenpai-stat-hub.has-drawer-visible {
   padding-block-end: 0;
 }
@@ -2099,8 +2105,8 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   display: none;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: var(--wenpai-space-5) calc(var(--wenpai-space-7) * -1) 0;
-  padding: 0 var(--wenpai-space-2);
-  border-block-start: 1px solid var(--wenpai-line-soft);
+  padding: 0;
+  border-block-start: 1px solid var(--wenpai-line-card);
   background: var(--wenpai-surface-soft);
   overflow: hidden;
 }
@@ -2113,9 +2119,9 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   }
 }
 .wenpai-app .wenpai-stat-hub__cell {
-  padding: var(--wenpai-space-3-5) var(--wenpai-space-5);
+  padding: var(--wenpai-space-3-5) var(--wenpai-space-7);
   margin-inline-start: -1px;
-  border-inline-start: 1px solid var(--wenpai-line-soft);
+  border-inline-start: 1px solid var(--wenpai-line-card);
   display: grid;
   gap: var(--wenpai-space-1);
   min-inline-size: 0;
@@ -2129,12 +2135,9 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
     margin-inline-start: 0;
     border-inline-start: 0;
   }
-}
-.wenpai-app .wenpai-stat-hub__cell.is-warn {
-  background: var(--wenpai-warn-soft);
-}
-.wenpai-app .wenpai-stat-hub__cell.is-bad {
-  background: var(--wenpai-bad-soft);
+  .wenpai-app .wenpai-stat-hub__cell:nth-child(n + 3) {
+    border-block-start: 1px solid var(--wenpai-line-card);
+  }
 }
 .wenpai-app .wenpai-stat-hub__cell-head {
   display: flex;
@@ -2186,8 +2189,16 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   font-size: var(--wenpai-text-caption);
   line-height: var(--wenpai-leading-caption);
   color: var(--wenpai-ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wenpai-space-0-5);
   cursor: pointer;
   border-radius: var(--wenpai-radius-sm);
+}
+.wenpai-app .wenpai-stat-hub__collapse svg {
+  inline-size: 13px;
+  block-size: 13px;
+  transform: rotate(180deg);
 }
 .wenpai-app .wenpai-stat-hub__collapse:hover {
   color: var(--wenpai-accent);
@@ -2426,7 +2437,7 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
 }
 
 .wenpai-app .wenpai-tag-feed-scroll {
-  max-block-size: 205px;
+  max-block-size: 230px;
   overflow-y: auto;
   padding-inline-end: var(--wenpai-space-1);
   margin-inline-end: calc(var(--wenpai-space-1) * -1);
@@ -2442,9 +2453,9 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--wenpai-space-3);
-  min-block-size: 40px;
-  padding: var(--wenpai-space-2) 0;
+  gap: var(--wenpai-space-3-5);
+  min-block-size: 46px;
+  padding: var(--wenpai-space-3) 0;
   border-block-end: 1px solid var(--wenpai-line-soft);
   box-sizing: border-box;
   margin: 0;

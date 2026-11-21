@@ -73,6 +73,14 @@
 		return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 	}
 
+	function formatShortDate(raw) {
+		if (!raw) return '';
+		const d = new Date(raw);
+		if (isNaN(d.getTime())) return '';
+		const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+		return pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+	}
+
 	function renderTrendSvg(series) {
 		const days = Array.isArray(series) && series.length ? series.slice(-7) : [];
 		const pts = days.length ? days.map(function (r) {
@@ -381,11 +389,6 @@
 			}
 		});
 
-		function cleanFeedSummary(raw) {
-			if (!raw) return '';
-			return String(raw).replace(/\s*(?:\[\.\.\.\]|\[…\])(?:\s*Source)?\s*$/i, '').trim();
-		}
-
 		function wrapScrollableFeed(ul) {
 			const wrap = document.createElement('div');
 			wrap.className = 'wenpai-tag-feed-scroll';
@@ -409,8 +412,8 @@
 						pinned.tone === 'warn' ? 'warn' : 'accent',
 						pinned.title || pinned.message || '重要维护通知',
 						pinned.url || '',
-						cleanFeedSummary(pinned.summary || pinned.body) || '重要消息置顶提醒，读后自动收起',
-						formatShortTime(pinned.published_at || pinned.date || ''),
+						'',
+						formatShortDate(pinned.published_at || pinned.date || ''),
 						function () {
 							api('/announcements/' + encodeURIComponent(pinned.id) + '/dismiss?per_page=15', { method: 'POST' })
 								.finally(function () {
@@ -420,21 +423,34 @@
 						}
 					));
 				}
+				let lastDedupeKey = '';
 				cachedEvents.slice(0, 20).forEach(function (ev) {
 					const rawType = ev.type || '';
 					const meta = eventMeta[rawType] || { tag: '记录', tone: '', text: '运行状态记录' };
+					let rowTitle = String(ev.title || meta.text || ev.summary || rawType)
+						.replace(/([\u4e00-\u9fa5])\s+([\u4e00-\u9fa5])/g, '$1$2')
+						.trim();
+					const detail = String(ev.detail || '').trim();
+					if ((rawType === 'first_check' || /首次线路检查/.test(rowTitle)) && detail && detail.length <= 16) {
+						rowTitle = rowTitle.replace(/^首次线路检查完成$/, '线路巡检完成') + ' · ' + detail;
+					}
+					const dedupeKey = rawType + '|' + rowTitle;
+					if (dedupeKey === lastDedupeKey) {
+						return;
+					}
+					lastDedupeKey = dedupeKey;
 					ul.appendChild(buildTagFeedRow(
 						meta.tag,
 						meta.tone,
-						ev.title || meta.text || ev.summary || rawType,
+						rowTitle,
 						'',
-						ev.detail || ev.target || '',
+						'',
 						formatShortTime(ev.at || ev.when || ''),
 						null
 					));
 				});
 				if (!ul.children.length) {
-					ul.appendChild(buildTagFeedRow('就绪', '', '各加速通道正按当前站点策略平稳运行', '', '发生节点切换或巡检时自动记录', '', null));
+					ul.appendChild(buildTagFeedRow('就绪', '', '各加速通道正按当前站点策略平稳运行', '', '', '', null));
 				}
 				eventsEl.innerHTML = '';
 				eventsEl.appendChild(wrapScrollableFeed(ul));
@@ -444,7 +460,7 @@
 				const ul = document.createElement('ul');
 				ul.className = 'wenpai-tag-feed';
 				if (!cachedNotices.length) {
-					ul.appendChild(buildTagFeedRow('茶馆', 'accent', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同步自 read.wptea.com，亦支持在 WP 仪表盘展示社区动态小工具', '', null));
+					ul.appendChild(buildTagFeedRow('茶馆', 'accent', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '', '', null));
 				} else {
 					cachedNotices.slice(0, 15).forEach(function (item) {
 						const src = item.source || '';
@@ -459,8 +475,8 @@
 							tone,
 							item.title || item.message || '社区更新动态',
 							item.url || '',
-							cleanFeedSummary(item.summary || item.body),
-							formatShortTime(item.published_at || item.date || ''),
+							'',
+							formatShortDate(item.published_at || item.date || ''),
 							item.id ? function () {
 								api('/announcements/' + encodeURIComponent(item.id) + '/dismiss?per_page=15', { method: 'POST' })
 									.finally(function () {
