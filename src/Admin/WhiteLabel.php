@@ -219,9 +219,15 @@ final class WhiteLabel {
 	 * - WPCY_WHITELABEL_LOGO         (string) Override logo image URL.
 	 * - WPCY_WHITELABEL_HIDE_LOGO    (bool)   Hide default brand mark.
 	 * - WPCY_WHITELABEL_HIDE_LINKS   (bool)   Hide uninstalled extension promos & default WenPai links.
+	 * - WPCY_WHITELABEL_HIDE_PROMO   (bool)   Hide Overview bottom-left promo card completely.
+	 * - WPCY_WHITELABEL_PROMO_BADGE  (string) Custom badge on Overview agency promo card.
+	 * - WPCY_WHITELABEL_PROMO_TITLE  (string) Custom headline on Overview agency promo card.
+	 * - WPCY_WHITELABEL_PROMO_DESC   (string) Custom description on Overview agency promo card.
+	 * - WPCY_WHITELABEL_PROMO_CTA    (string) Custom CTA button label on Overview agency promo card.
+	 * - WPCY_WHITELABEL_PROMO_URL    (string) Custom CTA URL on Overview agency promo card.
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
-	 * @return array{entitled: bool, enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, news_feed_url: string, logo_url: string, hide_logo: bool, hide_links: bool}
+	 * @return array{entitled: bool, enabled: bool, locked: bool, brand_name: string, help_url: string, feedback_url: string, docs_url: string, news_feed_url: string, logo_url: string, hide_logo: bool, hide_links: bool, promo_hidden: bool, promo_badge: string, promo_title: string, promo_desc: string, promo_cta_label: string, promo_cta_url: string}
 	 */
 	public static function resolve( array $settings ): array {
 		$raw = isset( $settings['admin']['whitelabel'] ) && is_array( $settings['admin']['whitelabel'] )
@@ -232,12 +238,17 @@ final class WhiteLabel {
 		$locked   = defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' );
 		$enabled  = $entitled && ( $locked || ! empty( $raw['enabled'] ) );
 
-		$brand_name    = self::resolve_string( $raw, 'brand_name', 'WPCY_WHITELABEL_NAME' );
-		$help_url      = self::resolve_string( $raw, 'help_url', 'WPCY_WHITELABEL_HELP_URL' );
-		$feedback_url  = self::resolve_string( $raw, 'feedback_url', 'WPCY_WHITELABEL_FEEDBACK_URL' );
-		$docs_url      = self::resolve_string( $raw, 'docs_url', 'WPCY_WHITELABEL_DOCS_URL' );
-		$news_feed_url = self::resolve_string( $raw, 'news_feed_url', 'WPCY_WHITELABEL_NEWS_URL' );
-		$logo_url      = self::resolve_string( $raw, 'logo_url', 'WPCY_WHITELABEL_LOGO' );
+		$brand_name      = self::resolve_string( $raw, 'brand_name', 'WPCY_WHITELABEL_NAME' );
+		$help_url        = self::resolve_string( $raw, 'help_url', 'WPCY_WHITELABEL_HELP_URL' );
+		$feedback_url    = self::resolve_string( $raw, 'feedback_url', 'WPCY_WHITELABEL_FEEDBACK_URL' );
+		$docs_url        = self::resolve_string( $raw, 'docs_url', 'WPCY_WHITELABEL_DOCS_URL' );
+		$news_feed_url   = self::resolve_string( $raw, 'news_feed_url', 'WPCY_WHITELABEL_NEWS_URL' );
+		$logo_url        = self::resolve_string( $raw, 'logo_url', 'WPCY_WHITELABEL_LOGO' );
+		$promo_badge     = self::resolve_string( $raw, 'promo_badge', 'WPCY_WHITELABEL_PROMO_BADGE' );
+		$promo_title     = self::resolve_string( $raw, 'promo_title', 'WPCY_WHITELABEL_PROMO_TITLE' );
+		$promo_desc      = self::resolve_string( $raw, 'promo_desc', 'WPCY_WHITELABEL_PROMO_DESC' );
+		$promo_cta_label = self::resolve_string( $raw, 'promo_cta_label', 'WPCY_WHITELABEL_PROMO_CTA' );
+		$promo_cta_url   = self::resolve_string( $raw, 'promo_cta_url', 'WPCY_WHITELABEL_PROMO_URL' );
 
 		$hide_logo = ! empty( $raw['hide_logo'] );
 		if ( defined( 'WPCY_WHITELABEL_HIDE_LOGO' ) ) {
@@ -251,18 +262,29 @@ final class WhiteLabel {
 			$hide_links = true;
 		}
 
+		$promo_hidden = ! empty( $raw['promo_hidden'] );
+		if ( defined( 'WPCY_WHITELABEL_HIDE_PROMO' ) ) {
+			$promo_hidden = (bool) constant( 'WPCY_WHITELABEL_HIDE_PROMO' );
+		}
+
 		return array(
-			'entitled'      => $entitled,
-			'enabled'       => $enabled,
-			'locked'        => $locked,
-			'brand_name'    => $brand_name,
-			'help_url'      => $help_url,
-			'feedback_url'  => $feedback_url,
-			'docs_url'      => $docs_url,
-			'news_feed_url' => $news_feed_url,
-			'logo_url'      => $logo_url,
-			'hide_logo'     => $hide_logo,
-			'hide_links'    => $hide_links,
+			'entitled'        => $entitled,
+			'enabled'         => $enabled,
+			'locked'          => $locked,
+			'brand_name'      => $brand_name,
+			'help_url'        => $help_url,
+			'feedback_url'    => $feedback_url,
+			'docs_url'        => $docs_url,
+			'news_feed_url'   => $news_feed_url,
+			'logo_url'        => $logo_url,
+			'hide_logo'       => $hide_logo,
+			'hide_links'      => $hide_links,
+			'promo_hidden'    => $promo_hidden,
+			'promo_badge'     => $promo_badge,
+			'promo_title'     => $promo_title,
+			'promo_desc'      => $promo_desc,
+			'promo_cta_label' => $promo_cta_label,
+			'promo_cta_url'   => $promo_cta_url,
 		);
 	}
 

@@ -294,8 +294,8 @@ final class KitRenderer {
 		$locale_follow = ! isset( $conn['admin_locale_follow'] ) || (bool) $conn['admin_locale_follow'];
 		$noise_on      = 'on' === (string) ( $conn['heartbeat'] ?? 'off' ) || 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
 		$news_enabled  = ! isset( $settings['admin']['news_enabled'] ) || (bool) $settings['admin']['news_enabled'];
-		$ad_dismissed  = function_exists( 'get_user_meta' ) && function_exists( 'get_current_user_id' ) && '1' === (string) get_user_meta( (int) get_current_user_id(), 'wpcy_overview_ad_dismissed', true );
 		$wl            = WhiteLabel::resolve( $settings );
+		$is_bound      = self::is_site_bound();
 		$active_count  = ( 'off' !== $mirror ? 1 : 0 ) + ( 'off' !== $scope ? 1 : 0 ) + ( 'off' !== $avatar ? 1 : 0 ) + ( ( $locale_follow || $noise_on ) ? 1 : 0 );
 
 		// Read cached server probe snapshot (render-safe local transient, zero remote HTTP).
@@ -452,13 +452,16 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'        => true,
-				'meta_html'    => '<span class="meta" data-wpcy-trend-legend="1">' . esc_html__( '静态库 0 次 · Cravatar 头像 0 次 · 更新镜像 0 次', 'wp-china-yes' ) . '</span>',
+				'meta_html'    => '<span class="meta" data-wpcy-trend-legend="1">' . esc_html__( '等待首批加速请求 · 产生访问后按日汇总', 'wp-china-yes' ) . '</span>',
 				'actions_html' => '<span class="meta">' . esc_html__( '按日汇总', 'wp-china-yes' ) . '</span>',
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
 
-		$side_tabs = \Wenpai_Admin_UI::view_tabs_html(
+		$quota_foot_meta = $is_bound
+			? __( '已关联文派云通行证 · 额度自动同步', 'wp-china-yes' )
+			: __( '扩展插件额度随站点绑定同步', 'wp-china-yes' );
+		$side_tabs       = \Wenpai_Admin_UI::view_tabs_html(
 			array(
 				'group'      => 'wpcy-side',
 				'aria_label' => __( '节点测速与服务额度切换', 'wp-china-yes' ),
@@ -476,7 +479,7 @@ final class KitRenderer {
 						'id'         => 'quota',
 						'label'      => __( '额度', 'wp-china-yes' ),
 						'card_title' => __( '服务用量额度', 'wp-china-yes' ),
-						'foot_meta'  => __( '扩展插件额度随站点绑定同步', 'wp-china-yes' ),
+						'foot_meta'  => $quota_foot_meta,
 						'foot_label' => __( '服务目录', 'wp-china-yes' ),
 						'foot_href'  => $svc_url,
 					),
@@ -586,15 +589,19 @@ final class KitRenderer {
 				'head_control_html' => $feed_head_ctl,
 			)
 		);
+		$event_rows     = array_merge(
+			self::overview_suggestion_feed_items( self::active_suggestions( $settings ) ),
+			array(
+				array(
+					'tag'   => __( '配置', 'wp-china-yes' ),
+					'title' => sprintf( /* translators: %s: profile label */ __( '已按「%s」场景启用加速策略', 'wp-china-yes' ), $profile ),
+					'note'  => __( '正在读取近期切换与检测记录…', 'wp-china-yes' ),
+				),
+			)
+		);
 		$initial_events = \Wenpai_Admin_UI::tag_feed_html(
 			array(
-				'items' => array(
-					array(
-						'tag'   => __( '配置', 'wp-china-yes' ),
-						'title' => sprintf( /* translators: %s: profile label */ __( '已按「%s」场景启用加速策略', 'wp-china-yes' ), $profile ),
-						'note'  => __( '正在读取近期切换与检测记录…', 'wp-china-yes' ),
-					),
-				),
+				'items' => $event_rows,
 			)
 		);
 		if ( $news_enabled ) {
@@ -629,34 +636,18 @@ final class KitRenderer {
 		}
 		\Wenpai_Admin_UI::card_close();
 
-		// Row 4: Reversed Split — Left 20rem Cloud Ad / White-Label Support Card + Right 1fr Icon-Box Quick Tools & Slim Site Suggestions.
-		$ad_args  = self::overview_ad_slot_args( $wl, $ad_dismissed, $feat_url, $svc_url );
-		$split_r4 = null === $ad_args ? 'wenpai-split wenpai-split--reverse wenpai-split--equal is-single' : 'wenpai-split wenpai-split--reverse wenpai-split--equal';
-		$ops_tabs = \Wenpai_Admin_UI::view_tabs_html(
-			array(
-				'group'      => 'wpcy-ops',
-				'aria_label' => __( '快捷工具与站点建议切换', 'wp-china-yes' ),
-				'items'      => array(
-					array(
-						'id'         => 'tools',
-						'label'      => __( '快捷工具', 'wp-china-yes' ),
-						'active'     => true,
-						'card_title' => __( '快捷工具', 'wp-china-yes' ),
-						'foot_meta'  => __( '常用排障与轻便生态小工具', 'wp-china-yes' ),
-						'foot_label' => __( '服务与工具目录', 'wp-china-yes' ),
-						'foot_href'  => $svc_url,
-					),
-					array(
-						'id'         => 'audit',
-						'label'      => __( '站点建议', 'wp-china-yes' ),
-						'card_title' => __( '站点建议', 'wp-china-yes' ),
-						'foot_meta'  => __( '按当前站点场景检测建议项', 'wp-china-yes' ),
-						'foot_label' => __( '前往环境诊断', 'wp-china-yes' ),
-						'foot_href'  => $diag_url,
-					),
-				),
-			)
-		);
+		// Row 4: Reversed Split — Left 20rem Cloud / White-Label Agency Promo Slot (never closed on Overview) + Right 1fr Reserved Toolbox.
+		$ad_args   = self::overview_ad_slot_args( $wl, $svc_url );
+		$split_r4  = null === $ad_args ? 'wenpai-split wenpai-split--reverse wenpai-split--equal is-single' : 'wenpai-split wenpai-split--reverse wenpai-split--equal';
+		$foot_acts = array();
+		if ( ! ( $wl['enabled'] && $wl['hide_links'] ) ) {
+			$foot_acts[] = array(
+				'label'   => __( '文派生态目录', 'wp-china-yes' ),
+				'href'    => $svc_url,
+				'variant' => 'ghost',
+				'size'    => 'sm',
+			);
+		}
 
 		echo '<div class="' . esc_attr( $split_r4 ) . '">';
 		if ( null !== $ad_args ) {
@@ -668,48 +659,21 @@ final class KitRenderer {
 				'title'             => __( '快捷工具', 'wp-china-yes' ),
 				'tile'              => false,
 				'class'             => 'wenpai-card--equal',
-				'head_control_html' => $ops_tabs,
+				'head_control_html' => '<span class="meta">' . esc_html__( '工具箱预留位', 'wp-china-yes' ) . '</span>',
 			)
 		);
 		echo '<div class="wenpai-card__body">';
-		\Wenpai_Admin_UI::view_panes(
+		\Wenpai_Admin_UI::icon_grid(
 			array(
-				'group' => 'wpcy-ops',
-				'panes' => array(
-					array(
-						'id'     => 'tools',
-						'active' => true,
-						'html'   => \Wenpai_Admin_UI::icon_grid_html(
-							array(
-								'items' => self::overview_quick_tools( $diag_url, $svc_url ),
-							)
-						),
-					),
-					array(
-						'id'   => 'audit',
-						'html' => \Wenpai_Admin_UI::tag_feed_html(
-							array(
-								'class' => 'wenpai-tag-feed--fill',
-								'items' => self::overview_audit_items( $mirror, $scope, $locale_follow, $noise_on, $set_url, $feat_url ),
-							)
-						),
-					),
-				),
+				'items' => self::overview_quick_tools( $wl, $svc_url ),
 			)
 		);
 		echo '</div>';
 		\Wenpai_Admin_UI::card_foot(
 			array(
 				'start'   => true,
-				'meta'    => __( '常用排障与轻便生态小工具', 'wp-china-yes' ),
-				'actions' => array(
-					array(
-						'label'   => __( '服务与工具目录', 'wp-china-yes' ),
-						'href'    => $svc_url,
-						'variant' => 'ghost',
-						'size'    => 'sm',
-					),
-				),
+				'meta'    => __( '内建维护动作 · 后续接入文派轻便小工具', 'wp-china-yes' ),
+				'actions' => $foot_acts,
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
@@ -849,65 +813,81 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Build `Wenpai_Admin_UI::ad_slot` args (cloud promos, white-label support card, or null when hidden).
+	 * Build `Wenpai_Admin_UI::ad_slot` args.
 	 *
-	 * @param array<string, mixed> $wl         WhiteLabel state.
-	 * @param bool                 $hide_promo Whether user dismissed promos.
-	 * @param string               $feat_url   Features URL.
-	 * @param string               $svc_url    Services URL.
+	 * Overview never renders a close button (`dismissible => false`):
+	 * - Default (White-Label off): WenPai cloud-configurable spotlight carousel.
+	 * - White-Label on: agencies either customize this card for their own client service/renewal/hosting
+	 *   promotion, or explicitly turn on `promo_hidden` inside White-Label settings (`null` -> right card expands).
+	 *
+	 * @param array<string, mixed> $wl      Resolved WhiteLabel state.
+	 * @param string               $svc_url Services URL.
 	 * @return array<string, mixed>|null
 	 */
-	private static function overview_ad_slot_args( array $wl, bool $hide_promo, string $feat_url, string $svc_url ): ?array {
+	private static function overview_ad_slot_args( array $wl, string $svc_url ): ?array {
 		if ( ! empty( $wl['enabled'] ) ) {
-			$agency_name = ! empty( $wl['brand_name'] ) ? (string) $wl['brand_name'] : __( '站点运维团队', 'wp-china-yes' );
-			$support_url = ! empty( $wl['feedback_url'] ) ? (string) $wl['feedback_url'] : ( ! empty( $wl['help_url'] ) ? (string) $wl['help_url'] : '' );
-			if ( ! empty( $wl['hide_links'] ) && '' === $support_url ) {
+			if ( ! empty( $wl['promo_hidden'] ) ) {
 				return null;
 			}
+			$agency_name = ! empty( $wl['brand_name'] ) ? (string) $wl['brand_name'] : __( '站点运维团队', 'wp-china-yes' );
+			$support_url = ! empty( $wl['feedback_url'] ) ? (string) $wl['feedback_url'] : ( ! empty( $wl['help_url'] ) ? (string) $wl['help_url'] : '' );
+			$cta_url     = ! empty( $wl['promo_cta_url'] ) ? (string) $wl['promo_cta_url'] : $support_url;
+			$cta_label   = '' !== $cta_url
+				? ( ! empty( $wl['promo_cta_label'] ) ? (string) $wl['promo_cta_label'] : __( '联系运维支持 ↗', 'wp-china-yes' ) )
+				: '';
+			$card_title  = ! empty( $wl['brand_name'] )
+				? sprintf( /* translators: %s: agency brand name */ __( '%s · 专属服务', 'wp-china-yes' ), $agency_name )
+				: __( '技术支持与维护', 'wp-china-yes' );
+			$badge       = ! empty( $wl['promo_badge'] ) ? (string) $wl['promo_badge'] : __( '专属服务', 'wp-china-yes' );
+			$headline    = ! empty( $wl['promo_title'] )
+				? (string) $wl['promo_title']
+				: sprintf( /* translators: %s: agency brand name */ __( '本站加速与日常维护由 %s 提供支持', 'wp-china-yes' ), $agency_name );
+			$desc        = ! empty( $wl['promo_desc'] )
+				? (string) $wl['promo_desc']
+				: __( '日常核心更新、国内镜像加速与连通巡检均已配置就绪，如需续费、定制或运维协助可直接联系我们。', 'wp-china-yes' );
+
 			return array(
-				'agency' => true,
-				'title'  => __( '技术支持与维护', 'wp-china-yes' ),
-				'slides' => array(
+				'dismissible' => false,
+				'title'       => $card_title,
+				'slides'      => array(
 					array(
-						'badge'      => __( '维护保障中', 'wp-china-yes' ),
+						'badge'      => $badge,
 						'sub'        => $agency_name,
-						'title'      => sprintf( /* translators: %s: agency brand name */ __( '本站加速与巡检由 %s 提供支持', 'wp-china-yes' ), $agency_name ),
-						'desc'       => __( '日常核心更新、国内镜像加速与连通巡检均已配置就绪，如需协助请联系技术支持。', 'wp-china-yes' ),
-						'pills'      => array( __( '工作时间响应', 'wp-china-yes' ), __( '运维支持', 'wp-china-yes' ) ),
+						'title'      => $headline,
+						'desc'       => $desc,
+						'pills'      => array( __( '工作时间响应', 'wp-china-yes' ), __( '专属支持', 'wp-china-yes' ) ),
 						'foot_meta'  => $agency_name,
-						'cta_label'  => '' !== $support_url ? __( '联系运维支持 ↗', 'wp-china-yes' ) : '',
-						'cta_url'    => $support_url,
+						'cta_label'  => $cta_label,
+						'cta_url'    => $cta_url,
 						'cta_target' => '_blank',
 					),
 				),
 			);
 		}
 
-		if ( $hide_promo ) {
-			return null;
-		}
-
 		if ( function_exists( 'get_transient' ) ) {
 			$catalog = get_transient( 'wpcy_catalog' );
 			if ( is_array( $catalog ) && isset( $catalog['promos'] ) && is_array( $catalog['promos'] ) && array() !== $catalog['promos'] ) {
 				return array(
-					'title'  => __( '精选推荐', 'wp-china-yes' ),
-					'slides' => $catalog['promos'],
+					'dismissible' => false,
+					'title'       => __( '精选推荐', 'wp-china-yes' ),
+					'slides'      => $catalog['promos'],
 				);
 			}
 		}
 
 		$wl_detail_url = self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) );
 		return array(
-			'title'  => __( '精选推荐', 'wp-china-yes' ),
-			'slides' => array(
+			'dismissible' => false,
+			'title'       => __( '精选推荐', 'wp-china-yes' ),
+			'slides'      => array(
 				array(
 					'badge'     => __( '商业授权', 'wp-china-yes' ),
-					'sub'       => __( '代理商与工作室', 'wp-china-yes' ),
+					'sub'       => __( '建站代理商方案', 'wp-china-yes' ),
 					'title'     => __( '面向客户交付站点？启用全套品牌白标', 'wp-china-yes' ),
-					'desc'      => __( '替换为你的团队名称、品牌图标与售后入口，并自动隐藏官方推荐位。', 'wp-china-yes' ),
-					'pills'     => array( __( '自定义品牌名', 'wp-china-yes' ), __( '隐藏推荐位', 'wp-china-yes' ) ),
-					'foot_meta' => __( '广告 · 云端可配', 'wp-china-yes' ),
+					'desc'      => __( '替换为你的团队名称与工单入口；本推荐位可改为你的主机续费或运维服务入口，也可在白标设置中关闭。', 'wp-china-yes' ),
+					'pills'     => array( __( '自有品牌交付', 'wp-china-yes' ), __( '代理商自用推荐位', 'wp-china-yes' ) ),
+					'foot_meta' => __( '官方推荐 · 白标可自用', 'wp-china-yes' ),
 					'cta_label' => __( '了解白标方案 →', 'wp-china-yes' ),
 					'cta_url'   => $wl_detail_url,
 				),
@@ -936,14 +916,14 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Build 4x2 icon-box launcher items for Overview quick tools & ecosystem mini-tools.
+	 * Build 4x2 icon-box items for Overview quick actions & reserved WenPai Toolbox slots.
 	 *
-	 * @param string $diag_url Diagnostics URL.
-	 * @param string $svc_url  Services URL.
+	 * @param array<string, mixed> $wl      Resolved WhiteLabel state.
+	 * @param string               $svc_url Services URL.
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function overview_quick_tools( string $diag_url, string $svc_url ): array {
-		return array(
+	private static function overview_quick_tools( array $wl, string $svc_url ): array {
+		$items = array(
 			array(
 				'label' => __( '刷新缓存', 'wp-china-yes' ),
 				'icon'  => 'refresh',
@@ -955,7 +935,7 @@ final class KitRenderer {
 				'attrs' => array( 'data-wpcy-quick' => 'reset-fallback' ),
 			),
 			array(
-				'label' => __( '外链检测', 'wp-china-yes' ),
+				'label' => __( '可达自检', 'wp-china-yes' ),
 				'icon'  => 'search',
 				'attrs' => array( 'data-wpcy-quick' => 'scan-outbound' ),
 			),
@@ -964,86 +944,304 @@ final class KitRenderer {
 				'icon'  => 'copy',
 				'attrs' => array( 'data-wpcy-quick' => 'copy-report' ),
 			),
-			array(
-				'label' => __( '别名转换', 'wp-china-yes' ),
-				'icon'  => 'link',
-				'href'  => $svc_url,
-			),
-			array(
-				'label' => __( '头像缓存', 'wp-china-yes' ),
-				'icon'  => 'user',
-				'href'  => $svc_url,
-			),
-			array(
-				'label' => __( '媒体上云', 'wp-china-yes' ),
-				'icon'  => 'cloud',
-				'href'  => $svc_url,
-			),
-			array(
-				'label'  => __( '更多工具', 'wp-china-yes' ),
+		);
+
+		$extra = array();
+		if ( function_exists( 'get_transient' ) ) {
+			$catalog = get_transient( 'wpcy_catalog' );
+			if ( is_array( $catalog ) && isset( $catalog['toolbox'] ) && is_array( $catalog['toolbox'] ) ) {
+				foreach ( $catalog['toolbox'] as $tool ) {
+					if ( is_array( $tool ) && ! empty( $tool['label'] ) ) {
+						$extra[] = array(
+							'label' => sanitize_text_field( (string) $tool['label'] ),
+							'icon'  => ! empty( $tool['icon'] ) ? sanitize_key( (string) $tool['icon'] ) : 'sparkle',
+							'href'  => ! empty( $tool['href'] ) ? esc_url_raw( (string) $tool['href'] ) : '',
+						);
+					}
+				}
+			}
+		}
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'wpcy_overview_toolbox_items', $extra );
+			if ( is_array( $filtered ) ) {
+				$extra = $filtered;
+			}
+		}
+
+		foreach ( array_slice( $extra, 0, 4 ) as $slot ) {
+			if ( is_array( $slot ) && ! empty( $slot['label'] ) ) {
+				$items[] = $slot;
+			}
+		}
+
+		$hide_eco = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
+		$pad_cap  = $hide_eco ? 8 : 7;
+		for ( $cur = count( $items ); $cur < $pad_cap; ++$cur ) {
+			$items[] = array(
+				'label'  => __( '工具预留', 'wp-china-yes' ),
 				'icon'   => 'add',
 				'dashed' => true,
-				'href'   => $diag_url,
-			),
-		);
+				'attrs'  => array( 'data-wpcy-quick' => 'reserved-slot' ),
+			);
+		}
+		if ( count( $items ) < 8 && ! $hide_eco ) {
+			$items[] = array(
+				'label'  => __( '生态目录', 'wp-china-yes' ),
+				'icon'   => 'link',
+				'dashed' => true,
+				'href'   => $svc_url,
+			);
+		}
+
+		return array_slice( $items, 0, 8 );
 	}
 
 	/**
-	 * Build 4 concise single-line site suggestion rows for Overview.
-	 *
-	 * @param string $mirror        WP.org mirror mode.
-	 * @param string $scope         Public assets scope.
-	 * @param bool   $locale_follow Locale separation enabled.
-	 * @param bool   $noise_on      Noise reduction enabled.
-	 * @param string $set_url       Settings URL.
-	 * @param string $feat_url      Features URL.
-	 * @return array<int, array<string, mixed>>
+	 * Whether this site is currently bound to a WenPai Cloud Passport (`wpcy_site_identity`).
 	 */
-	private static function overview_audit_items( string $mirror, string $scope, bool $locale_follow, bool $noise_on, string $set_url, string $feat_url ): array {
-		$mirror_on = 'off' !== $mirror;
-		$assets_on = 'off' !== $scope;
-		$admin_opt = $locale_follow && $noise_on;
+	private static function is_site_bound(): bool {
+		if ( ! function_exists( 'get_option' ) ) {
+			return false;
+		}
+		$identity = get_option( 'wpcy_site_identity', array() );
+		return is_array( $identity )
+			&& isset( $identity['binding'] )
+			&& is_array( $identity['binding'] )
+			&& 'bound' === (string) ( $identity['binding']['status'] ?? '' );
+	}
 
-		return array(
-			array(
-				'tag'          => $mirror_on ? __( '正常', 'wp-china-yes' ) : __( '待优化', 'wp-china-yes' ),
-				'tone'         => $mirror_on ? '' : 'warn',
-				'title'        => __( '核心、主题与插件国内更新通道', 'wp-china-yes' ),
-				'when'         => $mirror_on ? __( '已开启', 'wp-china-yes' ) : '',
-				'action_label' => $mirror_on ? '' : __( '去开启', 'wp-china-yes' ),
-				'action_url'   => $mirror_on ? '' : $set_url,
-			),
-			array(
-				'tag'         => __( '待绑定', 'wp-china-yes' ),
-				'tone'        => 'accent',
-				'title'       => __( '关联文派云通行证同步免费额度', 'wp-china-yes' ),
-				'action_html' => \Wenpai_Admin_UI::button_html(
+	/**
+	 * Compute active, un-dismissed actionable site suggestions merged into `近期运行记录`.
+	 *
+	 * Silent when everything is configured or dismissed — never emits filler "正常" rows.
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @return list<array<string, string>>
+	 */
+	public static function active_suggestions( array $settings ): array {
+		if ( ! empty( $settings['recovery_mode'] ) ) {
+			return array();
+		}
+		$dismissed = array();
+		if ( function_exists( 'get_option' ) ) {
+			$raw_dis = get_option( 'wpcy_announcements_dismissed', array() );
+			if ( is_array( $raw_dis ) ) {
+				foreach ( $raw_dis as $did ) {
+					if ( is_string( $did ) && '' !== $did ) {
+						$dismissed[ $did ] = true;
+					}
+				}
+			}
+		}
+
+		$profile = (string) ( $settings['profile'] ?? 'domestic' );
+		$conn    = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$mirror  = self::conn_mirror( $conn );
+		$scope   = self::conn_scope( $settings, $conn );
+		$feeds   = (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		$wl      = WhiteLabel::resolve( $settings );
+		$set_url = self::page_url( 'wpcy-connect' );
+		$out     = array();
+
+		if ( 'domestic' === $profile && 'off' === $mirror && ! isset( $dismissed['sug.wporg'] ) ) {
+			$out[] = array(
+				'id'        => 'sug.wporg',
+				'tag'       => __( '待处理', 'wp-china-yes' ),
+				'tone'      => 'warn',
+				'title'     => __( '核心与插件国内更新镜像当前已关闭', 'wp-china-yes' ),
+				'note'      => __( '国内服务器直连官方源易超时，可前往设置重新开启', 'wp-china-yes' ),
+				'fix_url'   => $set_url,
+				'fix_label' => __( '去开启', 'wp-china-yes' ),
+			);
+		}
+		if ( 'domestic' === $profile && 'off' === $scope && ! isset( $dismissed['sug.assets'] ) ) {
+			$out[] = array(
+				'id'        => 'sug.assets',
+				'tag'       => __( '待处理', 'wp-china-yes' ),
+				'tone'      => 'warn',
+				'title'     => __( '公共静态库与慢外链加速当前未启用', 'wp-china-yes' ),
+				'note'      => __( '开启后可避免海外字体与公共前端库阻塞首屏', 'wp-china-yes' ),
+				'fix_url'   => $set_url,
+				'fix_label' => __( '去开启', 'wp-china-yes' ),
+			);
+		}
+		if ( 'domestic' === $profile && 'block' !== $feeds && ! isset( $dismissed['sug.feeds'] ) ) {
+			$out[] = array(
+				'id'        => 'sug.feeds',
+				'tag'       => __( '建议', 'wp-china-yes' ),
+				'tone'      => 'warn',
+				'title'     => __( 'WordPress 仪表盘默认慢速海外新闻源尚未替换', 'wp-china-yes' ),
+				'note'      => __( '开启后在 WP 仪表盘替换为国内高速社区动态小工具', 'wp-china-yes' ),
+				'fix_kind'  => 'dashboard_feeds',
+				'fix_label' => __( '一键开启', 'wp-china-yes' ),
+			);
+		}
+		if ( ! self::is_site_bound() && ! ( $wl['enabled'] && $wl['hide_links'] ) && ! isset( $dismissed['sug.passport'] ) ) {
+			$out[] = array(
+				'id'        => 'sug.passport',
+				'tag'       => __( '待绑定', 'wp-china-yes' ),
+				'tone'      => 'accent',
+				'title'     => __( '尚未关联文派云通行证', 'wp-china-yes' ),
+				'note'      => __( '免费绑定后可同步跨站基础额度与节点回退提醒', 'wp-china-yes' ),
+				'fix_kind'  => 'bind',
+				'fix_label' => __( '绑定本站', 'wp-china-yes' ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Convert `active_suggestions()` entries into SSR `Wenpai_Admin_UI::tag_feed` rows.
+	 *
+	 * @param list<array<string, string>> $suggestions Active suggestions.
+	 * @return list<array<string, mixed>>
+	 */
+	private static function overview_suggestion_feed_items( array $suggestions ): array {
+		$rows = array();
+		foreach ( $suggestions as $sug ) {
+			$id      = isset( $sug['id'] ) ? (string) $sug['id'] : '';
+			$actions = '';
+			if ( ! empty( $sug['fix_kind'] ) && 'bind' === $sug['fix_kind'] ) {
+				$actions .= \Wenpai_Admin_UI::button_html(
 					array(
-						'label'   => __( '绑定本站', 'wp-china-yes' ),
+						'label'   => $sug['fix_label'] ?? __( '绑定本站', 'wp-china-yes' ),
 						'type'    => 'button',
 						'variant' => 'secondary',
 						'size'    => 'sm',
 						'attrs'   => array( 'data-wpcy-action' => 'bind' ),
 					)
+				);
+			} elseif ( ! empty( $sug['fix_kind'] ) ) {
+				$actions .= \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => $sug['fix_label'] ?? __( '一键开启', 'wp-china-yes' ),
+						'type'    => 'button',
+						'variant' => 'secondary',
+						'size'    => 'sm',
+						'attrs'   => array(
+							'data-wpcy-fix-sug' => $sug['fix_kind'],
+							'data-wpcy-sug-id'  => $id,
+						),
+					)
+				);
+			} elseif ( ! empty( $sug['fix_url'] ) ) {
+				$actions .= \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => $sug['fix_label'] ?? __( '去处理', 'wp-china-yes' ),
+						'href'    => $sug['fix_url'],
+						'variant' => 'secondary',
+						'size'    => 'sm',
+					)
+				);
+			}
+			if ( '' !== $id ) {
+				$actions .= \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '关闭', 'wp-china-yes' ),
+						'type'    => 'button',
+						'variant' => 'ghost',
+						'size'    => 'sm',
+						'attrs'   => array( 'data-wpcy-dismiss-sug' => $id ),
+					)
+				);
+			}
+
+			$rows[] = array(
+				'tag'         => $sug['tag'] ?? __( '建议', 'wp-china-yes' ),
+				'tone'        => $sug['tone'] ?? 'warn',
+				'title'       => $sug['title'] ?? '',
+				'note'        => $sug['note'] ?? '',
+				'action_html' => $actions,
+				'attrs'       => '' !== $id ? array( 'data-wpcy-sug-row' => $id ) : array(),
+			);
+		}
+		return $rows;
+	}
+
+	/**
+	 * Render the replacement fast domestic / agency news widget inside native WP Dashboard (`wp-admin/index.php`).
+	 *
+	 * @param array<string, mixed>              $settings Settings snapshot.
+	 * @param list<array<string, string|mixed>> $items    Cached undismissed items from `AnnouncementsModule`.
+	 */
+	public static function render_dashboard_news_widget( array $settings, array $items ): void {
+		if ( ! class_exists( '\Wenpai_Admin_UI', false ) ) {
+			return;
+		}
+		$wl           = WhiteLabel::resolve( $settings );
+		$overview_url = self::page_url( 'wpcy' );
+		$news_set_url = self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) );
+		$feed_rows    = array();
+
+		foreach ( array_slice( $items, 0, 4 ) as $item ) {
+			$cat       = isset( $item['category'] ) ? (string) $item['category'] : '';
+			$tone_raw  = isset( $item['tone'] ) ? (string) $item['tone'] : '';
+			$tag       = 'release' === $cat ? __( '版本', 'wp-china-yes' ) : ( 'warn' === $tone_raw ? __( '公告', 'wp-china-yes' ) : __( '动态', 'wp-china-yes' ) );
+			$tone      = 'warn' === $tone_raw ? 'warn' : ( 'release' === $cat ? 'accent' : '' );
+			$when      = '';
+			$published = isset( $item['published_at'] ) ? (string) $item['published_at'] : ( isset( $item['date'] ) ? (string) $item['date'] : '' );
+			if ( '' !== $published ) {
+				$ts = strtotime( $published );
+				if ( false !== $ts ) {
+					$when = gmdate( 'm-d', $ts + 8 * 3600 );
+				}
+			}
+			$feed_rows[] = array(
+				'tag'    => $tag,
+				'tone'   => $tone,
+				'title'  => isset( $item['title'] ) ? (string) $item['title'] : ( isset( $item['message'] ) ? (string) $item['message'] : '' ),
+				'url'    => isset( $item['url'] ) ? (string) $item['url'] : '',
+				'target' => '_blank',
+				'when'   => $when,
+			);
+		}
+
+		if ( array() === $feed_rows ) {
+			if ( $wl['enabled'] ) {
+				$feed_rows[] = array(
+					'tag'   => __( '公告', 'wp-china-yes' ),
+					'title' => __( '当前没有新的站点维护通知', 'wp-china-yes' ),
+					'note'  => __( '后台已自动屏蔽慢速海外默认事件源', 'wp-china-yes' ),
+				);
+			} else {
+				$feed_rows[] = array(
+					'tag'    => __( '社区', 'wp-china-yes' ),
+					'tone'   => 'accent',
+					'title'  => __( '文派茶馆 · WordPress 中文生态动态与版本维护公告', 'wp-china-yes' ),
+					'url'    => 'https://wptea.com/',
+					'target' => '_blank',
+				);
+				$feed_rows[] = array(
+					'tag'   => __( '状态', 'wp-china-yes' ),
+					'title' => __( '已替换默认慢速英文活动源，定期在后台静默同步最新中文动态', 'wp-china-yes' ),
+				);
+			}
+		}
+
+		echo '<div class="wenpai-app">';
+		\Wenpai_Admin_UI::tag_feed( array( 'items' => $feed_rows ) );
+		\Wenpai_Admin_UI::card_foot(
+			array(
+				'start'   => true,
+				'meta'    => $wl['enabled'] ? __( '高速动态小工具', 'wp-china-yes' ) : __( '已替换默认慢速海外新闻源', 'wp-china-yes' ),
+				'actions' => array(
+					array(
+						'label'   => __( '插件概览', 'wp-china-yes' ),
+						'href'    => $overview_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					),
+					array(
+						'label'   => __( '订阅设置', 'wp-china-yes' ),
+						'href'    => $news_set_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					),
 				),
-			),
-			array(
-				'tag'          => $assets_on ? __( '正常', 'wp-china-yes' ) : __( '待优化', 'wp-china-yes' ),
-				'tone'         => $assets_on ? '' : 'warn',
-				'title'        => __( '公共静态库与慢外链国内加速', 'wp-china-yes' ),
-				'when'         => $assets_on ? __( '已开启', 'wp-china-yes' ) : '',
-				'action_label' => $assets_on ? '' : __( '去开启', 'wp-china-yes' ),
-				'action_url'   => $assets_on ? '' : $set_url,
-			),
-			array(
-				'tag'          => $admin_opt ? __( '正常', 'wp-china-yes' ) : __( '建议', 'wp-china-yes' ),
-				'tone'         => $admin_opt ? '' : 'warn',
-				'title'        => __( '前后台语言分离与后台心跳减噪', 'wp-china-yes' ),
-				'when'         => $admin_opt ? __( '已开启', 'wp-china-yes' ) : '',
-				'action_label' => $admin_opt ? '' : __( '去配置', 'wp-china-yes' ),
-				'action_url'   => $admin_opt ? '' : $feat_url,
-			),
+			)
 		);
+		echo '</div>';
 	}
 
 	/**
@@ -1559,6 +1757,14 @@ final class KitRenderer {
 				if ( $wl['hide_links'] ) {
 					echo '<input type="hidden" name="wl_hide_links" value="1">';
 				}
+				if ( $wl['promo_hidden'] ) {
+					echo '<input type="hidden" name="wl_promo_hidden" value="1">';
+				}
+				echo '<input type="hidden" name="wl_promo_badge" value="' . esc_attr( $wl['promo_badge'] ) . '">';
+				echo '<input type="hidden" name="wl_promo_title" value="' . esc_attr( $wl['promo_title'] ) . '">';
+				echo '<input type="hidden" name="wl_promo_desc" value="' . esc_attr( $wl['promo_desc'] ) . '">';
+				echo '<input type="hidden" name="wl_promo_cta_label" value="' . esc_attr( $wl['promo_cta_label'] ) . '">';
+				echo '<input type="hidden" name="wl_promo_cta_url" value="' . esc_attr( $wl['promo_cta_url'] ) . '">';
 			}
 
 			\Wenpai_Admin_UI::card_open(
@@ -1844,6 +2050,14 @@ final class KitRenderer {
 		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义图标地址', 'wp-china-yes' ), __( '建议使用 44×44 正方形透明背景 PNG 或 SVG。', 'wp-china-yes' ), $wl['logo_url'], 'https://example.com/logo.svg', 300, $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏顶栏品牌图标', 'wp-china-yes' ), __( '仅显示纯文字品牌名称', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏未安装扩展与默认外链', 'wp-china-yes' ), __( '隐藏「服务」页未安装插件推荐及未自定义地址的默认链接', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
+		echo self::field_row_checkbox( 'wl_promo_hidden', __( '在概览页隐藏左侧推荐卡片', 'wp-china-yes' ), __( '概览页默认不提供关闭按钮；勾选后隐藏左下推荐位，不勾选时可作为你的代理商品牌服务推荐位。', 'wp-china-yes' ), $wl['promo_hidden'], $wl_locked );
+		echo '<div class="wenpai-stack--xs" data-wpcy-wl-promo-fields="1"' . ( $wl['promo_hidden'] ? ' hidden' : '' ) . '>';
+		echo self::field_row_input( 'wl_promo_badge', 'text', __( '概览推荐位标签', 'wp-china-yes' ), __( '留空默认显示「专属服务」。', 'wp-china-yes' ), $wl['promo_badge'], __( '例如：年度运维', 'wp-china-yes' ), 32, $wl_locked );
+		echo self::field_row_input( 'wl_promo_title', 'text', __( '概览推荐位标题', 'wp-china-yes' ), __( '面向客户展示你的主机续费、年度护航或定制开发信息；留空按品牌名自动生成。', 'wp-china-yes' ), $wl['promo_title'], __( '例如：云服务器续费与年度安全护航专享', 'wp-china-yes' ), 80, $wl_locked );
+		echo self::field_row_input( 'wl_promo_desc', 'text', __( '概览推荐位说明', 'wp-china-yes' ), '', $wl['promo_desc'], __( '例如：含每日异地备份、SSL 续签与专属工程师支持。', 'wp-china-yes' ), 200, $wl_locked );
+		echo self::field_row_input( 'wl_promo_cta_label', 'text', __( '推荐位按钮文字', 'wp-china-yes' ), '', $wl['promo_cta_label'], __( '例如：联系专属顾问 ↗', 'wp-china-yes' ), 32, $wl_locked );
+		echo self::field_row_input( 'wl_promo_cta_url', 'url', __( '推荐位跳转地址', 'wp-china-yes' ), __( '留空时默认复用上方的工单或帮助中心地址。', 'wp-china-yes' ), $wl['promo_cta_url'], 'https://example.com/renew', 300, $wl_locked );
+		echo '</div>';
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::fold_list(
 			array(
@@ -1852,7 +2066,7 @@ final class KitRenderer {
 						'icon'      => 'info',
 						'title'     => __( '部署锁定说明（wp-config.php）', 'wp-china-yes' ),
 						'desc'      => __( '交付客户站时可通过 PHP 常量固定白标参数，防止后台误改', 'wp-china-yes' ),
-						'body_html' => '<p class="meta">' . esc_html__( '在 wp-config.php 中定义 WPCY_WHITELABEL 为 true 可锁定白标开关，并支持 WPCY_WHITELABEL_NAME、WPCY_WHITELABEL_NEWS_URL 等常量覆盖对应字段。', 'wp-china-yes' ) . '</p>',
+						'body_html' => '<p class="meta">' . esc_html__( '在 wp-config.php 中定义 WPCY_WHITELABEL 为 true 可锁定白标开关，并支持 WPCY_WHITELABEL_NAME、WPCY_WHITELABEL_NEWS_URL、WPCY_WHITELABEL_HIDE_PROMO 等常量覆盖对应字段。', 'wp-china-yes' ) . '</p>',
 					),
 				),
 			)

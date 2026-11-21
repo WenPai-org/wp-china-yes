@@ -109,8 +109,12 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '近期运行记录', $overview );
 		$this->assertStringContainsString( '茶馆动态', $overview );
 		$this->assertStringContainsString( '精选推荐', $overview );
+		$this->assertStringNotContainsString( 'data-wenpai-ad-dismiss', $overview );
 		$this->assertStringContainsString( '快捷工具', $overview );
-		$this->assertStringContainsString( '站点建议', $overview );
+		$this->assertStringContainsString( '工具箱预留位', $overview );
+		$this->assertStringContainsString( '工具预留', $overview );
+		$this->assertStringContainsString( 'data-wpcy-sug-row="sug.feeds"', $overview );
+		$this->assertStringContainsString( 'data-wpcy-sug-row="sug.passport"', $overview );
 		$this->assertStringContainsString( 'wpcy-features', $overview );
 		$overview_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $overview );
 		$this->assertStringNotContainsString( 'style="', $overview_no_meter );
@@ -253,5 +257,91 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '恢复模式生效中，镜像与静态加速已暂停', $recovery );
 		$recovery_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $recovery );
 		$this->assertStringNotContainsString( 'style="', $recovery_no_meter );
+	}
+
+	/**
+	 * White-Label agency promo slot customization, promo_hidden expansion, dismissed suggestions,
+	 * and native WP Dashboard news widget all render cleanly.
+	 */
+	public function test_whitelabel_agency_promo_slot_suggestions_and_dashboard_widget(): void {
+		set_transient(
+			EntitlementsModule::TRANSIENT_FRESH,
+			array(
+				array(
+					'service' => 'oem',
+					'status'  => 'active',
+				),
+			),
+			3600
+		);
+
+		// 1. Agency customizes Overview promo slot for their own brand services (zero close button).
+		$agency_promo = $this->render_page(
+			'wpcy',
+			array(
+				'connectivity' => array(
+					'dashboard_feeds' => 'block',
+				),
+				'admin'        => array(
+					'whitelabel' => array(
+						'enabled'         => true,
+						'brand_name'      => '星云建站',
+						'hide_links'      => true,
+						'promo_hidden'    => false,
+						'promo_badge'     => '年度运维',
+						'promo_title'     => '云服务器续费立减 20%',
+						'promo_desc'      => '含每日异地备份与专属工程师响应。',
+						'promo_cta_label' => '联系专属顾问 ↗',
+						'promo_cta_url'   => 'https://nebula.example.com/renew',
+					),
+				),
+			)
+		);
+		$this->assertStringContainsString( '星云建站 · 专属服务', $agency_promo );
+		$this->assertStringContainsString( '云服务器续费立减 20%', $agency_promo );
+		$this->assertStringContainsString( 'https://nebula.example.com/renew', $agency_promo );
+		$this->assertStringNotContainsString( 'data-wenpai-ad-dismiss', $agency_promo );
+		$this->assertStringNotContainsString( 'data-wpcy-sug-row=', $agency_promo );
+
+		// 2. Agency turns on promo_hidden in White-Label settings -> ad_slot omitted, right card spans full width.
+		$hidden_promo = $this->render_page(
+			'wpcy',
+			array(
+				'admin' => array(
+					'whitelabel' => array(
+						'enabled'      => true,
+						'brand_name'   => '星云建站',
+						'promo_hidden' => true,
+					),
+				),
+			)
+		);
+		$this->assertStringNotContainsString( 'data-wenpai-ad-slot', $hidden_promo );
+		$this->assertStringContainsString( 'wenpai-split--reverse wenpai-split--equal is-single', $hidden_promo );
+
+		// 3. Dismissed suggestion IDs in wpcy_announcements_dismissed are suppressed on SSR.
+		update_option( 'wpcy_announcements_dismissed', array( 'sug.feeds', 'sug.passport' ) );
+		$dismissed_overview = $this->render_page( 'wpcy' );
+		$this->assertStringNotContainsString( 'data-wpcy-sug-row="sug.feeds"', $dismissed_overview );
+		$this->assertStringNotContainsString( 'data-wpcy-sug-row="sug.passport"', $dismissed_overview );
+
+		// 4. Native WP Dashboard replacement news widget renders cleanly.
+		ob_start();
+		KitRenderer::render_dashboard_news_widget(
+			Defaults::settings(),
+			array(
+				array(
+					'id'           => 'rel-681',
+					'category'     => 'release',
+					'title'        => 'WordPress 6.8.1 中文维护包说明',
+					'url'          => 'https://wptea.com/rel-681',
+					'published_at' => '2026-11-20T10:00:00Z',
+				),
+			)
+		);
+		$widget_html = (string) ob_get_clean();
+		$this->assertStringContainsString( 'WordPress 6.8.1 中文维护包说明', $widget_html );
+		$this->assertStringContainsString( '已替换默认慢速海外新闻源', $widget_html );
+		$this->assertStringNotContainsString( 'style="', $widget_html );
 	}
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin;
 
+use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
@@ -138,6 +139,7 @@ final class AdminModule implements Module {
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_head', array( $this, 'collapse_internal_submenus' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+		add_action( 'wp_dashboard_setup', array( $this, 'register_dashboard_news_widget' ), 20 );
 		add_action( 'init', array( $this, 'register_user_meta' ) );
 		add_filter( 'submenu_file', array( $this, 'highlight_parent_submenu_for_tabs' ) );
 		add_filter( 'wenpai_admin_ui_suite_parent_slug', array( $this, 'filter_suite_parent_slug' ), 10, 2 );
@@ -581,7 +583,12 @@ final class AdminModule implements Module {
 	 * @param string $hook_suffix Current admin screen id.
 	 */
 	public function enqueue( string $hook_suffix ): void {
-		unset( $hook_suffix );
+		if ( 'index.php' === $hook_suffix && $this->should_show_dashboard_news_widget( $this->repository->all() ) ) {
+			if ( class_exists( '\Wenpai_Admin_Loader', false ) ) {
+				\Wenpai_Admin_Loader::enqueue( array( 'full' => false ) );
+			}
+			return;
+		}
 
 		if ( ! $this->is_app_screen() ) {
 			return;
@@ -655,6 +662,8 @@ final class AdminModule implements Module {
 			$rest_root = esc_url_raw( rest_url() );
 		}
 
+		$settings = $this->repository->all();
+
 		return array(
 			'nonce'         => $nonce,
 			'restRoot'      => $rest_root,
@@ -664,12 +673,85 @@ final class AdminModule implements Module {
 				'network_admin'          => $this->in_network_admin(),
 				'network_locked'         => $this->network_locked(),
 			),
-			'settings'      => $this->repository->all(),
+			'settings'      => $settings,
 			'pluginVersion' => defined( 'CHINA_YES_VERSION' ) ? (string) CHINA_YES_VERSION : '',
 			'siteContext'   => $this->site_context(),
 			'links'         => self::links(),
 			'providers'     => self::providers(),
 		);
+	}
+
+	/**
+	 * Whether the replacement community/agency news widget should be registered on native WP Dashboard (`index.php`).
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 */
+	public function should_show_dashboard_news_widget( array $settings ): bool {
+		if ( ! empty( $settings['recovery_mode'] ) ) {
+			return false;
+		}
+		$conn  = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+		$block = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+		if ( function_exists( 'apply_filters' ) ) {
+			$block = (bool) apply_filters( 'wpcy_block_dashboard_feeds', $block );
+		}
+		if ( ! $block ) {
+			return false;
+		}
+		$news_enabled = ! isset( $settings['admin']['news_enabled'] ) || (bool) $settings['admin']['news_enabled'];
+		if ( ! $news_enabled ) {
+			return false;
+		}
+		$wl = WhiteLabel::resolve( $settings );
+		if ( $wl['enabled'] && $wl['hide_links'] && '' === $wl['news_feed_url'] ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Register the fast domestic / white-label news widget on native WP Dashboard (`index.php`)
+	 * when slow default WP events/news feeds are replaced.
+	 */
+	public function register_dashboard_news_widget(): void {
+		if ( ! function_exists( 'wp_add_dashboard_widget' ) ) {
+			return;
+		}
+		$settings = $this->repository->all();
+		if ( ! $this->should_show_dashboard_news_widget( $settings ) ) {
+			return;
+		}
+		$wl    = WhiteLabel::resolve( $settings );
+		$title = $wl['enabled']
+			? sprintf( /* translators: %s: agency brand name */ __( '%s 动态与公告', 'wp-china-yes' ), '' !== $wl['brand_name'] ? $wl['brand_name'] : __( '站点', 'wp-china-yes' ) )
+			: __( '文派茶馆动态', 'wp-china-yes' );
+
+		wp_add_dashboard_widget(
+			'wpcy_dashboard_news',
+			$title,
+			array( $this, 'render_dashboard_news_widget' ),
+			null,
+			null,
+			'side',
+			'core'
+		);
+	}
+
+	/**
+	 * Render the native WP Dashboard replacement news widget via cached `AnnouncementsModule` items (zero blocking HTTP).
+	 */
+	public function render_dashboard_news_widget(): void {
+		$settings      = $this->repository->all();
+		$announcements = new AnnouncementsModule( $this->repository, AnnouncementsModule::PRODUCTION_URL );
+		$cached        = $announcements->cached_document();
+		if ( null === $cached && function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_schedule_single_event' ) ) {
+			if ( ! wp_next_scheduled( AnnouncementsModule::CRON_HOOK ) ) {
+				wp_schedule_single_event( time(), AnnouncementsModule::CRON_HOOK );
+			}
+		}
+		$items = is_array( $cached ) ? $announcements->payload()['items'] : array();
+		KitRenderer::render_dashboard_news_widget( $settings, $items );
 	}
 
 	/**

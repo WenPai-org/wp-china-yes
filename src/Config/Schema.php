@@ -483,15 +483,21 @@ final class Schema {
 				'news_enabled'      => true,
 				'group_suite_menus' => false,
 				'whitelabel'        => array(
-					'enabled'       => false,
-					'brand_name'    => '',
-					'help_url'      => '',
-					'feedback_url'  => '',
-					'docs_url'      => '',
-					'news_feed_url' => '',
-					'logo_url'      => '',
-					'hide_logo'     => false,
-					'hide_links'    => false,
+					'enabled'         => false,
+					'brand_name'      => '',
+					'help_url'        => '',
+					'feedback_url'    => '',
+					'docs_url'        => '',
+					'news_feed_url'   => '',
+					'logo_url'        => '',
+					'hide_logo'       => false,
+					'hide_links'      => false,
+					'promo_hidden'    => false,
+					'promo_badge'     => '',
+					'promo_title'     => '',
+					'promo_desc'      => '',
+					'promo_cta_label' => '',
+					'promo_cta_url'   => '',
 				),
 			),
 			'properties'           => array(
@@ -511,58 +517,93 @@ final class Schema {
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'default'              => array(
-						'enabled'       => false,
-						'brand_name'    => '',
-						'help_url'      => '',
-						'feedback_url'  => '',
-						'docs_url'      => '',
-						'news_feed_url' => '',
-						'logo_url'      => '',
-						'hide_logo'     => false,
-						'hide_links'    => false,
+						'enabled'         => false,
+						'brand_name'      => '',
+						'help_url'        => '',
+						'feedback_url'    => '',
+						'docs_url'        => '',
+						'news_feed_url'   => '',
+						'logo_url'        => '',
+						'hide_logo'       => false,
+						'hide_links'      => false,
+						'promo_hidden'    => false,
+						'promo_badge'     => '',
+						'promo_title'     => '',
+						'promo_desc'      => '',
+						'promo_cta_label' => '',
+						'promo_cta_url'   => '',
 					),
 					'properties'           => array(
-						'enabled'       => array(
+						'enabled'         => array(
 							'type'    => 'boolean',
 							'default' => false,
 						),
-						'brand_name'    => array(
+						'brand_name'      => array(
 							'type'      => 'string',
 							'maxLength' => 64,
 							'default'   => '',
 						),
-						'help_url'      => array(
+						'help_url'        => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'feedback_url'  => array(
+						'feedback_url'    => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'docs_url'      => array(
+						'docs_url'        => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'news_feed_url' => array(
+						'news_feed_url'   => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'logo_url'      => array(
+						'logo_url'        => array(
 							'type'      => 'string',
 							'maxLength' => 300,
 							'default'   => '',
 						),
-						'hide_logo'     => array(
+						'hide_logo'       => array(
 							'type'    => 'boolean',
 							'default' => false,
 						),
-						'hide_links'    => array(
+						'hide_links'      => array(
 							'type'    => 'boolean',
 							'default' => false,
+						),
+						'promo_hidden'    => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+						'promo_badge'     => array(
+							'type'      => 'string',
+							'maxLength' => 32,
+							'default'   => '',
+						),
+						'promo_title'     => array(
+							'type'      => 'string',
+							'maxLength' => 80,
+							'default'   => '',
+						),
+						'promo_desc'      => array(
+							'type'      => 'string',
+							'maxLength' => 200,
+							'default'   => '',
+						),
+						'promo_cta_label' => array(
+							'type'      => 'string',
+							'maxLength' => 32,
+							'default'   => '',
+						),
+						'promo_cta_url'   => array(
+							'type'      => 'string',
+							'maxLength' => 300,
+							'default'   => '',
 						),
 					),
 				),

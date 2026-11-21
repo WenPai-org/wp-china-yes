@@ -242,6 +242,7 @@
 
 		let cachedEvents = [];
 		let cachedNotices = [];
+		let ssrSugNodes = eventsEl ? Array.prototype.slice.call(eventsEl.querySelectorAll('li[data-wpcy-sug-row]')) : [];
 
 		if (statsEl || trendEl) {
 			api('/stats?days=7').then(function (data) {
@@ -259,7 +260,9 @@
 					trendSumEl.textContent = '累计 ' + totalAcc + ' 次请求';
 				}
 				if (trendLegendEl) {
-					trendLegendEl.textContent = '静态库 ' + pubCnt + ' 次 · Cravatar 头像 ' + avaCnt + ' 次 · 更新镜像 ' + wporgCnt + ' 次';
+					trendLegendEl.textContent = totalAcc > 0
+						? ('静态库 ' + pubCnt + ' 次 · Cravatar 头像 ' + avaCnt + ' 次 · 更新镜像 ' + wporgCnt + ' 次')
+						: '等待首批加速请求 · 产生访问后按日汇总';
 				}
 				if (quotasEl && pubCnt > 0) {
 					const firstNum = quotasEl.querySelector('.wenpai-quota-item__num');
@@ -341,10 +344,50 @@
 			return li;
 		}
 
+		ssrSugNodes.forEach(function (li) {
+			const sugId = li.getAttribute('data-wpcy-sug-row') || '';
+			const fixBtn = li.querySelector('[data-wpcy-fix-sug]');
+			if (fixBtn) {
+				fixBtn.addEventListener('click', function () {
+					const fixKind = fixBtn.getAttribute('data-wpcy-fix-sug');
+					if (fixKind === 'dashboard_feeds') {
+						fixBtn.disabled = true;
+						api('/settings', { method: 'PUT', body: { connectivity: { dashboard_feeds: 'block' } } })
+							.then(function () {
+								ssrSugNodes = ssrSugNodes.filter(function (n) { return n !== li; });
+								renderEventsAndNews();
+								if (typeof window.wenpaiToast === 'function') {
+									window.wenpaiToast('已开启仪表盘高速动态小工具替换', 'ok');
+								} else {
+									notify('ok', '已开启仪表盘高速动态小工具替换');
+								}
+							})
+							.catch(function (err) {
+								fixBtn.disabled = false;
+								notify('bad', err.message);
+							});
+					}
+				});
+			}
+			const disBtn = li.querySelector('[data-wpcy-dismiss-sug]');
+			if (disBtn && sugId) {
+				disBtn.addEventListener('click', function () {
+					api('/announcements/' + encodeURIComponent(sugId) + '/dismiss', { method: 'POST' })
+						.finally(function () {
+							ssrSugNodes = ssrSugNodes.filter(function (n) { return n !== li; });
+							renderEventsAndNews();
+						});
+				});
+			}
+		});
+
 		function renderEventsAndNews() {
 			if (eventsEl) {
 				const ul = document.createElement('ul');
 				ul.className = 'wenpai-tag-feed';
+				ssrSugNodes.forEach(function (li) {
+					ul.appendChild(li);
+				});
 				const pinned = cachedNotices.length ? cachedNotices[0] : null;
 				if (pinned) {
 					ul.appendChild(buildTagFeedRow(
@@ -387,7 +430,7 @@
 				const ul = document.createElement('ul');
 				ul.className = 'wenpai-tag-feed';
 				if (!cachedNotices.length) {
-					ul.appendChild(buildTagFeedRow('动态', '', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同时已在仪表盘替换慢速默认新闻源', '', null));
+					ul.appendChild(buildTagFeedRow('动态', '', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同时支持在 WP 仪表盘展示高速社区动态小工具', '', null));
 				} else {
 					cachedNotices.slice(0, 5).forEach(function (item) {
 						const tag = item.category === 'release' ? '版本' : (item.tone === 'warn' ? '公告' : '动态');
@@ -426,6 +469,22 @@
 
 		loadEvents();
 
+		if (eventsEl || quotasEl) {
+			api('/binding').then(function (snap) {
+				if (snap && snap.state === 'bound') {
+					const prevLen = ssrSugNodes.length;
+					ssrSugNodes = ssrSugNodes.filter(function (li) { return li.getAttribute('data-wpcy-sug-row') !== 'sug.passport'; });
+					const quotaTab = document.querySelector('[data-wenpai-tabs="wpcy-side"] [data-wenpai-tab="quota"]');
+					if (quotaTab) {
+						quotaTab.setAttribute('data-wenpai-foot-meta', '已关联文派云通行证 · 额度自动同步');
+					}
+					if (ssrSugNodes.length !== prevLen) {
+						renderEventsAndNews();
+					}
+				}
+			}).catch(function () {});
+		}
+
 		if (feedCardEl && feedCardEl.getAttribute('data-wpcy-news-enabled') !== '0') {
 			api('/announcements').then(function (data) {
 				cachedNotices = Array.isArray(data && data.items) ? data.items : [];
@@ -438,28 +497,6 @@
 		document.addEventListener('wenpai:tab-change', function (e) {
 			if (newsManageEl && e.detail && e.detail.group === 'wpcy-feed') {
 				newsManageEl.hidden = e.detail.tab !== 'news';
-			}
-		});
-
-		const adSlotEl = document.querySelector('[data-wenpai-ad-slot]');
-		if (adSlotEl && !adSlotEl.querySelector('.wenpai-ad-stage.is-neutral')) {
-			try {
-				if (window.localStorage && window.localStorage.getItem('wpcy_overview_ad_dismissed') === '1') {
-					adSlotEl.hidden = true;
-					const split = adSlotEl.closest('.wenpai-split--reverse');
-					if (split) split.classList.add('is-single');
-				}
-			} catch (e) {}
-		}
-
-		document.addEventListener('wenpai:ad-dismiss', function () {
-			try {
-				if (window.localStorage) {
-					window.localStorage.setItem('wpcy_overview_ad_dismissed', '1');
-				}
-			} catch (e) {}
-			if (typeof window.wenpaiToast === 'function') {
-				window.wenpaiToast('已隐藏推荐位', 'ok');
 			}
 		});
 
@@ -546,6 +583,12 @@
 								window.wenpaiToast('脱敏诊断摘要已复制', 'ok');
 							}
 						}).catch(function () {});
+					}
+				} else if (kind === 'reserved-slot') {
+					if (typeof window.wenpaiToast === 'function') {
+						window.wenpaiToast('文派轻便工具箱预留位，后续版本按需接入', 'ok');
+					} else {
+						notify('ok', '文派轻便工具箱预留位，后续版本按需接入');
 					}
 				}
 			});
@@ -638,6 +681,14 @@
 			});
 		}
 
+		const wlPromoHiddenEl = form ? form.querySelector('input[name="wl_promo_hidden"]') : null;
+		const wlPromoFieldsEl = form ? form.querySelector('[data-wpcy-wl-promo-fields]') : null;
+		if (wlPromoHiddenEl && wlPromoFieldsEl) {
+			wlPromoHiddenEl.addEventListener('change', function () {
+				wlPromoFieldsEl.hidden = wlPromoHiddenEl.checked;
+			});
+		}
+
 		if (!form) return;
 
 		form.addEventListener('submit', function (e) {
@@ -676,6 +727,12 @@
 						logo_url: String(fd.get('wl_logo_url') || '').trim(),
 						hide_logo: !!fd.get('wl_hide_logo'),
 						hide_links: !!fd.get('wl_hide_links'),
+						promo_hidden: !!fd.get('wl_promo_hidden'),
+						promo_badge: String(fd.get('wl_promo_badge') || '').trim(),
+						promo_title: String(fd.get('wl_promo_title') || '').trim(),
+						promo_desc: String(fd.get('wl_promo_desc') || '').trim(),
+						promo_cta_label: String(fd.get('wl_promo_cta_label') || '').trim(),
+						promo_cta_url: String(fd.get('wl_promo_cta_url') || '').trim(),
 					},
 				});
 			}
