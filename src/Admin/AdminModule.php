@@ -631,6 +631,19 @@ final class AdminModule implements Module {
 			'window.wpcyAdmin = ' . $payload . ';',
 			'before'
 		);
+
+		foreach ( array( 'probes', 'apps', 'providers' ) as $mod ) {
+			$mod_file = 'assets/js/wpcy-' . $mod . '.js';
+			if ( is_readable( CHINA_YES_PLUGIN_PATH . $mod_file ) ) {
+				wp_enqueue_script(
+					self::HANDLE . '-' . $mod,
+					CHINA_YES_PLUGIN_URL . $mod_file,
+					array( self::HANDLE ),
+					CHINA_YES_VERSION,
+					true
+				);
+			}
+		}
 	}
 
 	/**

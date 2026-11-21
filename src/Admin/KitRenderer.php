@@ -510,15 +510,7 @@ final class KitRenderer {
 									self::overview_metric_tile( 'wporg', __( 'WP.org 镜像', 'wp-china-yes' ), __( '免费', 'wp-china-yes' ), __( '国内镜像', 'wp-china-yes' ), $wporg_probe ),
 									self::overview_metric_tile( 'cravatar', __( 'Cravatar 头像', 'wp-china-yes' ), __( '免费', 'wp-china-yes' ), __( '中国线路', 'wp-china-yes' ), $ava_probe ),
 									self::overview_metric_tile( 'admincdn', 'adminCDN', '', __( '前后台加速', 'wp-china-yes' ), $pub_probe ),
-									array(
-										'label'       => __( '浏览器直测', 'wp-china-yes' ),
-										'value'       => '—',
-										'unit'        => '',
-										'sub'         => __( '访客侧可达', 'wp-china-yes' ),
-										'attrs'       => array( 'data-wpcy-tile' => 'browser' ),
-										'value_attrs' => array( 'data-wpcy-tile-val' => 'browser' ),
-										'sub_attrs'   => array( 'data-wpcy-tile-sub' => 'browser' ),
-									),
+									ProbeSnapshot::overview_browser_tile(),
 								),
 							)
 						),
@@ -2091,6 +2083,13 @@ final class KitRenderer {
 	 * @param bool                 $locked   Whether subsite settings are locked.
 	 */
 	private static function render_services( array $settings, bool $locked = false ): void {
+		$raw_app = isset( $_GET['app'] ) ? (string) wp_unslash( $_GET['app'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by regex below.
+		$app_id  = (string) preg_replace( '/[^a-zA-Z0-9_.-]/', '', $raw_app );
+		if ( '' !== $app_id ) {
+			AppsView::render_host( $app_id, self::page_url( 'wpcy-services' ) );
+			return;
+		}
+
 		$service = isset( $_GET['service'] ) ? sanitize_key( wp_unslash( (string) $_GET['service'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only detail routing.
 		$catalog = self::service_catalog();
 		$reports = self::service_status_reports( $settings );
@@ -2300,6 +2299,10 @@ final class KitRenderer {
 			}
 			\Wenpai_Admin_UI::card_close();
 		}
+
+		AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
+		ProvidersView::render_card( $wl, $locked );
+
 		echo '</div>';
 	}
 
@@ -3191,20 +3194,7 @@ final class KitRenderer {
 		\Wenpai_Admin_UI::status_list(
 			array(
 				'attrs' => array( 'data-wpcy-diag-browser' => '1' ),
-				'items' => array(
-					array(
-						'label' => __( 'Cravatar 头像节点', 'wp-china-yes' ),
-						'value' => __( '等待检测', 'wp-china-yes' ),
-					),
-					array(
-						'label' => __( 'adminCDN 公共前端库', 'wp-china-yes' ),
-						'value' => __( '等待检测', 'wp-china-yes' ),
-					),
-					array(
-						'label' => __( 'Windfonts 中文字体源', 'wp-china-yes' ),
-						'value' => __( '等待检测', 'wp-china-yes' ),
-					),
-				),
+				'items' => ProbeSnapshot::diagnose_browser_items(),
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
