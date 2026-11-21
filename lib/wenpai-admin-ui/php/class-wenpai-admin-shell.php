@@ -185,6 +185,38 @@ if ( ! class_exists( 'Wenpai_Admin_Shell', false ) ) {
 		}
 
 		/**
+		 * Drill-down subpage heading with back breadcrumb link above the page head (kit 0.12.0).
+		 *
+		 * @param array $args {
+		 *     Subpage heading arguments.
+		 *
+		 *     @type string $title      Subpage h1 title (already translated).
+		 *     @type string $back_url   Parent tab/directory URL.
+		 *     @type string $back_label Back link label (e.g. 「返回功能列表」).
+		 *     @type string $lede       Optional subtitle.
+		 *     @type string $aside_html Optional HTML for .mode (pill, switch, or secondary action; caller escapes).
+		 * }
+		 */
+		public static function subpage_head( $args = array() ) {
+			$title      = isset( $args['title'] ) ? (string) $args['title'] : '';
+			$back_url   = isset( $args['back_url'] ) ? (string) $args['back_url'] : '';
+			$back_label = isset( $args['back_label'] ) ? (string) $args['back_label'] : '';
+			$lede       = isset( $args['lede'] ) ? (string) $args['lede'] : '';
+			$aside_html = isset( $args['aside_html'] ) ? (string) $args['aside_html'] : '';
+			$arrow      = class_exists( 'Wenpai_Admin_Icons', false ) ? Wenpai_Admin_Icons::svg( 'arrow-left' ) : '';
+
+			echo '<div class="wenpai-subhead">';
+			if ( '' !== $back_url && '' !== $back_label ) {
+				echo '<a class="wenpai-back" href="' . esc_url( $back_url ) . '">';
+				echo $arrow; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Wenpai_Admin_Icons::svg() safe SVG.
+				echo '<span>' . esc_html( $back_label ) . '</span>';
+				echo '</a>';
+			}
+			self::page_head( $title, $lede, $aside_html );
+			echo '</div>';
+		}
+
+		/**
 		 * Screen-reader hint after a link that opens in a new tab (0.3.0+).
 		 *
 		 * @param array $args open() / close() args; new_tab_label overrides the text.

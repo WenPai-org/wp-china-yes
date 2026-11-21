@@ -314,16 +314,22 @@
 				} else if (input.name === 'admin_locale_follow') {
 					patch.connectivity = { admin_locale_follow: checked };
 					const card = input.closest('[data-wpcy-core-card]');
-					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-					if (iconEl) iconEl.classList.toggle('is-green', checked);
+					const iconEl = card && card.querySelector('.tile');
+					if (iconEl) iconEl.classList.toggle('ok', checked);
 				} else if (input.name === 'admin_news_enabled') {
 					patch.admin = { news_enabled: checked };
 					const card = input.closest('[data-wpcy-core-card]');
-					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-					if (iconEl) iconEl.classList.toggle('is-green', checked);
+					const iconEl = card && card.querySelector('.tile');
+					if (iconEl) iconEl.classList.toggle('ok', checked);
 				}
 				api(settingsEndpoint(isNetwork), { method: 'PUT', body: patch })
-					.then(function () { notify('ok', '已保存'); })
+					.then(function () {
+						if (typeof window.wenpaiToast === 'function') {
+							window.wenpaiToast('已保存', 'ok');
+						} else {
+							notify('ok', '已保存');
+						}
+					})
 					.catch(function (err) {
 						input.checked = !checked;
 						if (labelEl) labelEl.textContent = input.checked ? '已开启' : '未开启';
@@ -386,6 +392,7 @@
 			}
 			api(settingsEndpoint(isNetwork), { method: 'PUT', body: payload })
 				.then(function () {
+					form.dispatchEvent(new Event('wenpai:saved', { bubbles: true }));
 					notify('ok', '设置已保存。');
 					if (payload.admin && payload.admin.whitelabel) {
 						setTimeout(function () { window.location.reload(); }, 450);
@@ -595,9 +602,9 @@
 				const id = input.getAttribute('data-wpcy-service-toggle');
 				const on = input.checked;
 				const card = input.closest('[data-wpcy-core-card]');
-				const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-				const dotEl = card && card.querySelector('.wpcy-core-card__dot');
-				const metricEl = card && (card.querySelector('[data-wpcy-core-metric-text]') || card.querySelector('[data-wpcy-core-metric]'));
+				const iconEl = card && card.querySelector('.tile');
+				const dotEl = card && card.querySelector('.wenpai-module-card__dot');
+				const metricEl = card && card.querySelector('[data-wpcy-core-metric-text]');
 				const labelEl = input.parentElement && input.parentElement.querySelector('.wenpai-switch__label');
 
 				let patch = {};
@@ -617,16 +624,22 @@
 				}
 
 				if (labelEl) labelEl.textContent = on ? '已开启' : '未开启';
-				if (iconEl) iconEl.classList.toggle('is-ok', on);
+				if (iconEl) iconEl.classList.toggle('accent', on);
 				if (dotEl) dotEl.classList.toggle('is-ok', on);
 				if (metricEl && nextMetric) metricEl.textContent = nextMetric;
 
 				api('/settings', { method: 'PUT', body: patch })
-					.then(function () { notify('ok', '已保存'); })
+					.then(function () {
+						if (typeof window.wenpaiToast === 'function') {
+							window.wenpaiToast('已保存', 'ok');
+						} else {
+							notify('ok', '已保存');
+						}
+					})
 					.catch(function (err) {
 						input.checked = !on;
 						if (labelEl) labelEl.textContent = input.checked ? '已开启' : '未开启';
-						if (iconEl) iconEl.classList.toggle('is-ok', input.checked);
+						if (iconEl) iconEl.classList.toggle('accent', input.checked);
 						notify('bad', err.message || '暂时无法保存设置，请稍后重试。');
 					});
 			});

@@ -538,3 +538,43 @@ if ( ! function_exists( 'esc_attr' ) ) {
 		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 	}
 }
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Minimal query-arg builder for unit tests.
+	 *
+	 * @param array<string, mixed>|string $args Query args or key.
+	 * @param string                      $url  Base URL.
+	 * @return string
+	 */
+	function add_query_arg( $args, $url = '' ) {
+		if ( ! is_array( $args ) ) {
+			return (string) $url;
+		}
+		$sep = false === strpos( (string) $url, '?' ) ? '?' : '&';
+		return (string) $url . $sep . http_build_query( $args );
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	/**
+	 * Sanitize key stub.
+	 *
+	 * @param string $key Key.
+	 * @return string
+	 */
+	function sanitize_key( $key ) {
+		return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );
+	}
+}
+
+if ( ! class_exists( '\Wenpai_Admin_Menu', false ) ) {
+	require_once dirname( __DIR__, 3 ) . '/lib/wenpai-admin-ui/php/class-wenpai-admin-menu.php';
+}
+\Wenpai_Admin_Menu::register(
+	array(
+		'slug'         => 'wpcy',
+		'top_level'    => true,
+		'legacy_slugs' => array( 'wp-china-yes' ),
+	)
+);

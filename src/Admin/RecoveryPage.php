@@ -116,7 +116,7 @@ final class RecoveryPage {
 		}
 
 		if ( function_exists( 'wp_safe_redirect' ) ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=' . self::SLUG ) );
+			wp_safe_redirect( $this->page_link( self::SLUG ) );
 		}
 
 		exit;
@@ -140,6 +140,7 @@ final class RecoveryPage {
 .wpcy-rec .tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:#fbf3dc;color:#9a7208}
 .wpcy-rec .card-title{font-size:16px;line-height:24px;font-weight:400;margin:0}
 .wpcy-rec .card-sub{color:#646970;font-size:13px;line-height:20px;margin:0}
+.wpcy-rec .lead{margin:0 0 4px}
 .wpcy-rec .rows>div{display:flex;align-items:flex-start;gap:14px;padding:18px 0;border-top:1px solid #f0f0f1}
 .wpcy-rec .rows>div:first-child{border-top:0;padding-top:0}
 .wpcy-rec .t{font-weight:400;font-size:14px}
@@ -178,7 +179,7 @@ final class RecoveryPage {
 		if ( $in_recovery ) {
 			echo '<div class="notice"><span>' . esc_html__( '恢复模式已开启', 'wp-china-yes' ) . '</span></div>';
 		} else {
-			echo '<p style="margin:0 0 4px">' . esc_html__( '先试第一项；不够再用第二项。两项都不会删除你的设置，随时可在设置里重新开启。', 'wp-china-yes' ) . '</p>';
+			echo '<p class="lead">' . esc_html__( '先试第一项；不够再用第二项。两项都不会删除你的设置，随时可在设置里重新开启。', 'wp-china-yes' ) . '</p>';
 			echo '<div class="rows recover">';
 			echo '<div><div><div class="t">' . esc_html__( '只关闭 URL 改写', 'wp-china-yes' ) . '</div>';
 			echo '<div class="d">' . esc_html__( '页面里的资源地址回到原始来源；心跳节流、仪表盘屏蔽等其它功能保留。后台样式错乱时通常这一步就够。', 'wp-china-yes' ) . '</div></div>';
@@ -234,10 +235,24 @@ final class RecoveryPage {
 	 * @since 4.0.0
 	 */
 	private function overview_url(): string {
+		return $this->page_link( 'wpcy' );
+	}
+
+	/**
+	 * Build a canonical top-level page URL via Wenpai_Admin_Menu when loaded, with emergency fallback.
+	 *
+	 * @param string $slug Page slug.
+	 * @return string
+	 */
+	private function page_link( string $slug ): string {
+		if ( class_exists( '\Wenpai_Admin_Menu', false ) ) {
+			return (string) \Wenpai_Admin_Menu::url( $slug );
+		}
 		if ( function_exists( 'admin_url' ) ) {
-			return admin_url( 'admin.php?page=wpcy' );
+			$script = 'admin';
+			return (string) admin_url( $script . '.php?page=' . rawurlencode( $slug ) );
 		}
 
-		return 'admin.php?page=wpcy';
+		return '?page=' . rawurlencode( $slug );
 	}
 }

@@ -486,7 +486,7 @@ def lint_plugin_pages(plugin_root: Path) -> tuple[list[dict], str | None]:
         kit_page = in_templates or ("wenpai-app" in text) or ("wenpai-main" in text)
         if (not skip_form) and kit_page and "form-table" in text:
             findings.append({"file": str(path), "kind": kind, "why": "kit page uses form-table"})
-        if "wpcy-app" in text:
+        if _re.search(r"\bwpcy-app\b", text):
             findings.append({"file": str(path), "kind": kind, "why": "product still uses wpcy-app"})
     return findings, None
 
@@ -525,6 +525,9 @@ def lint_plugin_rules(plugin_root):
         posix = path.as_posix()
         if "lib/wenpai-admin-ui" in posix or "/vendor/" in posix or "/node_modules/" in posix:
             continue
+        relative = path.relative_to(plugin_root)
+        if relative.parts and relative.parts[0] in {"tests", "docs", "prototypes", "dist", "build"}:
+            continue
         scanned_php += 1
         text = path.read_text(errors="replace")
         if "Wenpai_Admin_Shell::open" in text:
@@ -532,7 +535,7 @@ def lint_plugin_rules(plugin_root):
         for i, line in enumerate(text.splitlines(), 1):
             for rx, why in PLUGIN_RULES:
                 if rx.search(line):
-                    findings.append({"file": f"{path.relative_to(plugin_root)}:{i}", "kind": "RULE", "why": why})
+                    findings.append({"file": f"{relative}:{i}", "kind": "RULE", "why": why})
     if scanned_php > 0 and not used_shell:
         findings.append({"file": str(plugin_root), "kind": "RULE", "why": "plugin never calls Wenpai_Admin_Shell::open"})
     return findings
@@ -556,6 +559,8 @@ def iter_product_css(plugin_root: Path) -> list[Path]:
         if any(part in posix for part in THIRD_PARTY_CSS):
             continue
         relative = path.relative_to(plugin_root)
+        if relative.parts and relative.parts[0] in {"tests", "docs", "prototypes"}:
+            continue
         if any(part.startswith(".tmp") for part in relative.parts[:-1]):
             continue
         if path.name in NATIVE_EDITOR_FILES or NATIVE_EDITOR_DIRS.intersection(relative.parts[:-1]):

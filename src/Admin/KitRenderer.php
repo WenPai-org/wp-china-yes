@@ -93,13 +93,13 @@ final class KitRenderer {
 	 * @return string
 	 */
 	private static function page_url( string $slug, bool $network = false, array $extra = array() ): string {
-		$entry = 'admin.php';
-		$args  = array_merge( array( 'page' => $slug ), $extra );
+		$args = array_merge( array( 'page' => $slug ), $extra );
 		if ( $network && function_exists( 'network_admin_url' ) && function_exists( 'add_query_arg' ) ) {
-			return (string) add_query_arg( $args, network_admin_url( $entry ) );
+			$script = 'admin';
+			return (string) add_query_arg( $args, network_admin_url( $script . '.php' ) );
 		}
-		if ( function_exists( 'admin_url' ) && function_exists( 'add_query_arg' ) ) {
-			return (string) add_query_arg( $args, admin_url( $entry ) );
+		if ( class_exists( '\Wenpai_Admin_Menu', false ) && function_exists( 'admin_url' ) && function_exists( 'add_query_arg' ) ) {
+			return (string) \Wenpai_Admin_Menu::url( $slug, $extra );
 		}
 		$q = '?page=' . rawurlencode( $slug );
 		foreach ( $extra as $k => $v ) {
@@ -605,6 +605,13 @@ final class KitRenderer {
 			)
 		);
 		\Wenpai_Admin_UI::card_close();
+		if ( ! $locked ) {
+			\Wenpai_Admin_UI::savebar(
+				array(
+					'submit_label' => __( '保存设置', 'wp-china-yes' ),
+				)
+			);
+		}
 		echo '</form>';
 		echo '</div>';
 	}
@@ -737,50 +744,31 @@ final class KitRenderer {
 		echo '<div class="wenpai-stack" data-wpcy-screen="features">';
 
 		if ( ! empty( $active_mods ) ) {
-			echo '<div class="wpcy-core-grid wpcy-core-grid--3">';
+			$grid_items = array();
 			foreach ( $active_mods as $mod ) {
-				echo '<div class="wpcy-core-card" data-wpcy-core-card="' . esc_attr( $mod['id'] ) . '">';
-				echo '<div class="wpcy-core-card__top">';
-				echo '<span class="wpcy-core-card__icon is-green">';
-				echo \Wenpai_Admin_Icons::svg( $mod['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
-				echo '</span>';
-				echo '<div class="wpcy-core-card__head">';
-				echo '<h3 class="wpcy-core-card__title">' . esc_html( $mod['title'] ) . '</h3>';
-				echo '<p class="wpcy-core-card__desc">' . esc_html( $mod['desc'] ) . '</p>';
-				echo '</div>';
-				if ( ! empty( $mod['toggle'] ) ) {
-					$sw_html = self::switch_control(
-						(string) $mod['toggle'],
-						true,
-						$locked,
-						array( 'data-wpcy-instant' => '1' )
-					);
-					echo $sw_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside switch_control.
-				} else {
-					$pill_html = \Wenpai_Admin_UI::pill_html(
+				$ctl_html     = ! empty( $mod['toggle'] )
+					? self::switch_control( (string) $mod['toggle'], true, $locked, array( 'data-wpcy-instant' => '1' ), false )
+					: \Wenpai_Admin_UI::pill_html(
 						array(
 							'text'  => $mod['pill'],
 							'state' => 'ok',
 						)
 					);
-					echo $pill_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside kit pill_html.
-				}
-				echo '</div>';
-				echo '<div class="wpcy-core-card__foot">';
-				echo '<span class="wpcy-core-card__metric"><span class="wpcy-core-card__dot is-ok" aria-hidden="true"></span>' . esc_html( $mod['metric'] ) . '</span>';
-				$btn_html = \Wenpai_Admin_UI::button_html(
-					array(
-						'label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
-						'href'    => $mod['url'],
-						'variant' => 'ghost',
-						'size'    => 'sm',
-					)
+				$grid_items[] = array(
+					'title'          => $mod['title'],
+					'desc'           => $mod['desc'],
+					'icon'           => $mod['icon'],
+					'tone'           => 'ok',
+					'control_html'   => $ctl_html,
+					'status'         => $mod['metric'],
+					'status_tone'    => 'ok',
+					'action_label'   => ! empty( $mod['btn'] ) ? (string) $mod['btn'] : __( '配置', 'wp-china-yes' ),
+					'action_url'     => $mod['url'],
+					'action_variant' => 'ghost',
+					'attrs'          => array( 'data-wpcy-core-card' => $mod['id'] ),
 				);
-				echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes output.
-				echo '</div>';
-				echo '</div>';
 			}
-			echo '</div>';
+			\Wenpai_Admin_UI::module_grid( array( 'items' => $grid_items ) );
 		}
 
 		if ( ! empty( $inactive_mods ) ) {
@@ -830,15 +818,9 @@ final class KitRenderer {
 		$wl_locked    = $locked || $wl['locked'] || ! $wl['entitled'];
 		$wl_url       = self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) );
 
-		$actions = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => __( '返回功能列表', 'wp-china-yes' ),
-				'href'    => $back_url,
-				'variant' => 'ghost',
-			)
-		);
+		$aside_html = '';
 		if ( ! $wl_locked ) {
-			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+			$aside_html = \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '保存新闻源', 'wp-china-yes' ),
 					'type'    => 'submit',
@@ -848,13 +830,16 @@ final class KitRenderer {
 			);
 		}
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '资讯与公告源', 'wp-china-yes' ),
-			__( '管理概览页展示的 WordPress 中文社区资讯与维护通知；已授权白标客户可替换为自有品牌公告接口。', 'wp-china-yes' ),
-			$actions
+		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-news">';
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => __( '资讯与公告源', 'wp-china-yes' ),
+				'back_url'   => $back_url,
+				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
+				'lede'       => __( '管理概览页展示的 WordPress 中文社区资讯与维护通知；已授权白标客户可替换为自有品牌公告接口。', 'wp-china-yes' ),
+				'aside_html' => $aside_html,
+			)
 		);
-
-		echo '<div class="wenpai-stack" data-wpcy-screen="feature-news">';
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '文派茶馆与官方通知', 'wp-china-yes' ),
@@ -943,6 +928,13 @@ final class KitRenderer {
 			);
 		}
 		\Wenpai_Admin_UI::card_close();
+		if ( ! $wl_locked ) {
+			\Wenpai_Admin_UI::savebar(
+				array(
+					'submit_label' => __( '保存新闻源', 'wp-china-yes' ),
+				)
+			);
+		}
 		echo '</form>';
 		echo '</div>';
 	}
@@ -959,19 +951,16 @@ final class KitRenderer {
 		$locale_follow = ! isset( $conn['admin_locale_follow'] ) || (bool) $conn['admin_locale_follow'];
 		$profile_url   = self::wp_admin_link( 'profile.php' );
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '前后台语言分离', 'wp-china-yes' ),
-			__( '专为跨境独立站与多语种协作团队设计：前台保持面向访客的站点语言，后台界面按管理员个人偏好显示中文。', 'wp-china-yes' ),
-			\Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => __( '返回功能列表', 'wp-china-yes' ),
-					'href'    => $back_url,
-					'variant' => 'ghost',
-				)
+		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-locale">';
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => __( '前后台语言分离', 'wp-china-yes' ),
+				'back_url'   => $back_url,
+				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
+				'lede'       => __( '专为跨境独立站与多语种协作团队设计：前台保持面向访客的站点语言，后台界面按管理员个人偏好显示中文。', 'wp-china-yes' ),
 			)
 		);
 
-		echo '<div class="wenpai-stack" data-wpcy-screen="feature-locale">';
 		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 		\Wenpai_Admin_UI::card_open(
 			array(
@@ -1025,15 +1014,9 @@ final class KitRenderer {
 		$notice_ctrl = ! isset( $settings['modules']['notice_control'] ) || (bool) $settings['modules']['notice_control'];
 		$hide_promo  = ! isset( $settings['admin']['hide_promo'] ) || (bool) $settings['admin']['hide_promo'];
 
-		$actions = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => __( '返回功能列表', 'wp-china-yes' ),
-				'href'    => $back_url,
-				'variant' => 'ghost',
-			)
-		);
+		$aside_html = '';
 		if ( ! $locked ) {
-			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+			$aside_html = \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '保存设置', 'wp-china-yes' ),
 					'type'    => 'submit',
@@ -1043,13 +1026,17 @@ final class KitRenderer {
 			);
 		}
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '后台减噪与通知治理', 'wp-china-yes' ),
-			__( '收纳杂乱的插件横幅通知、过滤第三方营销推广，并减少拖慢后台的轮询与外部源请求。', 'wp-china-yes' ),
-			$actions
+		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-noise">';
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => __( '后台减噪与通知治理', 'wp-china-yes' ),
+				'back_url'   => $back_url,
+				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
+				'lede'       => __( '收纳杂乱的插件横幅通知、过滤第三方营销推广，并减少拖慢后台的轮询与外部源请求。', 'wp-china-yes' ),
+				'aside_html' => $aside_html,
+			)
 		);
 
-		echo '<div class="wenpai-stack" data-wpcy-screen="feature-noise">';
 		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
 		echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
@@ -1070,6 +1057,13 @@ final class KitRenderer {
 		echo self::field_row_checkbox( 'dashboard_feeds', __( '屏蔽仪表盘外部资讯请求', 'wp-china-yes' ), __( '跳过仪表盘对海外官方新闻与活动接口的同步请求，提升后台首页加载速度。', 'wp-china-yes' ), $feeds, $locked );
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::card_close();
+		if ( ! $locked ) {
+			\Wenpai_Admin_UI::savebar(
+				array(
+					'submit_label' => __( '保存设置', 'wp-china-yes' ),
+				)
+			);
+		}
 		echo '</form>';
 		echo '</div>';
 	}
@@ -1093,15 +1087,9 @@ final class KitRenderer {
 		$entitled  = ! empty( $wl['entitled'] );
 		$wl_locked = $locked || $wl['locked'] || ! $entitled;
 
-		$actions = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => __( '返回功能列表', 'wp-china-yes' ),
-				'href'    => $back_url,
-				'variant' => 'ghost',
-			)
-		);
+		$aside_html = '';
 		if ( ! $wl_locked ) {
-			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
+			$aside_html = \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '保存白标设置', 'wp-china-yes' ),
 					'type'    => 'submit',
@@ -1109,27 +1097,18 @@ final class KitRenderer {
 					'form'    => 'wpcy-settings-form',
 				)
 			);
-		} elseif ( ! $entitled ) {
-			$actions .= ' ' . \Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => __( '开通白标授权', 'wp-china-yes' ),
-					'href'    => 'https://wpcy.com/go/oem',
-					'variant' => 'primary',
-					'attrs'   => array(
-						'target' => '_blank',
-						'rel'    => 'noopener noreferrer',
-					),
-				)
-			);
 		}
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '全套白标', 'wp-china-yes' ),
-			__( '一次配置，即可将文派叶子及全站已安装的文派系列插件统一替换为你的自有服务品牌、支持入口与插件列表署名。', 'wp-china-yes' ),
-			$actions
+		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-whitelabel">';
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => __( '全套白标', 'wp-china-yes' ),
+				'back_url'   => $back_url,
+				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
+				'lede'       => __( '一次配置，即可将文派叶子及全站已安装的文派系列插件统一替换为你的自有服务品牌、支持入口与插件列表署名。', 'wp-china-yes' ),
+				'aside_html' => $aside_html,
+			)
 		);
-
-		echo '<div class="wenpai-stack" data-wpcy-screen="feature-whitelabel">';
 		if ( ! $entitled ) {
 			\Wenpai_Admin_UI::card_open(
 				array(
@@ -1219,6 +1198,13 @@ final class KitRenderer {
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</div>';
 		\Wenpai_Admin_UI::card_close();
+		if ( ! $wl_locked ) {
+			\Wenpai_Admin_UI::savebar(
+				array(
+					'submit_label' => __( '保存白标设置', 'wp-china-yes' ),
+				)
+			);
+		}
 		echo '</form>';
 		echo '</div>';
 	}
@@ -1298,7 +1284,7 @@ final class KitRenderer {
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="services">';
 
-		echo '<div class="wpcy-core-grid wpcy-core-grid--3">';
+		$svc_items = array();
 		foreach ( $catalog as $id => $spec ) {
 			$is_builtin   = 'builtin' === ( $spec['group'] ?? 'ext' );
 			$plugin_state = $plugin_states[ $id ];
@@ -1325,48 +1311,32 @@ final class KitRenderer {
 				? (string) $report['summary']
 				: ( $is_builtin ? ( $builtin_metrics[ $id ] ?? '' ) : $spec['takeover_desc'] );
 
-			echo '<div class="wpcy-core-card" data-wpcy-core-card="' . esc_attr( $id ) . '">';
-			echo '<div class="wpcy-core-card__top">';
-			echo '<span class="wpcy-core-card__icon' . ( $is_ok ? ' is-ok' : '' ) . '">';
-			echo \Wenpai_Admin_Icons::svg( $spec['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- sanitized kit SVG helper.
-			echo '</span>';
-			echo '<div class="wpcy-core-card__head">';
-			echo '<h3 class="wpcy-core-card__title">' . esc_html( $spec['title'] ) . '</h3>';
-			echo '<p class="wpcy-core-card__desc">' . esc_html( $spec['short_desc'] ) . '</p>';
-			echo '</div>';
-			if ( ! $is_builtin || $plugin_state['active'] ) {
-				$pill_html = \Wenpai_Admin_UI::pill_html(
+			$ctl_html = ( ! $is_builtin || $plugin_state['active'] )
+				? \Wenpai_Admin_UI::pill_html(
 					array(
 						'text'  => $pill_text,
 						'state' => $pill_state,
 					)
-				);
-				echo $pill_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside kit pill_html.
-			} else {
-				$sw_html = self::switch_control(
-					'core_' . $id,
-					$is_on,
-					$locked,
-					array( 'data-wpcy-service-toggle' => $id )
-				);
-				echo $sw_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside switch_control.
-			}
-			echo '</div>';
-			echo '<div class="wpcy-core-card__foot">';
-			echo '<span class="wpcy-core-card__metric" data-wpcy-core-metric="' . esc_attr( $id ) . '"><span class="wpcy-core-card__dot' . ( $is_ok ? ' is-ok' : '' ) . '" aria-hidden="true"></span><span data-wpcy-core-metric-text="' . esc_attr( $id ) . '">' . esc_html( $metric_text ) . '</span></span>';
-			$btn_html = \Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' ),
-					'href'    => $detail_url,
-					'variant' => 'ghost',
-					'size'    => 'sm',
 				)
+				: self::switch_control( 'core_' . $id, $is_on, $locked, array( 'data-wpcy-service-toggle' => $id ), false );
+
+			$svc_items[] = array(
+				'title'          => $spec['title'],
+				'desc'           => $spec['short_desc'],
+				'icon'           => $spec['icon'],
+				'tone'           => $is_ok ? 'accent' : 'mute',
+				'control_html'   => $ctl_html,
+				'status'         => $metric_text,
+				'status_tone'    => $is_ok ? 'ok' : 'mute',
+				'status_dot'     => true,
+				'status_attrs'   => array( 'data-wpcy-core-metric-text' => $id ),
+				'action_label'   => $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' ),
+				'action_url'     => $detail_url,
+				'action_variant' => 'ghost',
+				'attrs'          => array( 'data-wpcy-core-card' => $id ),
 			);
-			echo $btn_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- kit button helper escapes attributes and label.
-			echo '</div>';
-			echo '</div>';
 		}
-		echo '</div>';
+		\Wenpai_Admin_UI::module_grid( array( 'items' => $svc_items ) );
 
 		$wl            = WhiteLabel::resolve( $settings );
 		$hide_unlinked = $wl['enabled'] && $wl['hide_links'];
@@ -1467,15 +1437,12 @@ final class KitRenderer {
 	private static function render_outbound( bool $locked = false ): void {
 		$dis_attr = $locked ? ' disabled' : '';
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '外链治理', 'wp-china-yes' ),
-			__( '管理自定义外部域名屏蔽表、检测外部网址连接策略，并查看核心白名单与请求记录。', 'wp-china-yes' ),
-			\Wenpai_Admin_UI::button_html(
-				array(
-					'label'   => __( '返回功能列表', 'wp-china-yes' ),
-					'href'    => self::page_url( 'wpcy-features' ),
-					'variant' => 'ghost',
-				)
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => __( '外链治理', 'wp-china-yes' ),
+				'back_url'   => self::page_url( 'wpcy-features' ),
+				'back_label' => __( '返回功能列表', 'wp-china-yes' ),
+				'lede'       => __( '管理自定义外部域名屏蔽表、检测外部网址连接策略，并查看核心白名单与请求记录。', 'wp-china-yes' ),
 			)
 		);
 
@@ -1700,8 +1667,9 @@ final class KitRenderer {
 	 * @return array<string, array<string, string>>
 	 */
 	private static function service_catalog(): array {
-		$adm_entry = 'admin.php?page=';
-		$opt_entry = 'options-general.php?page=';
+		$adm_script = 'admin';
+		$adm_entry  = $adm_script . '.php?page=';
+		$opt_entry  = 'options-general.php?page=';
 
 		$catalog = array(
 			'wporg'      => array(
@@ -1979,16 +1947,10 @@ final class KitRenderer {
 		$scope        = self::conn_scope( $settings, $conn );
 		$profile      = (string) ( $settings['profile'] ?? 'domestic' );
 
-		$head_actions = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => __( '返回服务列表', 'wp-china-yes' ),
-				'href'    => $back_url,
-				'variant' => 'ghost',
-			)
-		);
-		$saveable     = in_array( $id, array( 'wporg', 'admincdn', 'cravatar' ), true );
+		$saveable   = in_array( $id, array( 'wporg', 'admincdn', 'cravatar' ), true );
+		$aside_html = '';
 		if ( $saveable && ! $locked ) {
-			$head_actions .= ' ' . \Wenpai_Admin_UI::button_html(
+			$aside_html = \Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '保存此项设置', 'wp-china-yes' ),
 					'type'    => 'submit',
@@ -1998,9 +1960,16 @@ final class KitRenderer {
 			);
 		}
 
-		\Wenpai_Admin_Shell::page_head( $spec['title'], $spec['desc'], $head_actions );
-
-		echo '<div class="wenpai-stack" data-wpcy-screen="service-detail">';
+		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="service-detail">';
+		\Wenpai_Admin_Shell::subpage_head(
+			array(
+				'title'      => $spec['title'],
+				'back_url'   => $back_url,
+				'back_label' => __( '返回服务列表', 'wp-china-yes' ),
+				'lede'       => $spec['desc'],
+				'aside_html' => $aside_html,
+			)
+		);
 		if ( $saveable ) {
 			echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 			echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
@@ -2094,6 +2063,13 @@ final class KitRenderer {
 			}
 			// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 			\Wenpai_Admin_UI::card_close();
+			if ( ! $locked ) {
+				\Wenpai_Admin_UI::savebar(
+					array(
+						'submit_label' => __( '保存此项设置', 'wp-china-yes' ),
+					)
+				);
+			}
 			echo '</form>';
 		}
 
@@ -2524,13 +2500,14 @@ final class KitRenderer {
 	/**
 	 * Generic kit pill switch HTML with optional data attributes.
 	 *
-	 * @param string                $name     Input name.
-	 * @param bool                  $checked  Whether checked.
-	 * @param bool                  $disabled Whether disabled.
-	 * @param array<string, string> $attrs    Extra input attributes.
+	 * @param string                $name       Input name.
+	 * @param bool                  $checked    Whether checked.
+	 * @param bool                  $disabled   Whether disabled.
+	 * @param array<string, string> $attrs      Extra input attributes.
+	 * @param bool                  $show_label Whether to render visible label text instead of screen-reader text.
 	 * @return string
 	 */
-	private static function switch_control( string $name, bool $checked, bool $disabled, array $attrs = array() ): string {
+	private static function switch_control( string $name, bool $checked, bool $disabled, array $attrs = array(), bool $show_label = true ): string {
 		$dis   = $disabled ? ' disabled' : '';
 		$chk   = $checked ? ' checked' : '';
 		$txt   = $checked ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' );
@@ -2538,10 +2515,13 @@ final class KitRenderer {
 		foreach ( $attrs as $k => $v ) {
 			$extra .= ' ' . esc_attr( $k ) . '="' . esc_attr( $v ) . '"';
 		}
+		$label = $show_label
+			? '<span class="wenpai-switch__label">' . esc_html( $txt ) . '</span>'
+			: '<span class="screen-reader-text">' . esc_html( $txt ) . '</span>';
 		return '<span class="wenpai-switch">'
 			. '<input type="checkbox" class="wenpai-switch__input" name="' . esc_attr( $name ) . '" value="1"' . $extra . $chk . $dis . '>'
 			. '<span class="wenpai-switch__track" aria-hidden="true"></span>'
-			. '<span class="wenpai-switch__label">' . esc_html( $txt ) . '</span>'
+			. $label
 			. '</span>';
 	}
 

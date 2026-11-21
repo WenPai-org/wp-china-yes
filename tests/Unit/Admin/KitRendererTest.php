@@ -52,7 +52,6 @@ class KitRendererTest extends TestCase {
 				function absint($v){return abs((int)$v);}
 				function wp_parse_args($a,$d=array()){return array_merge((array)$d,(array)$a);}
 				function wp_strip_all_tags($s){return trim(strip_tags((string)$s));}
-				function sanitize_key($s){return preg_replace("/[^a-z0-9_\\-]/","",strtolower((string)$s));}
 				function sanitize_text_field($s){return trim(strip_tags((string)$s));}
 				function wp_unslash($s){return $s;}
 				function wp_kses($s){return (string)$s;}
@@ -112,7 +111,7 @@ class KitRendererTest extends TestCase {
 
 		$features = $this->render_page( 'wpcy-features' );
 		$this->assertStringContainsString( 'data-wpcy-screen="features"', $features );
-		$this->assertStringContainsString( 'wpcy-core-grid--3', $features );
+		$this->assertStringContainsString( 'wenpai-module-grid', $features );
 		$this->assertStringContainsString( 'btn-ghost', $features );
 		$this->assertStringContainsString( '前后台语言分离', $features );
 		$this->assertStringContainsString( '资讯与公告源', $features );
@@ -138,7 +137,7 @@ class KitRendererTest extends TestCase {
 		);
 		$services = $this->render_page( 'wpcy-services' );
 		$this->assertStringContainsString( 'data-wpcy-screen="services"', $services );
-		$this->assertStringContainsString( 'wpcy-core-grid--3', $services );
+		$this->assertStringContainsString( 'wenpai-module-grid', $services );
 		$this->assertStringContainsString( '云盾备份', $services );
 		$this->assertStringContainsString( 'https://wpcy.com/', $services );
 		$this->assertStringNotContainsString( 'style="', $services );

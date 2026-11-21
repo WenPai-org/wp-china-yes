@@ -444,7 +444,7 @@ final class AppsController {
 		if ( $needs_quota && 'exhausted' === $status ) {
 			return RestError::make(
 				'wpcy_apps_quota_exceeded',
-				__( '暂时无法使用该小工具，本期配额已用尽。', 'wp-china-yes' ),
+				__( '暂时无法使用该小工具，本期额度已用尽。', 'wp-china-yes' ),
 				403
 			);
 		}

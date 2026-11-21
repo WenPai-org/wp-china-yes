@@ -170,7 +170,7 @@ class DataIsolationTest extends TestCase {
 		$quota_req->json   = array( 'value' => 1 );
 		$quota_req->body   = '{"value":1}';
 		$quota_err         = $quota->put_data( $quota_req );
-		$this->assertSame( '暂时无法使用该小工具，本期配额已用尽。', $quota_err->get_error_message() );
+		$this->assertSame( '暂时无法使用该小工具，本期额度已用尽。', $quota_err->get_error_message() );
 	}
 
 	/**

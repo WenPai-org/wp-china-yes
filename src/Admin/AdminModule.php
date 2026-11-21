@@ -132,6 +132,7 @@ final class AdminModule implements Module {
 		add_action( 'admin_menu', array( $this, 'add_pages' ) );
 		add_action( 'network_admin_menu', array( $this, 'add_network_pages' ) );
 		add_action( 'admin_page_access_denied', array( $this, 'redirect_legacy_options_url' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_wrong_parent' ), 1 );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_onboarding' ) );
 		add_action( 'admin_head', array( $this, 'hide_onboarding_submenu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
@@ -140,7 +141,23 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Redirect legacy 3.x ?page=wp-china-yes or accidental options-general.php?page=wpcy* links to admin.php?page=wpcy*.
+	 * Redirect top-level pages opened under options-general.php so the left menu highlights 文派叶子.
+	 *
+	 * @since 4.0.0
+	 */
+	public function maybe_redirect_wrong_parent(): void {
+		$script = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
+		if ( '' === $script && isset( $_SERVER['SCRIPT_NAME'] ) ) {
+			$script = basename( sanitize_text_field( wp_unslash( (string) $_SERVER['SCRIPT_NAME'] ) ) );
+		}
+		if ( 'options-general.php' !== $script ) {
+			return;
+		}
+		$this->redirect_legacy_options_url();
+	}
+
+	/**
+	 * Redirect legacy 3.x ?page=wp-china-yes or options-general.php?page=wpcy* links to canonical top-level URLs.
 	 *
 	 * @since 4.0.0
 	 */
@@ -157,81 +174,73 @@ final class AdminModule implements Module {
 		} elseif ( ! $this->is_app_screen() || '' === $slug ) {
 			return;
 		}
-		wp_safe_redirect( admin_url( 'admin.php?page=' . rawurlencode( $slug ) ) );
+		$extra = array();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- preserving safe read-only navigation query args across 302.
+		foreach ( $_GET as $key => $val ) {
+			$clean_key = sanitize_key( (string) $key );
+			if ( '' === $clean_key || 'page' === $clean_key || ! is_scalar( $val ) ) {
+				continue;
+			}
+			$extra[ $clean_key ] = sanitize_text_field( wp_unslash( (string) $val ) );
+		}
+		wp_safe_redirect( self::app_url( $slug, $extra ) );
 		exit;
 	}
 
 	/**
-	 * Top-level 文派叶子 plus four submenu items.
+	 * Top-level 文派叶子 plus five primary tabs and hidden onboarding wizard.
 	 *
 	 * @since 4.0.0
 	 */
 	public function add_pages(): void {
 		$cap        = 'manage_options';
 		$brand_name = WhiteLabel::brand_name( $this->repository->all() );
+		$cb         = array( $this, 'render' );
 
-		add_menu_page(
-			__( '概览', 'wp-china-yes' ),
-			$brand_name,
-			$cap,
-			self::SLUG,
-			array( $this, 'render' ),
-			$this->menu_icon(),
-			80
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '概览', 'wp-china-yes' ),
-			__( '概览', 'wp-china-yes' ),
-			$cap,
-			self::SLUG,
-			array( $this, 'render' )
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '设置', 'wp-china-yes' ),
-			__( '设置', 'wp-china-yes' ),
-			$cap,
-			'wpcy-connect',
-			array( $this, 'render' )
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '功能', 'wp-china-yes' ),
-			__( '功能', 'wp-china-yes' ),
-			$cap,
-			'wpcy-features',
-			array( $this, 'render' )
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '服务', 'wp-china-yes' ),
-			__( '服务', 'wp-china-yes' ),
-			$cap,
-			'wpcy-services',
-			array( $this, 'render' )
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '诊断', 'wp-china-yes' ),
-			__( '诊断', 'wp-china-yes' ),
-			$cap,
-			'wpcy-diagnose',
-			array( $this, 'render' )
-		);
-
-		add_submenu_page(
-			self::SLUG,
-			__( '首次设置', 'wp-china-yes' ),
-			__( '首次设置', 'wp-china-yes' ),
-			$cap,
-			'wpcy-onboarding',
-			array( $this, 'render' )
+		\Wenpai_Admin_Menu::register(
+			array(
+				'slug'         => self::SLUG,
+				'label'        => $brand_name,
+				'title'        => __( '概览', 'wp-china-yes' ),
+				'capability'   => $cap,
+				'render'       => $cb,
+				'top_level'    => true,
+				'icon'         => $this->menu_icon(),
+				'position'     => 80,
+				'legacy_slugs' => array( 'wp-china-yes' ),
+				'submenus'     => array(
+					array(
+						'slug'   => self::SLUG,
+						'label'  => __( '概览', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
+						'slug'   => 'wpcy-connect',
+						'label'  => __( '设置', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
+						'slug'   => 'wpcy-features',
+						'label'  => __( '功能', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
+						'slug'   => 'wpcy-services',
+						'label'  => __( '服务', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
+						'slug'   => 'wpcy-diagnose',
+						'label'  => __( '诊断', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
+						'slug'   => 'wpcy-onboarding',
+						'label'  => __( '首次设置', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+				),
+			)
 		);
 	}
 
@@ -239,7 +248,7 @@ final class AdminModule implements Module {
 	 * Hide the wizard from the sidebar without unregistering it.
 	 *
 	 * Runs on admin_head, after core's page access check: removing the
-	 * submenu during admin_menu makes admin.php?page=wpcy-onboarding answer
+	 * submenu during admin_menu makes ?page=wpcy-onboarding answer
 	 * "Sorry, you are not allowed to access this page". The hook has to run
 	 * on every admin screen because the sidebar is rendered on every screen.
 	 *
@@ -259,14 +268,18 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function add_network_pages(): void {
-		add_menu_page(
-			__( '设置', 'wp-china-yes' ),
-			__( '文派叶子', 'wp-china-yes' ),
-			'manage_network_options',
-			self::NETWORK_SLUG,
-			array( $this, 'render' ),
-			$this->menu_icon(),
-			80
+		\Wenpai_Admin_Menu::register(
+			array(
+				'slug'       => self::NETWORK_SLUG,
+				'label'      => __( '文派叶子', 'wp-china-yes' ),
+				'title'      => __( '设置', 'wp-china-yes' ),
+				'capability' => 'manage_network_options',
+				'render'     => array( $this, 'render' ),
+				'top_level'  => true,
+				'network'    => true,
+				'icon'       => $this->menu_icon(),
+				'position'   => 80,
+			)
 		);
 	}
 
@@ -304,7 +317,7 @@ final class AdminModule implements Module {
 			return '';
 		}
 
-		return admin_url( 'admin.php?page=wpcy-connect' );
+		return self::app_url( 'wpcy-connect' );
 	}
 
 	/**
@@ -354,7 +367,26 @@ final class AdminModule implements Module {
 			return '';
 		}
 
-		return admin_url( 'admin.php?page=wpcy-onboarding' );
+		return self::app_url( 'wpcy-onboarding' );
+	}
+
+	/**
+	 * Canonical top-level admin page URL via Wenpai_Admin_Menu.
+	 *
+	 * @param string                $slug  Page slug.
+	 * @param array<string, string> $extra Extra query args.
+	 * @return string
+	 */
+	public static function app_url( string $slug, array $extra = array() ): string {
+		if ( class_exists( '\Wenpai_Admin_Menu', false ) ) {
+			return (string) \Wenpai_Admin_Menu::url( $slug, $extra );
+		}
+		$script = 'admin';
+		$query  = '?page=' . rawurlencode( $slug );
+		foreach ( $extra as $k => $v ) {
+			$query .= '&' . rawurlencode( (string) $k ) . '=' . rawurlencode( (string) $v );
+		}
+		return function_exists( 'admin_url' ) ? (string) admin_url( $script . '.php' . $query ) : $query;
 	}
 
 	/**

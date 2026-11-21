@@ -194,6 +194,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				true
 			);
 			$tags   = array(
+				'a'        => array_fill_keys( array( 'href', 'target', 'rel' ), true ),
 				'span'     => array(),
 				'div'      => array(),
 				'label'    => array( 'for' => true ),
@@ -3260,6 +3261,197 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$html .= self::kses( (string) $args['table_html'], 'post' ) . '</details>';
 			}
 			return $html . '</figure>';
+		}
+
+		/**
+		 * Echo an equal-height 3-column (or 2-column) module/service hub card grid (kit 0.12.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function module_grid( $args = array() ) {
+			self::emit( self::module_grid_html( $args ) );
+		}
+
+		/**
+		 * Return equal-height module/service hub card grid markup (kit 0.12.0, D-38).
+		 *
+		 * Pairs with fold_list() below it on multi-module hub tabs (Features / Services / Modules):
+		 * up to 3 semantic-tinted featured cards on top, muted single-line list below.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type array  $items Array of card items: {
+		 *         @type string $title          Card heading (14px regular).
+		 *         @type string $desc           Concise summary (12px muted).
+		 *         @type string $icon           Wenpai_Admin_Icons semantic name.
+		 *         @type string $icon_html      Raw inline SVG (kses svg), wins over icon.
+		 *         @type string $logo           1–2 char brand fallback.
+		 *         @type string $logo_html      Brand SVG/img (kses logo).
+		 *         @type string $tone           Tile state: accent|ok|warn|bad|mute|'' (default accent).
+		 *         @type string $control_html   Top-right control markup (switch_html / pill_html; kses control).
+		 *         @type array  $pill           Alternative top-right pill args (label/text + tone/state).
+		 *         @type string $status         Bottom-left status summary text.
+		 *         @type string $status_tone    Status dot tone: ok|warn|bad|mute|'' ('' omits dot unless status_dot is true).
+		 *         @type bool   $status_dot     Force a neutral dot when status_tone is ''.
+		 *         @type array  $status_attrs   Extra attributes on the status text span (e.g. data-* for live latency).
+		 *         @type string $action_label   Bottom-right link button label (verb/entry, e.g. 配置 / 查看 / 了解与开通).
+		 *         @type string $action_url     Bottom-right link URL.
+		 *         @type string $action_variant ghost|secondary|primary (default ghost per D-38).
+		 *         @type string $action_target  Optional '_blank' for external links.
+		 *         @type string $action_html    Custom bottom-right action markup (kses control); wins over action_label.
+		 *         @type string $class          Extra classes on card section.
+		 *         @type array  $attrs          Extra attributes on card section.
+		 *     }
+		 *     @type int    $cols  Column count on wide screens: 3 (default) or 2.
+		 *     @type string $class Extra classes on grid wrapper.
+		 *     @type array  $attrs Extra attributes on grid wrapper.
+		 * }
+		 * @return string
+		 */
+		public static function module_grid_html( $args = array() ) {
+			$args  = self::args( $args, 'Wenpai_Admin_UI::module_grid' );
+			$items = isset( $args['items'] ) && is_array( $args['items'] ) ? $args['items'] : array();
+			if ( array() === $items ) {
+				return '';
+			}
+			$cols = isset( $args['cols'] ) && 2 === (int) $args['cols'] ? 2 : 3;
+			$gcls = self::classes( array( 'wenpai-module-grid', 2 === $cols ? 'wenpai-module-grid--2' : '', self::extra_class( $args ) ) );
+			$html = '<div class="' . esc_attr( $gcls ) . '"' . self::extra_attrs( $args ) . '>';
+
+			foreach ( $items as $raw_item ) {
+				if ( ! is_array( $raw_item ) ) {
+					continue;
+				}
+				$title = isset( $raw_item['title'] ) ? (string) $raw_item['title'] : '';
+				$desc  = isset( $raw_item['desc'] ) ? (string) $raw_item['desc'] : '';
+				$tone  = isset( $raw_item['tone'] ) ? (string) $raw_item['tone'] : 'accent';
+				$mark  = self::logo_slot( $raw_item, '' );
+				if ( '' === $mark && ( ! empty( $raw_item['icon'] ) || ! empty( $raw_item['icon_html'] ) ) ) {
+					$mark = self::tile_html(
+						array(
+							'state'     => $tone,
+							'icon'      => isset( $raw_item['icon'] ) ? (string) $raw_item['icon'] : '',
+							'icon_html' => isset( $raw_item['icon_html'] ) ? (string) $raw_item['icon_html'] : '',
+						)
+					);
+				}
+
+				$ctl = '';
+				if ( isset( $raw_item['control_html'] ) && '' !== (string) $raw_item['control_html'] ) {
+					$ctl = self::kses( (string) $raw_item['control_html'], 'control' );
+				} elseif ( isset( $raw_item['pill'] ) && is_array( $raw_item['pill'] ) ) {
+					$ctl = self::pill_html( self::pill_args( $raw_item['pill'] ) );
+				}
+
+				$status      = isset( $raw_item['status'] ) ? (string) $raw_item['status'] : '';
+				$status_tone = self::state( isset( $raw_item['status_tone'] ) ? $raw_item['status_tone'] : '', array( '', 'ok', 'warn', 'bad', 'mute' ), '', 'Wenpai_Admin_UI::module_grid' );
+				$show_dot    = '' !== $status_tone || ! empty( $raw_item['status_dot'] );
+				$s_attrs     = isset( $raw_item['status_attrs'] ) && is_array( $raw_item['status_attrs'] ) ? self::extra_attrs( array( 'attrs' => $raw_item['status_attrs'] ) ) : '';
+
+				$act = '';
+				if ( isset( $raw_item['action_html'] ) && '' !== (string) $raw_item['action_html'] ) {
+					$act = self::kses( (string) $raw_item['action_html'], 'control' );
+				} elseif ( isset( $raw_item['action_label'], $raw_item['action_url'] ) && '' !== (string) $raw_item['action_label'] && '' !== (string) $raw_item['action_url'] ) {
+					$variant = isset( $raw_item['action_variant'] ) ? (string) $raw_item['action_variant'] : 'ghost';
+					$btn_arg = array(
+						'label'   => (string) $raw_item['action_label'],
+						'href'    => (string) $raw_item['action_url'],
+						'variant' => $variant,
+					);
+					if ( ! empty( $raw_item['action_target'] ) ) {
+						$btn_arg['target'] = (string) $raw_item['action_target'];
+					}
+					$act = self::button_html( $btn_arg );
+				}
+
+				$ccls  = self::classes( array( 'card', 'wenpai-module-card', self::extra_class( $raw_item ) ) );
+				$html .= '<section class="' . esc_attr( $ccls ) . '"' . self::extra_attrs( $raw_item ) . '>';
+				$html .= '<div class="wenpai-module-card__head">';
+				$html .= '<div class="wenpai-module-card__lead">' . $mark . '<div class="wenpai-module-card__body">';
+				$html .= '<h3 class="wenpai-module-card__title">' . esc_html( $title ) . '</h3>';
+				if ( '' !== $desc ) {
+					$html .= '<p class="wenpai-module-card__desc">' . esc_html( $desc ) . '</p>';
+				}
+				$html .= '</div></div>';
+				if ( '' !== $ctl ) {
+					$html .= '<div class="wenpai-module-card__ctl">' . $ctl . '</div>';
+				}
+				$html .= '</div>';
+
+				if ( '' !== $status || '' !== $act ) {
+					$html .= '<div class="wenpai-module-card__foot">';
+					$html .= '<span class="wenpai-module-card__status">';
+					if ( $show_dot ) {
+						$dot_cls = self::classes( array( 'wenpai-module-card__dot', ( '' !== $status_tone && 'mute' !== $status_tone ) ? 'is-' . $status_tone : '' ) );
+						$html   .= '<i class="' . esc_attr( $dot_cls ) . '" aria-hidden="true"></i>';
+					}
+					$html .= '<span' . $s_attrs . '>' . esc_html( $status ) . '</span></span>';
+					$html .= $act;
+					$html .= '</div>';
+				}
+				$html .= '</section>';
+			}
+
+			return $html . '</div>';
+		}
+
+		/**
+		 * Echo a sticky dirty-form save bar for multi-field settings forms (kit 0.12.0).
+		 *
+		 * @param array $args Arguments.
+		 */
+		public static function savebar( $args = array() ) {
+			self::emit( self::savebar_html( $args ) );
+		}
+
+		/**
+		 * Return sticky dirty-form save bar markup (kit 0.12.0).
+		 *
+		 * Hidden until an input inside the enclosing form (or [data-wenpai-savebar-for] target form)
+		 * differs from its initial value. Gives multi-field forms one consistent explicit-save contract.
+		 *
+		 * @param array $args {
+		 *     Helper arguments.
+		 *
+		 *     @type string $message      Prompt text (default 「有未保存的设置更改」).
+		 *     @type string $reset_label  Reset button label (default 「放弃更改」; '' omits reset button).
+		 *     @type string $submit_label Submit button label (default 「保存设置」).
+		 *     @type string $busy_label   Optional data-wenpai-busy label on submit button.
+		 *     @type string $form         Optional target form id when rendered outside <form>.
+		 *     @type string $class        Extra classes.
+		 *     @type array  $attrs        Extra attributes.
+		 * }
+		 * @return string
+		 */
+		public static function savebar_html( $args = array() ) {
+			$args   = self::args( $args, 'Wenpai_Admin_UI::savebar' );
+			$msg    = isset( $args['message'] ) && '' !== (string) $args['message'] ? (string) $args['message'] : '有未保存的设置更改';
+			$reset  = array_key_exists( 'reset_label', $args ) ? (string) $args['reset_label'] : '放弃更改';
+			$submit = isset( $args['submit_label'] ) && '' !== (string) $args['submit_label'] ? (string) $args['submit_label'] : '保存设置';
+			$form   = isset( $args['form'] ) ? (string) $args['form'] : '';
+			$cls    = self::classes( array( 'wenpai-savebar', self::extra_class( $args ) ) );
+			$f_attr = '' !== $form ? ' data-wenpai-savebar-for="' . esc_attr( $form ) . '"' : '';
+			$html   = '<div class="' . esc_attr( $cls ) . '" data-wenpai-savebar' . $f_attr . self::extra_attrs( $args, array( 'hidden' ) ) . ' hidden>';
+			$html  .= '<span class="wenpai-savebar__msg">' . esc_html( $msg ) . '</span>';
+			$html  .= '<div class="wenpai-savebar__actions">';
+			if ( '' !== $reset ) {
+				$html .= '<button type="reset" class="btn btn-ghost"' . ( '' !== $form ? ' form="' . esc_attr( $form ) . '"' : '' ) . ' data-wenpai-savebar-reset>' . esc_html( $reset ) . '</button>';
+			}
+			$btn_args = array(
+				'type'    => 'submit',
+				'variant' => 'primary',
+				'label'   => $submit,
+			);
+			if ( '' !== $form ) {
+				$btn_args['form'] = $form;
+			}
+			if ( ! empty( $args['busy_label'] ) ) {
+				$btn_args['busy_label'] = (string) $args['busy_label'];
+			}
+			$html .= self::button_html( $btn_args );
+			$html .= '</div></div>';
+			return $html;
 		}
 
 		/**
