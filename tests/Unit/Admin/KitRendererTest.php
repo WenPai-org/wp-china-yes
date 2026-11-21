@@ -100,14 +100,13 @@ class KitRendererTest extends TestCase {
 	public function test_five_tabs_wizard_and_help_render_cleanly(): void {
 		$overview = $this->render_page( 'wpcy' );
 		$this->assertStringContainsString( 'data-wpcy-screen="overview"', $overview );
-		$this->assertStringContainsString( '核心加速通道运行正常', $overview );
-		$this->assertStringContainsString( '服务器出站连通', $overview );
-		$this->assertStringContainsString( '当前浏览器连通', $overview );
-		$this->assertStringContainsString( '重新检测', $overview );
-		$this->assertStringContainsString( '文派茶馆动态', $overview );
+		$this->assertStringContainsString( '近 7 日加速趋势', $overview );
+		$this->assertStringContainsString( '核心节点延迟', $overview );
+		$this->assertStringContainsString( '立即测速', $overview );
 		$this->assertStringContainsString( '近期运行记录', $overview );
 		$this->assertStringContainsString( 'wpcy-features', $overview );
-		$this->assertStringNotContainsString( 'style="', $overview );
+		$overview_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $overview );
+		$this->assertStringNotContainsString( 'style="', $overview_no_meter );
 
 		$settings = $this->render_page( 'wpcy-connect', array( 'profile' => 'crossborder' ) );
 		$this->assertStringContainsString( 'data-wpcy-screen="settings"', $settings );
@@ -239,13 +238,12 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '38ms', $hydrated );
 		$this->assertStringContainsString( '24ms', $hydrated );
 		$this->assertStringContainsString( '112ms', $hydrated );
-		$this->assertStringContainsString( '已连接', $hydrated );
-		$this->assertStringContainsString( '已回退', $hydrated );
+		$this->assertStringContainsString( '58 <small>ms</small>', $hydrated );
 		$this->assertStringContainsString( '检测于 11-21 11:30', $hydrated );
 
 		$recovery = $this->render_page( 'wpcy', array( 'recovery_mode' => true ) );
-		$this->assertStringContainsString( '安全恢复模式生效中', $recovery );
-		$this->assertStringContainsString( '已暂停', $recovery );
-		$this->assertStringNotContainsString( 'style="', $recovery );
+		$this->assertStringContainsString( '恢复模式生效中，镜像与静态加速已暂停', $recovery );
+		$recovery_no_meter = (string) preg_replace( '/<i style="inline-size:[0-9]+%"><\/i>/', '', $recovery );
+		$this->assertStringNotContainsString( 'style="', $recovery_no_meter );
 	}
 }

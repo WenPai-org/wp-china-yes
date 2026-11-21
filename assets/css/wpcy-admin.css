@@ -12,6 +12,19 @@
 	margin: 0;
 }
 
+.wenpai-app [data-wpcy-screen="overview"] .wenpai-split {
+	align-items: stretch;
+}
+
+.wenpai-app [data-wpcy-screen="overview"] .wenpai-split > .card {
+	display: flex;
+	flex-direction: column;
+}
+
+.wenpai-app [data-wpcy-screen="overview"] .wenpai-split > .card > .card-foot {
+	margin-block-start: auto;
+}
+
 .wenpai-app .wenpai-status-list__row dd {
 	justify-content: flex-end;
 	font-variant-numeric: tabular-nums;
