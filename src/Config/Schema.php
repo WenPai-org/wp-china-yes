@@ -479,7 +479,19 @@ final class Schema {
 			'additionalProperties' => false,
 			'required'             => array( 'hide_promo' ),
 			'default'              => array(
-				'hide_promo' => true,
+				'hide_promo'   => true,
+				'news_enabled' => true,
+				'whitelabel'   => array(
+					'enabled'       => false,
+					'brand_name'    => '',
+					'help_url'      => '',
+					'feedback_url'  => '',
+					'docs_url'      => '',
+					'news_feed_url' => '',
+					'logo_url'      => '',
+					'hide_logo'     => false,
+					'hide_links'    => false,
+				),
 			),
 			'properties'           => array(
 				'hide_promo'   => array(

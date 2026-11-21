@@ -10,6 +10,7 @@ test.describe( 'wpcy 4.0 kit admin screens', () => {
 		for ( const slug of [
 			'wpcy',
 			'wpcy-connect',
+			'wpcy-features',
 			'wpcy-services',
 			'wpcy-diagnose',
 			'wpcy-onboarding',

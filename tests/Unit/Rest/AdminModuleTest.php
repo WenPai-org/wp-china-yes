@@ -55,7 +55,7 @@ class AdminModuleTest extends TestCase {
 			$this->assertSame( 'manage_options', $page['capability'] );
 		}
 		$this->assertSame(
-			array( 'wpcy', 'wpcy-connect', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' ),
+			array( 'wpcy', 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' ),
 			$sub
 		);
 	}
@@ -102,6 +102,9 @@ class AdminModuleTest extends TestCase {
 		$_GET['page'] = 'wpcy-connect';
 		$this->assertTrue( $module->is_app_screen() );
 
+		$_GET['page'] = 'wpcy-features';
+		$this->assertTrue( $module->is_app_screen() );
+
 		$_GET['page'] = 'wpcy-services';
 		$this->assertTrue( $module->is_app_screen() );
 
@@ -140,7 +143,7 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 0, preg_match( '/@wordpress\/interface/', $joined ) );
 		$this->assertSame( 0, preg_match( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/', $joined ) );
 		$this->assertNotFalse( strpos( $joined, '绑定本站' ) );
-		$this->assertNotFalse( strpos( $joined, '绑定后显示' ) );
+		$this->assertNotFalse( strpos( $joined, '文派生态目录' ) );
 	}
 
 	/**

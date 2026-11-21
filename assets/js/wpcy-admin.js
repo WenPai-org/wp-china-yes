@@ -1,6 +1,6 @@
 /**
- * wpcy 4.0 lightweight progressive enhancement (Route A, zero dependencies).
- * Talks directly to existing REST /wpcy/v1/* endpoints and uses kit wenpaiAdmin.notice().
+ * WPCY 4.0 lightweight progressive enhancement (Route A, zero dependencies).
+ * Communicates with existing REST `/wpcy/v1/*` endpoints and kit `wenpaiAdmin.notice()`.
  */
 (function () {
 	'use strict';
@@ -8,6 +8,19 @@
 	const cfg = window.wpcyAdmin || {};
 	const restRoot = (cfg.restRoot || '').replace(/\/+$/, '');
 	const nonce = cfg.nonce || '';
+
+	function makePill(tone, label, withDot) {
+		const sp = document.createElement('span');
+		sp.className = ['pill', tone || 'mute'].join(' ');
+		if (withDot) {
+			const dot = document.createElement('span');
+			dot.className = 'dot';
+			dot.setAttribute('aria-hidden', 'true');
+			sp.appendChild(dot);
+		}
+		sp.appendChild(document.createTextNode(label));
+		return sp;
+	}
 
 	function notify(level, text) {
 		if (window.wenpaiAdmin && typeof window.wenpaiAdmin.notice === 'function') {
@@ -29,7 +42,7 @@
 		const res = await fetch(restRoot + '/wpcy/v1' + path, opts);
 		const data = await res.json().catch(function () { return {}; });
 		if (!res.ok) {
-			const msg = (data && data.message) ? data.message : '请求失败，请稍后重试。';
+			const msg = (data && data.message) ? data.message : '暂时无法完成请求，请稍后重试。';
 			throw new Error(msg);
 		}
 		return data;
@@ -58,8 +71,8 @@
 			const total = (Number(r.wporg_rewrites) || 0) + (Number(r.public_asset_rewrites) || 0) + (Number(r.avatar_rewrites) || 0);
 			return { label: String(r.date || '').slice(5) || '—', val: total };
 		}) : [
-			{ label: 'D-6', val: 0 }, { label: 'D-5', val: 0 }, { label: 'D-4', val: 0 },
-			{ label: 'D-3', val: 0 }, { label: 'D-2', val: 0 }, { label: '昨天', val: 0 }, { label: '今天', val: 0 }
+			{ label: '6天前', val: 0 }, { label: '5天前', val: 0 }, { label: '4天前', val: 0 },
+			{ label: '3天前', val: 0 }, { label: '前天', val: 0 }, { label: '昨天', val: 0 }, { label: '今天', val: 0 }
 		];
 		const maxVal = Math.max(10, Math.max.apply(null, pts.map(function (p) { return p.val; })));
 		const x0 = 44;
@@ -88,7 +101,7 @@
 			+ '<path d="' + area + '" fill="url(#wpcy-g)"/>'
 			+ '<polyline fill="none" stroke="var(--wenpai-accent)" stroke-width="2" points="' + poly + '"/>'
 			+ circles
-			+ '<g fill="var(--wenpai-ink-3)" font-size="11">'
+			+ '<g fill="var(--wenpai-ink-3)" font-size="12">'
 			+ '<text x="36" y="30" text-anchor="end">' + maxVal + '</text>'
 			+ '<text x="36" y="91" text-anchor="end">' + Math.round(maxVal / 2) + '</text>'
 			+ '<text x="36" y="152" text-anchor="end">0</text>'
@@ -121,7 +134,7 @@
 				const valEl = row.querySelector('.wenpai-meter__value');
 				const barEl = row.querySelector('.wenpai-meter__bar > i');
 				const ms = item.latency_ms != null ? item.latency_ms : null;
-				if (valEl) valEl.textContent = ms != null ? (ms + 'ms') : (item.result === 'down' ? '不可达' : '正常');
+				if (valEl) valEl.textContent = ms != null ? (ms + 'ms') : (item.result === 'down' ? '未连接' : '正常');
 				if (barEl && ms != null) {
 					const pct = Math.max(6, Math.min(100, Math.round((ms / 800) * 100)));
 					barEl.style.inlineSize = pct + '%';
@@ -130,7 +143,7 @@
 		}
 	}
 
-	// 1. Overview: hydrate statbar, trend chart, latency meter, and recent events.
+	// 1. Overview: hydrate statbar, trend chart, latency meter, announcements, and recent events.
 	function initOverview() {
 		const statsEl = document.querySelector('[data-wpcy-stats]');
 		const trendEl = document.querySelector('[data-wpcy-trend]');
@@ -167,16 +180,16 @@
 		const eventsEl = document.querySelector('[data-wpcy-events]');
 		if (eventsEl) {
 			const eventLabels = {
-				first_check: '首次连通性巡检',
-				profile_set: '站点场景已更新',
-				settings_saved: '加速设置已保存',
-				diagnostics_run: '双端连通性诊断',
+				first_check: '完成首次连通性检测',
+				profile_set: '更新站点场景设置',
+				settings_saved: '保存加速设置',
+				diagnostics_run: '执行双端连通性检测',
 				recovery_entered: '进入安全恢复模式',
-				recovery_exited: '退出安全恢复模式',
-				fallback: '镜像异常自动回退官方源',
-				route_down: '上游节点暂不可达（已自动回退）',
-				route_up: '上游节点已恢复正常',
-				binding_started: '发起站点绑定',
+				recovery_exited: '恢复正常加速运行',
+				fallback: '镜像波动自动回退至官方源',
+				route_down: '上游节点不可达（已自动回退官方源）',
+				route_up: '上游加速节点恢复正常',
+				binding_started: '发起站点绑定请求',
 				binding_revoked: '解除站点绑定'
 			};
 			function formatEventTime(raw) {
@@ -189,7 +202,7 @@
 			api('/events?per_page=5').then(function (data) {
 				const list = Array.isArray(data && data.events) ? data.events : [];
 				if (!list.length) {
-					eventsEl.innerHTML = '<p class="meta">最近还没有新的加速或巡检事件。</p>';
+					eventsEl.innerHTML = '<p class="meta">当前尚未产生新的线路切换或检测记录，系统发生自动回退或配置更新时会在此展示。</p>';
 					return;
 				}
 				const ul = document.createElement('ul');
@@ -199,7 +212,7 @@
 					li.className = 'wpcy-event-item';
 					const left = document.createElement('span');
 					const rawType = ev.type || ev.summary || '';
-					left.textContent = eventLabels[rawType] || ev.summary || rawType || '加速巡检事件';
+					left.textContent = eventLabels[rawType] || ev.summary || rawType || '运行状态记录';
 					const right = document.createElement('span');
 					right.className = 'wpcy-event-item__time';
 					right.textContent = formatEventTime(ev.at || ev.when || '');
@@ -210,7 +223,7 @@
 				eventsEl.innerHTML = '';
 				eventsEl.appendChild(ul);
 			}).catch(function () {
-				eventsEl.innerHTML = '<p class="meta">最近还没有新的加速或巡检事件。</p>';
+				eventsEl.innerHTML = '<p class="meta">当前尚未产生新的线路切换或检测记录，系统发生自动回退或配置更新时会在此展示。</p>';
 			});
 		}
 
@@ -224,11 +237,21 @@
 					const div = document.createElement('div');
 					div.className = 'notice ' + (item.tone === 'warn' ? 'warn' : 'info');
 					const text = document.createElement('span');
-					text.textContent = (item.title ? item.title + '：' : '') + (item.body || item.message || '');
+					const body = item.summary || item.body || item.message || '';
+					text.textContent = (item.title ? item.title + (body ? '：' : '') : '') + body;
+					if (item.url && /^https:\/\//i.test(item.url)) {
+						text.appendChild(document.createTextNode(' '));
+						const link = document.createElement('a');
+						link.href = item.url;
+						link.target = '_blank';
+						link.rel = 'noopener noreferrer';
+						link.textContent = '查看详情';
+						text.appendChild(link);
+					}
 					const btn = document.createElement('button');
 					btn.type = 'button';
 					btn.className = 'btn btn-ghost btn-sm';
-					btn.textContent = '知道了';
+					btn.textContent = '关闭通知';
 					btn.addEventListener('click', function () {
 						api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
 							.finally(function () {
@@ -253,14 +276,14 @@
 				const ver = rep.source_version ? ' ' + rep.source_version : '';
 				const migratedCount = Array.isArray(rep.migrated) ? rep.migrated.length : 0;
 				const span = document.createElement('span');
-				span.textContent = '已从文派叶子' + ver + ' 自动迁移 ' + migratedCount + ' 项配置至 4.0，原设置已保留备份。';
+				span.textContent = '已从旧版文派叶子' + ver + ' 平滑导入 ' + migratedCount + ' 项兼容设置，原有配置已自动留存备份。';
 				div.appendChild(span);
 				migEl.appendChild(div);
 			}).catch(function () {});
 		}
 	}
 
-	// 2. Settings: instant toggles + unified form save.
+	// 2. Settings & Feature Forms: instant toggles + unified form save.
 	function initSettings() {
 		const form = document.getElementById('wpcy-settings-form');
 		const isNetwork = !!(form && form.getAttribute('data-wpcy-network') === '1');
@@ -292,15 +315,15 @@
 					patch.connectivity = { admin_locale_follow: checked };
 					const card = input.closest('[data-wpcy-core-card]');
 					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-					if (iconEl) iconEl.classList.toggle('is-ok', checked);
+					if (iconEl) iconEl.classList.toggle('is-green', checked);
 				} else if (input.name === 'admin_news_enabled') {
 					patch.admin = { news_enabled: checked };
 					const card = input.closest('[data-wpcy-core-card]');
 					const iconEl = card && card.querySelector('.wpcy-core-card__icon');
-					if (iconEl) iconEl.classList.toggle('is-ok', checked);
+					if (iconEl) iconEl.classList.toggle('is-green', checked);
 				}
 				api(settingsEndpoint(isNetwork), { method: 'PUT', body: patch })
-					.then(function () { notify('ok', '设置已保存。'); })
+					.then(function () { notify('ok', '已保存'); })
 					.catch(function (err) {
 						input.checked = !checked;
 						if (labelEl) labelEl.textContent = input.checked ? '已开启' : '未开启';
@@ -363,7 +386,7 @@
 			}
 			api(settingsEndpoint(isNetwork), { method: 'PUT', body: payload })
 				.then(function () {
-					notify('ok', '全部设置已保存。');
+					notify('ok', '设置已保存。');
 					if (payload.admin && payload.admin.whitelabel) {
 						setTimeout(function () { window.location.reload(); }, 450);
 					}
@@ -401,7 +424,7 @@
 			if (!item) return;
 			const ms = item.latency_ms != null ? (item.latency_ms + 'ms') : '—';
 			const state = item.result === 'ok' ? 'ok' : (item.result === 'fallback' ? 'warn' : 'bad');
-			const label = item.result === 'ok' ? '正常' : (item.result === 'fallback' ? '已回退' : '不可达');
+			const label = item.result === 'ok' ? '已连接' : (item.result === 'fallback' ? '已回退' : '未连接');
 			updateStatusListRow(srvList, idx, ms, state, label);
 		});
 	}
@@ -420,10 +443,10 @@
 				await fetch(p.url, { mode: 'no-cors', cache: 'no-store' });
 				const ms = Math.max(1, Math.round(performance.now() - t0));
 				const state = ms > 1000 ? 'warn' : 'ok';
-				const label = ms > 1000 ? '较慢' : '正常';
+				const label = ms > 1000 ? '响应偏慢' : '已连接';
 				updateStatusListRow(browserList, p.idx, ms + 'ms', state, label);
 			} catch (e) {
-				updateStatusListRow(browserList, p.idx, '超时', 'bad', '不可达');
+				updateStatusListRow(browserList, p.idx, '连接超时', 'bad', '未连接');
 			}
 		}
 	}
@@ -482,7 +505,7 @@
 				}
 				api('/recovery', { method: 'POST', body: { action: enable ? 'disable_rewrites' : 'exit' } })
 					.then(function () {
-						notify('ok', enable ? '已进入安全恢复模式。' : '已恢复正常运行。');
+						notify('ok', enable ? '已进入安全恢复模式。' : '已恢复正常加速运行。');
 						window.location.reload();
 					})
 					.catch(function (err) { notify('bad', err.message); });
@@ -492,7 +515,7 @@
 		document.querySelectorAll('[data-wpcy-action="bind"]').forEach(function (el) {
 			api('/binding').then(function (snap) {
 				if (snap && snap.state === 'bound') {
-					el.textContent = '已绑定 · 解绑';
+					el.textContent = '已绑定 · 解除绑定';
 					el.classList.remove('btn-primary');
 					el.classList.add('btn-secondary');
 					el.dataset.wpcyBound = '1';
@@ -508,7 +531,7 @@
 							el.textContent = '绑定本站';
 							el.classList.remove('btn-secondary');
 							el.classList.add('btn-primary');
-							notify('ok', '已解除本站绑定。');
+							notify('ok', '已解除当前站点绑定。');
 						})
 						.catch(function (err) { notify('bad', err.message); })
 						.finally(function () { el.classList.remove('is-busy'); });
@@ -519,7 +542,7 @@
 						if (data && data.authorize_url) {
 							window.location.href = data.authorize_url;
 						} else {
-							notify('ok', '站点绑定请求已发起。');
+							notify('ok', '已发起站点绑定请求。');
 						}
 					})
 					.catch(function (err) { notify('bad', err.message); })
@@ -542,12 +565,19 @@
 			});
 		});
 
-		// Hydrate live node latencies onto Services 3-col cloud cards from cached diagnostics.
 		const svcScreen = document.querySelector('[data-wpcy-screen="services"]');
 		if (svcScreen) {
 			api('/diagnostics').then(function (data) {
 				const targets = Array.isArray(data && data.targets) ? data.targets : [];
-				const map = { wporg_mirror: ['wporg', 'WenPai.org'], public_assets: ['admincdn', 'adminCDN'], cravatar: ['cravatar', 'Cravatar'] };
+				const map = {
+					'api.wenpai.net': ['wporg', 'WenPai.org'],
+					'cdnjs.admincdn.com': ['admincdn', 'adminCDN'],
+					'cravatar.com': ['cravatar', 'Cravatar'],
+					'cn.cravatar.com': ['cravatar', 'Cravatar'],
+					wporg_mirror: ['wporg', 'WenPai.org'],
+					public_assets: ['admincdn', 'adminCDN'],
+					cravatar: ['cravatar', 'Cravatar']
+				};
 				targets.forEach(function (t) {
 					const m = t && map[t.target];
 					if (!m || typeof t.latency_ms !== 'number' || t.latency_ms <= 0) return;
@@ -577,13 +607,13 @@
 					nextMetric = on ? 'WenPai.org 镜像 · 异常自动回退' : '直连 WordPress.org 官方源';
 				} else if (id === 'admincdn') {
 					patch = { connectivity: { public_assets: { scope: on ? 'both' : 'off' } } };
-					nextMetric = on ? '前台与后台全量加速' : '当前未开启';
+					nextMetric = on ? '后台与前台同时加速' : '未开启';
 				} else if (id === 'cravatar') {
 					patch = { connectivity: { avatar: on ? 'cravatar_cn' : 'off' } };
-					nextMetric = on ? 'Cravatar 中国节点' : '使用默认 Gravatar';
+					nextMetric = on ? 'Cravatar 中国线路' : '未开启（原始 Gravatar）';
 				} else if (id === 'noise') {
 					patch = { connectivity: { heartbeat: on ? 'on' : 'off', dashboard_feeds: on ? 'block' : 'allow' } };
-					nextMetric = on ? '已启用心跳降频与外部源屏蔽' : '默认保持原样，可按需开启';
+					nextMetric = on ? '心跳降频与外部源屏蔽已生效' : '保持 WordPress 默认行为';
 				}
 
 				if (labelEl) labelEl.textContent = on ? '已开启' : '未开启';
@@ -592,18 +622,18 @@
 				if (metricEl && nextMetric) metricEl.textContent = nextMetric;
 
 				api('/settings', { method: 'PUT', body: patch })
-					.then(function () { notify('ok', on ? '服务已开启。' : '服务已关闭。'); })
+					.then(function () { notify('ok', '已保存'); })
 					.catch(function (err) {
 						input.checked = !on;
 						if (labelEl) labelEl.textContent = input.checked ? '已开启' : '未开启';
 						if (iconEl) iconEl.classList.toggle('is-ok', input.checked);
-						notify('bad', err.message || '保存失败');
+						notify('bad', err.message || '暂时无法保存设置，请稍后重试。');
 					});
 			});
 		});
 	}
 
-	// 3b. Site Blocklist (GET/PUT /site-blocklist).
+	// 3b. Site Blocklist (`GET/PUT /site-blocklist`).
 	function initSiteBlocklist() {
 		const root = document.querySelector('[data-wpcy-blocklist]');
 		if (!root) return;
@@ -627,7 +657,10 @@
 			if (!state.hosts.length) {
 				const li = document.createElement('li');
 				li.className = 'wpcy-host-item';
-				li.innerHTML = '<span class="wpcy-host-item__note">暂无自定义拦截域名。</span>';
+				const span = document.createElement('span');
+				span.className = 'wpcy-host-item__note';
+				span.textContent = '尚未添加自定义拦截域名，需要屏蔽慢源时可在上方输入域名后添加。';
+				li.appendChild(span);
 				listEl.appendChild(li);
 				return;
 			}
@@ -638,9 +671,7 @@
 				main.className = 'wpcy-host-item__main';
 				const code = document.createElement('code');
 				code.textContent = item.host;
-				const badge = document.createElement('span');
-				badge.className = 'pill mute';
-				badge.textContent = item.match === 'suffix' ? '含子域名' : '精确匹配';
+				const badge = makePill('mute', item.match === 'suffix' ? '含子域名' : '精确匹配', false);
 				main.appendChild(code);
 				main.appendChild(badge);
 				if (item.note) {
@@ -652,7 +683,7 @@
 				const rm = document.createElement('button');
 				rm.type = 'button';
 				rm.className = 'btn btn-ghost btn-sm';
-				rm.textContent = '移除';
+				rm.textContent = '移除域名';
 				rm.addEventListener('click', function () {
 					const next = {
 						enabled: state.enabled,
@@ -678,7 +709,7 @@
 				})
 				.catch(function (err) {
 					renderList();
-					notify('bad', err.message || '保存外链拦截表失败');
+					notify('bad', err.message || '暂时无法保存拦截列表，请稍后重试。');
 				});
 		}
 
@@ -692,7 +723,7 @@
 
 		if (chk) {
 			chk.addEventListener('change', function () {
-				saveBlocklist({ enabled: chk.checked, hosts: state.hosts }, chk.checked ? '已启用外链拦截表。' : '已关闭外链拦截表。');
+				saveBlocklist({ enabled: chk.checked, hosts: state.hosts }, chk.checked ? '已开启自定义外链拦截表。' : '已关闭自定义外链拦截表。');
 			});
 		}
 
@@ -700,7 +731,7 @@
 			addBtn.addEventListener('click', function () {
 				const host = hostInput ? hostInput.value.trim().toLowerCase() : '';
 				if (!host) {
-					notify('warn', '请先输入要拦截的域名。');
+					notify('warn', '请先输入需要拦截的域名。');
 					return;
 				}
 				const entry = {
@@ -727,7 +758,7 @@
 		});
 	}
 
-	// 3c. Outbound URL routing tester (POST /residency/test).
+	// 3c. Outbound URL routing tester (`POST /residency/test`).
 	function initUrlTester() {
 		const root = document.querySelector('[data-wpcy-url-tester]');
 		if (!root) return;
@@ -736,18 +767,18 @@
 		const out = root.querySelector('[data-wpcy-url-output]');
 
 		const layerLabels = {
-			l0: 'L0 核心白名单（永久放行）',
-			l1: 'L1 数据驻留 / 镜像规则',
-			l2: 'L2 自定义外链拦截表',
-			noise_block: '后台减噪拦截规则',
+			l0: '核心业务白名单（始终放行）',
+			l1: '内置镜像与连接规则',
+			l2: '自定义外链拦截表',
+			noise_block: '后台慢源过滤规则',
 			none: '未命中特殊规则'
 		};
 		const actionMap = {
 			allow: { text: '直连放行', cls: 'mute' },
-			reroute: { text: '走国内镜像改写', cls: 'ok' },
-			record: { text: '放行并记录', cls: 'warn' },
-			block: { text: '拦截阻止', cls: 'bad' },
-			ignore: { text: '忽略放行', cls: 'mute' }
+			reroute: { text: '走国内镜像加速', cls: 'ok' },
+			record: { text: '放行并记录频次', cls: 'warn' },
+			block: { text: '阻断请求', cls: 'bad' },
+			ignore: { text: '直接放行', cls: 'mute' }
 		};
 
 		function runTest() {
@@ -766,14 +797,12 @@
 					out.innerHTML = '';
 					const left = document.createElement('span');
 					left.textContent = (res && res.host ? res.host + ' · ' : '') + layer;
-					const pill = document.createElement('span');
-					pill.className = 'pill ' + act.cls;
-					pill.innerHTML = '<span class="dot" aria-hidden="true"></span>' + act.text;
+					const pill = makePill(act.cls, act.text, true);
 					out.appendChild(left);
 					out.appendChild(pill);
 				})
 				.catch(function (err) {
-					notify('bad', err.message || 'URL 检测失败，请确认输入了完整网址。');
+					notify('bad', err.message || '暂时无法完成网址检测，请确认输入了完整网址。');
 				})
 				.finally(function () {
 					if (btn) btn.classList.remove('is-busy');
@@ -799,18 +828,18 @@
 		});
 	}
 
-	// 3d. Outbound screen rules snapshot & B-tier log.
+	// 3d. Outbound screen rules snapshot & recent log.
 	function initOutboundOverview() {
 		const layersEl = document.querySelector('[data-wpcy-outbound-layers]');
 		if (layersEl) {
 			api('/residency/protected').then(function (snap) {
 				const l0Count = snap && snap.l0 && Array.isArray(snap.l0.hosts) ? snap.l0.hosts.length : 0;
-				const l1Ver = snap && snap.l1 && snap.l1.version ? String(snap.l1.version) : '内建基线';
+				const l1Ver = snap && snap.l1 && snap.l1.version ? String(snap.l1.version) : '内置默认版';
 				const noiseOn = !!(snap && snap.noise_block && snap.noise_block.enabled);
 				const noiseCount = snap && snap.noise_block && Array.isArray(snap.noise_block.hosts) ? snap.noise_block.hosts.length : 0;
-				updateStatusListRow(layersEl, 0, l0Count + ' 个受保护核心域名', 'ok', '永久放行');
-				updateStatusListRow(layersEl, 1, '规则版本 ' + l1Ver, 'ok', '运行中');
-				updateStatusListRow(layersEl, 2, noiseCount + ' 个已知噪音源', noiseOn ? 'ok' : 'mute', noiseOn ? '已开启' : '已关闭');
+				updateStatusListRow(layersEl, 0, l0Count + ' 个核心业务域名', 'ok', '始终放行');
+				updateStatusListRow(layersEl, 1, '规则版本 ' + l1Ver, 'ok', '已开启');
+				updateStatusListRow(layersEl, 2, noiseCount + ' 个常见慢源域名', noiseOn ? 'ok' : 'mute', noiseOn ? '已开启' : '未开启');
 			}).catch(function () {});
 		}
 
@@ -819,7 +848,7 @@
 			api('/residency/log?per_page=10').then(function (data) {
 				const items = Array.isArray(data && data.items) ? data.items : [];
 				if (!items.length) {
-					logEl.innerHTML = '<p class="meta">近期暂无 B 级外部请求记录。</p>';
+					logEl.innerHTML = '<p class="meta">近期没有触发记录的外部请求，产生外部连接时会自动汇总在此。</p>';
 					return;
 				}
 				const ul = document.createElement('ul');
@@ -827,16 +856,24 @@
 				items.forEach(function (row) {
 					const li = document.createElement('li');
 					li.className = 'wpcy-host-item';
-					li.innerHTML = '<span class="wpcy-host-item__main"><code></code><span class="pill mute"></span></span><span class="wpcy-host-item__note"></span>';
-					li.querySelector('code').textContent = row.host || '';
-					li.querySelector('.pill').textContent = (row.count || 0) + ' 次';
-					li.querySelector('.wpcy-host-item__note').textContent = (row.data_class || '') + (row.last_seen ? ' · ' + row.last_seen : '');
+					const main = document.createElement('span');
+					main.className = 'wpcy-host-item__main';
+					const code = document.createElement('code');
+					code.textContent = row.host || '';
+					const badge = makePill('mute', (row.count || 0) + ' 次', false);
+					main.appendChild(code);
+					main.appendChild(badge);
+					const note = document.createElement('span');
+					note.className = 'wpcy-host-item__note';
+					note.textContent = (row.data_class || '') + (row.last_seen ? ' · ' + row.last_seen : '');
+					li.appendChild(main);
+					li.appendChild(note);
 					ul.appendChild(li);
 				});
 				logEl.innerHTML = '';
 				logEl.appendChild(ul);
 			}).catch(function () {
-				logEl.innerHTML = '<p class="meta">近期暂无 B 级外部请求记录。</p>';
+				logEl.innerHTML = '<p class="meta">近期没有触发记录的外部请求，产生外部连接时会自动汇总在此。</p>';
 			});
 		}
 	}

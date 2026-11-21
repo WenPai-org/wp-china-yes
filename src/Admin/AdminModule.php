@@ -140,19 +140,21 @@ final class AdminModule implements Module {
 	}
 
 	/**
-	 * Redirect accidental options-general.php?page=wpcy* links to admin.php?page=wpcy*.
+	 * Redirect legacy 3.x ?page=wp-china-yes or accidental options-general.php?page=wpcy* links to admin.php?page=wpcy*.
 	 *
 	 * @since 4.0.0
 	 */
 	public function redirect_legacy_options_url(): void {
-		if ( $this->in_network_admin() || ! $this->is_app_screen() ) {
+		if ( $this->in_network_admin() ) {
 			return;
 		}
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 		$slug = $this->current_page();
-		if ( '' === $slug ) {
+		if ( 'wp-china-yes' === $slug ) {
+			$slug = self::SLUG;
+		} elseif ( ! $this->is_app_screen() || '' === $slug ) {
 			return;
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=' . rawurlencode( $slug ) ) );

@@ -377,6 +377,114 @@ class AnnouncementsTest extends TestCase {
 	}
 
 	/**
+	 * Disabling `admin.news_enabled` suppresses announcements payload and skips remote fetch.
+	 */
+	public function test_news_disabled_returns_empty_payload_and_skips_fetch() {
+		$repo                              = new Repository();
+		$settings                          = Defaults::settings();
+		$settings['admin']['news_enabled'] = false;
+		$repo->save_option( Schema::SETTINGS, $settings );
+
+		$called = false;
+		$module = new AnnouncementsModule(
+			$repo,
+			'mock://ann',
+			static function () use ( &$called ) {
+				$called = true;
+				return '';
+			}
+		);
+
+		$this->assertFalse( $module->is_enabled() );
+		$this->assertSame(
+			array(
+				'generated_at' => null,
+				'items'        => array(),
+			),
+			$module->payload()
+		);
+		$this->assertFalse( $called );
+	}
+
+	/**
+	 * Entitled white-label custom HTTPS news_feed_url overrides source with an isolated cache key.
+	 */
+	public function test_entitled_whitelabel_custom_news_feed_overrides_source_and_isolates_cache() {
+		set_transient(
+			\WenPai\ChinaYes\Services\Entitlements\EntitlementsModule::TRANSIENT_FRESH,
+			array(
+				array(
+					'service' => 'oem',
+					'status'  => 'active',
+				),
+			),
+			3600
+		);
+
+		$repo                                       = new Repository();
+		$settings                                   = Defaults::settings();
+		$settings['admin']['whitelabel']['enabled'] = true;
+		$settings['admin']['whitelabel']['news_feed_url'] = 'https://agency.example.com/wp-json/agency/v1/news';
+		$repo->save_option( Schema::SETTINGS, $settings );
+
+		$fetched_url = '';
+		$module      = new AnnouncementsModule(
+			$repo,
+			'https://wpcy.com/wp-json/wpcy/v1/announcements',
+			static function ( string $target ) use ( &$fetched_url ) {
+				$fetched_url = $target;
+				return (string) wp_json_encode(
+					array(
+						'generated_at' => '2026-11-20T10:00:00Z',
+						'items'        => array(
+							array(
+								'id'           => 'agency-1',
+								'title'        => '<b>系统维护通知</b>',
+								'url'          => 'https://agency.example.com/notice/1',
+								'summary'      => '今晚 23:00 例行升级。',
+								'published_at' => '2026-11-20T09:00:00Z',
+							),
+							array(
+								'id'           => 'insecure-drop',
+								'title'        => 'HTTP 链接应被丢弃',
+								'url'          => 'http://agency.example.com/insecure',
+								'summary'      => '丢弃',
+								'published_at' => '2026-11-20T09:30:00Z',
+							),
+						),
+					)
+				);
+			}
+		);
+
+		$this->assertSame( 'https://agency.example.com/wp-json/agency/v1/news', $module->source() );
+		$this->assertStringStartsWith( 'wpcy_announcements_wl_', $module->cache_key() );
+
+		$payload = $module->payload();
+		$this->assertSame( 'https://agency.example.com/wp-json/agency/v1/news', $fetched_url );
+		$this->assertSame( '2026-11-20T10:00:00Z', $payload['generated_at'] );
+		$this->assertCount( 1, $payload['items'] );
+		$this->assertSame( 'agency-1', $payload['items'][0]['id'] );
+		$this->assertSame( '系统维护通知', $payload['items'][0]['title'] );
+		$this->assertSame( 'whitelabel', $payload['items'][0]['source'] );
+	}
+
+	/**
+	 * Unentitled sites ignore `whitelabel.news_feed_url` even if written in database options.
+	 */
+	public function test_unentitled_whitelabel_news_feed_url_is_ignored() {
+		$repo                                       = new Repository();
+		$settings                                   = Defaults::settings();
+		$settings['admin']['whitelabel']['enabled'] = true;
+		$settings['admin']['whitelabel']['news_feed_url'] = 'https://agency.example.com/wp-json/agency/v1/news';
+		$repo->save_option( Schema::SETTINGS, $settings );
+
+		$module = new AnnouncementsModule( $repo, 'https://wpcy.com/wp-json/wpcy/v1/announcements' );
+		$this->assertSame( 'https://wpcy.com/wp-json/wpcy/v1/announcements', $module->source() );
+		$this->assertStringNotContainsString( '_wl_', $module->cache_key() );
+	}
+
+	/**
 	 * Unsigned sample used by existing tests.
 	 *
 	 * @param string $generated Generated-at stamp.

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\Announcements;
 
+use WenPai\ChinaYes\Admin\WhiteLabel;
 use WenPai\ChinaYes\Apps\CacheKey;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
@@ -94,6 +95,13 @@ final class AnnouncementsModule implements Module {
 	public const DISMISSED_OPTION = 'wpcy_announcements_dismissed';
 
 	/**
+	 * Settings repository (controls `admin.news_enabled` and white-label `news_feed_url`).
+	 *
+	 * @var Repository
+	 */
+	private Repository $config;
+
+	/**
 	 * Local path or https://wpcy.com/… URL. Empty means do not fetch.
 	 *
 	 * @var string
@@ -119,13 +127,13 @@ final class AnnouncementsModule implements Module {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Repository            $config   Settings access. Unused since dismissed ids moved to DISMISSED_OPTION; kept for the call sites.
+	 * @param Repository            $config   Settings access (`admin.news_enabled` & white-label feed URL).
 	 * @param string                $source   Fixture path or wpcy.com HTTPS URL. Empty disables fetch.
 	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
 	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
 	 */
 	public function __construct( Repository $config, string $source = '', $fetcher = null, $verifier = null ) {
-		unset( $config );
+		$this->config   = $config;
 		$this->source   = $source;
 		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
 		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
@@ -171,7 +179,7 @@ final class AnnouncementsModule implements Module {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_action( self::CRON_HOOK, array( $this, 'cron_refresh' ) );
 
-		if ( '' === $this->source ) {
+		if ( ! $this->is_enabled() || '' === $this->effective_source() ) {
 			return;
 		}
 		if ( function_exists( 'wp_next_scheduled' ) && ! wp_next_scheduled( self::CRON_HOOK ) ) {
@@ -200,26 +208,64 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Configured source. Empty when production fetch is disabled.
+	 * Configured source (or active white-label HTTPS override). Empty when fetch is disabled.
 	 *
 	 * @since 4.0.0
 	 */
 	public function source(): string {
-		return $this->source;
+		$custom = $this->whitelabel_feed_url();
+		return '' !== $custom ? $custom : $this->source;
+	}
+
+	/**
+	 * Whether announcements push is enabled in `admin.news_enabled`.
+	 */
+	public function is_enabled(): bool {
+		$settings = $this->config->all();
+		if ( isset( $settings['admin'] ) && is_array( $settings['admin'] ) && array_key_exists( 'news_enabled', $settings['admin'] ) ) {
+			return (bool) $settings['admin']['news_enabled'];
+		}
+		return true;
+	}
+
+	/**
+	 * Active entitled white-label custom HTTPS feed URL, or empty string.
+	 */
+	private function whitelabel_feed_url(): string {
+		$wl  = WhiteLabel::resolve( $this->config->all() );
+		$url = $wl['enabled'] ? trim( $wl['news_feed_url'] ) : '';
+		if ( '' !== $url && 0 === strpos( $url, 'https://' ) ) {
+			return $url;
+		}
+		return '';
+	}
+
+	/**
+	 * Effective source URL/path for fetching.
+	 */
+	private function effective_source(): string {
+		return $this->source();
 	}
 
 	/**
 	 * REST payload: cached undismissed items, at most 5.
 	 *
-	 * No cache → generated_at null and items []. Does not error.
+	 * No cache or disabled → generated_at null and items []. Does not error.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @return array{generated_at: string|null, items: list<array<string, string>>}
 	 */
 	public function payload(): array {
+		if ( ! $this->is_enabled() ) {
+			return array(
+				'generated_at' => null,
+				'items'        => array(),
+			);
+		}
+
 		$cached = $this->cached_document();
-		if ( ! is_array( $cached ) && '' !== $this->source ) {
+		if ( ! is_array( $cached ) && '' !== $this->effective_source() ) {
 			$this->refresh();
 			$cached = $this->cached_document();
 		}
@@ -282,23 +328,40 @@ final class AnnouncementsModule implements Module {
 	 */
 	public function refresh() {
 		$previous = $this->cached_document();
-		if ( '' === $this->source ) {
+		if ( ! $this->is_enabled() ) {
 			return $previous;
 		}
 
-		$raw = $this->read_source();
+		$custom_url = $this->whitelabel_feed_url();
+		$is_custom  = '' !== $custom_url;
+		$target     = $is_custom ? $custom_url : $this->source;
+		if ( '' === $target ) {
+			return $previous;
+		}
+
+		$raw = $this->read_source( $target, $is_custom );
 		if ( '' === $raw ) {
 			return $previous;
 		}
 
 		$decoded = json_decode( $raw, true );
-		if ( ! is_array( $decoded ) || ! $this->verifier->verify( $decoded ) ) {
+		if ( ! is_array( $decoded ) ) {
 			return $previous;
 		}
 
-		unset( $decoded['signature'] );
+		if ( ! $is_custom ) {
+			if ( ! $this->verifier->verify( $decoded ) ) {
+				return $previous;
+			}
+			unset( $decoded['signature'] );
+		} elseif ( ! isset( $decoded['items'] ) && array_values( $decoded ) === $decoded ) {
+			$decoded = array(
+				'generated_at' => gmdate( 'Y-m-d\\TH:i:s\\Z' ),
+				'items'        => $decoded,
+			);
+		}
 
-		$clean = $this->sanitize_document( $decoded );
+		$clean = $this->sanitize_document( $decoded, $is_custom );
 		if ( ! is_array( $clean ) ) {
 			return $previous;
 		}
@@ -308,11 +371,15 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Transient name of the cached document for this verifier's keys.
+	 * Transient name of the cached document (isolated per custom white-label URL).
 	 *
 	 * @since 4.0.0
 	 */
 	public function cache_key(): string {
+		$custom = $this->whitelabel_feed_url();
+		if ( '' !== $custom ) {
+			return self::TRANSIENT_KEY . '_wl_' . substr( hash( 'sha256', $custom ), 0, 16 );
+		}
 		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
 	}
 
@@ -327,8 +394,9 @@ final class AnnouncementsModule implements Module {
 		if ( ! function_exists( 'get_transient' ) ) {
 			return null;
 		}
-		$stored = get_transient( $this->cache_key() );
-		$clean  = $this->sanitize_document( $stored );
+		$is_custom = '' !== $this->whitelabel_feed_url();
+		$stored    = get_transient( $this->cache_key() );
+		$clean     = $this->sanitize_document( $stored, $is_custom );
 		return is_array( $clean ) ? $clean : null;
 	}
 
@@ -382,17 +450,18 @@ final class AnnouncementsModule implements Module {
 	/**
 	 * Keep a spec-shaped document or reject.
 	 *
-	 * @param mixed $decoded Candidate.
+	 * @param mixed $decoded   Candidate.
+	 * @param bool  $is_custom Whether sanitizing an entitled white-label custom feed.
 	 * @return array{generated_at: string, items: list<array<string, string>>}|null
 	 */
-	private function sanitize_document( $decoded ) {
+	private function sanitize_document( $decoded, bool $is_custom = false ) {
 		if ( ! is_array( $decoded ) || ! isset( $decoded['items'] ) || ! is_array( $decoded['items'] ) ) {
 			return null;
 		}
 
 		$items = array();
 		foreach ( $decoded['items'] as $row ) {
-			$item = $this->sanitize_item( $row );
+			$item = $this->sanitize_item( $row, $is_custom );
 			if ( is_array( $item ) ) {
 				$items[] = $item;
 			}
@@ -414,10 +483,11 @@ final class AnnouncementsModule implements Module {
 	/**
 	 * One item: id, source, title, https url, summary ≤ 200, published_at.
 	 *
-	 * @param mixed $row Candidate.
+	 * @param mixed $row       Candidate.
+	 * @param bool  $is_custom Whether sanitizing an entitled white-label custom feed.
 	 * @return array<string, string>|null
 	 */
-	private function sanitize_item( $row ) {
+	private function sanitize_item( $row, bool $is_custom = false ) {
 		if ( ! is_array( $row ) ) {
 			return null;
 		}
@@ -427,8 +497,10 @@ final class AnnouncementsModule implements Module {
 			return null;
 		}
 
-		$source = isset( $row['source'] ) && is_string( $row['source'] ) ? $row['source'] : '';
-		if ( ! in_array( $source, self::SOURCES, true ) ) {
+		$source = isset( $row['source'] ) && is_string( $row['source'] ) ? trim( $row['source'] ) : '';
+		if ( $is_custom ) {
+			$source = '' !== $source ? substr( $this->plain_text( $source ), 0, 32 ) : 'whitelabel';
+		} elseif ( ! in_array( $source, self::SOURCES, true ) ) {
 			return null;
 		}
 
@@ -447,7 +519,10 @@ final class AnnouncementsModule implements Module {
 
 		$published = isset( $row['published_at'] ) && is_string( $row['published_at'] ) ? $row['published_at'] : '';
 		if ( '' === $published ) {
-			return null;
+			if ( ! $is_custom ) {
+				return null;
+			}
+			$published = gmdate( 'Y-m-d\\TH:i:s\\Z' );
 		}
 
 		return array(
@@ -461,25 +536,32 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Read the source. Local files do not use HTTP. Remote only https://wpcy.com/.
+	 * Read the source. Local files do not use HTTP. Official remote only https://wpcy.com/;
+	 * entitled white-label custom source allows any https:// URL.
 	 *
+	 * @param string $target    Target source URL or local path.
+	 * @param bool   $is_custom Whether $target is an entitled white-label custom HTTPS URL.
 	 * @return string
 	 */
-	private function read_source(): string {
+	private function read_source( string $target, bool $is_custom = false ): string {
 		if ( is_callable( $this->fetcher ) ) {
-			$result = call_user_func( $this->fetcher, $this->source );
+			$result = call_user_func( $this->fetcher, $target );
 			return is_string( $result ) ? $result : '';
 		}
 
-		if ( $this->is_local_path( $this->source ) ) {
-			if ( ! is_readable( $this->source ) ) {
+		if ( ! $is_custom && $this->is_local_path( $target ) ) {
+			if ( ! is_readable( $target ) ) {
 				return '';
 			}
-			$raw = file_get_contents( $this->source ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture, not a remote URL.
+			$raw = file_get_contents( $target ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture, not a remote URL.
 			return is_string( $raw ) ? $raw : '';
 		}
 
-		if ( 0 !== strpos( $this->source, 'https://wpcy.com/' ) ) {
+		if ( $is_custom ) {
+			if ( 0 !== strpos( $target, 'https://' ) ) {
+				return '';
+			}
+		} elseif ( 0 !== strpos( $target, 'https://wpcy.com/' ) ) {
 			return '';
 		}
 
@@ -488,7 +570,7 @@ final class AnnouncementsModule implements Module {
 		}
 
 		$response = wp_remote_get(
-			$this->source,
+			$target,
 			array(
 				'timeout'   => 10,
 				'sslverify' => true,

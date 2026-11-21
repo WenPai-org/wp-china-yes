@@ -1,30 +1,35 @@
 /**
- * Scoped layout & typography refinements for WenPai Leaf 4.0 Services screens.
- * Uses wenpai-admin-ui design tokens exclusively.
+ * Scoped layout & typography refinements for WenPai Leaf 4.0 admin screens.
+ * Uses wenpai-admin-ui design tokens exclusively (400 regular weight, zero raw hex/spacing).
  */
 
 .wenpai-app .row-title,
 .wenpai-app .card-title {
-	font-weight: var(--wenpai-weight-regular, 400);
+	font-weight: var(--wenpai-weight-regular);
 }
 
 .wenpai-app .row-desc,
 .wenpai-app .card-sub,
 .wenpai-app .meta {
-	font-size: var(--wenpai-text-caption, 12px);
+	font-size: var(--wenpai-text-caption);
 	line-height: 1.55;
 	color: var(--wenpai-ink-3);
 }
 
 .wenpai-app [data-wpcy-screen="services"] .row,
 .wenpai-app [data-wpcy-screen="service-detail"] .row {
-	padding-block: 14px;
+	padding-block: var(--wenpai-space-3-5);
+}
+
+.wpcy-mark-img {
+	object-fit: contain;
+	border-radius: var(--wenpai-radius-sm);
 }
 
 .wpcy-core-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--wenpai-space-4, 16px);
+	gap: var(--wenpai-space-4);
 	align-items: stretch;
 }
 
@@ -46,24 +51,24 @@
 }
 
 .wpcy-core-card {
-	background: var(--wenpai-surface, #fff);
-	border: 1px solid var(--wenpai-line-card, #e2e5ea);
-	border-radius: var(--wenpai-radius-lg, 12px);
-	padding: var(--wenpai-space-5, 20px);
+	background: var(--wenpai-card);
+	border: 1px solid var(--wenpai-line-card);
+	border-radius: var(--wenpai-radius);
+	padding: var(--wenpai-space-5);
 	display: flex;
 	flex-direction: column;
-	gap: var(--wenpai-space-4, 16px);
-	transition: border-color 0.15s ease;
+	gap: var(--wenpai-space-4);
+	transition: border-color var(--wenpai-motion-base) var(--wenpai-motion-ease);
 }
 
 .wpcy-core-card:hover {
-	border-color: var(--wenpai-line-strong, #c9cfd8);
+	border-color: var(--wenpai-line-strong);
 }
 
 .wpcy-core-card__top {
 	display: flex;
 	align-items: flex-start;
-	gap: var(--wenpai-space-3, 12px);
+	gap: var(--wenpai-space-3);
 }
 
 .wpcy-core-card__top .wenpai-switch {
@@ -76,25 +81,25 @@
 }
 
 .wpcy-core-card__icon {
-	width: 36px;
-	height: 36px;
-	border-radius: var(--wenpai-radius-md, 8px);
+	width: var(--wenpai-size-tile);
+	height: var(--wenpai-size-tile);
+	border-radius: var(--wenpai-radius-md);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	flex: none;
-	background: var(--wenpai-mute-soft, #f2f4f7);
-	color: var(--wenpai-ink-2, #4b5563);
+	background: var(--wenpai-mute-soft);
+	color: var(--wenpai-ink-2);
 }
 
 .wpcy-core-card__icon.is-ok {
-	background: var(--wenpai-accent-soft, #eef2ff);
-	color: var(--wenpai-accent, #3858e9);
+	background: var(--wenpai-accent-soft);
+	color: var(--wenpai-accent);
 }
 
 .wpcy-core-card__icon.is-green {
-	background: var(--wenpai-ok-soft, #ecfdf3);
-	color: var(--wenpai-ok-ink, #166534);
+	background: var(--wenpai-ok-soft);
+	color: var(--wenpai-ok-ink);
 }
 
 .wpcy-core-card__icon svg {
@@ -109,16 +114,16 @@
 
 .wpcy-core-card__title {
 	margin: 0;
-	font-size: var(--wenpai-text-body, 14px);
-	font-weight: var(--wenpai-weight-regular, 400);
-	color: var(--wenpai-ink, #111827);
+	font-size: var(--wenpai-text-body);
+	font-weight: var(--wenpai-weight-regular);
+	color: var(--wenpai-ink);
 	line-height: 1.35;
 }
 
 .wpcy-core-card__desc {
-	margin: var(--wenpai-space-1, 4px) 0 0;
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-3, #6b7280);
+	margin: var(--wenpai-space-1) 0 0;
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-3);
 	line-height: 1.55;
 }
 
@@ -127,17 +132,17 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--wenpai-space-3, 12px);
-	padding-top: var(--wenpai-space-3, 12px);
-	border-top: 1px solid var(--wenpai-line-soft, #eef0f3);
+	gap: var(--wenpai-space-3);
+	padding-top: var(--wenpai-space-3);
+	border-top: 1px solid var(--wenpai-line-soft);
 }
 
 .wpcy-core-card__metric {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-3, #6b7280);
+	gap: var(--wenpai-space-1-5);
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-3);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -149,50 +154,28 @@
 	height: 6px;
 	border-radius: 999px;
 	flex: none;
-	background: var(--wenpai-line-strong, #c9cfd8);
+	background: var(--wenpai-line-strong);
 }
 
 .wpcy-core-card__dot.is-ok {
-	background: var(--wenpai-ok-ink, #16a34a);
-}
-
-.wpcy-core-card__link {
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-accent, #3858e9);
-	text-decoration: none;
-	white-space: nowrap;
-	flex: none;
-}
-
-.wpcy-core-card__link:hover {
-	text-decoration: underline;
+	background: var(--wenpai-ok);
 }
 
 .wenpai-app [data-wpcy-screen="services"] .row:hover,
 .wenpai-app [data-wpcy-screen="features"] .row:hover {
-	background: var(--wenpai-line-soft, #f7f8fa);
-	border-radius: var(--wenpai-radius-sm, 6px);
-}
-
-.wpcy-scene-tag {
-	display: inline-flex;
-	align-items: center;
-	height: 20px;
-	padding: 0 7px;
-	margin-inline-start: 6px;
-	border-radius: 999px;
-	background: var(--wenpai-accent-soft, #eef2ff);
-	color: var(--wenpai-accent, #3858e9);
-	font-size: 11px;
-	font-weight: var(--wenpai-weight-regular, 400);
-	vertical-align: middle;
+	background: var(--wenpai-line-soft);
+	border-radius: var(--wenpai-radius-sm);
 }
 
 .wpcy-inline-bar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wenpai-space-2);
+}
+
+.wpcy-inline-bar--spaced {
+	margin-top: var(--wenpai-space-3);
 }
 
 .wpcy-inline-bar input[type="text"],
@@ -208,46 +191,46 @@
 
 .wpcy-host-list {
 	list-style: none;
-	margin: 12px 0 0;
+	margin: var(--wenpai-space-3) 0 0;
 	padding: 0;
-	border-top: 1px solid var(--wenpai-line-soft, #eef0f3);
+	border-top: 1px solid var(--wenpai-line-soft);
 }
 
 .wpcy-host-item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 0;
-	border-bottom: 1px solid var(--wenpai-line-soft, #eef0f3);
-	font-size: var(--wenpai-text-body, 14px);
+	gap: var(--wenpai-space-3);
+	padding: var(--wenpai-space-2-5) 0;
+	border-bottom: 1px solid var(--wenpai-line-soft);
+	font-size: var(--wenpai-text-body);
 }
 
 .wpcy-host-item__main {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--wenpai-space-2);
 	min-width: 0;
 	flex-wrap: wrap;
 }
 
 .wpcy-host-item__note {
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-3, #6b7280);
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-3);
 }
 
 .wpcy-test-result {
-	margin-top: 12px;
-	padding: 12px 14px;
-	border-radius: var(--wenpai-radius-md, 8px);
-	background: var(--wenpai-mute-soft, #f5f6f8);
+	margin-top: var(--wenpai-space-3);
+	padding: var(--wenpai-space-3) var(--wenpai-space-3-5);
+	border-radius: var(--wenpai-radius-md);
+	background: var(--wenpai-mute-soft);
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--wenpai-space-3);
 	flex-wrap: wrap;
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-2, #4b5563);
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-2);
 }
 
 .wpcy-test-result[hidden] {
@@ -258,31 +241,35 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 6px;
-	margin-top: 10px;
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-3, #6b7280);
+	gap: var(--wenpai-space-1-5);
+	margin-top: var(--wenpai-space-2-5);
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-3);
+}
+
+.wpcy-chips--flush {
+	margin: 0 0 var(--wenpai-space-2);
 }
 
 .wpcy-chip {
 	appearance: none;
-	border: 1px solid var(--wenpai-line-card, #e2e5ea);
-	background: var(--wenpai-surface, #fff);
-	color: var(--wenpai-ink-2, #4b5563);
+	border: 1px solid var(--wenpai-line-card);
+	background: var(--wenpai-card);
+	color: var(--wenpai-ink-2);
 	border-radius: 999px;
-	padding: 2px 10px;
-	font-size: 12px;
-	font-weight: var(--wenpai-weight-regular, 400);
+	padding: var(--wenpai-space-0-5) var(--wenpai-space-2-5);
+	font-size: var(--wenpai-text-caption);
+	font-weight: var(--wenpai-weight-regular);
 	line-height: 1.6;
 	cursor: pointer;
-	transition: border-color 0.15s ease, color 0.15s ease;
+	transition: border-color var(--wenpai-motion-base) var(--wenpai-motion-ease), color var(--wenpai-motion-base) var(--wenpai-motion-ease);
 }
 
 .wpcy-chip:hover,
 .wpcy-chip.is-active {
-	border-color: var(--wenpai-accent, #3858e9);
-	color: var(--wenpai-accent, #3858e9);
-	background: var(--wenpai-accent-soft, #eef2ff);
+	border-color: var(--wenpai-accent);
+	color: var(--wenpai-accent);
+	background: var(--wenpai-accent-soft);
 }
 
 .wpcy-event-list {
@@ -295,10 +282,10 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 0;
-	border-bottom: 1px solid var(--wenpai-line-soft, #eef0f3);
-	font-size: var(--wenpai-text-body, 14px);
+	gap: var(--wenpai-space-3);
+	padding: var(--wenpai-space-2-5) 0;
+	border-bottom: 1px solid var(--wenpai-line-soft);
+	font-size: var(--wenpai-text-body);
 }
 
 .wpcy-event-item:last-child {
@@ -306,8 +293,8 @@
 }
 
 .wpcy-event-item__time {
-	font-size: var(--wenpai-text-caption, 12px);
-	color: var(--wenpai-ink-3, #6b7280);
+	font-size: var(--wenpai-text-caption);
+	color: var(--wenpai-ink-3);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
