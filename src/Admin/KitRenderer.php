@@ -593,16 +593,19 @@ final class KitRenderer {
 		);
 		$initial_events = \Wenpai_Admin_UI::tag_feed_html(
 			array(
-				'items' => $event_rows,
+				'scrollable' => true,
+				'items'      => $event_rows,
 			)
 		);
 		if ( $news_enabled ) {
 			$initial_news = \Wenpai_Admin_UI::tag_feed_html(
 				array(
-					'items' => array(
+					'scrollable' => true,
+					'items'      => array(
 						array(
-							'tag'   => __( '动态', 'wp-china-yes' ),
-							'title' => __( '正在同步最新中文社区维护资讯…', 'wp-china-yes' ),
+							'tag'   => __( '茶馆', 'wp-china-yes' ),
+							'tone'  => 'accent',
+							'title' => __( '正在同步文派茶馆动态（read.wptea.com）…', 'wp-china-yes' ),
 						),
 					),
 				)
@@ -1166,11 +1169,18 @@ final class KitRenderer {
 		$news_set_url = self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) );
 		$feed_rows    = array();
 
-		foreach ( array_slice( $items, 0, 4 ) as $item ) {
+		foreach ( array_slice( $items, 0, 5 ) as $item ) {
 			$cat       = isset( $item['category'] ) ? (string) $item['category'] : '';
+			$src_raw   = isset( $item['source'] ) ? (string) $item['source'] : '';
 			$tone_raw  = isset( $item['tone'] ) ? (string) $item['tone'] : '';
-			$tag       = 'release' === $cat ? __( '版本', 'wp-china-yes' ) : ( 'warn' === $tone_raw ? __( '公告', 'wp-china-yes' ) : __( '动态', 'wp-china-yes' ) );
-			$tone      = 'warn' === $tone_raw ? 'warn' : ( 'release' === $cat ? 'accent' : '' );
+			$tag       = 'release' === $cat
+				? __( '版本', 'wp-china-yes' )
+				: ( 'warn' === $tone_raw
+					? __( '公告', 'wp-china-yes' )
+					: ( 'wptea' === $src_raw
+						? __( '茶馆', 'wp-china-yes' )
+						: ( 'one' === $src_raw ? __( '官方', 'wp-china-yes' ) : __( '动态', 'wp-china-yes' ) ) ) );
+			$tone      = 'warn' === $tone_raw ? 'warn' : ( ( 'release' === $cat || 'wptea' === $src_raw ) ? 'accent' : '' );
 			$when      = '';
 			$published = isset( $item['published_at'] ) ? (string) $item['published_at'] : ( isset( $item['date'] ) ? (string) $item['date'] : '' );
 			if ( '' !== $published ) {
@@ -1529,7 +1539,7 @@ final class KitRenderer {
 				'pill'   => $news_enabled ? __( '已开启', 'wp-china-yes' ) : __( '未开启', 'wp-china-yes' ),
 				'metric' => ( $wl['enabled'] && '' !== $wl['news_feed_url'] )
 					? __( '白标自定义公告源', 'wp-china-yes' )
-					: __( '默认源 wptea.com', 'wp-china-yes' ),
+					: __( '默认源 read.wptea.com', 'wp-china-yes' ),
 				'url'    => self::page_url( 'wpcy-features', false, array( 'module' => 'news' ) ),
 				'toggle' => 'admin_news_enabled',
 			),
@@ -1684,7 +1694,7 @@ final class KitRenderer {
 				'icon'         => 'feedback',
 				'state'        => $news_enabled ? 'ok' : '',
 				'title'        => __( '启用资讯与公告推送', 'wp-china-yes' ),
-				'desc'         => __( '每日同步一次文派茶馆（wptea.com）精选资讯，最多展示 5 条未读通知。', 'wp-china-yes' ),
+				'desc'         => __( '每日同步一次文派茶馆动态（read.wptea.com），默认显示 5 条，超出可下拉滑动查看。', 'wp-china-yes' ),
 				'control_html' => self::toggle_control( 'admin_news_enabled', $news_enabled, $locked ),
 			)
 		);
@@ -1837,6 +1847,7 @@ final class KitRenderer {
 						'label'   => __( '设置个人资料语言', 'wp-china-yes' ),
 						'href'    => $profile_url,
 						'variant' => 'secondary',
+						'size'    => 'sm',
 					),
 				),
 			)
@@ -1988,10 +1999,7 @@ final class KitRenderer {
 							'href'    => 'https://wpcy.com/go/oem',
 							'variant' => 'primary',
 							'size'    => 'sm',
-							'attrs'   => array(
-								'target' => '_blank',
-								'rel'    => 'noopener noreferrer',
-							),
+							'target'  => '_blank',
 						)
 					),
 				)
@@ -2352,7 +2360,6 @@ final class KitRenderer {
 				'label'    => __( '添加域名', 'wp-china-yes' ),
 				'type'     => 'button',
 				'variant'  => 'primary',
-				'size'     => 'sm',
 				'disabled' => $locked,
 				'attrs'    => array( 'data-wpcy-bl-add' => '1' ),
 			)
@@ -2977,6 +2984,7 @@ final class KitRenderer {
 							'label'   => $action_label,
 							'href'    => $admin_link,
 							'variant' => 'primary',
+							'size'    => 'sm',
 						)
 					),
 				)
@@ -2998,6 +3006,7 @@ final class KitRenderer {
 							'label'   => __( '前往启用插件', 'wp-china-yes' ),
 							'href'    => $plugins_url,
 							'variant' => 'primary',
+							'size'    => 'sm',
 						)
 					),
 				)
@@ -3028,16 +3037,15 @@ final class KitRenderer {
 							'label'   => __( '查看插件页', 'wp-china-yes' ),
 							'href'    => $plugin_url,
 							'variant' => 'ghost',
-							'attrs'   => array(
-								'target' => '_blank',
-								'rel'    => 'noopener noreferrer',
-							),
+							'size'    => 'sm',
+							'target'  => '_blank',
 						)
 					) . ' ' . \Wenpai_Admin_UI::button_html(
 						array(
 							'label'   => __( '安装独立插件', 'wp-china-yes' ),
 							'href'    => $install_url,
 							'variant' => 'secondary',
+							'size'    => 'sm',
 						)
 					),
 				)
@@ -3218,6 +3226,7 @@ final class KitRenderer {
 					array(
 						'label'   => $recovery ? __( '恢复正常运行', 'wp-china-yes' ) : __( '进入恢复模式', 'wp-china-yes' ),
 						'variant' => $recovery ? 'secondary' : 'danger',
+						'size'    => 'sm',
 						'attrs'   => $recovery
 							? array( 'data-wpcy-action' => 'recovery-off' )
 							: array(

@@ -381,6 +381,18 @@
 			}
 		});
 
+		function cleanFeedSummary(raw) {
+			if (!raw) return '';
+			return String(raw).replace(/\s*(?:\[\.\.\.\]|\[…\])(?:\s*Source)?\s*$/i, '').trim();
+		}
+
+		function wrapScrollableFeed(ul) {
+			const wrap = document.createElement('div');
+			wrap.className = 'wenpai-tag-feed-scroll';
+			wrap.appendChild(ul);
+			return wrap;
+		}
+
 		function renderEventsAndNews() {
 			if (eventsEl) {
 				const ul = document.createElement('ul');
@@ -388,17 +400,19 @@
 				ssrSugNodes.forEach(function (li) {
 					ul.appendChild(li);
 				});
-				const pinned = cachedNotices.length ? cachedNotices[0] : null;
+				const pinned = cachedNotices.find(function (n) {
+					return n && (n.pinned || n.tone === 'warn' || n.category === 'security');
+				});
 				if (pinned) {
 					ul.appendChild(buildTagFeedRow(
 						'通知',
 						pinned.tone === 'warn' ? 'warn' : 'accent',
 						pinned.title || pinned.message || '重要维护通知',
 						pinned.url || '',
-						pinned.summary || pinned.body || '重要消息置顶提醒，读后自动收起',
+						cleanFeedSummary(pinned.summary || pinned.body) || '重要消息置顶提醒，读后自动收起',
 						formatShortTime(pinned.published_at || pinned.date || ''),
 						function () {
-							api('/announcements/' + encodeURIComponent(pinned.id) + '/dismiss', { method: 'POST' })
+							api('/announcements/' + encodeURIComponent(pinned.id) + '/dismiss?per_page=15', { method: 'POST' })
 								.finally(function () {
 									cachedNotices = cachedNotices.filter(function (n) { return n.id !== pinned.id; });
 									renderEventsAndNews();
@@ -406,7 +420,7 @@
 						}
 					));
 				}
-				cachedEvents.slice(0, 5).forEach(function (ev) {
+				cachedEvents.slice(0, 20).forEach(function (ev) {
 					const rawType = ev.type || '';
 					const meta = eventMeta[rawType] || { tag: '记录', tone: '', text: '运行状态记录' };
 					ul.appendChild(buildTagFeedRow(
@@ -423,27 +437,32 @@
 					ul.appendChild(buildTagFeedRow('就绪', '', '各加速通道正按当前站点策略平稳运行', '', '发生节点切换或巡检时自动记录', '', null));
 				}
 				eventsEl.innerHTML = '';
-				eventsEl.appendChild(ul);
+				eventsEl.appendChild(wrapScrollableFeed(ul));
 			}
 
 			if (newsEl) {
 				const ul = document.createElement('ul');
 				ul.className = 'wenpai-tag-feed';
 				if (!cachedNotices.length) {
-					ul.appendChild(buildTagFeedRow('动态', '', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同时支持在 WP 仪表盘展示高速社区动态小工具', '', null));
+					ul.appendChild(buildTagFeedRow('茶馆', 'accent', '当前没有未读社区动态与维护通知', 'https://wptea.com/', '同步自 read.wptea.com，亦支持在 WP 仪表盘展示社区动态小工具', '', null));
 				} else {
-					cachedNotices.slice(0, 5).forEach(function (item) {
-						const tag = item.category === 'release' ? '版本' : (item.tone === 'warn' ? '公告' : '动态');
-						const tone = item.tone === 'warn' ? 'warn' : (tag === '版本' ? 'accent' : '');
+					cachedNotices.slice(0, 15).forEach(function (item) {
+						const src = item.source || '';
+						const tag = item.category === 'release'
+							? '版本'
+							: (item.tone === 'warn'
+								? '公告'
+								: (src === 'wptea' ? '茶馆' : (src === 'one' ? '官方' : '动态')));
+						const tone = item.tone === 'warn' ? 'warn' : ((tag === '版本' || tag === '茶馆') ? 'accent' : '');
 						ul.appendChild(buildTagFeedRow(
 							tag,
 							tone,
 							item.title || item.message || '社区更新动态',
 							item.url || '',
-							item.summary || item.body || '',
+							cleanFeedSummary(item.summary || item.body),
 							formatShortTime(item.published_at || item.date || ''),
 							item.id ? function () {
-								api('/announcements/' + encodeURIComponent(item.id) + '/dismiss', { method: 'POST' })
+								api('/announcements/' + encodeURIComponent(item.id) + '/dismiss?per_page=15', { method: 'POST' })
 									.finally(function () {
 										cachedNotices = cachedNotices.filter(function (n) { return n.id !== item.id; });
 										renderEventsAndNews();
@@ -453,13 +472,13 @@
 					});
 				}
 				newsEl.innerHTML = '';
-				newsEl.appendChild(ul);
+				newsEl.appendChild(wrapScrollableFeed(ul));
 			}
 		}
 
 		function loadEvents() {
 			if (!eventsEl) return;
-			api('/events?per_page=5').then(function (data) {
+			api('/events?per_page=20').then(function (data) {
 				cachedEvents = Array.isArray(data && data.events) ? data.events : [];
 				renderEventsAndNews();
 			}).catch(function () {
@@ -486,7 +505,7 @@
 		}
 
 		if (feedCardEl && feedCardEl.getAttribute('data-wpcy-news-enabled') !== '0') {
-			api('/announcements').then(function (data) {
+			api('/announcements?per_page=15').then(function (data) {
 				cachedNotices = Array.isArray(data && data.items) ? data.items : [];
 				renderEventsAndNews();
 			}).catch(function () {

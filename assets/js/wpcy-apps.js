@@ -181,7 +181,7 @@
 
 				btn.classList.remove('is-more');
 				btn.setAttribute('data-wpcy-quick', 'app');
-				btn.setAttribute('data-wpcy-app-id', app.id);
+				btn.setAttribute('data-wpcy-miniapp-id', app.id);
 
 				var glyphEl = btn.querySelector('.wenpai-icon-box__glyph');
 				if (glyphEl) {
@@ -233,7 +233,7 @@
 				var link = document.createElement('a');
 				link.className = 'wenpai-icon-box';
 				link.href = buildServicesAppHref(servicesUrl, app.id);
-				link.setAttribute('data-wpcy-app-id', app.id);
+				link.setAttribute('data-wpcy-miniapp-id', app.id);
 
 				var glyph = document.createElement('span');
 				glyph.className = 'wenpai-icon-box__glyph';
@@ -278,7 +278,7 @@
 		var btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = 'btn btn-primary';
-		btn.setAttribute('data-wpcy-app-unlock', appId);
+		btn.setAttribute('data-wpcy-miniapp-unlock', appId);
 		btn.textContent = '了解与开通';
 
 		btn.addEventListener('click', function () {
@@ -327,7 +327,7 @@
 		iframe.setAttribute('width', '100%');
 		iframe.setAttribute('height', '420');
 		iframe.setAttribute('frameborder', '0');
-		iframe.setAttribute('data-testid', 'wpcy-app-iframe');
+		iframe.setAttribute('data-testid', 'wpcy-miniapp-iframe');
 		iframe.setAttribute('src', manifest.entry_url);
 
 		if (statusEl) {
@@ -460,9 +460,9 @@
 		if (!hostEl) {
 			return;
 		}
-		var appId = hostEl.getAttribute('data-wpcy-app-id') || '';
-		var statusEl = hostEl.querySelector('[data-wpcy-app-status]');
-		var stageEl = hostEl.querySelector('[data-wpcy-app-stage]');
+		var appId = hostEl.getAttribute('data-wpcy-miniapp-id') || '';
+		var statusEl = hostEl.querySelector('[data-wpcy-miniapp-status]');
+		var stageEl = hostEl.querySelector('[data-wpcy-miniapp-stage]');
 		var titleEl = hostEl.querySelector('.card-title');
 
 		fetchApps().then(function (data) {

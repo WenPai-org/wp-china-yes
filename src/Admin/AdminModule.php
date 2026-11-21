@@ -604,7 +604,7 @@ final class AdminModule implements Module {
 				self::HANDLE,
 				CHINA_YES_PLUGIN_URL . 'assets/css/wpcy-admin.css',
 				array( 'wenpai-admin-ui' ),
-				CHINA_YES_VERSION
+				CHINA_YES_VERSION . '-' . (int) filemtime( $css_path )
 			);
 		}
 
@@ -617,7 +617,7 @@ final class AdminModule implements Module {
 			self::HANDLE,
 			CHINA_YES_PLUGIN_URL . 'assets/js/wpcy-admin.js',
 			array( 'wenpai-admin-ui' ),
-			CHINA_YES_VERSION,
+			CHINA_YES_VERSION . '-' . (int) filemtime( $js_path ),
 			true
 		);
 
@@ -756,7 +756,9 @@ final class AdminModule implements Module {
 	 */
 	public function render_dashboard_news_widget(): void {
 		$settings      = $this->repository->all();
-		$announcements = new AnnouncementsModule( $this->repository, AnnouncementsModule::PRODUCTION_URL );
+		$default_ann   = AnnouncementsModule::READ_URL;
+		$ann_source    = function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', $default_ann ) : $default_ann;
+		$announcements = new AnnouncementsModule( $this->repository, is_string( $ann_source ) ? $ann_source : $default_ann );
 		$cached        = $announcements->cached_document();
 		if ( null === $cached && function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_schedule_single_event' ) ) {
 			if ( ! wp_next_scheduled( AnnouncementsModule::CRON_HOOK ) ) {

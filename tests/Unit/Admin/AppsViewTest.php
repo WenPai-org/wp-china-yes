@@ -80,11 +80,11 @@ class AppsViewTest extends TestCase {
 		$this->assertStringContainsString( '在隔离沙箱中运行文派生态轻便工具。', $html );
 		$this->assertStringContainsString( 'class="wenpai-stack"', $html );
 		$this->assertStringContainsString( 'data-wpcy-screen="app-host"', $html );
-		$this->assertStringContainsString( 'data-wpcy-app-id="slug-helper"', $html );
-		$this->assertStringContainsString( 'data-wpcy-app-card="1"', $html );
-		$this->assertStringContainsString( 'role="status" aria-live="polite" class="meta" data-wpcy-app-status="1"', $html );
+		$this->assertStringContainsString( 'data-wpcy-miniapp-id="slug-helper"', $html );
+		$this->assertStringContainsString( 'data-wpcy-miniapp-card="1"', $html );
+		$this->assertStringContainsString( 'role="status" aria-live="polite" class="meta" data-wpcy-miniapp-status="1"', $html );
 		$this->assertStringContainsString( '正在校验签名目录与运行环境…', $html );
-		$this->assertStringContainsString( '<div data-wpcy-app-stage="1"></div>', $html );
+		$this->assertStringContainsString( '<div data-wpcy-miniapp-stage="1"></div>', $html );
 		$this->assertStringNotContainsString( 'style="', $html );
 	}
 
@@ -165,7 +165,7 @@ class AppsViewTest extends TestCase {
 		$this->assertStringContainsString( 'allow-scripts allow-forms', $js_src );
 		$this->assertStringNotContainsString( 'allow-same-origin', $js_src );
 		$this->assertStringContainsString( 'strict-origin', $js_src );
-		$this->assertStringContainsString( 'wpcy-app-iframe', $js_src );
+		$this->assertStringContainsString( 'wpcy-miniapp-iframe', $js_src );
 		$this->assertStringContainsString( 'wpcy_apps_session_invalid', $js_src );
 	}
 }

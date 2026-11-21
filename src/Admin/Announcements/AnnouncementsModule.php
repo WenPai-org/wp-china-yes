@@ -28,7 +28,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class AnnouncementsModule implements Module {
 
 	/**
-	 * Production aggregate URL. Not the default source.
+	 * Canonical Read Hub static JSON URL (OSS + CyberCDN).
+	 *
+	 * @since 4.0.0
+	 */
+	public const READ_URL = 'https://read.wptea.com/announcements.json';
+
+	/**
+	 * Production REST fallback URL on wpcy.com.
 	 *
 	 * @since 4.0.0
 	 */
@@ -123,20 +130,28 @@ final class AnnouncementsModule implements Module {
 	private ManifestVerifier $verifier;
 
 	/**
+	 * Whether an explicit verifier was injected (strict detached signature mode).
+	 *
+	 * @var bool
+	 */
+	private bool $require_signature;
+
+	/**
 	 * Constructor. Does not register hooks or fetch.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param Repository            $config   Settings access (`admin.news_enabled` & white-label feed URL).
-	 * @param string                $source   Fixture path or wpcy.com HTTPS URL. Empty disables fetch.
+	 * @param string                $source   Fixture path or official HTTPS URL. Empty disables fetch.
 	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
 	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
 	 */
 	public function __construct( Repository $config, string $source = '', $fetcher = null, $verifier = null ) {
-		$this->config   = $config;
-		$this->source   = $source;
-		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
-		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
+		$this->config            = $config;
+		$this->source            = $source;
+		$this->fetcher           = is_callable( $fetcher ) ? $fetcher : null;
+		$this->require_signature = $verifier instanceof ManifestVerifier;
+		$this->verifier          = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
 	}
 
 	/**
@@ -248,15 +263,16 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * REST payload: cached undismissed items, at most 5.
+	 * REST payload: cached undismissed items, at most $limit (default 5, max 20).
 	 *
 	 * No cache or disabled → generated_at null and items []. Does not error.
 	 *
 	 * @since 4.0.0
 	 *
+	 * @param int $limit Max items to return (1..20, default VISIBLE_LIMIT).
 	 * @return array{generated_at: string|null, items: list<array<string, string>>}
 	 */
-	public function payload(): array {
+	public function payload( int $limit = self::VISIBLE_LIMIT ): array {
 		if ( ! $this->is_enabled() ) {
 			return array(
 				'generated_at' => null,
@@ -282,9 +298,11 @@ final class AnnouncementsModule implements Module {
 			$generated = null;
 		}
 
+		$cap = max( 1, min( 20, $limit ) );
+
 		return array(
 			'generated_at' => $generated,
-			'items'        => $this->visible_items( $cached ),
+			'items'        => $this->visible_items( $cached, $cap ),
 		);
 	}
 
@@ -350,10 +368,12 @@ final class AnnouncementsModule implements Module {
 		}
 
 		if ( ! $is_custom ) {
-			if ( ! $this->verifier->verify( $decoded ) ) {
-				return $previous;
+			if ( array_key_exists( 'signature', $decoded ) || $this->require_signature || ! $this->is_official_hub_url( $target ) ) {
+				if ( ! $this->verifier->verify( $decoded ) ) {
+					return $previous;
+				}
+				unset( $decoded['signature'] );
 			}
-			unset( $decoded['signature'] );
 		} elseif ( ! isset( $decoded['items'] ) && array_values( $decoded ) === $decoded ) {
 			$decoded = array(
 				'generated_at' => gmdate( 'Y-m-d\\TH:i:s\\Z' ),
@@ -422,12 +442,13 @@ final class AnnouncementsModule implements Module {
 	}
 
 	/**
-	 * Undismissed items, newest first, at most VISIBLE_LIMIT.
+	 * Undismissed items, newest first, at most $limit.
 	 *
 	 * @param array{generated_at: string, items: list<array<string, string>>} $document Cached document.
+	 * @param int                                                             $limit    Max items.
 	 * @return list<array<string, string>>
 	 */
-	private function visible_items( array $document ): array {
+	private function visible_items( array $document, int $limit = self::VISIBLE_LIMIT ): array {
 		$skip    = array_fill_keys( $this->dismissed_ids(), true );
 		$visible = array();
 		foreach ( $document['items'] as $item ) {
@@ -444,7 +465,7 @@ final class AnnouncementsModule implements Module {
 			}
 		);
 
-		return array_slice( $visible, 0, self::VISIBLE_LIMIT );
+		return array_slice( $visible, 0, $limit );
 	}
 
 	/**
@@ -515,7 +536,8 @@ final class AnnouncementsModule implements Module {
 		}
 
 		$summary = isset( $row['summary'] ) && is_string( $row['summary'] ) ? $this->plain_text( $row['summary'] ) : '';
-		$summary = $this->clip( $summary, 200 );
+		$cleaned = preg_replace( '/\s*(?:\[\.\.\.\]|\[…\])(?:\s*Source)?\s*$/iu', '', $summary );
+		$summary = $this->clip( is_string( $cleaned ) ? trim( $cleaned ) : $summary, 200 );
 
 		$published = isset( $row['published_at'] ) && is_string( $row['published_at'] ) ? $row['published_at'] : '';
 		if ( '' === $published ) {
@@ -561,18 +583,44 @@ final class AnnouncementsModule implements Module {
 			if ( 0 !== strpos( $target, 'https://' ) ) {
 				return '';
 			}
-		} elseif ( 0 !== strpos( $target, 'https://wpcy.com/' ) ) {
+			return $this->http_get_body( $target, 10 );
+		}
+
+		if ( ! $this->is_official_hub_url( $target ) ) {
 			return '';
 		}
 
+		$body = $this->http_get_body( $target, self::READ_URL === $target ? 6 : 10 );
+		if ( '' === $body && self::READ_URL === $target ) {
+			$body = $this->http_get_body( self::PRODUCTION_URL, 8 );
+		}
+		return $body;
+	}
+
+	/**
+	 * Whether $url points to the official Read Hub (`read.wptea.com`) or `wpcy.com` HTTPS origin.
+	 *
+	 * @param string $url Candidate URL.
+	 */
+	private function is_official_hub_url( string $url ): bool {
+		return 0 === strpos( $url, 'https://read.wptea.com/' ) || 0 === strpos( $url, 'https://wpcy.com/' );
+	}
+
+	/**
+	 * Perform one verified HTTPS GET and return body on HTTP 200, else empty string.
+	 *
+	 * @param string $url     HTTPS URL.
+	 * @param int    $timeout Timeout seconds.
+	 */
+	private function http_get_body( string $url, int $timeout ): string {
 		if ( ! function_exists( 'wp_remote_get' ) ) {
 			return '';
 		}
 
 		$response = wp_remote_get(
-			$target,
+			$url,
 			array(
-				'timeout'   => 10,
+				'timeout'   => $timeout,
 				'sslverify' => true,
 			)
 		);

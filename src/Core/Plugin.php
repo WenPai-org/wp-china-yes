@@ -242,7 +242,8 @@ final class Plugin {
 		$registry->add( $entitlements );
 		$registry->add( new CatalogModule( $config, $logger ) );
 		$registry->add( new NoticeControlModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_notice_rules_source', '' ) : '' ), null, $logger ) );
-		$registry->add( new AnnouncementsModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', '' ) : '' ) ) );
+		$default_ann = AnnouncementsModule::READ_URL;
+		$registry->add( new AnnouncementsModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', $default_ann ) : $default_ann ) ) );
 		$registry->add( new ElementHideModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_element_hide_source', '' ) : '' ), null, $logger ) );
 		$registry->add( new UpdateBridge( $config, null, null, $logger ) );
 

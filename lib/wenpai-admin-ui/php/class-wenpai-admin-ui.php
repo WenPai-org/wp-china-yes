@@ -1348,6 +1348,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *
 		 *     @type string $label      Button text.
 		 *     @type string $variant    primary|secondary|ghost|danger. Default secondary.
+		 *     @type string $size       ''|sm|xs. Default ''.
 		 *     @type string $href       Output <a> when set.
 		 *     @type string $target     For <a>; _blank adds rel and screen-reader hint.
 		 *     @type string $type       button|submit for <button>. Default button.
@@ -1372,8 +1373,13 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				self::doing_it_wrong( sprintf( 'Invalid button variant 「%s」.', $variant ), 'Wenpai_Admin_UI::button' );
 				$variant = 'secondary';
 			}
+			$size = isset( $args['size'] ) ? (string) $args['size'] : '';
+			if ( '' !== $size && ! in_array( $size, array( 'sm', 'xs' ), true ) ) {
+				self::doing_it_wrong( sprintf( 'Invalid button size 「%s」.', $size ), 'Wenpai_Admin_UI::button' );
+				$size = '';
+			}
 			$label = isset( $args['label'] ) ? (string) $args['label'] : '';
-			$class = self::classes( array( 'btn', 'btn-' . $variant, self::extra_class( $args ) ) );
+			$class = self::classes( array( 'btn', 'btn-' . $variant, '' !== $size ? 'btn-' . $size : '', self::extra_class( $args ) ) );
 			$href  = isset( $args['href'] ) ? (string) $args['href'] : '';
 			$skip  = array();
 			$extra = '';
@@ -3840,10 +3846,11 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 * @param array $args {
 		 *     Helper arguments.
 		 *
-		 *     @type array  $items Array of array{ tag, tone?: string, title, url?: string, target?: string, note?: string, when?: string, action_html?: string, action_label?: string, action_url?: string, action_variant?: string, attrs?: array }.
-		 *     @type array  $empty Optional empty_state() args when items is empty.
-		 *     @type string $class Extra classes.
-		 *     @type array  $attrs Extra attributes.
+		 *     @type array  $items      Array of array{ tag, tone?: string, title, url?: string, target?: string, note?: string, when?: string, action_html?: string, action_label?: string, action_url?: string, action_variant?: string, attrs?: array }.
+		 *     @type bool   $scrollable Wrap list in .wenpai-tag-feed-scroll (5-row cap + vertical scroll). Default false.
+		 *     @type array  $empty      Optional empty_state() args when items is empty.
+		 *     @type string $class      Extra classes.
+		 *     @type array  $attrs      Extra attributes.
 		 * }
 		 * @return string
 		 */
@@ -3853,8 +3860,9 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 			if ( array() === $items ) {
 				return isset( $args['empty'] ) && is_array( $args['empty'] ) ? self::empty_state_html( $args['empty'] ) : '';
 			}
-			$cls  = self::classes( array( 'wenpai-tag-feed', self::extra_class( $args ) ) );
-			$html = '<ul class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '>';
+			$scroll = ! empty( $args['scrollable'] );
+			$cls    = self::classes( array( 'wenpai-tag-feed', self::extra_class( $args ) ) );
+			$html   = ( $scroll ? '<div class="wenpai-tag-feed-scroll">' : '' ) . '<ul class="' . esc_attr( $cls ) . '"' . self::extra_attrs( $args ) . '>';
 			foreach ( $items as $item ) {
 				if ( ! is_array( $item ) ) {
 					continue;
@@ -3894,7 +3902,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				}
 				$html .= '</span></li>';
 			}
-			return $html . '</ul>';
+			return $html . '</ul>' . ( $scroll ? '</div>' : '' );
 		}
 
 		/**

@@ -8,7 +8,8 @@
 	border-radius: var(--wenpai-radius-sm);
 }
 
-.wenpai-app .card-head .head-actions .meta {
+.wenpai-app .card-head .head-actions .meta,
+.wenpai-app .card-foot.start > .meta {
 	margin: 0;
 }
 

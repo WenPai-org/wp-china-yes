@@ -485,6 +485,47 @@ class AnnouncementsTest extends TestCase {
 	}
 
 	/**
+	 * Canonical read.wptea.com JSON accepts unsigned official Planet items, cleans WP RSS '[…] Source', and supports per_page > 5.
+	 */
+	public function test_read_wptea_hub_accepts_official_json_and_supports_per_page() {
+		$items = array();
+		for ( $i = 1; $i <= 7; $i++ ) {
+			$items[] = array(
+				'id'           => 'wptea-' . $i,
+				'source'       => 0 === $i % 2 ? 'one' : 'wptea',
+				'title'        => '茶馆更新 #' . $i,
+				'url'          => 'https://wptea.com/' . $i . '.html',
+				'summary'      => '摘要内容 #' . $i . ' […] Source',
+				'published_at' => sprintf( '2026-11-%02dT08:00:00Z', $i ),
+			);
+		}
+		$module = new AnnouncementsModule(
+			new Repository(),
+			AnnouncementsModule::READ_URL,
+			static function ( string $target ) use ( $items ) {
+				return AnnouncementsModule::READ_URL === $target
+					? (string) wp_json_encode(
+						array(
+							'generated_at' => '2026-11-21T10:00:00Z',
+							'items'        => $items,
+						)
+					)
+					: '';
+			}
+		);
+
+		$default_payload = $module->payload();
+		$this->assertCount( 5, $default_payload['items'] );
+		$this->assertSame( '摘要内容 #7', $default_payload['items'][0]['summary'] );
+
+		$controller      = new AnnouncementsController( $module );
+		$request         = new WP_REST_Request();
+		$request->params = array( 'per_page' => 15 );
+		$expanded        = $controller->get_items( $request )->get_data();
+		$this->assertCount( 7, $expanded['items'] );
+	}
+
+	/**
 	 * Unsigned sample used by existing tests.
 	 *
 	 * @param string $generated Generated-at stamp.

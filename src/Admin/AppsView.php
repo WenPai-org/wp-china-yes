@@ -44,18 +44,18 @@ final class AppsView {
 			)
 		);
 
-		echo '<div class="wenpai-stack" data-wpcy-screen="app-host" data-wpcy-app-id="' . esc_attr( $app_id ) . '">';
+		echo '<div class="wenpai-stack" data-wpcy-screen="app-host" data-wpcy-miniapp-id="' . esc_attr( $app_id ) . '">';
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '轻便小工具', 'wp-china-yes' ),
 				'tile'  => false,
 				'attrs' => array(
-					'data-wpcy-app-card' => '1',
+					'data-wpcy-miniapp-card' => '1',
 				),
 			)
 		);
-		echo '<p role="status" aria-live="polite" class="meta" data-wpcy-app-status="1">' . esc_html__( '正在校验签名目录与运行环境…', 'wp-china-yes' ) . '</p>';
-		echo '<div data-wpcy-app-stage="1"></div>';
+		echo '<p role="status" aria-live="polite" class="meta" data-wpcy-miniapp-status="1">' . esc_html__( '正在校验签名目录与运行环境…', 'wp-china-yes' ) . '</p>';
+		echo '<div data-wpcy-miniapp-stage="1"></div>';
 		\Wenpai_Admin_UI::card_close();
 		echo '</div>';
 	}
