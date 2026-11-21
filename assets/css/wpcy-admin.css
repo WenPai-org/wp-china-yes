@@ -3,32 +3,8 @@
  * Uses wenpai-admin-ui design tokens exclusively (400 regular weight, zero raw hex/spacing).
  */
 
-.wenpai-app .row-title,
-.wenpai-app .card-title {
-	font-weight: var(--wenpai-weight-regular);
-}
-
-.wenpai-app .row-desc,
-.wenpai-app .card-sub,
-.wenpai-app .meta {
-	font-size: var(--wenpai-text-caption);
-	line-height: 1.55;
-	color: var(--wenpai-ink-3);
-}
-
-.wenpai-app [data-wpcy-screen="services"] .row,
-.wenpai-app [data-wpcy-screen="service-detail"] .row {
-	padding-block: var(--wenpai-space-3-5);
-}
-
 .wpcy-mark-img {
 	object-fit: contain;
-	border-radius: var(--wenpai-radius-sm);
-}
-
-.wenpai-app [data-wpcy-screen="services"] .row:hover,
-.wenpai-app [data-wpcy-screen="features"] .row:hover {
-	background: var(--wenpai-line-soft);
 	border-radius: var(--wenpai-radius-sm);
 }
 
