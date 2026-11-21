@@ -766,7 +766,13 @@ pre.wenpai-code code {
 /* Disable-style depends_on: dimmed label, reason in ink-3. */
 .wenpai-field.is-disabled .wenpai-field__label,
 .wenpai-field.is-disabled .field-label { color: var(--wenpai-ink-3); }
-.wenpai-app .wenpai-field.is-disabled :is(input, select, textarea):disabled { background: var(--wenpai-mute-soft); color: var(--wenpai-ink-3); cursor: not-allowed; }
+.wenpai-app .wenpai-field.is-disabled :is(input, select, textarea):disabled,
+.wenpai-app .field-ctl :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):disabled {
+  background: var(--wenpai-mute-soft);
+  border-color: var(--wenpai-line-card);
+  color: var(--wenpai-ink-3);
+  cursor: not-allowed;
+}
 .wenpai-field__reason { margin: 0; color: var(--wenpai-ink-3); font-size: var(--wenpai-text-caption); line-height: var(--wenpai-leading-caption); }
 /* Read-only status: pill + ink-3 note + link. Never an input. */
 .wenpai-field__status { display: flex; flex-direction: column; align-items: flex-start; gap: var(--wenpai-space-1); }
@@ -1733,16 +1739,19 @@ div.wenpai-code code { font-family: inherit; font-size: var(--wenpai-text-meta);
   .wenpai-toast { border: 2px solid Highlight; }
 }
 
-/* --- 0.12.0 二级子详情页头、阅读窄栏、目录模块卡栅格与未保存浮动条 --- */
+/* --- 0.12.0–0.12.1 二级子详情页头、目录模块卡栅格与未保存浮动条 --- */
 
-.wenpai-narrow,
-.wenpai-main.is-narrow > :not(.foot) {
+.wenpai-main.is-narrow {
   max-inline-size: var(--wenpai-size-subpage);
 }
 
 .wenpai-subhead {
   display: grid;
   gap: var(--wenpai-space-2);
+  margin-block-end: var(--wenpai-space-5);
+}
+.wenpai-app .wenpai-subhead .wenpai-page-head {
+  margin: 0;
 }
 .wenpai-app .wenpai-back {
   display: inline-flex;

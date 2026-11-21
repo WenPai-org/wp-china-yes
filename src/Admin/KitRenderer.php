@@ -830,7 +830,6 @@ final class KitRenderer {
 			);
 		}
 
-		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-news">';
 		\Wenpai_Admin_Shell::subpage_head(
 			array(
 				'title'      => __( '资讯与公告源', 'wp-china-yes' ),
@@ -840,6 +839,7 @@ final class KitRenderer {
 				'aside_html' => $aside_html,
 			)
 		);
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-news">';
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '文派茶馆与官方通知', 'wp-china-yes' ),
@@ -858,84 +858,97 @@ final class KitRenderer {
 		);
 		\Wenpai_Admin_UI::card_close();
 
-		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
-		$profile   = (string) ( $settings['profile'] ?? 'domestic' );
-		$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
-		$mirror    = self::conn_mirror( $conn );
-		$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
-		$scope     = self::conn_scope( $settings, $conn );
-		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
-		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
-		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
-		echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
-		echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
-		echo '<input type="hidden" name="avatar_source" value="' . esc_attr( $avatar ) . '">';
-		if ( $heartbeat ) {
-			echo '<input type="hidden" name="heartbeat" value="1">';
-		}
-		if ( $feeds ) {
-			echo '<input type="hidden" name="dashboard_feeds" value="1">';
-		}
-		if ( ! $wl_locked ) {
-			echo '<input type="hidden" name="wl_enabled" value="' . ( $wl['enabled'] ? '1' : '0' ) . '">';
-			echo '<input type="hidden" name="wl_brand_name" value="' . esc_attr( $wl['brand_name'] ) . '">';
-			echo '<input type="hidden" name="wl_help_url" value="' . esc_attr( $wl['help_url'] ) . '">';
-			echo '<input type="hidden" name="wl_feedback_url" value="' . esc_attr( $wl['feedback_url'] ) . '">';
-			echo '<input type="hidden" name="wl_docs_url" value="' . esc_attr( $wl['docs_url'] ) . '">';
-			echo '<input type="hidden" name="wl_logo_url" value="' . esc_attr( $wl['logo_url'] ) . '">';
-			if ( $wl['hide_logo'] ) {
-				echo '<input type="hidden" name="wl_hide_logo" value="1">';
-			}
-			if ( $wl['hide_links'] ) {
-				echo '<input type="hidden" name="wl_hide_links" value="1">';
-			}
-		}
-
-		\Wenpai_Admin_UI::card_open(
-			array(
-				'title' => __( '自有品牌新闻源（白标能力）', 'wp-china-yes' ),
-				'sub'   => $wl['entitled']
-					? __( '填写自有 HTTPS 公告接口地址后，启用全套白标时将自动向客户站点推送你的服务通知；留空则保持默认源。', 'wp-china-yes' )
-					: __( '开通全套白标授权后，可将默认资讯源替换为建站团队或企业自己的客户服务公告地址。', 'wp-china-yes' ),
-				'tile'  => false,
-			)
-		);
-		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_input.
-		echo self::field_row_input(
-			'wl_news_feed_url',
-			'url',
-			__( '自定义新闻源地址', 'wp-china-yes' ),
-			__( '需使用 HTTPS 地址并返回包含标题、链接与摘要的公告列表；也可在 wp-config.php 中定义 WPCY_WHITELABEL_NEWS_URL 固定。', 'wp-china-yes' ),
-			$wl['news_feed_url'],
-			'https://example.com/wp-json/agency/v1/news',
-			300,
-			$wl_locked
-		);
-		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( ! $wl['entitled'] ) {
-			\Wenpai_Admin_UI::card_foot(
+			\Wenpai_Admin_UI::card_open(
 				array(
-					'start'   => true,
-					'meta'    => __( '自定义新闻源属于全套白标商业交付权益的一部分。', 'wp-china-yes' ),
-					'actions' => array(
+					'title' => __( '自有品牌新闻源（白标能力）', 'wp-china-yes' ),
+					'sub'   => __( '面向建站服务商与企业交付：可将概览页默认资讯源替换为自有客户服务公告地址。', 'wp-china-yes' ),
+					'tile'  => false,
+				)
+			);
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => 'sparkle',
+					'title'        => __( '自定义 HTTPS 公告接口', 'wp-china-yes' ),
+					'desc'         => __( '开通商业白标授权后即可配置自有公告列表地址，或通过 wp-config.php 中的 WPCY_WHITELABEL_NEWS_URL 常量固定。', 'wp-china-yes' ),
+					'pill'         => array(
+						'text'  => __( '需授权', 'wp-china-yes' ),
+						'state' => 'mute',
+					),
+					'control_html' => \Wenpai_Admin_UI::button_html(
 						array(
 							'label'   => __( '查看全套白标授权', 'wp-china-yes' ),
 							'href'    => $wl_url,
 							'variant' => 'secondary',
-						),
+							'size'    => 'sm',
+						)
 					),
 				)
 			);
-		}
-		\Wenpai_Admin_UI::card_close();
-		if ( ! $wl_locked ) {
-			\Wenpai_Admin_UI::savebar(
+			\Wenpai_Admin_UI::card_close();
+		} else {
+			echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
+			$profile   = (string) ( $settings['profile'] ?? 'domestic' );
+			$conn      = isset( $settings['connectivity'] ) && is_array( $settings['connectivity'] ) ? $settings['connectivity'] : array();
+			$mirror    = self::conn_mirror( $conn );
+			$avatar    = (string) ( $conn['avatar'] ?? 'cravatar_cn' );
+			$scope     = self::conn_scope( $settings, $conn );
+			$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
+			$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
+			echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
+			echo '<input type="hidden" name="wporg_mirror" value="' . esc_attr( $mirror ) . '">';
+			echo '<input type="hidden" name="public_assets_scope" value="' . esc_attr( $scope ) . '">';
+			echo '<input type="hidden" name="avatar_source" value="' . esc_attr( $avatar ) . '">';
+			if ( $heartbeat ) {
+				echo '<input type="hidden" name="heartbeat" value="1">';
+			}
+			if ( $feeds ) {
+				echo '<input type="hidden" name="dashboard_feeds" value="1">';
+			}
+			if ( ! $wl_locked ) {
+				echo '<input type="hidden" name="wl_enabled" value="' . ( $wl['enabled'] ? '1' : '0' ) . '">';
+				echo '<input type="hidden" name="wl_brand_name" value="' . esc_attr( $wl['brand_name'] ) . '">';
+				echo '<input type="hidden" name="wl_help_url" value="' . esc_attr( $wl['help_url'] ) . '">';
+				echo '<input type="hidden" name="wl_feedback_url" value="' . esc_attr( $wl['feedback_url'] ) . '">';
+				echo '<input type="hidden" name="wl_docs_url" value="' . esc_attr( $wl['docs_url'] ) . '">';
+				echo '<input type="hidden" name="wl_logo_url" value="' . esc_attr( $wl['logo_url'] ) . '">';
+				if ( $wl['hide_logo'] ) {
+					echo '<input type="hidden" name="wl_hide_logo" value="1">';
+				}
+				if ( $wl['hide_links'] ) {
+					echo '<input type="hidden" name="wl_hide_links" value="1">';
+				}
+			}
+
+			\Wenpai_Admin_UI::card_open(
 				array(
-					'submit_label' => __( '保存新闻源', 'wp-china-yes' ),
+					'title' => __( '自有品牌新闻源（白标能力）', 'wp-china-yes' ),
+					'sub'   => __( '填写自有 HTTPS 公告接口地址后，启用全套白标时将自动向客户站点推送你的服务通知；留空则保持默认源。', 'wp-china-yes' ),
+					'tile'  => false,
 				)
 			);
+			// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_input.
+			echo self::field_row_input(
+				'wl_news_feed_url',
+				'url',
+				__( '自定义新闻源地址', 'wp-china-yes' ),
+				__( '需使用 HTTPS 地址并返回包含标题、链接与摘要的公告列表；也可在 wp-config.php 中定义 WPCY_WHITELABEL_NEWS_URL 固定。', 'wp-china-yes' ),
+				$wl['news_feed_url'],
+				'https://example.com/wp-json/agency/v1/news',
+				300,
+				$wl_locked
+			);
+			// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+			\Wenpai_Admin_UI::card_close();
+			if ( ! $wl_locked ) {
+				\Wenpai_Admin_UI::savebar(
+					array(
+						'submit_label' => __( '保存新闻源', 'wp-china-yes' ),
+					)
+				);
+			}
+			echo '</form>';
 		}
-		echo '</form>';
 		echo '</div>';
 	}
 
@@ -951,7 +964,6 @@ final class KitRenderer {
 		$locale_follow = ! isset( $conn['admin_locale_follow'] ) || (bool) $conn['admin_locale_follow'];
 		$profile_url   = self::wp_admin_link( 'profile.php' );
 
-		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-locale">';
 		\Wenpai_Admin_Shell::subpage_head(
 			array(
 				'title'      => __( '前后台语言分离', 'wp-china-yes' ),
@@ -960,6 +972,7 @@ final class KitRenderer {
 				'lede'       => __( '专为跨境独立站与多语种协作团队设计：前台保持面向访客的站点语言，后台界面按管理员个人偏好显示中文。', 'wp-china-yes' ),
 			)
 		);
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-locale">';
 
 		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 		\Wenpai_Admin_UI::card_open(
@@ -1026,7 +1039,6 @@ final class KitRenderer {
 			);
 		}
 
-		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-noise">';
 		\Wenpai_Admin_Shell::subpage_head(
 			array(
 				'title'      => __( '后台减噪与通知治理', 'wp-china-yes' ),
@@ -1036,6 +1048,7 @@ final class KitRenderer {
 				'aside_html' => $aside_html,
 			)
 		);
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-noise">';
 
 		echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 		echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
@@ -1099,7 +1112,6 @@ final class KitRenderer {
 			);
 		}
 
-		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="feature-whitelabel">';
 		\Wenpai_Admin_Shell::subpage_head(
 			array(
 				'title'      => __( '全套白标', 'wp-china-yes' ),
@@ -1109,6 +1121,7 @@ final class KitRenderer {
 				'aside_html' => $aside_html,
 			)
 		);
+		echo '<div class="wenpai-stack" data-wpcy-screen="feature-whitelabel">';
 		if ( ! $entitled ) {
 			\Wenpai_Admin_UI::card_open(
 				array(
@@ -1960,7 +1973,6 @@ final class KitRenderer {
 			);
 		}
 
-		echo '<div class="wenpai-narrow wenpai-stack" data-wpcy-screen="service-detail">';
 		\Wenpai_Admin_Shell::subpage_head(
 			array(
 				'title'      => $spec['title'],
@@ -1970,6 +1982,7 @@ final class KitRenderer {
 				'aside_html' => $aside_html,
 			)
 		);
+		echo '<div class="wenpai-stack" data-wpcy-screen="service-detail">';
 		if ( $saveable ) {
 			echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 			echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';
@@ -2541,7 +2554,8 @@ final class KitRenderer {
 	private static function field_row_input( string $name, string $type, string $label, string $desc, string $value, string $placeholder, int $max_length, bool $disabled ): string {
 		$id  = 'wpcy-f-' . $name;
 		$dis = $disabled ? ' disabled' : '';
-		$h   = '<div class="wenpai-field field wenpai-field--row">';
+		$cls = 'wenpai-field field wenpai-field--row' . ( $disabled ? ' is-disabled' : '' );
+		$h   = '<div class="' . $cls . '">';
 		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
 		$h  .= '<div class="field-ctl"><input id="' . esc_attr( $id ) . '" type="' . esc_attr( $type ) . '" name="' . esc_attr( $name ) . '" maxlength="' . (int) $max_length . '" value="' . esc_attr( $value ) . '" placeholder="' . esc_attr( $placeholder ) . '"' . $dis . '>';
 		$h  .= '<p class="wenpai-field__desc">' . esc_html( $desc ) . '</p></div></div>';
@@ -2562,7 +2576,8 @@ final class KitRenderer {
 	private static function field_row_select( string $name, string $label, string $desc, array $options, string $current, bool $disabled ): string {
 		$id  = 'wpcy-f-' . $name;
 		$dis = $disabled ? ' disabled' : '';
-		$h   = '<div class="wenpai-field field wenpai-field--row">';
+		$cls = 'wenpai-field field wenpai-field--row' . ( $disabled ? ' is-disabled' : '' );
+		$h   = '<div class="' . $cls . '">';
 		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
 		$h  .= '<div class="field-ctl"><select id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '"' . $dis . '>';
 		foreach ( $options as $val => $text ) {
@@ -2587,7 +2602,8 @@ final class KitRenderer {
 		$id  = 'wpcy-f-' . $name;
 		$dis = $disabled ? ' disabled' : '';
 		$chk = $checked ? ' checked' : '';
-		$h   = '<div class="wenpai-field field wenpai-field--row">';
+		$cls = 'wenpai-field field wenpai-field--row' . ( $disabled ? ' is-disabled' : '' );
+		$h   = '<div class="' . $cls . '">';
 		$h  .= '<div class="field-label"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></div>';
 		$h  .= '<div class="field-ctl"><label class="opt"><input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="1"' . $chk . $dis . '><span>' . esc_html( $desc ) . '</span></label></div></div>';
 		return $h;
