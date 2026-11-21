@@ -152,6 +152,7 @@ final class RestModule implements Module {
 		$binding        = new BindingController( $this->repository );
 		$stats          = new StatsController( $this->counters() );
 		$event_log      = new EventsController( $this->events() );
+		$suite          = new SuiteController();
 		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
@@ -205,6 +206,26 @@ final class RestModule implements Module {
 				'methods'             => 'POST',
 				'callback'            => array( $diagnostics, 'run' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/diagnostics/conflicts',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $suite, 'get_conflicts' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/suite/provision',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $suite, 'provision' ),
+				'permission_callback' => array( SuiteController::class, 'permission_provision' ),
 			)
 		);
 

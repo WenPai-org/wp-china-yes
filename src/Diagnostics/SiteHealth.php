@@ -85,6 +85,18 @@ final class SiteHealth {
 			);
 		}
 
+		$scan                 = ConflictDetector::scan();
+		$fields['suite_scan'] = array(
+			'label' => __( '组件互联与冲突检测', 'wp-china-yes' ),
+			'value' => sprintf(
+				/* translators: 1: active WenPai companion count, 2: detected third-party conflict count */
+				__( '已协同组件 %1$d 项 · 同类冲突 %2$d 项', 'wp-china-yes' ),
+				count( $scan['synergies'] ),
+				count( $scan['conflicts'] )
+			),
+			'debug' => $scan,
+		);
+
 		$info[ self::SECTION ] = array(
 			'label'       => __( '文派叶子', 'wp-china-yes' ),
 			'description' => __( '连接检查：目标、结果、延迟、最近检查时间。', 'wp-china-yes' ),

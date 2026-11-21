@@ -113,7 +113,7 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '快捷工具', $overview );
 		$this->assertStringContainsString( '文派组件', $overview );
 		$this->assertStringContainsString( 'wenpai-icon-grid--5', $overview );
-		$this->assertStringContainsString( 'wenpai-icon-box__badge', $overview );
+		$this->assertStringNotContainsString( 'wenpai-icon-box__badge', $overview );
 		$this->assertStringContainsString( 'data-wpcy-suite-slug="wpavatar"', $overview );
 		$this->assertStringContainsString( 'data-wpcy-suite-slug="wpfonts"', $overview );
 		$this->assertStringContainsString( '工具箱预留位', $overview );
@@ -166,9 +166,15 @@ class KitRendererTest extends TestCase {
 
 		$diagnose = $this->render_page( 'wpcy-diagnose' );
 		$this->assertStringContainsString( 'data-wpcy-screen="diagnose"', $diagnose );
+		$this->assertStringContainsString( '组件互联与冲突检测', $diagnose );
+		$this->assertStringContainsString( '未检测到同类改写或失效镜像冲突', $diagnose );
 
 		$wizard = $this->render_page( 'wpcy-onboarding' );
 		$this->assertStringContainsString( 'data-wpcy-screen="wizard"', $wizard );
+		$this->assertStringContainsString( '环境与冲突检测', $wizard );
+		$this->assertStringContainsString( '装机组件推荐', $wizard );
+		$this->assertStringContainsString( 'data-wpcy-starter-slug="wpavatar"', $wizard );
+		$this->assertStringNotContainsString( 'style="', $wizard );
 
 		$help = $this->render_page( 'wpcy', array(), array( 'view' => 'help' ) );
 		$this->assertStringContainsString( '帮助与支持', $help );
@@ -348,5 +354,37 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( 'WordPress 6.8.1 中文维护包说明', $widget_html );
 		$this->assertStringContainsString( '已替换默认慢速海外新闻源', $widget_html );
 		$this->assertStringNotContainsString( 'style="', $widget_html );
+	}
+
+	/**
+	 * ConflictDetector surfaces overlapping plugins in Overview, Diagnose, and Wizard while pairing companions.
+	 */
+	public function test_conflict_detector_and_companion_synergy_across_screens(): void {
+		update_option(
+			'active_plugins',
+			array(
+				'useso-take-over-google/useso-take-over-google.php',
+				'wpslug/wpslug.php',
+				'wp-pinyin-slug/wp-pinyin-slug.php',
+				'wpavatar/wpavatar.php',
+			)
+		);
+
+		$overview = $this->render_page( 'wpcy' );
+		$this->assertStringContainsString( 'data-wpcy-sug-row="sug.conflict.useso-take-over-google"', $overview );
+		$this->assertStringContainsString( 'data-wpcy-sug-row="sug.conflict.wp-pinyin-slug"', $overview );
+		$this->assertStringContainsString( '文派头像协同接管', $overview );
+
+		$diagnose = $this->render_page( 'wpcy-diagnose' );
+		$this->assertStringContainsString( '360 前端公共库替换（Useso）', $diagnose );
+		$this->assertStringContainsString( '失效节点冲突', $diagnose );
+		$this->assertStringContainsString( 'WP Pinyin Slug', $diagnose );
+		$this->assertStringContainsString( '文派头像（WPAvatar）', $diagnose );
+		$this->assertStringContainsString( '协同接管', $diagnose );
+
+		$wizard = $this->render_page( 'wpcy', array(), array( 'view' => 'wizard' ) );
+		$this->assertStringContainsString( 'data-wpcy-screen="wizard"', $wizard );
+		$this->assertStringContainsString( '360 前端公共库替换（Useso）', $wizard );
+		$this->assertStringContainsString( '装机组件推荐', $wizard );
 	}
 }

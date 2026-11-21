@@ -1272,26 +1272,134 @@
 		}
 	}
 
-	// 4. Wizard: save chosen profile with defaults and navigate to overview.
+	// 4. Wizard: 3-step scene -> conflict check -> starter companion bundle.
 	function initWizard() {
 		const form = document.getElementById('wpcy-wizard-form');
 		if (!form) return;
+		const wizShell = form.closest('[data-wpcy-wizard-shell]') || document;
+		const stepPanes = Array.prototype.slice.call(form.querySelectorAll('[data-wpcy-wiz-step]'));
+		const navNodes = Array.prototype.slice.call(wizShell.querySelectorAll('nav.steps .st'));
+		const starterInputs = Array.prototype.slice.call(form.querySelectorAll('[data-wpcy-starter-slug]'));
+
+		starterInputs.forEach(function (inp) {
+			inp.addEventListener('change', function () {
+				inp.setAttribute('data-wpcy-user-touched', '1');
+			});
+		});
+
+		function syncStarterByProfile(profileKey) {
+			starterInputs.forEach(function (inp) {
+				if (inp.getAttribute('data-wpcy-user-touched') === '1') {
+					return;
+				}
+				const isInstalled = inp.getAttribute('data-wpcy-installed') === '1';
+				const isRec = inp.getAttribute('data-wpcy-rec-' + profileKey) === '1';
+				inp.checked = isInstalled || isRec;
+				const row = inp.closest('[data-wpcy-starter-row]');
+				const pill = row ? row.querySelector('.pill') : null;
+				if (pill && !isInstalled) {
+					pill.className = 'pill ' + (isRec ? 'ok' : 'mute');
+					pill.textContent = isRec ? '场景推荐' : '按需选装';
+				}
+			});
+		}
+
+		function showWizardStep(idx) {
+			stepPanes.forEach(function (pane) {
+				const pIdx = parseInt(pane.getAttribute('data-wpcy-wiz-step') || '0', 10) || 0;
+				pane.hidden = pIdx !== idx;
+			});
+			navNodes.forEach(function (st, sIdx) {
+				st.classList.remove('done', 'cur');
+				st.removeAttribute('aria-current');
+				const numEl = st.querySelector('.n');
+				if (sIdx < idx) {
+					st.classList.add('done');
+					if (numEl) {
+						numEl.innerHTML = '<span aria-hidden="true">✓</span><span class="screen-reader-text">已完成</span>';
+					}
+				} else if (sIdx === idx) {
+					st.classList.add('cur');
+					st.setAttribute('aria-current', 'step');
+					if (numEl) {
+						numEl.textContent = String(sIdx + 1);
+					}
+				} else if (numEl) {
+					numEl.textContent = String(sIdx + 1);
+				}
+			});
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+
+		form.querySelectorAll('[data-wpcy-wiz-goto]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				const target = parseInt(btn.getAttribute('data-wpcy-wiz-goto') || '0', 10) || 0;
+				showWizardStep(target);
+			});
+		});
+
 		form.querySelectorAll('input[name="profile"]').forEach(function (radio) {
 			radio.addEventListener('change', function () {
 				form.querySelectorAll('.choice').forEach(function (lbl) {
 					lbl.classList.toggle('is-on', !!lbl.querySelector('input:checked'));
 				});
+				if (radio.checked) {
+					syncStarterByProfile(radio.value);
+				}
 			});
 		});
-		form.addEventListener('submit', function (e) {
-			e.preventDefault();
+
+		function finishWizard(includeSuite) {
 			const fd = new FormData(form);
 			const profile = String(fd.get('profile') || 'domestic');
+			const homeUrl = form.getAttribute('data-wpcy-home') || '?page=wpcy';
+			const submitBtn = form.querySelector('[data-wpcy-wiz-submit]');
+			const skipBtn = form.querySelector('[data-wpcy-wiz-skip-suite]');
+			if (submitBtn) submitBtn.disabled = true;
+			if (skipBtn) skipBtn.disabled = true;
+
+			const selectedSlugs = includeSuite
+				? starterInputs
+					.filter(function (inp) { return inp.checked && !inp.disabled; })
+					.map(function (inp) { return inp.getAttribute('data-wpcy-starter-slug') || ''; })
+					.filter(Boolean)
+				: [];
+
+			if (submitBtn && selectedSlugs.length) {
+				submitBtn.textContent = '正在配置组件…';
+			}
+
 			api('/settings', { method: 'PUT', body: { profile: profile, apply_defaults: true } })
 				.then(function () {
-					window.location.href = form.getAttribute('data-wpcy-home') || '?page=wpcy';
+					if (!selectedSlugs.length) {
+						return null;
+					}
+					return api('/suite/provision', { method: 'POST', body: { slugs: selectedSlugs } })
+						.catch(function () { return null; });
 				})
-				.catch(function (err) { notify('bad', err.message); });
+				.then(function () {
+					window.location.href = homeUrl;
+				})
+				.catch(function (err) {
+					if (submitBtn) {
+						submitBtn.disabled = false;
+						submitBtn.textContent = '应用方案并配置组件';
+					}
+					if (skipBtn) skipBtn.disabled = false;
+					notify('bad', err.message);
+				});
+		}
+
+		const skipSuiteBtn = form.querySelector('[data-wpcy-wiz-skip-suite]');
+		if (skipSuiteBtn) {
+			skipSuiteBtn.addEventListener('click', function () {
+				finishWizard(false);
+			});
+		}
+
+		form.addEventListener('submit', function (e) {
+			e.preventDefault();
+			finishWizard(true);
 		});
 	}
 

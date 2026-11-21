@@ -14,6 +14,7 @@ use WenPai\ChinaYes\Connectivity\Scope;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
+use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -110,6 +111,10 @@ final class AvatarModule implements ConditionalModule {
 		}
 
 		if ( ! $environment->allowsUrlRewrite() ) {
+			return false;
+		}
+
+		if ( ConflictDetector::is_companion_active( 'wpavatar' ) ) {
 			return false;
 		}
 
