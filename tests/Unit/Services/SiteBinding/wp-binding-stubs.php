@@ -32,15 +32,23 @@ if ( ! function_exists( 'delete_transient' ) ) {
 
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
-	 * Return BindingStore::$api for wpcy_services_api.
+	 * Return BindingStore::$api for wpcy_services_api and dispatch hooks stored in RestStore::$hooks.
 	 *
-	 * @param string $tag   Filter name.
-	 * @param mixed  $value Default.
+	 * @param string $tag     Filter name.
+	 * @param mixed  $value   Default.
+	 * @param mixed  ...$args Additional filter arguments.
 	 * @return mixed
 	 */
-	function apply_filters( $tag, $value ) {
+	function apply_filters( $tag, $value, ...$args ) {
 		if ( 'wpcy_services_api' === $tag ) {
 			return BindingStore::$api;
+		}
+		if ( ! empty( RestStore::$hooks[ $tag ] ) && is_array( RestStore::$hooks[ $tag ] ) ) {
+			foreach ( RestStore::$hooks[ $tag ] as $callback ) {
+				if ( is_callable( $callback ) ) {
+					$value = $callback( $value, ...$args );
+				}
+			}
 		}
 		return $value;
 	}

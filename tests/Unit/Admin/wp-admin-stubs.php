@@ -295,6 +295,27 @@ if ( ! function_exists( 'add_filter' ) ) {
 	}
 }
 
+if ( ! function_exists( 'apply_filters' ) ) {
+	/**
+	 * Run registered test filter callbacks from AdminStore::$hooks.
+	 *
+	 * @param string $tag     Filter name.
+	 * @param mixed  $value   Initial value.
+	 * @param mixed  ...$args Extra arguments.
+	 * @return mixed
+	 */
+	function apply_filters( $tag, $value, ...$args ) {
+		if ( ! empty( AdminStore::$hooks[ $tag ] ) && is_array( AdminStore::$hooks[ $tag ] ) ) {
+			foreach ( AdminStore::$hooks[ $tag ] as $callback ) {
+				if ( is_callable( $callback ) ) {
+					$value = $callback( $value, ...$args );
+				}
+			}
+		}
+		return $value;
+	}
+}
+
 if ( ! function_exists( 'register_rest_route' ) ) {
 	/**
 	 * Record a REST route.

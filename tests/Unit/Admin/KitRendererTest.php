@@ -455,4 +455,82 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( 'wenpai-icon-box__dot is-warn', $active_html );
 		\WenPai\ChinaYes\Admin\MaintenanceModule::set_enabled( false );
 	}
+
+	/**
+	 * Overview applies `wpcy_quota_items` so companion plugins (e.g. WPMind) can render live balances,
+	 * and Onboarding Wizard Step 2 includes WPMind in the starter list.
+	 */
+	public function test_overview_applies_wpcy_quota_items_filter_and_wizard_includes_wpmind(): void {
+		$captured_context = null;
+		$saw_wpmind_id    = false;
+
+		add_filter(
+			'wpcy_quota_items',
+			static function ( $items, $context ) use ( &$captured_context, &$saw_wpmind_id ) {
+				$captured_context = $context;
+				if ( ! is_array( $items ) ) {
+					$items = array();
+				}
+				foreach ( $items as $index => $row ) {
+					if ( is_array( $row ) && 'wpmind' === ( $row['id'] ?? '' ) ) {
+						$saw_wpmind_id   = true;
+						$items[ $index ] = array(
+							'id'           => 'wpmind',
+							'name'         => '心思 AI 接口服务',
+							'usage'        => '剩余 4,500 心思点数',
+							'percent'      => 10,
+							'note'         => '本月已用 500 / 5,000 心思点数',
+							'action_label' => '管理算力',
+							'action_url'   => 'admin.php?page=wpmind&tab=cloud',
+						);
+					}
+				}
+				$items[] = array(
+					'id'      => 'custom_quota',
+					'name'    => '扩展额度示例',
+					'usage'   => '不限量',
+					'percent' => null,
+				);
+				$items[] = 'invalid-row';
+				$items[] = array( 'name' => '' );
+				return $items;
+			},
+			10,
+			2
+		);
+
+		$overview = $this->render_page( 'wpcy' );
+		$this->assertTrue( $saw_wpmind_id );
+		$this->assertIsArray( $captured_context );
+		$this->assertArrayHasKey( 'services_url', $captured_context );
+		$this->assertArrayHasKey( 'settings', $captured_context );
+		$this->assertArrayHasKey( 'bound', $captured_context );
+		$this->assertStringContainsString( '剩余 4,500 心思点数', $overview );
+		$this->assertStringContainsString( '本月已用 500 / 5,000 心思点数', $overview );
+		$this->assertStringContainsString( '管理算力', $overview );
+		$this->assertStringContainsString( '扩展额度示例', $overview );
+		$this->assertStringNotContainsString( '支持自有密钥或站点绑定额度', $overview );
+
+		// Filter still runs even when remote wpcy_catalog transient supplies quotas.
+		set_transient(
+			'wpcy_catalog',
+			array(
+				'quotas' => array(
+					array(
+						'id'    => 'wpmind',
+						'name'  => '心思 AI 接口服务',
+						'usage' => '云端占位文案',
+					),
+				),
+			),
+			3600
+		);
+		$overview_with_catalog = $this->render_page( 'wpcy' );
+		$this->assertStringContainsString( '剩余 4,500 心思点数', $overview_with_catalog );
+		$this->assertStringNotContainsString( '云端占位文案', $overview_with_catalog );
+
+		$wizard = $this->render_page( 'wpcy-onboarding' );
+		$this->assertStringContainsString( 'data-wpcy-starter-slug="wpmind"', $wizard );
+		$this->assertStringContainsString( '文派心思（WPMind）', $wizard );
+	}
 }
