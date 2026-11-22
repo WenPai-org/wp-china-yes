@@ -1665,7 +1665,7 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		/**
 		 * Return in-tab secondary navigation markup.
 		 *
-		 * Shell tabs stay ≤4; conditional modules (e.g. 7) use this .seg chain under the active tab.
+		 * Shell tabs scale on demand by product IA; intra-tab sub-sections use this .seg chain under the active tab.
 		 *
 		 * @param array $args {
 		 *     Helper arguments.

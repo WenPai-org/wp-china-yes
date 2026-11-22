@@ -237,6 +237,18 @@
 				alertText: issueCount + ' 项通道发生自动回退，系统正定期自动复检'
 			});
 		}
+		const ledeEl = document.querySelector('[data-wpcy-overview-lede]');
+		if (ledeEl && ledeEl.getAttribute('data-wpcy-recovery') !== '1') {
+			const prof = ledeEl.getAttribute('data-wpcy-profile-label') || '国内站';
+			const actCnt = parseInt(ledeEl.getAttribute('data-wpcy-active-count') || '4', 10) || 0;
+			if (issueCount > 0) {
+				ledeEl.textContent = '当前场景：' + prof + ' · ' + issueCount + ' 项通道自动回退';
+			} else if (actCnt > 0) {
+				ledeEl.textContent = '当前场景：' + prof + ' · ' + actCnt + ' 项核心通道正常';
+			} else {
+				ledeEl.textContent = '当前场景：' + prof + ' · 当前使用默认直连';
+			}
+		}
 		if (checkedAtEl) {
 			const stamp = formatShortTime((wporg && wporg.checked_at) || (targets[0] && targets[0].checked_at));
 			if (stamp) {

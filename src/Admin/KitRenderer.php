@@ -367,17 +367,20 @@ final class KitRenderer {
 		);
 		$head_actions .= '</div>';
 
-		\Wenpai_Admin_Shell::page_head(
-			__( '概览', 'wp-china-yes' ),
-			$lede,
-			$head_actions,
-			\Wenpai_Admin_UI::drawer_toggle_html(
+		$lede_html = '<span data-wpcy-overview-lede="1" data-wpcy-profile-label="' . esc_attr( $profile ) . '" data-wpcy-active-count="' . (int) $active_count . '" data-wpcy-recovery="' . ( $recovery ? '1' : '0' ) . '">' . esc_html( $lede ) . '</span>'
+			. \Wenpai_Admin_UI::drawer_toggle_html(
 				array(
 					'target'     => 'wpcy-channel-drawer',
 					'label'      => __( '通道详情', 'wp-china-yes' ),
 					'open_label' => __( '收起通道', 'wp-china-yes' ),
 				)
-			)
+			);
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '概览', 'wp-china-yes' ),
+			'',
+			$head_actions,
+			$lede_html
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="overview">';
@@ -2457,6 +2460,15 @@ final class KitRenderer {
 				)
 				: self::switch_control( 'core_' . $id, $is_on, $locked, array( 'data-wpcy-service-toggle' => $id ), false );
 
+			$card_action_url   = $detail_url;
+			$card_action_label = $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' );
+			if ( ! $is_builtin && $plugin_state['active'] ) {
+				$card_action_url   = ! empty( $report['action_url'] )
+					? $report['action_url']
+					: ConflictDetector::resolve_companion_admin_url( $spec['plugin_slug'], $spec['plugin_file'] );
+				$card_action_label = ! empty( $report['action_label'] ) ? $report['action_label'] : __( '打开设置', 'wp-china-yes' );
+			}
+
 			$svc_items[] = array(
 				'title'          => $spec['title'],
 				'desc'           => $spec['short_desc'],
@@ -2467,8 +2479,8 @@ final class KitRenderer {
 				'status_tone'    => $is_ok ? 'ok' : 'mute',
 				'status_dot'     => true,
 				'status_attrs'   => array( 'data-wpcy-core-metric-text' => $id ),
-				'action_label'   => $is_builtin ? __( '设置', 'wp-china-yes' ) : __( '管理', 'wp-china-yes' ),
-				'action_url'     => $detail_url,
+				'action_label'   => $card_action_label,
+				'action_url'     => $card_action_url,
 				'action_variant' => 'ghost',
 				'attrs'          => array( 'data-wpcy-core-card' => $id ),
 			);
@@ -2563,8 +2575,44 @@ final class KitRenderer {
 			\Wenpai_Admin_UI::card_close();
 		}
 
-		AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
-		ProvidersView::render_card( $wl, $locked );
+		if ( self::is_site_bound() ) {
+			AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
+			ProvidersView::render_card( $wl, $locked );
+		} elseif ( ! $hide_unlinked ) {
+			ob_start();
+			AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
+			$apps_html = (string) ob_get_clean();
+
+			ob_start();
+			ProvidersView::render_card( $wl, $locked );
+			$providers_html = (string) ob_get_clean();
+
+			\Wenpai_Admin_UI::card_open(
+				array(
+					'title' => __( '云端工具与商业更新源', 'wp-china-yes' ),
+					'tile'  => false,
+				)
+			);
+			\Wenpai_Admin_UI::fold_list(
+				array(
+					'items' => array(
+						array(
+							'icon'      => 'sparkle',
+							'title'     => __( '轻便工具箱', 'wp-china-yes' ),
+							'desc'      => __( '绑定文派云通行证后自动同步云端签名的运维与内容小工具', 'wp-china-yes' ),
+							'body_html' => $apps_html,
+						),
+						array(
+							'icon'      => 'plug',
+							'title'     => __( '商业扩展授权与更新源', 'wp-china-yes' ),
+							'desc'      => __( '连接薇晓朵商城等商业更新通道，绑定通行证后可配置授权密钥', 'wp-china-yes' ),
+							'body_html' => $providers_html,
+						),
+					),
+				)
+			);
+			\Wenpai_Admin_UI::card_close();
+		}
 
 		echo '</div>';
 	}
@@ -2741,19 +2789,74 @@ final class KitRenderer {
 			$row_state = '';
 		}
 
-		$row_desc   = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
-		$is_action  = $plugin_state['active'] || $plugin_state['installed'];
-		$btn_label  = $plugin_state['active']
-			? __( '管理', 'wp-china-yes' )
-			: ( $plugin_state['installed'] ? __( '启用', 'wp-china-yes' ) : __( '查看', 'wp-china-yes' ) );
-		$action_ctl = \Wenpai_Admin_UI::button_html(
-			array(
-				'label'   => $btn_label,
-				'href'    => $detail_url,
-				'variant' => $is_action ? 'secondary' : 'ghost',
-				'size'    => 'sm',
-			)
-		);
+		$row_desc    = ! empty( $report['summary'] ) ? (string) $report['summary'] : $spec['short_desc'];
+		$can_install = ! function_exists( 'current_user_can' ) || current_user_can( 'install_plugins' );
+		$can_act     = ! function_exists( 'current_user_can' ) || current_user_can( 'activate_plugins' );
+
+		if ( $plugin_state['active'] ) {
+			$settings_url = ! empty( $report['action_url'] )
+				? $report['action_url']
+				: ConflictDetector::resolve_companion_admin_url( $spec['plugin_slug'], $spec['plugin_file'] );
+			$action_ctl   = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '打开设置', 'wp-china-yes' ),
+					'href'    => $settings_url,
+					'variant' => 'secondary',
+					'size'    => 'sm',
+				)
+			);
+		} elseif ( $plugin_state['installed'] && $can_act ) {
+			$action_ctl = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '详情', 'wp-china-yes' ),
+					'href'    => $detail_url,
+					'variant' => 'ghost',
+					'size'    => 'sm',
+				)
+			) . ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '立即启用', 'wp-china-yes' ),
+					'type'    => 'button',
+					'variant' => 'secondary',
+					'size'    => 'sm',
+					'attrs'   => array(
+						'data-wpcy-provision-slug' => $spec['plugin_slug'],
+						'data-wpcy-provision-name' => $spec['plugin_name'],
+						'data-wpcy-suite-state'    => 'installed',
+					),
+				)
+			);
+		} elseif ( ! $plugin_state['installed'] && $can_install && $can_act && ConflictDetector::is_companion_installable( $spec['plugin_slug'] ) ) {
+			$action_ctl = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '详情', 'wp-china-yes' ),
+					'href'    => $detail_url,
+					'variant' => 'ghost',
+					'size'    => 'sm',
+				)
+			) . ' ' . \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '一键安装', 'wp-china-yes' ),
+					'type'    => 'button',
+					'variant' => 'secondary',
+					'size'    => 'sm',
+					'attrs'   => array(
+						'data-wpcy-provision-slug' => $spec['plugin_slug'],
+						'data-wpcy-provision-name' => $spec['plugin_name'],
+						'data-wpcy-suite-state'    => 'missing',
+					),
+				)
+			);
+		} else {
+			$action_ctl = \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '查看详情', 'wp-china-yes' ),
+					'href'    => $detail_url,
+					'variant' => 'ghost',
+					'size'    => 'sm',
+				)
+			);
+		}
 
 		\Wenpai_Admin_UI::row(
 			array(
@@ -3106,6 +3209,14 @@ final class KitRenderer {
 			)
 		);
 		echo '<div class="wenpai-stack" data-wpcy-screen="service-detail">';
+		if ( 'cravatar' === $id && $plugin_state['active'] ) {
+			\Wenpai_Admin_UI::notice(
+				array(
+					'tone' => 'info',
+					'text' => __( '头像加速与本地头像能力当前已由文派头像（WPAvatar）协同接管，下方基础线路设置仅在停用文派头像后生效。', 'wp-china-yes' ),
+				)
+			);
+		}
 		if ( $saveable ) {
 			echo '<form id="wpcy-settings-form" class="wenpai-stack" data-wpcy-network="0">';
 			echo '<input type="hidden" name="profile" value="' . esc_attr( $profile ) . '">';

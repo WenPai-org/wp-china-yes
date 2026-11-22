@@ -223,6 +223,13 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 				if ( 'media' === $f['type'] ) {
 					$needs_media = true;
 				}
+				if ( 'repeater' === $f['type'] && isset( $f['fields'] ) && is_array( $f['fields'] ) ) {
+					foreach ( $f['fields'] as $sf ) {
+						if ( is_array( $sf ) && isset( $sf['type'] ) && 'media' === $sf['type'] ) {
+							$needs_media = true;
+						}
+					}
+				}
 			}
 			if ( $needs_media && ! self::$needs_media ) {
 				// The media picker needs wp.media; enqueue it only on this
@@ -1471,7 +1478,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					$sf,
 					array(
 						'type'    => 'text',
-						'default' => ( 'toggle' === $type ? false : ( 'number' === $type ? 0 : '' ) ),
+						'default' => ( 'toggle' === $type ? false : ( in_array( $type, array( 'number', 'media' ), true ) ? 0 : '' ) ),
 						'label'   => $fid,
 						'desc'    => '',
 						'choices' => array(),
@@ -1543,7 +1550,7 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 					}
 					continue;
 				}
-				if ( 'number' === $sf['type'] ) {
+				if ( in_array( $sf['type'], array( 'number', 'media' ), true ) ) {
 					if ( (int) $val !== (int) $def ) {
 						return false;
 					}
@@ -3723,6 +3730,8 @@ if ( ! class_exists( 'Wenpai_Admin_Settings' ) ) {
 						$html .= '<option value="' . esc_attr( $k ) . '"' . selected( (string) $val, (string) $k, false ) . '>' . esc_html( self::choice_label( $lab ) ) . '</option>';
 					}
 					return $html . '</select>';
+				case 'media':
+					return $this->media_html( $sf, $cid, $name, is_scalar( $val ) ? (int) $val : 0, '', '' );
 				case 'secret':
 					$saved = is_scalar( $val ) && '' !== (string) $val;
 					return '<input type="password" id="' . esc_attr( $cid ) . '" name="' . esc_attr( $name ) . '" value=""' . self::placeholder_attr( $sf ) . ' autocomplete="new-password" spellcheck="false"' . ( $saved ? ' data-wenpai-saved' : '' ) . '>';

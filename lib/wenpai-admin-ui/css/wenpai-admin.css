@@ -27,20 +27,21 @@
 .wenpai-top { background: var(--wenpai-card); border-bottom: 1px solid var(--wenpai-line); }
 .wenpai-wrap { max-width: var(--wenpai-size-wrap); margin: 0 auto; padding: 0 var(--wenpai-space-8); }
 .wenpai-head { display: flex; align-items: center; height: var(--wenpai-size-head); gap: var(--wenpai-space-2); }
-.wenpai-brand { display: flex; align-items: center; gap: var(--wenpai-space-2-5); color: var(--wenpai-ink); margin-inline-end: var(--wenpai-space-2); }
+.wenpai-brand { display: flex; align-items: center; gap: var(--wenpai-space-2-5); color: var(--wenpai-ink); margin-inline-end: var(--wenpai-space-2); flex-shrink: 0; white-space: nowrap; }
 .wenpai-brand:hover { color: var(--wenpai-ink); }
 .wenpai-mark { width: var(--wenpai-size-mark); height: var(--wenpai-size-mark); border-radius: var(--wenpai-radius-md); background: var(--wenpai-accent); color: var(--wenpai-on-accent); display: grid; place-items: center; }
 .wenpai-mark svg { width: 16px; height: 16px; max-width: 16px; max-height: 16px; }
 .wenpai-name { font-size: var(--wenpai-text-brand); font-weight: var(--wenpai-weight-regular); letter-spacing: .01em; }
-.wenpai-head-right { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-1); color: var(--wenpai-ink-2); }
+.wenpai-head-right { margin-inline-start: auto; display: flex; align-items: center; gap: var(--wenpai-space-1); color: var(--wenpai-ink-2); flex-shrink: 0; white-space: nowrap; }
 .wenpai-head-right .btn-ghost { color: var(--wenpai-ink-2); }
 .wenpai-head-right .btn-ghost:hover { color: var(--wenpai-ink); }
 .wenpai-head-right .btn-ghost.is-active { color: var(--wenpai-accent); background: var(--wenpai-accent-soft); }
 .wenpai-head-right a { color: var(--wenpai-ink-2); }
 .wenpai-head-action { position: relative; }
 .wenpai-head-right .wenpai-head-action.is-active { color: var(--wenpai-accent); background: var(--wenpai-accent-soft); }
-.wenpai-tabs { display: flex; gap: var(--wenpai-space-1); align-self: stretch; }
-.wenpai-tab { display: flex; align-items: center; height: 100%; padding: 0 var(--wenpai-space-3-5); color: var(--wenpai-ink-2); font-weight: var(--wenpai-weight-regular); border-bottom: 2px solid transparent; margin-bottom: -1px; font-size: var(--wenpai-text-body); }
+.wenpai-tabs { display: flex; gap: var(--wenpai-space-1); align-self: stretch; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.wenpai-tabs::-webkit-scrollbar { display: none; }
+.wenpai-tab { display: flex; align-items: center; flex-shrink: 0; white-space: nowrap; height: 100%; padding: 0 var(--wenpai-space-3-5); color: var(--wenpai-ink-2); font-weight: var(--wenpai-weight-regular); border-bottom: 2px solid transparent; margin-bottom: -1px; font-size: var(--wenpai-text-body); }
 .wenpai-tab svg { width: 18px; height: 18px; margin-inline-end: var(--wenpai-space-1); }
 .wenpai-tab:hover { color: var(--wenpai-ink); }
 .wenpai-tab.is-active { color: var(--wenpai-accent); border-bottom-color: var(--wenpai-accent); }
