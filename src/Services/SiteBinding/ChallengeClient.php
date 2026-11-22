@@ -43,6 +43,13 @@ final class ChallengeClient {
 	public const PRODUCTION_HOST = 'license.wenpai.net';
 
 	/**
+	 * Production Bearer credential header (frozen M1 contract).
+	 *
+	 * @since 4.0.0
+	 */
+	public const AUTH_HEADER = 'Authorization';
+
+	/**
 	 * Filter that overrides the services API base URL (tests / mock).
 	 *
 	 * @since 4.0.0
@@ -207,6 +214,57 @@ final class ChallengeClient {
 			'site_hash'  => $hash,
 			'credential' => $cred,
 		);
+	}
+
+	/**
+	 * Best-effort server revoke notification (`DELETE /v1/sites/{site_hash}/connection`).
+	 *
+	 * Never logs the credential and never blocks local revoke on network errors.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $site_hash  Bound site hash.
+	 * @param string $credential Plaintext site credential for Bearer auth.
+	 * @return bool True when accepted (2xx or 404), false otherwise.
+	 */
+	public function revoke( string $site_hash, string $credential ): bool {
+		if ( ! self::outbound_allowed() ) {
+			return false;
+		}
+
+		$hash = self::sanitize_id( $site_hash );
+		if ( '' === $hash || '' === $credential ) {
+			return false;
+		}
+
+		$request_id = self::new_id();
+		$url        = self::api_root() . '/sites/' . rawurlencode( $hash ) . '/connection';
+		$args       = array(
+			'method'    => 'DELETE',
+			'timeout'   => 5,
+			'sslverify' => true,
+			'headers'   => array(
+				self::AUTH_HEADER => 'Bearer ' . $credential,
+				'X-Request-Id'    => $request_id,
+			),
+		);
+
+		$caller   = ( 'wp_remote_post' === $this->http && function_exists( 'wp_remote_request' ) )
+			? 'wp_remote_request'
+			: $this->http;
+		$response = call_user_func( $caller, $url, $args );
+		if ( is_wp_error( $response ) ) {
+			$this->log_failure( 'Site revoke HTTP error.', $url, $request_id, 0 );
+			return false;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( ( $code >= 200 && $code < 300 ) || 404 === $code ) {
+			return true;
+		}
+
+		$this->log_failure( 'Site revoke HTTP status was not 2xx.', $url, $request_id, $code );
+		return false;
 	}
 
 	/**

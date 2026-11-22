@@ -364,7 +364,10 @@ final class PublicCatalog {
 	 * @param int    $max   Max character count.
 	 */
 	private static function clean_text( string $value, int $max ): string {
-		$clean = trim( wp_strip_all_tags( $value ) );
+		$stripped = function_exists( 'wp_strip_all_tags' )
+			? wp_strip_all_tags( $value )
+			: strip_tags( $value ); // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- unit bootstrap has no WordPress.
+		$clean    = trim( $stripped );
 		if ( function_exists( 'mb_substr' ) ) {
 			return mb_substr( $clean, 0, $max, 'UTF-8' );
 		}

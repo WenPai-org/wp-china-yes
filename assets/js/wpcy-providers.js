@@ -313,12 +313,26 @@
 			});
 		}
 
-		api('/providers').then(function (data) {
-			bindingStatus = (data && typeof data.binding_status === 'string') ? data.binding_status : 'unbound';
-			const list = Array.isArray(data && data.providers) ? data.providers : [];
-			const mall = list.find(function (p) { return p && p.id === MALL_ID; }) || null;
-			applyProviderItem(mall);
-		}).catch(function () {});
+		let lastMallItem = null;
+
+		function refreshProviders() {
+			api('/providers').then(function (data) {
+				bindingStatus = (data && typeof data.binding_status === 'string') ? data.binding_status : 'unbound';
+				const list = Array.isArray(data && data.providers) ? data.providers : [];
+				lastMallItem = list.find(function (p) { return p && p.id === MALL_ID; }) || null;
+				applyProviderItem(lastMallItem);
+			}).catch(function () {});
+		}
+
+		window.addEventListener('wpcy:binding-changed', function (ev) {
+			if (ev && ev.detail && typeof ev.detail.status === 'string') {
+				bindingStatus = ev.detail.status;
+				applyProviderItem(lastMallItem);
+			}
+			refreshProviders();
+		});
+
+		refreshProviders();
 	}
 
 	function matchQuotaNode(nodes, item) {

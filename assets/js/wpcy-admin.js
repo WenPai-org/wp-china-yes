@@ -1101,6 +1101,7 @@
 								passportPill.textContent = '未绑定';
 							}
 							notify('ok', '已解除当前站点绑定。');
+							window.dispatchEvent(new CustomEvent('wpcy:binding-changed', { detail: { status: 'revoked' } }));
 						})
 						.catch(function (err) { notify('bad', err.message); })
 						.finally(function () { el.classList.remove('is-busy'); });
@@ -1110,6 +1111,18 @@
 					.then(function (data) {
 						if (data && data.authorize_url) {
 							window.location.href = data.authorize_url;
+						} else if (data && data.status === 'bound') {
+							el.dataset.wpcyBound = '1';
+							el.textContent = '已绑定 · 解除绑定';
+							el.classList.remove('btn-primary');
+							el.classList.add('btn-secondary');
+							const passportPill = document.querySelector('[data-wpcy-licenses-passport] .pill');
+							if (passportPill) {
+								passportPill.className = 'pill ok';
+								passportPill.textContent = '已绑定';
+							}
+							notify('ok', '站点通行证绑定成功。');
+							window.dispatchEvent(new CustomEvent('wpcy:binding-changed', { detail: { status: 'bound' } }));
 						} else {
 							notify('ok', '已发起站点绑定请求。');
 						}

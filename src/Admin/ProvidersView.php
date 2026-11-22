@@ -140,6 +140,18 @@ final class ProvidersView {
 				),
 			)
 		);
+		$update_url = function_exists( 'admin_url' ) ? admin_url( 'update-core.php?force-check=1' ) : 'update-core.php?force-check=1';
+		\Wenpai_Admin_UI::button(
+			array(
+				'label'   => __( '检查更新 ↗', 'wp-china-yes' ),
+				'href'    => $update_url,
+				'variant' => 'ghost',
+				'size'    => 'sm',
+				'attrs'   => array(
+					'data-wpcy-prov-updates' => $mall_id,
+				),
+			)
+		);
 		\Wenpai_Admin_UI::button(
 			array(
 				'label'    => __( '断开连接', 'wp-china-yes' ),

@@ -15,6 +15,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Core\Module;
+use WenPai\ChinaYes\Services\Catalog\CatalogModule;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WP_Error;
 
@@ -204,7 +205,7 @@ final class SiteBindingModule implements Module {
 			'site_uuid'  => isset( $identity['site_uuid'] ) && is_string( $identity['site_uuid'] ) ? $identity['site_uuid'] : '',
 			'site_hash'  => $snap['site_hash'],
 			'bound_at'   => $snap['bound_at'],
-			'manage_url' => AdminModule::app_url( 'wpcy-services' ),
+			'manage_url' => AdminModule::app_url( 'wpcy-licenses' ),
 		);
 	}
 
@@ -460,7 +461,9 @@ final class SiteBindingModule implements Module {
 	}
 
 	/**
-	 * Local revoke. Does not call the license server (path 待定 M0).
+	 * Local revoke plus best-effort server connection revoke (`DELETE /v1/sites/{site_hash}/connection`).
+	 *
+	 * Local state is cleared first so offline or server-error revokes always succeed immediately.
 	 *
 	 * @since 4.0.0
 	 *
@@ -470,6 +473,11 @@ final class SiteBindingModule implements Module {
 		$identity     = $this->repository->get_identity();
 		$binding      = $this->binding_from( $identity );
 		$challenge_id = (string) $binding['challenge_id'];
+		$prev_status  = $binding['status'];
+		$prev_hash    = is_string( $binding['site_hash'] ) ? $binding['site_hash'] : '';
+		$prev_cred    = is_string( $binding['credential'] ) && '' !== $binding['credential']
+			? $this->credentials->open( $binding['credential'] )
+			: null;
 
 		$binding['status']       = 'revoked';
 		$binding['credential']   = null;
@@ -487,6 +495,12 @@ final class SiteBindingModule implements Module {
 		if ( function_exists( 'delete_transient' ) ) {
 			delete_transient( EntitlementsModule::TRANSIENT_FRESH );
 			delete_transient( EntitlementsModule::TRANSIENT_STALE );
+			delete_transient( CatalogModule::TRANSIENT_FRESH );
+			delete_transient( CatalogModule::TRANSIENT_STALE );
+		}
+
+		if ( 'bound' === $prev_status && '' !== $prev_hash && is_string( $prev_cred ) && '' !== $prev_cred ) {
+			$this->client->revoke( $prev_hash, $prev_cred );
 		}
 
 		return $this->snapshot();

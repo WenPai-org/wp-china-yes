@@ -96,6 +96,19 @@ if ( ! function_exists( 'wp_remote_post' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_remote_request' ) ) {
+	/**
+	 * Record generic HTTP requests (e.g. DELETE revoke). Never contacts a network.
+	 *
+	 * @param string               $url  URL.
+	 * @param array<string, mixed> $args Args.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	function wp_remote_request( $url, $args = array() ) {
+		return wp_remote_post( $url, $args );
+	}
+}
+
 if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
 	/**
 	 * HTTP status from a mock response.

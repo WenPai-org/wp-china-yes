@@ -157,7 +157,8 @@ class CatalogStateTest extends TestCase {
 
 		$this->assertNotEmpty( EntitlementsStore::$requests );
 		$headers = EntitlementsStore::$requests[0]['args']['headers'];
-		$this->assertSame( 'cred_test_secret', $headers[ CatalogClient::TEST_CREDENTIAL_HEADER ] );
+		$this->assertSame( 'Bearer cred_test_secret', $headers[ CatalogClient::AUTH_HEADER ] );
+		$this->assertArrayNotHasKey( CatalogClient::TEST_CREDENTIAL_HEADER, $headers );
 		$this->assertStringNotContainsString( 'cred_test_secret', EntitlementsStore::$log_sink );
 	}
 

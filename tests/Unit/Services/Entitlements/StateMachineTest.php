@@ -168,6 +168,37 @@ class StateMachineTest extends TestCase {
 	}
 
 	/**
+	 * Entitlements client sends Authorization: Bearer <credential> and never logs it.
+	 */
+	public function test_bearer_credential_header_forwarded_and_never_logged() {
+		$logger               = new Logger(
+			'debug',
+			static function ( $level, $message, $context ) {
+				EntitlementsStore::$log_sink .= $level . ' ' . $message . ' ' . wp_json_encode( $context ) . "\n";
+			}
+		);
+		$repo                 = new Repository( $logger );
+		$ident                = $repo->get_identity();
+		$binding              = $ident['binding'];
+		$binding['status']    = 'bound';
+		$binding['site_hash'] = 'site_hash_test_01';
+		$ident['binding']     = $binding;
+		$repo->set_identity( $ident );
+		$repo->set_credential( 'cred_ent_secret' );
+
+		EntitlementsStore::$responses[] = new WP_Error( 'http_request_failed', 'forced failure to exercise log sink' );
+		$client                         = new Client( $logger, array( EntitlementsStore::class, 'http_get' ), EntitlementsStore::$api );
+		$module                         = new EntitlementsModule( $repo, $logger, $client, array( EntitlementsStore::class, 'get_transient' ), array( EntitlementsStore::class, 'set_transient' ) );
+		$module->items();
+
+		$this->assertNotEmpty( EntitlementsStore::$requests );
+		$headers = EntitlementsStore::$requests[0]['args']['headers'];
+		$this->assertSame( 'Bearer cred_ent_secret', $headers[ Client::AUTH_HEADER ] );
+		$this->assertArrayNotHasKey( Client::TEST_CREDENTIAL_HEADER, $headers );
+		$this->assertStringNotContainsString( 'cred_ent_secret', EntitlementsStore::$log_sink );
+	}
+
+	/**
 	 * Restricted services are denied when the cached row is exhausted.
 	 */
 	public function test_entitlement_allows_false_when_exhausted() {

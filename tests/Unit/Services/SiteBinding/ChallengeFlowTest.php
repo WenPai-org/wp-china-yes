@@ -199,11 +199,27 @@ class ChallengeFlowTest extends TestCase {
 		$this->assertStringContainsString( '/v1/site-connections/' . $this->start_fixture['challenge_id'] . '/confirm', $confirm_req['url'] );
 		$this->assertArrayHasKey( 'Idempotency-Key', $confirm_req['args']['headers'] );
 
+		$this->queue_json( array( 'revoked' => true ) );
 		$revoked = $module->revoke();
 		$this->assertSame( 'revoked', $revoked['status'] );
 		$stored = get_option( Schema::SITE_IDENTITY );
 		$this->assertNull( $stored['binding']['credential'] );
 		$this->assertNull( $stored['binding']['challenge_id'] );
+
+		$revoke_req = null;
+		foreach ( BindingStore::$requests as $row ) {
+			if ( false !== strpos( $row['url'], '/sites/' ) && false !== strpos( $row['url'], '/connection' ) ) {
+				$revoke_req = $row;
+			}
+		}
+		$this->assertIsArray( $revoke_req );
+		$this->assertSame( 'DELETE', $revoke_req['args']['method'] );
+		$this->assertStringContainsString( '/v1/sites/' . $this->confirm_fixture['site_hash'] . '/connection', $revoke_req['url'] );
+		$this->assertSame(
+			'Bearer ' . $this->confirm_fixture['credential'],
+			$revoke_req['args']['headers'][ ChallengeClient::AUTH_HEADER ]
+		);
+		$this->assertStringNotContainsString( $this->confirm_fixture['credential'], BindingStore::$log_sink );
 	}
 
 	/**
@@ -324,8 +340,26 @@ class ChallengeFlowTest extends TestCase {
 		$this->assertTrue( $bound['bound'] );
 		$this->assertSame( 'bound', $bound['status'] );
 		$this->assertNotEmpty( $bound['site_hash'] );
-		$this->assertStringContainsString( 'wpcy-services', $bound['manage_url'] );
+		$this->assertStringContainsString( 'wpcy-licenses', $bound['manage_url'] );
 		$this->assertArrayNotHasKey( 'credential', $bound );
+	}
+
+	/**
+	 * Local revoke still succeeds and never logs the credential when server revoke fails.
+	 */
+	public function test_revoke_succeeds_locally_when_server_unreachable() {
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$this->queue_json( $this->confirm_fixture );
+		$module->start();
+
+		BindingStore::$responses[] = new WP_Error( 'http_request_failed', 'network down' );
+		$revoked                   = $module->revoke();
+
+		$this->assertSame( 'revoked', $revoked['status'] );
+		$stored = get_option( Schema::SITE_IDENTITY );
+		$this->assertNull( $stored['binding']['credential'] );
+		$this->assertStringNotContainsString( $this->confirm_fixture['credential'], BindingStore::$log_sink );
 	}
 
 	/**

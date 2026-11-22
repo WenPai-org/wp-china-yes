@@ -111,6 +111,8 @@ class ProvidersViewTest extends TestCase {
 		$this->assertStringContainsString( 'data-wpcy-prov-connected="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( 'data-wpcy-prov-test="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( 'data-wpcy-prov-products-btn="weixiaoduo-mall"', $html );
+		$this->assertStringContainsString( 'data-wpcy-prov-updates="weixiaoduo-mall"', $html );
+		$this->assertStringContainsString( '检查更新 ↗', $html );
 		$this->assertStringContainsString( 'data-wpcy-prov-disconnect="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( 'data-wpcy-prov-products="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( '文派集市', $html );

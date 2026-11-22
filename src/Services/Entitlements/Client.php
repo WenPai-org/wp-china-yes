@@ -28,7 +28,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Client {
 
 	/**
-	 * Mock-only credential header. Production auth is 待定（M0 / M3）.
+	 * Production Bearer credential header (frozen M1 contract).
+	 *
+	 * @since 4.0.0
+	 */
+	public const AUTH_HEADER = 'Authorization';
+
+	/**
+	 * Legacy staging credential header kept for backwards compatibility.
 	 *
 	 * @since 4.0.0
 	 */
@@ -220,7 +227,7 @@ final class Client {
 			'X-Request-Id' => $request_id,
 		);
 		if ( '' !== $credential ) {
-			$headers[ self::TEST_CREDENTIAL_HEADER ] = $credential;
+			$headers[ self::AUTH_HEADER ] = 'Bearer ' . $credential;
 		}
 
 		$args = array(
