@@ -11,6 +11,9 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Telemetry;
 
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Diagnostics\Checker;
+use WenPai\ChinaYes\Diagnostics\ConflictDetector;
+use WenPai\ChinaYes\Rest\ClientProbeController;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -114,7 +117,81 @@ final class Report {
 			$report['woocommerce'] = $wc_data;
 		}
 
+		$probe_summary = $this->get_cached_probe_summary();
+		if ( array() !== $probe_summary ) {
+			$report['probes'] = $probe_summary;
+		}
+
+		$scan = ConflictDetector::scan();
+		if ( array() !== $scan['synergies'] ) {
+			$report['companions'] = array_map(
+				static function ( array $syn ): string {
+					return $syn['slug'];
+				},
+				$scan['synergies']
+			);
+		}
+		if ( array() !== $scan['conflicts'] ) {
+			$report['conflicts'] = array_map(
+				static function ( array $conf ): string {
+					return $conf['slug'];
+				},
+				$scan['conflicts']
+			);
+		}
+
 		return $report;
+	}
+
+	/**
+	 * Collect cached server + browser probe summaries without issuing any outbound HTTP request.
+	 *
+	 * @return array<string, list<array{target: string, result: string, latency_ms: int|null}>>
+	 */
+	private function get_cached_probe_summary(): array {
+		$summary = array();
+
+		if ( function_exists( 'get_transient' ) ) {
+			$raw_srv = get_transient( Checker::STORE_KEY );
+			if ( is_array( $raw_srv ) ) {
+				$srv_rows = array();
+				foreach ( $raw_srv as $row ) {
+					if ( ! is_array( $row ) || empty( $row['target'] ) || empty( $row['result'] ) ) {
+						continue;
+					}
+					$srv_rows[] = array(
+						'target'     => (string) $row['target'],
+						'result'     => (string) $row['result'],
+						'latency_ms' => isset( $row['latency_ms'] ) && is_numeric( $row['latency_ms'] ) ? (int) $row['latency_ms'] : null,
+					);
+				}
+				if ( array() !== $srv_rows ) {
+					$summary['server'] = $srv_rows;
+				}
+			}
+		}
+
+		if ( function_exists( 'get_option' ) ) {
+			$raw_cli = get_option( ClientProbeController::OPTION, array() );
+			if ( is_array( $raw_cli ) && isset( $raw_cli['probes'] ) && is_array( $raw_cli['probes'] ) ) {
+				$cli_rows = array();
+				foreach ( $raw_cli['probes'] as $row ) {
+					if ( ! is_array( $row ) || empty( $row['target'] ) || empty( $row['result'] ) ) {
+						continue;
+					}
+					$cli_rows[] = array(
+						'target'     => (string) $row['target'],
+						'result'     => (string) $row['result'],
+						'latency_ms' => isset( $row['latency_ms'] ) && is_numeric( $row['latency_ms'] ) ? (int) $row['latency_ms'] : null,
+					);
+				}
+				if ( array() !== $cli_rows ) {
+					$summary['browser'] = $cli_rows;
+				}
+			}
+		}
+
+		return $summary;
 	}
 
 	/**

@@ -434,4 +434,25 @@ class KitRendererTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * Overview Quick Tools grid includes the three built-in M0 tools plus two reserved slots.
+	 */
+	public function test_overview_renders_built_in_quick_tools_and_maintenance_badge(): void {
+		\WenPai\ChinaYes\Admin\MaintenanceModule::set_enabled( false );
+		$html = $this->render_page( 'wpcy' );
+		$this->assertStringContainsString( 'data-wpcy-quick="clear-transients"', $html );
+		$this->assertStringContainsString( '清瞬态缓存', $html );
+		$this->assertStringContainsString( 'data-wpcy-quick="toggle-maintenance"', $html );
+		$this->assertStringContainsString( '维护模式', $html );
+		$this->assertStringContainsString( 'data-wpcy-quick="site-snapshot"', $html );
+		$this->assertStringContainsString( '环境快照', $html );
+		$this->assertSame( 2, substr_count( $html, 'data-wpcy-quick="reserved-slot"' ) );
+
+		\WenPai\ChinaYes\Admin\MaintenanceModule::set_enabled( true );
+		$active_html = $this->render_page( 'wpcy' );
+		$this->assertStringContainsString( '维护中', $active_html );
+		$this->assertStringContainsString( 'wenpai-icon-box__dot is-warn', $active_html );
+		\WenPai\ChinaYes\Admin\MaintenanceModule::set_enabled( false );
+	}
 }

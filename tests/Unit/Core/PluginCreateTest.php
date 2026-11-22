@@ -58,6 +58,7 @@ class PluginCreateTest extends TestCase {
 				'services.apps',
 				'rest',
 				'admin',
+				'admin.maintenance',
 				'services.entitlements',
 				'services.catalog',
 				'admin.notice_control',

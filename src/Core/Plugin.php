@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Core;
 use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
 use WenPai\ChinaYes\Admin\ElementHide\ElementHideModule;
+use WenPai\ChinaYes\Admin\MaintenanceModule;
 use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\AppsModule;
 use WenPai\ChinaYes\Apps\CachedEntitlements;
@@ -239,6 +240,7 @@ final class Plugin {
 		$registry->add( new AppsModule( null, null, new CachedEntitlements( $entitlements ), null, $logger ) );
 		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
 		$registry->add( new AdminModule( $config ) );
+		$registry->add( new MaintenanceModule( $config ) );
 		$registry->add( $entitlements );
 		$registry->add( new CatalogModule( $config, $logger ) );
 		$registry->add( new NoticeControlModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_notice_rules_source', '' ) : '' ), null, $logger ) );

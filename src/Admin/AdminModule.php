@@ -144,7 +144,42 @@ final class AdminModule implements Module {
 		add_action( 'init', array( $this, 'register_user_meta' ) );
 		add_filter( 'submenu_file', array( $this, 'highlight_parent_submenu_for_tabs' ) );
 		add_filter( 'wenpai_admin_ui_suite_parent_slug', array( $this, 'filter_suite_parent_slug' ), 10, 2 );
+		add_filter( 'admin_footer_text', array( $this, 'filter_admin_footer_text' ), 20 );
 		WhiteLabel::register( $this->repository );
+	}
+
+	/**
+	 * Append a restrained WenPai Leaf attribution to the WordPress admin footer.
+	 *
+	 * Applies only to administrators inside wp-admin (never frontend HTML), stays
+	 * completely untouched when White-Label is active, and can be disabled via the
+	 * `wpcy_admin_footer_credit` filter.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $text Default WordPress admin footer text.
+	 * @return mixed
+	 */
+	public function filter_admin_footer_text( $text ) {
+		if ( ! is_string( $text ) ) {
+			return $text;
+		}
+		if ( function_exists( 'current_user_can' ) && ! current_user_can( 'manage_options' ) ) {
+			return $text;
+		}
+		if ( function_exists( 'apply_filters' ) && ! (bool) apply_filters( 'wpcy_admin_footer_credit', true ) ) {
+			return $text;
+		}
+		$settings = $this->repository->all();
+		$wl       = WhiteLabel::resolve( $settings );
+		if ( ! empty( $wl['enabled'] ) ) {
+			return $text;
+		}
+		return sprintf(
+			/* translators: %s: WenPai Leaf website link */
+			__( '感谢使用 WordPress · 本站加速由 %s 提供支持', 'wp-china-yes' ),
+			'<a href="https://wpcy.com/" target="_blank" rel="noopener noreferrer">' . esc_html__( '文派叶子', 'wp-china-yes' ) . '</a>'
+		);
 	}
 
 	/**

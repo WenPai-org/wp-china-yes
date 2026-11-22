@@ -221,4 +221,35 @@ class AdminModuleTest extends TestCase {
 		$this->assertSame( 'wpcy', $remaining[0][2] );
 		$this->assertSame( 'wpslug', $remaining[1][2] );
 	}
+
+	/**
+	 * Admin footer attribution appears for administrators and stays hidden for non-admins or when White-Label is active.
+	 */
+	public function test_admin_footer_text_respects_capability_and_whitelabel() {
+		$repo   = new Repository();
+		$module = new AdminModule( $repo );
+
+		RestStore::$caps['manage_options'] = false;
+		$this->assertSame( 'default footer', $module->filter_admin_footer_text( 'default footer' ) );
+
+		RestStore::$caps['manage_options'] = true;
+		$footer                            = $module->filter_admin_footer_text( 'default footer' );
+		$this->assertStringContainsString( '文派叶子', $footer );
+		$this->assertStringContainsString( 'https://wpcy.com/', $footer );
+
+		set_transient(
+			\WenPai\ChinaYes\Services\Entitlements\EntitlementsModule::TRANSIENT_FRESH,
+			array(
+				'entitlements' => array(
+					array(
+						'service' => 'whitelabel',
+						'status'  => 'active',
+					),
+				),
+			),
+			3600
+		);
+		$repo->set( 'admin.whitelabel', array( 'enabled' => true ) );
+		$this->assertSame( 'default footer', $module->filter_admin_footer_text( 'default footer' ) );
+	}
 }

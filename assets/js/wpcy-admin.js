@@ -648,6 +648,71 @@
 			});
 		}
 
+		function toast(msg, tone) {
+			if (typeof window.wenpaiToast === 'function') {
+				window.wenpaiToast(msg, tone || 'ok');
+			} else {
+				notify(tone || 'ok', msg);
+			}
+		}
+
+		function copyTextToClipboard(text) {
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				return navigator.clipboard.writeText(text);
+			}
+			return new Promise(function (resolve, reject) {
+				try {
+					const ta = document.createElement('textarea');
+					ta.value = text;
+					ta.setAttribute('readonly', 'readonly');
+					ta.className = 'screen-reader-text';
+					document.body.appendChild(ta);
+					ta.select();
+					const ok = document.execCommand('copy');
+					document.body.removeChild(ta);
+					if (ok) resolve();
+					else reject(new Error('copy failed'));
+				} catch (err) {
+					reject(err);
+				}
+			});
+		}
+
+		function syncMaintenanceTile(btn, enabled) {
+			btn.setAttribute('data-wpcy-maint-state', enabled ? '1' : '0');
+			const labelEl = btn.querySelector('.wenpai-icon-box__label');
+			if (labelEl) {
+				labelEl.textContent = enabled ? '维护中' : '维护模式';
+			}
+			btn.setAttribute(
+				'title',
+				enabled
+					? '前台维护模式已开启，点击关闭并恢复正常访问'
+					: '临时向前台访客展示维护提示，管理员后台不受影响'
+			);
+			const existingDot = btn.querySelector('.wenpai-icon-box__dot');
+			if (enabled) {
+				if (!existingDot) {
+					const dot = document.createElement('span');
+					dot.className = 'wenpai-icon-box__dot is-warn';
+					dot.setAttribute('aria-hidden', 'true');
+					btn.insertBefore(dot, btn.firstChild);
+				}
+				btn.removeAttribute('data-wenpai-confirm');
+				btn.removeAttribute('data-wenpai-confirm-title');
+				btn.removeAttribute('data-wenpai-confirm-ok');
+				btn.removeAttribute('data-wenpai-confirm-primary');
+			} else {
+				if (existingDot) {
+					existingDot.remove();
+				}
+				btn.setAttribute('data-wenpai-confirm', '开启后，未登录的前台访客将看到 HTTP 503 维护提示；管理员登录、后台、REST API 与计划任务不受影响。确定现在开启？');
+				btn.setAttribute('data-wenpai-confirm-title', '开启前台维护模式');
+				btn.setAttribute('data-wenpai-confirm-ok', '立即开启');
+				btn.setAttribute('data-wenpai-confirm-primary', '1');
+			}
+		}
+
 		document.querySelectorAll('[data-wpcy-quick]').forEach(function (btn) {
 			btn.addEventListener('click', function () {
 				const kind = btn.getAttribute('data-wpcy-quick');
@@ -657,9 +722,7 @@
 					triggerOverviewProbe('回退锁定已重置并完成重测');
 				} else if (kind === 'scan-outbound') {
 					measureOverviewBrowser(tilesEl).then(function () {
-						if (typeof window.wenpaiToast === 'function') {
-							window.wenpaiToast('静态源与访客侧可达性检测完成', 'ok');
-						}
+						toast('静态源与访客侧可达性检测完成', 'ok');
 					});
 				} else if (kind === 'copy-report') {
 					const summary = [
@@ -667,19 +730,66 @@
 						'Stats: ' + (trendSumEl ? trendSumEl.textContent : ''),
 						'Status: ' + (checkedAtEl ? checkedAtEl.textContent : '')
 					].join('\n');
-					if (navigator.clipboard && navigator.clipboard.writeText) {
-						navigator.clipboard.writeText(summary).then(function () {
-							if (typeof window.wenpaiToast === 'function') {
-								window.wenpaiToast('脱敏诊断摘要已复制', 'ok');
-							}
-						}).catch(function () {});
+					copyTextToClipboard(summary).then(function () {
+						toast('脱敏诊断摘要已复制', 'ok');
+					}).catch(function () {
+						toast('复制失败，请检查浏览器剪贴板权限', 'bad');
+					});
+				} else if (kind === 'clear-transients') {
+					btn.disabled = true;
+					api('/tools/clear-transients', { method: 'POST' }).then(function (res) {
+						const deleted = res && typeof res.deleted === 'number' ? res.deleted : 0;
+						toast(
+							deleted > 0
+								? ('已清理 ' + deleted + ' 条过期瞬态缓存并刷新对象缓存')
+								: '未发现过期瞬态缓存，已刷新对象缓存',
+							'ok'
+						);
+					}).catch(function (err) {
+						toast((err && err.message) || '清理瞬态缓存失败，请稍后重试', 'bad');
+					}).finally(function () {
+						btn.disabled = false;
+					});
+				} else if (kind === 'toggle-maintenance') {
+					if (btn.hasAttribute('data-wenpai-confirm') && !btn.hasAttribute('data-wenpai-confirm-bypass')) {
+						return;
 					}
+					const nextOn = btn.getAttribute('data-wpcy-maint-state') !== '1';
+					btn.disabled = true;
+					api('/tools/maintenance', { method: 'POST', body: { enabled: nextOn } }).then(function (res) {
+						const active = !!(res && res.enabled);
+						syncMaintenanceTile(btn, active);
+						toast(
+							active
+								? '已开启前台维护模式（管理员后台不受影响）'
+								: '已关闭维护模式，前台恢复正常访问',
+							'ok'
+						);
+					}).catch(function (err) {
+						toast((err && err.message) || '切换维护模式失败，请稍后重试', 'bad');
+					}).finally(function () {
+						btn.disabled = false;
+					});
+				} else if (kind === 'site-snapshot') {
+					btn.disabled = true;
+					api('/tools/snapshot').then(function (res) {
+						const text = (res && res.text) ? String(res.text) : '';
+						if (!text) {
+							throw new Error('环境快照生成为空');
+						}
+						return copyTextToClipboard(text).then(function () {
+							toast(
+								'已复制环境快照（WP ' + (res.wp_version || '-') + ' / PHP ' + (res.php_version || '-') + ' / ' + (res.active_plugins || 0) + ' 款插件）',
+								'ok'
+							);
+						});
+					}).catch(function (err) {
+						toast((err && err.message) || '复制环境快照失败，请稍后重试', 'bad');
+					}).finally(function () {
+						btn.disabled = false;
+					});
 				} else if (kind === 'reserved-slot') {
-					if (typeof window.wenpaiToast === 'function') {
-						window.wenpaiToast('文派轻便工具箱预留位，后续版本按需接入', 'ok');
-					} else {
-						notify('ok', '文派轻便工具箱预留位，后续版本按需接入');
-					}
+					toast('文派轻便工具箱预留位，后续版本按需接入', 'ok');
 				}
 			});
 		});

@@ -153,6 +153,7 @@ final class RestModule implements Module {
 		$stats          = new StatsController( $this->counters() );
 		$event_log      = new EventsController( $this->events() );
 		$suite          = new SuiteController();
+		$tools          = new ToolsController( $this->repository, $this->checker );
 		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
@@ -438,6 +439,36 @@ final class RestModule implements Module {
 						'required' => true,
 					),
 				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/clear-transients',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $tools, 'clear_transients' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/maintenance',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $tools, 'set_maintenance' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/snapshot',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $tools, 'get_snapshot' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
 			)
 		);
 	}

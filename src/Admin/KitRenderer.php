@@ -979,13 +979,25 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Build 4x2 icon-box items for Overview quick actions & reserved WenPai Toolbox slots.
+	 * Build 5x2 icon-box items for Overview quick actions & reserved WenPai Toolbox slots.
 	 *
 	 * @param array<string, mixed> $wl      Resolved WhiteLabel state.
 	 * @param string               $svc_url Services URL.
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function overview_quick_tools( array $wl, string $svc_url ): array {
+		$maint_on    = MaintenanceModule::is_enabled();
+		$maint_attrs = array(
+			'data-wpcy-quick'       => 'toggle-maintenance',
+			'data-wpcy-maint-state' => $maint_on ? '1' : '0',
+		);
+		if ( ! $maint_on ) {
+			$maint_attrs['data-wenpai-confirm']         = __( '开启后，未登录的前台访客将看到 HTTP 503 维护提示；管理员登录、后台、REST API 与计划任务不受影响。确定现在开启？', 'wp-china-yes' );
+			$maint_attrs['data-wenpai-confirm-title']   = __( '开启前台维护模式', 'wp-china-yes' );
+			$maint_attrs['data-wenpai-confirm-ok']      = __( '立即开启', 'wp-china-yes' );
+			$maint_attrs['data-wenpai-confirm-primary'] = '1';
+		}
+
 		$items = array(
 			array(
 				'label' => __( '刷新缓存', 'wp-china-yes' ),
@@ -1006,6 +1018,27 @@ final class KitRenderer {
 				'label' => __( '复制诊断', 'wp-china-yes' ),
 				'icon'  => 'copy',
 				'attrs' => array( 'data-wpcy-quick' => 'copy-report' ),
+			),
+			array(
+				'label' => __( '清瞬态缓存', 'wp-china-yes' ),
+				'icon'  => 'flash',
+				'title' => __( '清理已过期的瞬态缓存并刷新对象缓存', 'wp-china-yes' ),
+				'attrs' => array( 'data-wpcy-quick' => 'clear-transients' ),
+			),
+			array(
+				'label' => $maint_on ? __( '维护中', 'wp-china-yes' ) : __( '维护模式', 'wp-china-yes' ),
+				'icon'  => 'tools',
+				'state' => $maint_on ? 'warn' : '',
+				'title' => $maint_on
+					? __( '前台维护模式已开启，点击关闭并恢复正常访问', 'wp-china-yes' )
+					: __( '临时向前台访客展示维护提示，管理员后台不受影响', 'wp-china-yes' ),
+				'attrs' => $maint_attrs,
+			),
+			array(
+				'label' => __( '环境快照', 'wp-china-yes' ),
+				'icon'  => 'server',
+				'title' => __( '复制脱敏的 WordPress / PHP / 节点探测环境快照', 'wp-china-yes' ),
+				'attrs' => array( 'data-wpcy-quick' => 'site-snapshot' ),
 			),
 		);
 
@@ -1031,14 +1064,15 @@ final class KitRenderer {
 			}
 		}
 
-		foreach ( array_slice( $extra, 0, 6 ) as $slot ) {
+		$hide_eco  = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
+		$pad_cap   = $hide_eco ? 10 : 9;
+		$max_extra = max( 0, $pad_cap - count( $items ) );
+		foreach ( array_slice( $extra, 0, $max_extra ) as $slot ) {
 			if ( is_array( $slot ) && ! empty( $slot['label'] ) ) {
 				$items[] = $slot;
 			}
 		}
 
-		$hide_eco = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
-		$pad_cap  = $hide_eco ? 10 : 9;
 		for ( $cur = count( $items ); $cur < $pad_cap; ++$cur ) {
 			$items[] = array(
 				'label'  => __( '工具预留', 'wp-china-yes' ),

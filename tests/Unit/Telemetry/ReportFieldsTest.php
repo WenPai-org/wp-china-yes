@@ -84,6 +84,46 @@ class ReportFieldsTest extends TestCase {
 	}
 
 	/**
+	 * Cached probe results and companion/conflict slugs piggyback on daily telemetry with zero extra HTTP.
+	 */
+	public function test_collect_appends_cached_probes_and_companion_summary() {
+		OptionStore::$options['active_plugins']                                        = array(
+			'demo/demo.php',
+			'wpavatar/wpavatar.php',
+			'useso-take-over-google/useso-take-over-google.php',
+		);
+		TelemetryStore::$transients[ \WenPai\ChinaYes\Diagnostics\Checker::STORE_KEY ] = array(
+			array(
+				'target'     => 'api.wenpai.net',
+				'result'     => 'ok',
+				'latency_ms' => 142,
+				'checked_at' => '2026-11-22T05:00:00Z',
+			),
+		);
+		OptionStore::$options[ \WenPai\ChinaYes\Rest\ClientProbeController::OPTION ]   = array(
+			'recorded_at' => '2026-11-22T05:01:00Z',
+			'probes'      => array(
+				array(
+					'target'     => 'cn.cravatar.com',
+					'result'     => 'ok',
+					'latency_ms' => 45,
+				),
+			),
+		);
+
+		$report = ( new Report( new Repository() ) )->collect();
+		$this->assertArrayHasKey( 'probes', $report );
+		$this->assertSame( 'api.wenpai.net', $report['probes']['server'][0]['target'] );
+		$this->assertSame( 142, $report['probes']['server'][0]['latency_ms'] );
+		$this->assertSame( 'cn.cravatar.com', $report['probes']['browser'][0]['target'] );
+		$this->assertSame( array( 'wpavatar' ), $report['companions'] );
+		$this->assertSame( array( 'useso-take-over-google' ), $report['conflicts'] );
+
+		$forbidden = array( 'admin_email', 'customer_email', 'billing_email', 'order_items', 'line_items', 'license_key', 'api_key', 'password', 'user_email' );
+		$this->assert_no_forbidden_keys( $report, $forbidden );
+	}
+
+	/**
 	 * Recurse and fail on forbidden keys. Same walk as tests/test-telemetry.php.
 	 *
 	 * @param mixed    $node      Tree.
