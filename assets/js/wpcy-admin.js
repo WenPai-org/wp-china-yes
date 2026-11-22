@@ -717,7 +717,8 @@
 			btn.addEventListener('click', function () {
 				const kind = btn.getAttribute('data-wpcy-quick');
 				if (kind === 'flush-updates') {
-					triggerOverviewProbe('更新与镜像检测缓存已刷新');
+					api('/tools/catalog/refresh', { method: 'POST' }).catch(function () {});
+					triggerOverviewProbe('更新、目录与镜像检测缓存已刷新');
 				} else if (kind === 'reset-fallback') {
 					triggerOverviewProbe('回退锁定已重置并完成重测');
 				} else if (kind === 'scan-outbound') {

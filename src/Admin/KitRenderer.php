@@ -16,6 +16,7 @@ namespace WenPai\ChinaYes\Admin;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Diagnostics\HealthAudit;
+use WenPai\ChinaYes\Services\Catalog\PublicCatalog;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -858,6 +859,12 @@ final class KitRenderer {
 				$items = $catalog['quotas'];
 			}
 		}
+		if ( null === $items ) {
+			$pub = PublicCatalog::cached();
+			if ( isset( $pub['quotas'] ) && is_array( $pub['quotas'] ) && array() !== $pub['quotas'] ) {
+				$items = $pub['quotas'];
+			}
+		}
 
 		if ( null === $items ) {
 			$items = array(
@@ -1023,6 +1030,15 @@ final class KitRenderer {
 			}
 		}
 
+		$pub = PublicCatalog::cached();
+		if ( isset( $pub['promos'] ) && is_array( $pub['promos'] ) && array() !== $pub['promos'] ) {
+			return array(
+				'dismissible' => false,
+				'title'       => __( '精选推荐', 'wp-china-yes' ),
+				'slides'      => $pub['promos'],
+			);
+		}
+
 		$wl_detail_url = self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) );
 		return array(
 			'dismissible' => false,
@@ -1132,19 +1148,27 @@ final class KitRenderer {
 			),
 		);
 
-		$extra = array();
+		$extra     = array();
+		$raw_tools = array();
 		if ( function_exists( 'get_transient' ) ) {
 			$catalog = get_transient( 'wpcy_catalog' );
-			if ( is_array( $catalog ) && isset( $catalog['toolbox'] ) && is_array( $catalog['toolbox'] ) ) {
-				foreach ( $catalog['toolbox'] as $tool ) {
-					if ( is_array( $tool ) && ! empty( $tool['label'] ) ) {
-						$extra[] = array(
-							'label' => sanitize_text_field( (string) $tool['label'] ),
-							'icon'  => ! empty( $tool['icon'] ) ? sanitize_key( (string) $tool['icon'] ) : 'sparkle',
-							'href'  => ! empty( $tool['href'] ) ? esc_url_raw( (string) $tool['href'] ) : '',
-						);
-					}
-				}
+			if ( is_array( $catalog ) && isset( $catalog['toolbox'] ) && is_array( $catalog['toolbox'] ) && array() !== $catalog['toolbox'] ) {
+				$raw_tools = $catalog['toolbox'];
+			}
+		}
+		if ( array() === $raw_tools ) {
+			$pub = PublicCatalog::cached();
+			if ( isset( $pub['toolbox'] ) && is_array( $pub['toolbox'] ) ) {
+				$raw_tools = $pub['toolbox'];
+			}
+		}
+		foreach ( $raw_tools as $tool ) {
+			if ( is_array( $tool ) && ! empty( $tool['label'] ) ) {
+				$extra[] = array(
+					'label' => sanitize_text_field( (string) $tool['label'] ),
+					'icon'  => ! empty( $tool['icon'] ) ? sanitize_key( (string) $tool['icon'] ) : 'sparkle',
+					'href'  => ! empty( $tool['href'] ) ? esc_url_raw( (string) $tool['href'] ) : '',
+				);
 			}
 		}
 		if ( function_exists( 'apply_filters' ) ) {

@@ -18,6 +18,7 @@ use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Diagnostics\HealthAudit;
+use WenPai\ChinaYes\Services\Catalog\PublicCatalog;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -261,6 +262,28 @@ final class ToolsController {
 				'fixed'        => array_keys( $patch ),
 				'fixed_count'  => count( $patch ),
 				'audit'        => $after,
+			)
+		);
+	}
+
+	/**
+	 * Refresh the read-only public static catalog cache (`POST /wpcy/v1/tools/catalog/refresh`).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return WP_REST_Response
+	 */
+	public function refresh_public_catalog( WP_REST_Request $request ): WP_REST_Response {
+		unset( $request );
+		$res = ( new PublicCatalog() )->sync( true );
+
+		return RestError::ok(
+			array(
+				'source'        => $res['source'],
+				'updated_at'    => $res['updated_at'],
+				'quotas_count'  => count( $res['quotas'] ),
+				'promos_count'  => count( $res['promos'] ),
+				'toolbox_count' => count( $res['toolbox'] ),
 			)
 		);
 	}

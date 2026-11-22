@@ -142,6 +142,39 @@ final class CatalogModule implements Module {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_action( 'init', array( $this, 'schedule_public_catalog' ) );
+		add_action( PublicCatalog::CRON_HOOK, array( $this, 'sync_public_catalog' ) );
+	}
+
+	/**
+	 * Schedule lightweight background public catalog sync (twice daily, zero frontend blocking).
+	 *
+	 * @since 4.0.0
+	 */
+	public function schedule_public_catalog(): void {
+		if ( function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_schedule_event' ) && ! wp_next_scheduled( PublicCatalog::CRON_HOOK ) ) {
+			wp_schedule_event( time() + 300, 'twicedaily', PublicCatalog::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Cron handler: refresh read-only static catalog cache from WenPai Bridge.
+	 *
+	 * @since 4.0.0
+	 */
+	public function sync_public_catalog(): void {
+		( new PublicCatalog() )->sync( false );
+	}
+
+	/**
+	 * Clear public catalog cron hook on deactivation.
+	 *
+	 * @since 4.0.0
+	 */
+	public function deactivate(): void {
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			wp_clear_scheduled_hook( PublicCatalog::CRON_HOOK );
+		}
 	}
 
 	/**

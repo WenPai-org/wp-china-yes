@@ -55,6 +55,7 @@ class ToolsControllerTest extends TestCase {
 		$this->assertContains( '/tools/snapshot', $routes );
 		$this->assertContains( '/tools/audit', $routes );
 		$this->assertContains( '/tools/audit/fix', $routes );
+		$this->assertContains( '/tools/catalog/refresh', $routes );
 	}
 
 	/**

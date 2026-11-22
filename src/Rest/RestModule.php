@@ -491,6 +491,16 @@ final class RestModule implements Module {
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/catalog/refresh',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $tools, 'refresh_public_catalog' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
 	}
 
 	/**
