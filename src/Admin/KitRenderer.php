@@ -530,7 +530,7 @@ final class KitRenderer {
 						'html' => \Wenpai_Admin_UI::quota_list_html(
 							array(
 								'attrs' => array( 'data-wpcy-quotas' => '1' ),
-								'items' => self::overview_quota_items( $svc_url ),
+								'items' => self::overview_quota_items( $svc_url, $settings, $is_bound ),
 							)
 						),
 					),
@@ -826,53 +826,121 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Build model-agnostic scrollable service quota items (cloud-overridable via `wpcy_catalog` transient).
+	 * Build model-agnostic scrollable service quota items (cloud-overridable via `wpcy_catalog` transient
+	 * and extensible by companion plugins via the `wpcy_quota_items` filter).
 	 *
-	 * @param string $svc_url Services directory URL.
+	 * @param string               $svc_url  Services directory URL.
+	 * @param array<string, mixed> $settings Current settings snapshot.
+	 * @param bool                 $is_bound Whether the site is currently bound to WenPai Cloud.
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function overview_quota_items( string $svc_url ): array {
+	private static function overview_quota_items( string $svc_url, array $settings = array(), bool $is_bound = false ): array {
+		$items = null;
 		if ( function_exists( 'get_transient' ) ) {
 			$catalog = get_transient( 'wpcy_catalog' );
 			if ( is_array( $catalog ) && isset( $catalog['quotas'] ) && is_array( $catalog['quotas'] ) && array() !== $catalog['quotas'] ) {
-				return $catalog['quotas'];
+				$items = $catalog['quotas'];
 			}
 		}
 
-		return array(
-			array(
-				'name'         => __( 'adminCDN 静态资源加速', 'wp-china-yes' ),
-				'usage'        => __( '基础免费额度生效中', 'wp-china-yes' ),
-				'percent'      => 24,
-				'note'         => __( '超额自动切慢速通道或按需补充', 'wp-china-yes' ),
-				'action_label' => __( '查看说明', 'wp-china-yes' ),
-				'action_url'   => $svc_url,
-			),
-			array(
-				'name'         => __( '文风中文字体分片服务', 'wp-china-yes' ),
-				'usage'        => __( '按扩展插件同步', 'wp-china-yes' ),
-				'percent'      => 8,
-				'note'         => __( '启用文风字体后在此汇总消耗', 'wp-china-yes' ),
-				'action_label' => __( '浏览目录', 'wp-china-yes' ),
-				'action_url'   => $svc_url,
-			),
-			array(
-				'name'         => __( '心思 AI 接口服务', 'wp-china-yes' ),
-				'usage'        => __( '按调用额度计量', 'wp-china-yes' ),
-				'percent'      => 4,
-				'note'         => __( '支持自有密钥或站点绑定额度', 'wp-china-yes' ),
-				'action_label' => __( '服务目录', 'wp-china-yes' ),
-				'action_url'   => $svc_url,
-			),
-			array(
-				'name'  => __( '墨图图库与智储同步', 'wp-china-yes' ),
-				'usage' => __( '当前不限额', 'wp-china-yes' ),
-			),
-			array(
-				'name'  => __( 'Cravatar 头像与 WP.org 镜像', 'wp-china-yes' ),
-				'usage' => __( '永久免费', 'wp-china-yes' ),
-			),
-		);
+		if ( null === $items ) {
+			$items = array(
+				array(
+					'id'           => 'admincdn',
+					'name'         => __( 'adminCDN 静态资源加速', 'wp-china-yes' ),
+					'usage'        => __( '基础免费额度生效中', 'wp-china-yes' ),
+					'percent'      => 24,
+					'note'         => __( '超额自动切慢速通道或按需补充', 'wp-china-yes' ),
+					'action_label' => __( '查看说明', 'wp-china-yes' ),
+					'action_url'   => $svc_url,
+				),
+				array(
+					'id'           => 'wpfonts',
+					'name'         => __( '文风中文字体分片服务', 'wp-china-yes' ),
+					'usage'        => __( '按扩展插件同步', 'wp-china-yes' ),
+					'percent'      => 8,
+					'note'         => __( '启用文风字体后在此汇总消耗', 'wp-china-yes' ),
+					'action_label' => __( '浏览目录', 'wp-china-yes' ),
+					'action_url'   => $svc_url,
+				),
+				array(
+					'id'           => 'wpmind',
+					'name'         => __( '心思 AI 接口服务', 'wp-china-yes' ),
+					'usage'        => __( '按调用额度计量', 'wp-china-yes' ),
+					'percent'      => 4,
+					'note'         => __( '支持自有密钥或站点绑定额度', 'wp-china-yes' ),
+					'action_label' => __( '服务目录', 'wp-china-yes' ),
+					'action_url'   => $svc_url,
+				),
+				array(
+					'id'    => 'motucloud',
+					'name'  => __( '墨图图库与智储同步', 'wp-china-yes' ),
+					'usage' => __( '当前不限额', 'wp-china-yes' ),
+				),
+				array(
+					'id'    => 'cravatar',
+					'name'  => __( 'Cravatar 头像与 WP.org 镜像', 'wp-china-yes' ),
+					'usage' => __( '永久免费', 'wp-china-yes' ),
+				),
+			);
+		}
+
+		if ( function_exists( 'apply_filters' ) ) {
+			$context  = array(
+				'services_url' => $svc_url,
+				'settings'     => $settings,
+				'bound'        => $is_bound,
+			);
+			$filtered = apply_filters( 'wpcy_quota_items', $items, $context );
+			if ( is_array( $filtered ) ) {
+				$items = self::sanitize_quota_items( $filtered );
+			}
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Normalize and sanitize quota items returned by `wpcy_quota_items` filters.
+	 *
+	 * @param array<int|string, mixed> $raw Raw quota rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function sanitize_quota_items( array $raw ): array {
+		$clean = array();
+		foreach ( $raw as $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			$name = isset( $entry['name'] ) ? sanitize_text_field( (string) $entry['name'] ) : '';
+			if ( '' === $name ) {
+				continue;
+			}
+			$row = array(
+				'name'  => $name,
+				'usage' => isset( $entry['usage'] ) ? sanitize_text_field( (string) $entry['usage'] ) : '',
+			);
+			if ( isset( $entry['id'] ) && is_string( $entry['id'] ) && '' !== $entry['id'] ) {
+				$row['id'] = sanitize_key( $entry['id'] );
+			}
+			if ( array_key_exists( 'percent', $entry ) && null !== $entry['percent'] && '' !== (string) $entry['percent'] && is_numeric( $entry['percent'] ) ) {
+				$row['percent'] = max( 0, min( 100, (int) round( (float) $entry['percent'] ) ) );
+			}
+			if ( isset( $entry['tone'] ) && is_string( $entry['tone'] ) && '' !== $entry['tone'] ) {
+				$row['tone'] = sanitize_key( $entry['tone'] );
+			}
+			if ( isset( $entry['note'] ) && is_string( $entry['note'] ) && '' !== $entry['note'] ) {
+				$row['note'] = sanitize_text_field( $entry['note'] );
+			}
+			if ( isset( $entry['action_label'] ) && is_string( $entry['action_label'] ) && '' !== $entry['action_label'] ) {
+				$row['action_label'] = sanitize_text_field( $entry['action_label'] );
+			}
+			if ( isset( $entry['action_url'] ) && is_string( $entry['action_url'] ) && '' !== $entry['action_url'] ) {
+				$row['action_url'] = esc_url_raw( $entry['action_url'] );
+			}
+			$clean[] = $row;
+		}
+		return $clean;
 	}
 
 	/**

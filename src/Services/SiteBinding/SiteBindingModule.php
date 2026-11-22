@@ -60,6 +60,43 @@ final class SiteBindingModule implements Module {
 	public const CONFIRM_RETRY_DELAY = 60;
 
 	/**
+	 * Allowed scopes for `wenpai_sign_cloud_request`.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @var list<string>
+	 */
+	public const CLOUD_SIGN_SCOPES = array(
+		'mind:gateway',
+		'wpmind:gateway',
+	);
+
+	/**
+	 * Default trusted hosts for `wenpai_sign_cloud_request`.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @var list<string>
+	 */
+	public const CLOUD_SIGN_DEFAULT_HOSTS = array(
+		'mind-api.wenpai.net',
+	);
+
+	/**
+	 * Short-lived derived bearer token TTL in seconds.
+	 *
+	 * @since 4.0.0
+	 */
+	public const CLOUD_SIGN_TTL = 300;
+
+	/**
+	 * Domain separation prefix when deriving per-scope HMAC keys from the site credential.
+	 *
+	 * @since 4.0.0
+	 */
+	public const CLOUD_SIGN_KDF_PREFIX = 'wenpai-cloud-sign-v1:';
+
+	/**
 	 * Settings / identity access.
 	 *
 	 * @var Repository
@@ -135,6 +172,7 @@ final class SiteBindingModule implements Module {
 		add_action( self::CRON_HOOK, array( $this, 'cron_confirm' ) );
 		if ( function_exists( 'add_filter' ) ) {
 			add_filter( 'wenpai_site_binding', array( $this, 'filter_suite_binding' ) );
+			add_filter( 'wenpai_sign_cloud_request', array( $this, 'filter_sign_cloud_request' ), 10, 2 );
 		}
 		if ( ! function_exists( 'update_option' ) ) {
 			return;
@@ -168,6 +206,82 @@ final class SiteBindingModule implements Module {
 			'bound_at'   => $snap['bound_at'],
 			'manage_url' => AdminModule::app_url( 'wpcy-services' ),
 		);
+	}
+
+	/**
+	 * Derive a short-lived HMAC-SHA256 bearer token for trusted WenPai cloud endpoints.
+	 *
+	 * Never returns the raw site-binding credential. Passes through any already-populated
+	 * non-empty token string unchanged, and returns `$token` untouched when the site is
+	 * unbound, the credential cannot be unsealed, or scope/target validation fails.
+	 *
+	 * Token format: `v1.<base64url(payload_json)>.<base64url(hmac_sha256_raw)>`.
+	 * Signing key: `hash_hmac( 'sha256', self::CLOUD_SIGN_KDF_PREFIX . $scope, $raw_credential, true )`.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param mixed $token   Incoming bearer token from caller or earlier filter.
+	 * @param mixed $context Request context array containing `scope` and `target`.
+	 * @return mixed
+	 */
+	public function filter_sign_cloud_request( $token = '', $context = array() ) {
+		if ( is_string( $token ) && '' !== trim( $token ) ) {
+			return $token;
+		}
+
+		if ( ! is_array( $context ) ) {
+			return $token;
+		}
+
+		$scope = isset( $context['scope'] ) && is_string( $context['scope'] ) ? trim( $context['scope'] ) : '';
+		if ( ! in_array( $scope, self::CLOUD_SIGN_SCOPES, true ) ) {
+			return $token;
+		}
+
+		$target = isset( $context['target'] ) && is_string( $context['target'] ) ? trim( $context['target'] ) : '';
+		if ( ! $this->is_allowed_cloud_target( $target, $scope ) ) {
+			return $token;
+		}
+
+		$identity  = $this->repository->get_identity();
+		$binding   = $this->binding_from( $identity );
+		$site_uuid = isset( $identity['site_uuid'] ) && is_string( $identity['site_uuid'] ) ? trim( $identity['site_uuid'] ) : '';
+		if ( 'bound' !== $binding['status'] || '' === $site_uuid ) {
+			return $token;
+		}
+
+		if ( ! is_string( $binding['credential'] ) || '' === $binding['credential'] ) {
+			return $token;
+		}
+
+		$raw_credential = $this->credentials->open( $binding['credential'] );
+		if ( ! is_string( $raw_credential ) || '' === $raw_credential ) {
+			return $token;
+		}
+
+		$iat     = time();
+		$payload = array(
+			'site_uuid' => $site_uuid,
+			'site_hash' => $binding['site_hash'],
+			'scope'     => $scope,
+			'target'    => $target,
+			'iat'       => $iat,
+			'exp'       => $iat + self::CLOUD_SIGN_TTL,
+			'nonce'     => bin2hex( random_bytes( 16 ) ),
+		);
+
+		$json = function_exists( 'wp_json_encode' )
+			? wp_json_encode( $payload )
+			: json_encode( $payload ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- fallback when WordPress is not loaded.
+		if ( ! is_string( $json ) ) {
+			return $token;
+		}
+
+		$signing_input = 'v1.' . self::base64url_encode( $json );
+		$secret        = hash_hmac( 'sha256', self::CLOUD_SIGN_KDF_PREFIX . $scope, $raw_credential, true );
+		$signature     = hash_hmac( 'sha256', $signing_input, $secret, true );
+
+		return $signing_input . '.' . self::base64url_encode( $signature );
 	}
 
 	/**
@@ -608,5 +722,61 @@ final class SiteBindingModule implements Module {
 				'status' => 'failed',
 			)
 		);
+	}
+
+	/**
+	 * Validate that a cloud-signing target is an HTTPS URL on an allowlisted host.
+	 *
+	 * @param string $target Target URL.
+	 * @param string $scope  Validated request scope.
+	 * @return bool
+	 */
+	private function is_allowed_cloud_target( string $target, string $scope ): bool {
+		if ( '' === $target ) {
+			return false;
+		}
+
+		$parts = function_exists( 'wp_parse_url' )
+			? wp_parse_url( $target )
+			: parse_url( $target ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- fallback when WordPress is not loaded.
+		if ( ! is_array( $parts ) ) {
+			return false;
+		}
+
+		$scheme = isset( $parts['scheme'] ) ? (string) $parts['scheme'] : '';
+		$host   = isset( $parts['host'] ) ? strtolower( trim( (string) $parts['host'] ) ) : '';
+		if ( 0 !== strcasecmp( $scheme, 'https' ) || '' === $host ) {
+			return false;
+		}
+
+		if ( isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return false;
+		}
+
+		$allowed_hosts = self::CLOUD_SIGN_DEFAULT_HOSTS;
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'wpcy_cloud_sign_allowed_hosts', $allowed_hosts, $scope, $target );
+			if ( is_array( $filtered ) ) {
+				$allowed_hosts = array();
+				foreach ( $filtered as $candidate ) {
+					if ( is_string( $candidate ) && '' !== trim( $candidate ) ) {
+						$allowed_hosts[] = strtolower( trim( $candidate ) );
+					}
+				}
+			}
+		}
+
+		return in_array( $host, $allowed_hosts, true );
+	}
+
+	/**
+	 * Encode binary or UTF-8 bytes as unpadded RFC 4648 URL-safe Base64.
+	 *
+	 * @param string $raw Input bytes.
+	 * @return string
+	 */
+	private static function base64url_encode( string $raw ): string {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- URL-safe base64 encoding for signed bearer token segments.
+		return rtrim( strtr( base64_encode( $raw ), '+/', '-_' ), '=' );
 	}
 }
