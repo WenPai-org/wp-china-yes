@@ -319,6 +319,7 @@ final class ConflictDetector {
 
 		$effective_file = '' !== $plugin_file ? $plugin_file : ( null !== $meta ? $meta['file'] : $slug . '/' . $slug . '.php' );
 		if ( function_exists( 'apply_filters' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress plugin_action_links hook.
 			$links = apply_filters( 'plugin_action_links_' . $effective_file, array() );
 			if ( is_array( $links ) ) {
 				foreach ( $links as $html ) {
