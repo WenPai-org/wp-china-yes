@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin;
 
+use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\ConflictDetector;
+use WenPai\ChinaYes\Diagnostics\HealthAudit;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -74,7 +76,7 @@ final class KitRenderer {
 		} elseif ( 'licenses' === $current ) {
 			self::render_licenses( $settings, $locked );
 		} elseif ( 'diagnose' === $current ) {
-			self::render_diagnose( $settings );
+			self::render_diagnose( $settings, $locked );
 		} else {
 			self::render_overview( $settings );
 		}
@@ -1121,6 +1123,12 @@ final class KitRenderer {
 				'icon'  => 'server',
 				'title' => __( '复制脱敏的 WordPress / PHP / 节点探测环境快照', 'wp-china-yes' ),
 				'attrs' => array( 'data-wpcy-quick' => 'site-snapshot' ),
+			),
+			array(
+				'label' => __( '国内化体检', 'wp-china-yes' ),
+				'icon'  => 'shield-check',
+				'title' => __( '查看国内化体检评分并一键修复优化项', 'wp-china-yes' ),
+				'href'  => self::page_url( 'wpcy-diagnose' ) . '#wpcy-audit',
 			),
 		);
 
@@ -2691,6 +2699,10 @@ final class KitRenderer {
 			\Wenpai_Admin_UI::card_close();
 		}
 
+		if ( ! $hide_unlinked ) {
+			self::render_scenario_bundles_card( $profile, $plugin_states );
+		}
+
 		if ( self::is_site_bound() ) {
 			AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
 		} elseif ( ! $hide_unlinked ) {
@@ -2732,6 +2744,134 @@ final class KitRenderer {
 		}
 
 		echo '</div>';
+	}
+
+	/**
+	 * Render curated 1-click scenario starter bundles on the Services screen.
+	 *
+	 * Every plugin slug in these bundles is guaranteed to have a live downloadable
+	 * release on WenPai Bridge (`updates.wenpai.net`).
+	 *
+	 * @param string                              $profile       Active site profile.
+	 * @param array<string, array<string, mixed>> $plugin_states Detected plugin states keyed by catalog id.
+	 */
+	private static function render_scenario_bundles_card( string $profile, array $plugin_states ): void {
+		$can_install = ! function_exists( 'current_user_can' ) || current_user_can( 'install_plugins' );
+		$slug_labels = array(
+			'wpavatar'             => __( '文派头像', 'wp-china-yes' ),
+			'wpslug'               => __( '文派别名', 'wp-china-yes' ),
+			'wpcomments'           => __( '文派评论', 'wp-china-yes' ),
+			'wp-chinese-converter' => __( '译词简繁', 'wp-china-yes' ),
+			'wpsss'                => __( '文派智储', 'wp-china-yes' ),
+			'wpmind'               => __( '文派心思', 'wp-china-yes' ),
+		);
+		$slug_to_id  = array(
+			'wpavatar'             => 'cravatar',
+			'wpslug'               => 'slug',
+			'wpcomments'           => 'comments',
+			'wp-chinese-converter' => 'converter',
+			'wpsss'                => 'storage',
+			'wpmind'               => 'ai',
+		);
+
+		$bundles = array(
+			array(
+				'id'      => 'domestic',
+				'match'   => 'domestic',
+				'icon'    => 'home',
+				'title'   => __( '国内企业与官网组合', 'wp-china-yes' ),
+				'summary' => __( '头像本地化 + 拼音别名 + 评论增强', 'wp-china-yes' ),
+				'slugs'   => array( 'wpavatar', 'wpslug', 'wpcomments' ),
+			),
+			array(
+				'id'      => 'content',
+				'match'   => 'mixed',
+				'icon'    => 'sparkle',
+				'title'   => __( '内容与社区组合', 'wp-china-yes' ),
+				'summary' => __( '头像加速 + 拼音别名 + 简繁互转 + 心思 AI', 'wp-china-yes' ),
+				'slugs'   => array( 'wpavatar', 'wpslug', 'wp-chinese-converter', 'wpmind' ),
+			),
+			array(
+				'id'      => 'crossborder',
+				'match'   => 'crossborder',
+				'icon'    => 'cloud',
+				'title'   => __( '外贸与跨境组合', 'wp-china-yes' ),
+				'summary' => __( '对象存储加速 + 简繁多语 + 心思 AI', 'wp-china-yes' ),
+				'slugs'   => array( 'wpsss', 'wp-chinese-converter', 'wpmind' ),
+			),
+		);
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '场景一键装机包', 'wp-china-yes' ),
+				'tile'  => false,
+				'attrs' => array( 'data-wpcy-bundles' => '1' ),
+			)
+		);
+
+		foreach ( $bundles as $bundle ) {
+			$missing = array();
+			$active  = 0;
+			$names   = array();
+			foreach ( $bundle['slugs'] as $slug ) {
+				$names[] = $slug_labels[ $slug ];
+				$cat_id  = $slug_to_id[ $slug ];
+				$is_act  = ! empty( $plugin_states[ $cat_id ]['active'] )
+					|| ConflictDetector::is_companion_active( $slug );
+				if ( $is_act ) {
+					++$active;
+				} else {
+					$missing[] = $slug;
+				}
+			}
+
+			$total     = count( $bundle['slugs'] );
+			$is_match  = $profile === $bundle['match'];
+			$all_ready = array() === $missing;
+
+			if ( $all_ready ) {
+				$pill_text  = __( '已全部启用', 'wp-china-yes' );
+				$pill_state = 'ok';
+			} elseif ( $is_match ) {
+				$pill_text  = sprintf( /* translators: 1: active count, 2: total count */ __( '匹配当前场景 · %1$d/%2$d', 'wp-china-yes' ), $active, $total );
+				$pill_state = 'accent';
+			} else {
+				$pill_text  = sprintf( /* translators: 1: active count, 2: total count */ __( '已启用 %1$d/%2$d', 'wp-china-yes' ), $active, $total );
+				$pill_state = 'mute';
+			}
+
+			$control_html = '';
+			if ( ! $all_ready && $can_install ) {
+				$control_html = \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => sprintf( /* translators: %d: remaining plugin count */ __( '一键安装剩余 %d 款', 'wp-china-yes' ), count( $missing ) ),
+						'type'    => 'button',
+						'variant' => $is_match ? 'primary' : 'secondary',
+						'size'    => 'sm',
+						'attrs'   => array(
+							'data-wpcy-bundle-install' => implode( ',', $missing ),
+							'data-wpcy-bundle-id'      => $bundle['id'],
+						),
+					)
+				);
+			}
+
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => $bundle['icon'],
+					'title'        => $bundle['title'],
+					'desc'         => implode( ' · ', $names ) . ' — ' . $bundle['summary'],
+					'pill'         => array(
+						'text'  => $pill_text,
+						'state' => $pill_state,
+					),
+					'control_html' => $control_html,
+					'attrs'        => array( 'data-wpcy-bundle-row' => $bundle['id'] ),
+				)
+			);
+		}
+
+		\Wenpai_Admin_UI::card_close();
 	}
 
 	/**
@@ -3781,15 +3921,36 @@ final class KitRenderer {
 	}
 
 	/**
-	 * Diagnose screen (`?page=wpcy-diagnose`): Server vs Browser 2-column comparison + recovery mode.
+	 * Diagnose screen (`?page=wpcy-diagnose`): China-localization audit + Server vs Browser 2-column comparison + recovery mode.
 	 *
 	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are network-locked.
 	 */
-	private static function render_diagnose( array $settings ): void {
+	private static function render_diagnose( array $settings, bool $locked = false ): void {
 		$recovery = ! empty( $settings['recovery_mode'] );
+		$probes   = array();
+		if ( function_exists( 'get_transient' ) ) {
+			$raw_probes = get_transient( Checker::STORE_KEY );
+			if ( is_array( $raw_probes ) ) {
+				$probes = $raw_probes;
+			}
+		}
+		$audit       = HealthAudit::evaluate( $settings, $probes );
+		$audit_score = $audit['score'];
+		$audit_tone  = $audit['status'];
+		$fix_count   = $audit['fixable_count'];
+		$score_pill  = sprintf(
+			/* translators: 1: numeric score out of 100, 2: status text */
+			__( '%1$d 分 · %2$s', 'wp-china-yes' ),
+			$audit_score,
+			'ok' === $audit_tone
+				? __( '已就绪', 'wp-china-yes' )
+				: ( $fix_count > 0 ? __( '可一键优化', 'wp-china-yes' ) : __( '需留意', 'wp-china-yes' ) )
+		);
+
 		\Wenpai_Admin_Shell::page_head(
 			__( '诊断', 'wp-china-yes' ),
-			__( '对比服务器出站与当前浏览器的实际连通延迟。', 'wp-china-yes' ),
+			__( '一键体检国内化状态，并对比服务器出站与当前浏览器的连通延迟。', 'wp-china-yes' ),
 			\Wenpai_Admin_UI::button_html(
 				array(
 					'label'   => __( '开始检测', 'wp-china-yes' ),
@@ -3800,6 +3961,85 @@ final class KitRenderer {
 		);
 
 		echo '<div class="wenpai-stack" data-wpcy-screen="diagnose">';
+
+		$audit_head_actions  = '<div class="wenpai-row wenpai-row--tight">';
+		$audit_head_actions .= \Wenpai_Admin_UI::pill_html(
+			array(
+				'text'  => $score_pill,
+				'state' => $audit_tone,
+				'attrs' => array( 'data-wpcy-audit-score' => '1' ),
+			)
+		);
+		if ( ! $locked ) {
+			$audit_head_actions .= \Wenpai_Admin_UI::button_html(
+				array(
+					'label'    => $fix_count > 0
+						? sprintf( /* translators: %d: fixable count */ __( '一键修复（%d 项）', 'wp-china-yes' ), $fix_count )
+						: __( '已全部优化', 'wp-china-yes' ),
+					'type'     => 'button',
+					'variant'  => $fix_count > 0 ? 'primary' : 'secondary',
+					'size'     => 'sm',
+					'disabled' => 0 === $fix_count,
+					'attrs'    => array( 'data-wpcy-audit-fix' => '1' ),
+				)
+			);
+		}
+		$audit_head_actions .= '</div>';
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title'             => __( '国内化体检与一键修复', 'wp-china-yes' ),
+				'tile'              => false,
+				'head_control_html' => $audit_head_actions,
+				'attrs'             => array(
+					'id'                   => 'wpcy-audit',
+					'data-wpcy-audit-card' => '1',
+				),
+			)
+		);
+		foreach ( $audit['items'] as $item ) {
+			$row_control = '';
+			if ( 'conflicts' === $item['id'] && 'ok' !== $item['status'] && function_exists( 'admin_url' ) ) {
+				$row_control = \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '插件管理', 'wp-china-yes' ),
+						'href'    => admin_url( 'plugins.php' ),
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					)
+				);
+			}
+			\Wenpai_Admin_UI::row(
+				array(
+					'icon'         => $item['icon'],
+					'title'        => $item['label'],
+					'desc'         => $item['detail'],
+					'pill'         => array(
+						'text'  => $item['pill'],
+						'state' => $item['status'],
+					),
+					'control_html' => $row_control,
+					'attrs'        => array( 'data-wpcy-audit-item' => $item['id'] ),
+				)
+			);
+		}
+		\Wenpai_Admin_UI::card_foot(
+			array(
+				'meta'    => $fix_count > 0
+					? sprintf( /* translators: %d: count of auto-fixable items */ __( '发现 %d 项可自动优化的国内化配置，一键修复不影响第三方插件。', 'wp-china-yes' ), $fix_count )
+					: __( '国内化核心配置已就绪，修复动作始终可逆。', 'wp-china-yes' ),
+				'attrs'   => array( 'data-wpcy-audit-summary' => '1' ),
+				'actions' => array(
+					array(
+						'label'   => __( '重新体检', 'wp-china-yes' ),
+						'type'    => 'button',
+						'variant' => 'ghost',
+						'attrs'   => array( 'data-wpcy-audit-refresh' => '1' ),
+					),
+				),
+			)
+		);
+		\Wenpai_Admin_UI::card_close();
 		echo '<div class="wenpai-grid-2">';
 		\Wenpai_Admin_UI::card_open(
 			array(

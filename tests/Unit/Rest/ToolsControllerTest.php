@@ -53,6 +53,8 @@ class ToolsControllerTest extends TestCase {
 		$this->assertContains( '/tools/clear-transients', $routes );
 		$this->assertContains( '/tools/maintenance', $routes );
 		$this->assertContains( '/tools/snapshot', $routes );
+		$this->assertContains( '/tools/audit', $routes );
+		$this->assertContains( '/tools/audit/fix', $routes );
 	}
 
 	/**
@@ -197,5 +199,32 @@ class ToolsControllerTest extends TestCase {
 		$this->assertContains( 'useso-take-over-google', $data['conflicts'] );
 		$this->assertStringContainsString( '=== WenPai Leaf Environment Snapshot ===', $data['text'] );
 		$this->assertStringNotContainsString( 'password', strtolower( $data['text'] ) );
+	}
+
+	/**
+	 * Audit and one-click fix endpoints improve score from degraded domestic settings.
+	 */
+	public function test_audit_and_one_click_fix_improve_score(): void {
+		$repo = new Repository();
+		$repo->set( 'connectivity.wordpress_org', 'off' );
+		$repo->set( 'connectivity.public_assets.scope', 'off' );
+		$repo->set( 'connectivity.avatar', 'off' );
+		$repo->set( 'connectivity.heartbeat', 'off' );
+		$repo->set( 'connectivity.dashboard_feeds', 'allow' );
+
+		$controller = new ToolsController( $repo, new Checker() );
+		$before_res = $controller->get_audit( new WP_REST_Request() );
+		$this->assertSame( 200, $before_res->get_status() );
+		$before_data = $before_res->get_data();
+		$this->assertSame( 25, $before_data['score'] );
+		$this->assertSame( 4, $before_data['fixable_count'] );
+
+		$fix_res  = $controller->fix_audit( new WP_REST_Request() );
+		$fix_data = $fix_res->get_data();
+		$this->assertSame( 200, $fix_res->get_status() );
+		$this->assertSame( 25, $fix_data['before_score'] );
+		$this->assertGreaterThan( 90, $fix_data['after_score'] );
+		$this->assertSame( 5, $fix_data['fixed_count'] );
+		$this->assertSame( 0, $fix_data['audit']['fixable_count'] );
 	}
 }

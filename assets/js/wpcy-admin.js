@@ -1133,6 +1133,158 @@
 			});
 		});
 
+		const auditCard = document.querySelector('[data-wpcy-audit-card]');
+		if (auditCard) {
+			const scoreEl = auditCard.querySelector('[data-wpcy-audit-score]');
+			const fixBtn = auditCard.querySelector('[data-wpcy-audit-fix]');
+			const refreshBtn = auditCard.querySelector('[data-wpcy-audit-refresh]');
+			const summaryFoot = auditCard.querySelector('[data-wpcy-audit-summary]');
+
+			function showAuditToast(msg, tone) {
+				if (typeof window.wenpaiToast === 'function') {
+					window.wenpaiToast(msg, tone || 'ok');
+				} else {
+					notify(tone || 'ok', msg);
+				}
+			}
+
+			function renderAuditSnapshot(audit) {
+				if (!audit || !Array.isArray(audit.items)) return;
+				const score = Number(audit.score) || 0;
+				const tone = audit.status || 'ok';
+				const fixCount = Number(audit.fixable_count) || 0;
+				if (scoreEl) {
+					scoreEl.className = 'pill ' + tone;
+					scoreEl.textContent = score + ' 分 · ' + (tone === 'ok' ? '已就绪' : (fixCount > 0 ? '可一键优化' : '需留意'));
+				}
+				if (fixBtn) {
+					fixBtn.disabled = fixCount === 0;
+					fixBtn.textContent = fixCount > 0 ? ('一键修复（' + fixCount + ' 项）') : '已全部优化';
+					fixBtn.classList.toggle('btn-primary', fixCount > 0);
+					fixBtn.classList.toggle('btn-secondary', fixCount === 0);
+				}
+				audit.items.forEach(function (it) {
+					const row = auditCard.querySelector('[data-wpcy-audit-item="' + it.id + '"]');
+					if (!row) return;
+					const pill = row.querySelector('.pill');
+					if (pill) {
+						pill.className = 'pill ' + (it.status || 'mute');
+						pill.textContent = it.pill || '';
+					}
+					const desc = row.querySelector('.d');
+					if (desc && it.detail) {
+						desc.textContent = it.detail;
+					}
+				});
+				if (summaryFoot) {
+					const metaEl = summaryFoot.querySelector('.meta') || summaryFoot.firstElementChild;
+					if (metaEl) {
+						metaEl.textContent = fixCount > 0
+							? ('发现 ' + fixCount + ' 项可自动优化的国内化配置，一键修复不影响第三方插件。')
+							: '国内化核心配置已就绪，修复动作始终可逆。';
+					}
+				}
+			}
+
+			if (fixBtn) {
+				fixBtn.addEventListener('click', function () {
+					fixBtn.classList.add('is-busy');
+					fixBtn.disabled = true;
+					api('/tools/audit/fix', { method: 'POST' })
+						.then(function (res) {
+							if (res && res.audit) {
+								renderAuditSnapshot(res.audit);
+							}
+							const before = res && typeof res.before_score === 'number' ? res.before_score : 0;
+							const after = res && typeof res.after_score === 'number' ? res.after_score : before;
+							const cnt = res && typeof res.fixed_count === 'number' ? res.fixed_count : 0;
+							showAuditToast(
+								cnt > 0
+									? ('已一键修复 ' + cnt + ' 项配置，国内化体检评分 ' + before + ' → ' + after + ' 分')
+									: '当前配置已就绪，无需额外修复',
+								'ok'
+							);
+						})
+						.catch(function (err) {
+							showAuditToast((err && err.message) || '一键修复未完成，请稍后重试', 'bad');
+							fixBtn.disabled = false;
+						})
+						.finally(function () {
+							fixBtn.classList.remove('is-busy');
+						});
+				});
+			}
+
+			if (refreshBtn) {
+				refreshBtn.addEventListener('click', function () {
+					refreshBtn.classList.add('is-busy');
+					refreshBtn.disabled = true;
+					api('/tools/audit')
+						.then(function (res) {
+							renderAuditSnapshot(res);
+							showAuditToast('国内化体检结果已刷新', 'ok');
+						})
+						.catch(function (err) {
+							showAuditToast((err && err.message) || '刷新体检结果失败，请稍后重试', 'bad');
+						})
+						.finally(function () {
+							refreshBtn.classList.remove('is-busy');
+							refreshBtn.disabled = false;
+						});
+				});
+			}
+		}
+
+		document.querySelectorAll('[data-wpcy-bundle-install]').forEach(function (bundleBtn) {
+			bundleBtn.addEventListener('click', function () {
+				const raw = String(bundleBtn.getAttribute('data-wpcy-bundle-install') || '');
+				const slugs = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+				if (!slugs.length) return;
+				const origLabel = bundleBtn.textContent;
+				bundleBtn.disabled = true;
+				bundleBtn.classList.add('is-busy');
+
+				let installed = 0;
+				let failed = 0;
+				let chain = Promise.resolve();
+				slugs.forEach(function (slug, idx) {
+					chain = chain.then(function () {
+						bundleBtn.textContent = '正在安装 ' + (idx + 1) + '/' + slugs.length + '…';
+						return api('/suite/install', { method: 'POST', body: { slug: slug } })
+							.then(function () { installed += 1; })
+							.catch(function () { failed += 1; });
+					});
+				});
+				chain.finally(function () {
+					bundleBtn.classList.remove('is-busy');
+					if (failed === 0 && installed > 0) {
+						bundleBtn.textContent = '已全部启用';
+						const row = bundleBtn.closest('[data-wpcy-bundle-row]');
+						const pill = row && row.querySelector('.pill');
+						if (pill) {
+							pill.className = 'pill ok';
+							pill.textContent = '已全部启用';
+						}
+						if (typeof window.wenpaiToast === 'function') {
+							window.wenpaiToast('组合装机包 ' + installed + ' 款组件已安装并启用，正在刷新…', 'ok');
+						}
+						window.setTimeout(function () { window.location.reload(); }, 900);
+					} else {
+						bundleBtn.disabled = false;
+						bundleBtn.textContent = origLabel;
+						const msg = installed > 0
+							? ('已安装 ' + installed + ' 款，' + failed + ' 款失败，请稍后重试')
+							: '组合安装未完成，请检查服务器写入权限或稍后重试';
+						if (typeof window.wenpaiToast === 'function') {
+							window.wenpaiToast(msg, 'bad');
+						} else {
+							notify('bad', msg);
+						}
+					}
+				});
+			});
+		});
+
 		const svcScreen = document.querySelector('[data-wpcy-screen="services"]');
 		if (svcScreen) {
 			api('/diagnostics').then(function (data) {

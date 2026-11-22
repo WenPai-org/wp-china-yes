@@ -17,6 +17,7 @@ use WenPai\ChinaYes\Admin\MaintenanceModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Diagnostics\ConflictDetector;
+use WenPai\ChinaYes\Diagnostics\HealthAudit;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -215,6 +216,51 @@ final class ToolsController {
 				'conflicts'      => $conflict_names,
 				'maintenance'    => $maint,
 				'text'           => implode( "\n", $lines ),
+			)
+		);
+	}
+
+	/**
+	 * Run zero-HTTP China-localization health audit (`GET /wpcy/v1/tools/audit`).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return WP_REST_Response
+	 */
+	public function get_audit( WP_REST_Request $request ): WP_REST_Response {
+		unset( $request );
+		return RestError::ok(
+			HealthAudit::evaluate( $this->repository->all(), $this->checker->latest() )
+		);
+	}
+
+	/**
+	 * Apply safe reversible config fixes for fixable audit items (`POST /wpcy/v1/tools/audit/fix`).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
+	 * @return WP_REST_Response
+	 */
+	public function fix_audit( WP_REST_Request $request ): WP_REST_Response {
+		unset( $request );
+		$before_settings = $this->repository->all();
+		$probes          = $this->checker->latest();
+		$before          = HealthAudit::evaluate( $before_settings, $probes );
+		$patch           = HealthAudit::build_fix_patch( $before_settings );
+
+		foreach ( $patch as $key => $val ) {
+			$this->repository->set( $key, $val );
+		}
+
+		$after = HealthAudit::evaluate( $this->repository->all(), $probes );
+
+		return RestError::ok(
+			array(
+				'before_score' => $before['score'],
+				'after_score'  => $after['score'],
+				'fixed'        => array_keys( $patch ),
+				'fixed_count'  => count( $patch ),
+				'audit'        => $after,
 			)
 		);
 	}

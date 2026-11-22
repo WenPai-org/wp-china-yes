@@ -447,7 +447,8 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '维护模式', $html );
 		$this->assertStringContainsString( 'data-wpcy-quick="site-snapshot"', $html );
 		$this->assertStringContainsString( '环境快照', $html );
-		$this->assertSame( 2, substr_count( $html, 'data-wpcy-quick="reserved-slot"' ) );
+		$this->assertStringContainsString( '国内化体检', $html );
+		$this->assertSame( 1, substr_count( $html, 'data-wpcy-quick="reserved-slot"' ) );
 
 		\WenPai\ChinaYes\Admin\MaintenanceModule::set_enabled( true );
 		$active_html = $this->render_page( 'wpcy' );
@@ -553,5 +554,16 @@ class KitRendererTest extends TestCase {
 		$services = $this->render_page( 'wpcy-services' );
 		$this->assertStringNotContainsString( 'data-wpcy-providers-card="1"', $services );
 		$this->assertStringContainsString( 'page=wpcy-licenses', $services );
+		$this->assertStringContainsString( 'data-wpcy-bundles="1"', $services );
+		$this->assertStringContainsString( '场景一键装机包', $services );
+		$this->assertStringContainsString( '国内企业与官网组合', $services );
+		$this->assertStringContainsString( '内容与社区组合', $services );
+		$this->assertStringContainsString( '外贸与跨境组合', $services );
+
+		$diagnose = $this->render_page( 'wpcy-diagnose' );
+		$this->assertStringContainsString( 'data-wpcy-audit-card="1"', $diagnose );
+		$this->assertStringContainsString( '国内化体检与一键修复', $diagnose );
+		$this->assertStringContainsString( 'data-wpcy-audit-fix="1"', $diagnose );
+		$this->assertStringNotContainsString( 'style="', $diagnose );
 	}
 }

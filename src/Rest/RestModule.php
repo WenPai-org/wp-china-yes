@@ -471,6 +471,26 @@ final class RestModule implements Module {
 				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/audit',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $tools, 'get_audit' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/tools/audit/fix',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $tools, 'fix_audit' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
 	}
 
 	/**
