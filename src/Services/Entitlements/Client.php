@@ -89,10 +89,28 @@ final class Client {
 	 * @since 4.0.0
 	 *
 	 * @param string $site_hash  Bound site hash from identity.
-	 * @param string $credential Plaintext credential. Attached only as a mock test header.
+	 * @param string $credential Plaintext credential for Bearer auth.
 	 * @return list<array<string, mixed>>|WP_Error
 	 */
 	public function fetch( string $site_hash, string $credential = '' ) {
+		$envelope = $this->fetch_envelope( $site_hash, $credential );
+		if ( is_wp_error( $envelope ) ) {
+			return $envelope;
+		}
+
+		return $envelope['entitlements'];
+	}
+
+	/**
+	 * Fetch the full entitlements envelope (`entitlements` list + optional `mind` credits snapshot).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $site_hash  Bound site hash from identity.
+	 * @param string $credential Plaintext credential for Bearer auth.
+	 * @return array{entitlements: list<array<string, mixed>>, mind: array{credits_balance: int, credits_limit_month: int, credits_used_month: int}|null}|WP_Error
+	 */
+	public function fetch_envelope( string $site_hash, string $credential = '' ) {
 		if ( ! $this->outbound_allowed() ) {
 			return self::unavailable();
 		}
@@ -125,7 +143,12 @@ final class Client {
 			}
 		}
 
-		return $items;
+		$mind = isset( $raw['mind'] ) && is_array( $raw['mind'] ) ? self::normalize_mind( $raw['mind'] ) : null;
+
+		return array(
+			'entitlements' => $items,
+			'mind'         => $mind,
+		);
 	}
 
 	/**
@@ -292,6 +315,32 @@ final class Client {
 				'period'    => array_key_exists( 'period', $quota_in ) ? $quota_in['period'] : null,
 				'resets_at' => array_key_exists( 'resets_at', $quota_in ) ? $quota_in['resets_at'] : null,
 			),
+		);
+	}
+
+	/**
+	 * Normalize optional top-level `mind` credits payload from license-server.
+	 *
+	 * @param array<string, mixed> $raw Raw mind object.
+	 * @return array{credits_balance: int, credits_limit_month: int, credits_used_month: int}|null
+	 */
+	private static function normalize_mind( array $raw ) {
+		if ( ! isset( $raw['credits_balance'] ) || ! is_numeric( $raw['credits_balance'] ) ) {
+			return null;
+		}
+
+		$balance = max( 0, (int) $raw['credits_balance'] );
+		$limit   = isset( $raw['credits_limit_month'] ) && is_numeric( $raw['credits_limit_month'] )
+			? max( 0, (int) $raw['credits_limit_month'] )
+			: 0;
+		$used    = isset( $raw['credits_used_month'] ) && is_numeric( $raw['credits_used_month'] )
+			? max( 0, (int) $raw['credits_used_month'] )
+			: 0;
+
+		return array(
+			'credits_balance'     => $balance,
+			'credits_limit_month' => $limit,
+			'credits_used_month'  => $used,
 		);
 	}
 

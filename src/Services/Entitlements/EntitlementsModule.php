@@ -179,16 +179,43 @@ final class EntitlementsModule implements Module {
 	}
 
 	/**
-	 * Expose cached entitlement rows across the WenPai plugin suite.
+	 * Cached optional Mind Credits snapshot (1h fresh + 72h offline fallback, render-safe without remote HTTP).
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array{credits_balance: int, credits_limit_month: int, credits_used_month: int}|null
+	 */
+	public function cached_mind() {
+		$fresh = $this->read_mind( self::TRANSIENT_FRESH );
+		if ( is_array( $fresh ) ) {
+			return $fresh;
+		}
+		$stale = $this->read_mind( self::TRANSIENT_STALE );
+		if ( is_array( $stale ) ) {
+			return $stale;
+		}
+		return null;
+	}
+
+	/**
+	 * Expose cached entitlement rows (plus optional `mind` credits summary) across the WenPai plugin suite.
+	 *
+	 * Preserves 0-indexed entitlement rows while attaching string key `'mind'` when present so
+	 * WPMind reads `credits_balance`, `credits_limit_month`, and `credits_used_month` directly.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param mixed $items Default items from caller.
-	 * @return list<array<string, mixed>>
+	 * @return array<int|string, mixed>
 	 */
 	public function filter_suite_entitlements( $items = array() ): array {
 		unset( $items );
-		return $this->cached_items();
+		$out  = $this->cached_items();
+		$mind = $this->cached_mind();
+		if ( is_array( $mind ) ) {
+			$out['mind'] = $mind;
+		}
+		return $out;
 	}
 
 	/**
@@ -197,7 +224,7 @@ final class EntitlementsModule implements Module {
 	 * @since 4.0.0
 	 *
 	 * @param mixed $active  Default flag from caller.
-	 * @param mixed $service Target service slug (e.g. 'oem', 'wpmind-pro', 'windfonts').
+	 * @param mixed $service Target service slug (e.g. 'oem', 'mind', 'wpmind-pro', 'windfonts').
 	 */
 	public function filter_has_entitlement( $active, $service = '' ): bool {
 		if ( (bool) $active ) {
@@ -206,6 +233,12 @@ final class EntitlementsModule implements Module {
 		$target = is_string( $service ) ? strtolower( trim( $service ) ) : '';
 		if ( '' === $target ) {
 			return false;
+		}
+		if ( 'mind' === $target ) {
+			$mind = $this->cached_mind();
+			if ( is_array( $mind ) && $mind['credits_balance'] > 0 ) {
+				return true;
+			}
 		}
 		foreach ( $this->cached_items() as $row ) {
 			$slug   = isset( $row['service'] ) && is_string( $row['service'] ) ? strtolower( trim( $row['service'] ) ) : '';
@@ -232,12 +265,18 @@ final class EntitlementsModule implements Module {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @return array{entitlements: list<array<string, mixed>>}
+	 * @return array<string, mixed>
 	 */
 	public function snapshot(): array {
-		return array(
-			'entitlements' => $this->items(),
+		$items = $this->items();
+		$out   = array(
+			'entitlements' => $items,
 		);
+		$mind  = $this->cached_mind();
+		if ( is_array( $mind ) ) {
+			$out['mind'] = $mind;
+		}
+		return $out;
 	}
 
 	/**
@@ -319,27 +358,58 @@ final class EntitlementsModule implements Module {
 		}
 
 		$credential = $this->repository->get_credential();
-		$result     = $this->client->fetch( $hash, is_string( $credential ) ? $credential : '' );
-		if ( is_wp_error( $result ) ) {
+		$envelope   = $this->client->fetch_envelope( $hash, is_string( $credential ) ? $credential : '' );
+		if ( is_wp_error( $envelope ) ) {
 			return null;
 		}
 
-		$this->store( $result );
-		return $result;
+		$this->store( $envelope['entitlements'], $envelope['mind'] );
+		return $envelope['entitlements'];
 	}
 
 	/**
 	 * Persist fresh (1h) and stale (72h) copies.
 	 *
-	 * @param list<array<string, mixed>> $items Normalized rows.
+	 * @param list<array<string, mixed>>                                                          $items Normalized rows.
+	 * @param array{credits_balance: int, credits_limit_month: int, credits_used_month: int}|null $mind  Optional Mind credits snapshot.
 	 */
-	private function store( array $items ): void {
+	private function store( array $items, $mind = null ): void {
 		$payload = array(
 			'fetched_at'   => gmdate( 'Y-m-d\TH:i:s\Z' ),
 			'entitlements' => $items,
 		);
+		if ( is_array( $mind ) ) {
+			$payload['mind'] = $mind;
+		}
 		call_user_func( $this->set_transient, self::TRANSIENT_FRESH, $payload, self::TTL_FRESH );
 		call_user_func( $this->set_transient, self::TRANSIENT_STALE, $payload, self::TTL_STALE );
+	}
+
+	/**
+	 * Mind credits snapshot from a transient, or null when absent / malformed.
+	 *
+	 * @param string $key Transient name.
+	 * @return array{credits_balance: int, credits_limit_month: int, credits_used_month: int}|null
+	 */
+	private function read_mind( string $key ) {
+		$stored = call_user_func( $this->get_transient, $key );
+		if ( ! is_array( $stored ) || ! isset( $stored['mind'] ) || ! is_array( $stored['mind'] ) ) {
+			return null;
+		}
+		$raw = $stored['mind'];
+		if ( ! isset( $raw['credits_balance'] ) || ! is_numeric( $raw['credits_balance'] ) ) {
+			return null;
+		}
+
+		return array(
+			'credits_balance'     => max( 0, (int) $raw['credits_balance'] ),
+			'credits_limit_month' => isset( $raw['credits_limit_month'] ) && is_numeric( $raw['credits_limit_month'] )
+				? max( 0, (int) $raw['credits_limit_month'] )
+				: 0,
+			'credits_used_month'  => isset( $raw['credits_used_month'] ) && is_numeric( $raw['credits_used_month'] )
+				? max( 0, (int) $raw['credits_used_month'] )
+				: 0,
+		);
 	}
 
 	/**

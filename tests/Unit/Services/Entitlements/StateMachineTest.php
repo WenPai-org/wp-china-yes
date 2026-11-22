@@ -308,6 +308,38 @@ class StateMachineTest extends TestCase {
 	}
 
 	/**
+	 * Top-level `mind` credits payload from license-server is cached and exposed via `wenpai_site_entitlements['mind']`.
+	 */
+	public function test_mind_credits_envelope_persists_and_exposes_to_suite_filter(): void {
+		$payload         = $this->load_fixture( 'entitlements-active.json' );
+		$payload['mind'] = array(
+			'credits_balance'     => 498,
+			'credits_limit_month' => 500,
+			'credits_used_month'  => 2,
+		);
+
+		$module = $this->bound_module( null );
+		$this->queue_json( $payload );
+
+		$snap = $module->snapshot();
+		$this->assertArrayHasKey( 'mind', $snap );
+		$this->assertSame( 498, $snap['mind']['credits_balance'] );
+		$this->assertSame( 500, $snap['mind']['credits_limit_month'] );
+		$this->assertSame( 2, $snap['mind']['credits_used_month'] );
+
+		$suite = $module->filter_suite_entitlements();
+		$this->assertArrayHasKey( 'mind', $suite );
+		$this->assertSame( 498, $suite['mind']['credits_balance'] );
+		$this->assertTrue( $module->filter_has_entitlement( false, 'mind' ) );
+
+		// Survives fresh cache expiry via 72h stale fallback without network.
+		EntitlementsStore::delete_transient( EntitlementsModule::TRANSIENT_FRESH );
+		$stale_suite = $module->filter_suite_entitlements();
+		$this->assertSame( 498, $stale_suite['mind']['credits_balance'] );
+		$this->assertCount( 1, EntitlementsStore::$requests );
+	}
+
+	/**
 	 * Bound module that optionally queues a fixture as the next HTTP 200.
 	 *
 	 * HTTP, API base, and transients are injected so --filter StateMachine
