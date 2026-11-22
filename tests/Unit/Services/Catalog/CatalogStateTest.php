@@ -119,22 +119,26 @@ class CatalogStateTest extends TestCase {
 	}
 
 	/**
-	 * Production host is never contacted; mock URL is /v1/sites/{hash}/catalog.
+	 * Empty/non-HTTPS API is blocked; production DEFAULT_API GET uses /v1/sites/{hash}/catalog.
 	 */
-	public function test_production_host_blocked_and_mock_url() {
-		EntitlementsStore::$api = ChallengeClient::DEFAULT_API;
+	public function test_empty_blocked_and_production_default_catalog_url() {
+		EntitlementsStore::$api = '';
 		$module                 = $this->bound_module( null );
 		$module->snapshot();
 		$this->assertSame( array(), EntitlementsStore::$requests );
 
-		EntitlementsStore::$api = 'https://mock.wpcy.test/v1';
+		EntitlementsStore::$api = 'http://insecure.wpcy.test/v1';
+		$module                 = $this->bound_module( null );
+		$module->snapshot();
+		$this->assertSame( array(), EntitlementsStore::$requests );
+
+		EntitlementsStore::$api = ChallengeClient::DEFAULT_API;
 		$module                 = $this->bound_module( $this->catalog_payload() );
 		$module->snapshot();
 		$this->assertNotEmpty( EntitlementsStore::$requests );
 		$url = EntitlementsStore::$requests[0]['url'];
-		$this->assertStringContainsString( '/v1/sites/site_hash_test_01/catalog', $url );
+		$this->assertSame( 'https://license.wenpai.net/v1/sites/site_hash_test_01/catalog', $url );
 		$this->assertStringNotContainsString( '/v1/v1/', $url );
-		$this->assertStringNotContainsString( ChallengeClient::PRODUCTION_HOST, $url );
 	}
 
 	/**

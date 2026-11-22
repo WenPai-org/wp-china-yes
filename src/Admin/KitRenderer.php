@@ -2376,6 +2376,15 @@ final class KitRenderer {
 		);
 		echo '<div class="wenpai-stack" data-wpcy-screen="feature-whitelabel">';
 		if ( ! $entitled ) {
+			$oem_url = 'https://wpcy.com/go/oem';
+			if ( function_exists( 'get_option' ) ) {
+				$ident = get_option( \WenPai\ChinaYes\Config\Schema::SITE_IDENTITY, array() );
+				if ( is_array( $ident ) && ! empty( $ident['site_uuid'] ) && is_string( $ident['site_uuid'] ) ) {
+					$oem_url = function_exists( 'add_query_arg' )
+						? (string) add_query_arg( 'site_uuid', $ident['site_uuid'], $oem_url )
+						: $oem_url . '?site_uuid=' . rawurlencode( $ident['site_uuid'] );
+				}
+			}
 			\Wenpai_Admin_UI::card_open(
 				array(
 					'title' => __( '开通商业白标授权（Agency / OEM）', 'wp-china-yes' ),
@@ -2402,7 +2411,7 @@ final class KitRenderer {
 					) . ' ' . \Wenpai_Admin_UI::button_html(
 						array(
 							'label'   => __( '前往开通授权', 'wp-china-yes' ),
-							'href'    => 'https://wpcy.com/go/oem',
+							'href'    => $oem_url,
 							'variant' => 'primary',
 							'size'    => 'sm',
 							'target'  => '_blank',

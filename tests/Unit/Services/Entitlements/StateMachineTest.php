@@ -149,22 +149,26 @@ class StateMachineTest extends TestCase {
 	}
 
 	/**
-	 * Production license-server is not contacted. Mock GET uses /v1/sites/{hash}/entitlements.
+	 * Empty/non-HTTPS API is blocked; production DEFAULT_API and mock GET use /v1/sites/{hash}/entitlements.
 	 */
-	public function test_production_host_is_not_contacted_and_mock_url_is_correct() {
-		EntitlementsStore::$api = ChallengeClient::DEFAULT_API;
+	public function test_empty_blocked_and_production_default_url_is_correct() {
+		EntitlementsStore::$api = '';
 		$module                 = $this->bound_module( null );
 		$this->assertSame( array(), $module->items() );
 		$this->assertSame( array(), EntitlementsStore::$requests );
 
-		EntitlementsStore::$api = 'https://mock.wpcy.test/v1';
+		EntitlementsStore::$api = 'http://insecure.wpcy.test/v1';
+		$module                 = $this->bound_module( null );
+		$this->assertSame( array(), $module->items() );
+		$this->assertSame( array(), EntitlementsStore::$requests );
+
+		EntitlementsStore::$api = ChallengeClient::DEFAULT_API;
 		$module                 = $this->bound_module( 'entitlements-active.json' );
 		$module->items();
 		$this->assertNotEmpty( EntitlementsStore::$requests );
 		$url = EntitlementsStore::$requests[0]['url'];
-		$this->assertStringContainsString( '/v1/sites/site_hash_test_01/entitlements', $url );
+		$this->assertSame( 'https://license.wenpai.net/v1/sites/site_hash_test_01/entitlements', $url );
 		$this->assertStringNotContainsString( '/v1/v1/', $url );
-		$this->assertStringNotContainsString( ChallengeClient::PRODUCTION_HOST, $url );
 	}
 
 	/**

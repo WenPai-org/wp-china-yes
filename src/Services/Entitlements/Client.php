@@ -185,7 +185,7 @@ final class Client {
 	/**
 	 * Whether this process may GET the configured API.
 	 *
-	 * Empty base → no. Production host → only when WPCY_TESTING / WP_TESTS_DOMAIN.
+	 * Empty base or non-HTTPS → no. Any HTTPS URL (production or mock) → yes.
 	 *
 	 * @since 4.0.0
 	 */
@@ -195,9 +195,6 @@ final class Client {
 			return false;
 		}
 		if ( 0 !== strpos( $base, 'https://' ) ) {
-			return false;
-		}
-		if ( $this->is_production_host( $base ) && ! ChallengeClient::is_test_environment() ) {
 			return false;
 		}
 
@@ -409,20 +406,6 @@ final class Client {
 		}
 
 		return '';
-	}
-
-	/**
-	 * Production license-server host check.
-	 *
-	 * @param string $base API base URL.
-	 */
-	private function is_production_host( string $base ): bool {
-		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $base ) : parse_url( $base ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap has no WordPress.
-		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
-			return false;
-		}
-
-		return 0 === strcasecmp( (string) $parts['host'], ChallengeClient::PRODUCTION_HOST );
 	}
 
 	/**

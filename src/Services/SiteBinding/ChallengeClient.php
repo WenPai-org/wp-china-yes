@@ -22,21 +22,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * WPCY_SERVICES_API may already include `/v1` (grok-context §7.5b-2) or not
  * (entitlements.md `{API}/v1/...`). api_root() keeps a single `/v1`.
- * The production host is never contacted unless an explicit test flag is on.
+ * Defaults to `DEFAULT_API` (`https://license.wenpai.net/v1`); set
+ * `WPCY_SERVICES_API` or `wpcy_services_api` filter to `''` to disable outbound.
  */
 final class ChallengeClient {
 
 	/**
 	 * Production license-server origin from grok-context §7.5b-2.
 	 *
-	 * Not used as an outbound default. M3 points WPCY_SERVICES_API here.
-	 *
 	 * @since 4.0.0
 	 */
 	public const DEFAULT_API = 'https://license.wenpai.net/v1';
 
 	/**
-	 * Production host. Outbound is blocked unless testing.
+	 * Production host name.
 	 *
 	 * @since 4.0.0
 	 */
@@ -88,13 +87,13 @@ final class ChallengeClient {
 	}
 
 	/**
-	 * Resolved API base: constant, then filter. Empty means outbound is off.
+	 * Resolved API base: DEFAULT_API, overridden by constant, then filter. Empty disables outbound.
 	 *
 	 * @since 4.0.0
 	 */
 	public static function api_base(): string {
-		$base = '';
-		if ( defined( 'WPCY_SERVICES_API' ) && is_string( WPCY_SERVICES_API ) && '' !== WPCY_SERVICES_API ) {
+		$base = self::DEFAULT_API;
+		if ( defined( 'WPCY_SERVICES_API' ) && is_string( WPCY_SERVICES_API ) ) {
 			$base = WPCY_SERVICES_API;
 		}
 		if ( function_exists( 'apply_filters' ) ) {
@@ -127,8 +126,7 @@ final class ChallengeClient {
 	/**
 	 * Whether this process may POST to the configured API.
 	 *
-	 * Empty base → no. Production host → only when WPCY_TESTING / WP_TESTS_DOMAIN.
-	 * Any other HTTPS URL (mock) → yes.
+	 * Empty base or non-HTTPS → no. Any HTTPS URL (production or mock) → yes.
 	 *
 	 * @since 4.0.0
 	 */
@@ -138,9 +136,6 @@ final class ChallengeClient {
 			return false;
 		}
 		if ( 0 !== strpos( $base, 'https://' ) ) {
-			return false;
-		}
-		if ( self::is_production_host( $base ) && ! self::is_test_environment() ) {
 			return false;
 		}
 
@@ -407,21 +402,7 @@ final class ChallengeClient {
 	}
 
 	/**
-	 * Production license-server host check.
-	 *
-	 * @param string $base API base URL.
-	 */
-	private static function is_production_host( string $base ): bool {
-		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $base ) : parse_url( $base ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap has no WordPress.
-		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
-			return false;
-		}
-
-		return 0 === strcasecmp( (string) $parts['host'], self::PRODUCTION_HOST );
-	}
-
-	/**
-	 * Explicit test flags only. PHPUnit itself does not open production.
+	 * Explicit test flags only.
 	 *
 	 * @since 4.0.0
 	 */

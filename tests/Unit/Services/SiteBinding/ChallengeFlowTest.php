@@ -223,9 +223,9 @@ class ChallengeFlowTest extends TestCase {
 	}
 
 	/**
-	 * Empty API and production host without a test flag do not auto-start.
+	 * Empty API and non-HTTPS URLs do not outbound; DEFAULT_API (license.wenpai.net) is enabled.
 	 */
-	public function test_no_api_and_production_host_do_not_outbound() {
+	public function test_empty_and_non_https_blocked_while_default_production_api_allowed() {
 		BindingStore::$api = '';
 		$module            = $this->module();
 		$result            = $module->start();
@@ -237,12 +237,15 @@ class ChallengeFlowTest extends TestCase {
 		$module->register();
 		$this->assertSame( array(), BindingStore::$requests );
 
-		BindingStore::$api = ChallengeClient::DEFAULT_API;
+		BindingStore::$api = 'http://insecure.wpcy.test/v1';
 		$this->assertFalse( ChallengeClient::outbound_allowed() );
 		$blocked = $this->module()->start();
 		$this->assertInstanceOf( WP_Error::class, $blocked );
-		$this->assertSame( '暂时无法连接文派服务，请稍后重试。', $blocked->get_error_message() );
 		$this->assertSame( array(), BindingStore::$requests );
+
+		BindingStore::$api = ChallengeClient::DEFAULT_API;
+		$this->assertTrue( ChallengeClient::outbound_allowed() );
+		$this->assertSame( 'https://license.wenpai.net/v1', ChallengeClient::api_root() );
 
 		$unavailable = ChallengeClient::unavailable();
 		$this->assertSame( 'wpcy_binding_unavailable', $unavailable->get_error_code() );
