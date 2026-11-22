@@ -2963,7 +2963,7 @@ final class KitRenderer {
 					? \Wenpai_Admin_UI::button_html(
 						array(
 							'label'   => __( '控制台 ↗', 'wp-china-yes' ),
-							'href'    => 'https://wenpai.net/',
+							'href'    => 'https://wenpai.net/my-account/my-sites/',
 							'target'  => '_blank',
 							'variant' => 'ghost',
 							'size'    => 'sm',
