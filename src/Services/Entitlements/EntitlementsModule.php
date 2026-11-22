@@ -314,6 +314,10 @@ final class EntitlementsModule implements Module {
 			return null;
 		}
 
+		if ( ! $this->client->outbound_allowed() ) {
+			return null;
+		}
+
 		$credential = $this->repository->get_credential();
 		$result     = $this->client->fetch( $hash, is_string( $credential ) ? $credential : '' );
 		if ( is_wp_error( $result ) ) {

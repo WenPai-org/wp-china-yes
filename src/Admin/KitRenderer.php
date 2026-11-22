@@ -2858,7 +2858,7 @@ final class KitRenderer {
 				$pill_state = 'ok';
 			} elseif ( $is_match ) {
 				$pill_text  = sprintf( /* translators: 1: active count, 2: total count */ __( '匹配当前场景 · %1$d/%2$d', 'wp-china-yes' ), $active, $total );
-				$pill_state = 'accent';
+				$pill_state = '';
 			} else {
 				$pill_text  = sprintf( /* translators: 1: active count, 2: total count */ __( '已启用 %1$d/%2$d', 'wp-china-yes' ), $active, $total );
 				$pill_state = 'mute';

@@ -153,11 +153,26 @@ final class Plugin {
 	}
 
 	/**
-	 * Load the plugin text domain from languages/.
+	 * Register text domain loading on `init` (WordPress 6.7+ rejects earlier loads).
 	 *
 	 * @since 4.0.0
 	 */
 	private static function load_textdomain(): void {
+		if ( function_exists( 'did_action' ) && did_action( 'init' ) ) {
+			self::load_textdomain_now();
+			return;
+		}
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'init', array( self::class, 'load_textdomain_now' ), 1 );
+		}
+	}
+
+	/**
+	 * Load the plugin text domain from languages/.
+	 *
+	 * @since 4.0.0
+	 */
+	public static function load_textdomain_now(): void {
 		if ( ! function_exists( 'load_plugin_textdomain' ) || ! defined( 'CHINA_YES_PLUGIN_FILE' ) ) {
 			return;
 		}

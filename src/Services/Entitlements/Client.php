@@ -204,9 +204,13 @@ final class Client {
 	 * @return WP_Error
 	 */
 	public static function unavailable(): WP_Error {
+		$message = ( ! function_exists( 'did_action' ) || did_action( 'init' ) )
+			? __( '暂时无法读取授权额度，请稍后重试。', 'wp-china-yes' )
+			: '暂时无法读取授权额度，请稍后重试。';
+
 		return new WP_Error(
 			'wpcy_entitlements_unavailable',
-			__( '暂时无法读取授权额度，请稍后重试。', 'wp-china-yes' ),
+			$message,
 			array(
 				'status' => 503,
 			)
