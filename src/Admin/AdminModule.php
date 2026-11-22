@@ -70,6 +70,7 @@ final class AdminModule implements Module {
 		'wpcy-connect',
 		'wpcy-features',
 		'wpcy-services',
+		'wpcy-licenses',
 		'wpcy-diagnose',
 		'wpcy-onboarding',
 	);
@@ -430,6 +431,11 @@ final class AdminModule implements Module {
 						'render' => $cb,
 					),
 					array(
+						'slug'   => 'wpcy-licenses',
+						'label'  => __( '授权', 'wp-china-yes' ),
+						'render' => $cb,
+					),
+					array(
 						'slug'   => 'wpcy-diagnose',
 						'label'  => __( '诊断', 'wp-china-yes' ),
 						'render' => $cb,
@@ -467,9 +473,9 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function collapse_internal_submenus(): void {
-		$internal_tabs = array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' );
+		$internal_tabs = array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose', 'wpcy-onboarding' );
 		if ( function_exists( 'remove_submenu_page' ) ) {
-			foreach ( array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose' ) as $tab_slug ) {
+			foreach ( array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose' ) as $tab_slug ) {
 				remove_submenu_page( self::SLUG, $tab_slug );
 			}
 		}
@@ -501,7 +507,7 @@ final class AdminModule implements Module {
 	 * @return mixed
 	 */
 	public function highlight_parent_submenu_for_tabs( $submenu_file ) {
-		if ( in_array( $this->current_page(), array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose' ), true ) ) {
+		if ( in_array( $this->current_page(), array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose' ), true ) ) {
 			return self::SLUG;
 		}
 		return $submenu_file;

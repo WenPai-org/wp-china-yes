@@ -533,4 +533,25 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( 'data-wpcy-starter-slug="wpmind"', $wizard );
 		$this->assertStringContainsString( '文派心思（WPMind）', $wizard );
 	}
+
+	/**
+	 * Commercial licenses & update providers live in their own top-level tab (`wpcy-licenses`)
+	 * without duplicating `ProvidersView` inside `wpcy-services`.
+	 */
+	public function test_licenses_tab_renders_passport_and_providers_without_duplicating_on_services(): void {
+		$licenses = $this->render_page( 'wpcy-licenses' );
+		$this->assertStringContainsString( 'data-wpcy-screen="licenses"', $licenses );
+		$this->assertStringContainsString( '站点通行证与文派云权益', $licenses );
+		$this->assertStringContainsString( 'data-wpcy-licenses-passport="1"', $licenses );
+		$this->assertStringContainsString( '商业扩展授权与更新源', $licenses );
+		$this->assertStringContainsString( 'data-wpcy-providers-card="1"', $licenses );
+		$this->assertStringContainsString( '薇晓朵商城', $licenses );
+		$this->assertStringContainsString( '文派集市', $licenses );
+		$this->assertStringContainsString( 'page=wpcy-licenses', $licenses );
+		$this->assertStringNotContainsString( 'style="', $licenses );
+
+		$services = $this->render_page( 'wpcy-services' );
+		$this->assertStringNotContainsString( 'data-wpcy-providers-card="1"', $services );
+		$this->assertStringContainsString( 'page=wpcy-licenses', $services );
+	}
 }

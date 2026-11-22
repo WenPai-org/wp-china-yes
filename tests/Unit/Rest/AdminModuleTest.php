@@ -55,7 +55,7 @@ class AdminModuleTest extends TestCase {
 			$this->assertSame( 'manage_options', $page['capability'] );
 		}
 		$this->assertSame(
-			array( 'wpcy', 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-diagnose', 'wpcy-onboarding' ),
+			array( 'wpcy', 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose', 'wpcy-onboarding' ),
 			$sub
 		);
 	}
@@ -106,6 +106,9 @@ class AdminModuleTest extends TestCase {
 		$this->assertTrue( $module->is_app_screen() );
 
 		$_GET['page'] = 'wpcy-services';
+		$this->assertTrue( $module->is_app_screen() );
+
+		$_GET['page'] = 'wpcy-licenses';
 		$this->assertTrue( $module->is_app_screen() );
 
 		$_GET['page'] = 'wpcy-diagnose';

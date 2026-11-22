@@ -561,7 +561,7 @@
 
 		if (eventsEl || quotasEl) {
 			api('/binding').then(function (snap) {
-				if (snap && snap.state === 'bound') {
+				if (snap && (snap.status === 'bound' || snap.state === 'bound')) {
 					const prevLen = ssrSugNodes.length;
 					ssrSugNodes = ssrSugNodes.filter(function (li) { return li.getAttribute('data-wpcy-sug-row') !== 'sug.passport'; });
 					const quotaTab = document.querySelector('[data-wenpai-tabs="wpcy-side"] [data-wenpai-tab="quota"]');
@@ -1077,7 +1077,7 @@
 
 		document.querySelectorAll('[data-wpcy-action="bind"]').forEach(function (el) {
 			api('/binding').then(function (snap) {
-				if (snap && snap.state === 'bound') {
+				if (snap && (snap.status === 'bound' || snap.state === 'bound')) {
 					el.textContent = '已绑定 · 解除绑定';
 					el.classList.remove('btn-primary');
 					el.classList.add('btn-secondary');
@@ -1094,6 +1094,11 @@
 							el.textContent = '绑定本站';
 							el.classList.remove('btn-secondary');
 							el.classList.add('btn-primary');
+							const passportPill = document.querySelector('[data-wpcy-licenses-passport] .pill');
+							if (passportPill) {
+								passportPill.className = 'pill mute';
+								passportPill.textContent = '未绑定';
+							}
 							notify('ok', '已解除当前站点绑定。');
 						})
 						.catch(function (err) { notify('bad', err.message); })

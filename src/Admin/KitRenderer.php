@@ -55,6 +55,7 @@ final class KitRenderer {
 			'wpcy-connect'  => 'settings',
 			'wpcy-features' => 'features',
 			'wpcy-services' => 'services',
+			'wpcy-licenses' => 'licenses',
 			'wpcy-diagnose' => 'diagnose',
 		);
 		$current = $network ? 'settings' : ( 'help' === $view ? 'help' : ( $tab_map[ $page ] ?? 'overview' ) );
@@ -70,6 +71,8 @@ final class KitRenderer {
 			self::render_features( $settings, $locked );
 		} elseif ( 'services' === $current ) {
 			self::render_services( $settings, $locked );
+		} elseif ( 'licenses' === $current ) {
+			self::render_licenses( $settings, $locked );
 		} elseif ( 'diagnose' === $current ) {
 			self::render_diagnose( $settings );
 		} else {
@@ -180,16 +183,19 @@ final class KitRenderer {
 			return self::page_url( $slug, $network, $extra );
 		};
 
-		$tabs = $network
-			? array(
+		$wl = WhiteLabel::resolve( $settings );
+
+		if ( $network ) {
+			$tabs = array(
 				array(
 					'id'        => 'settings',
 					'label'     => __( '设置', 'wp-china-yes' ),
 					'url'       => $admin_url( 'wpcy-connect' ),
 					'icon_html' => self::kit_icon( 'settings' ),
 				),
-			)
-			: array(
+			);
+		} else {
+			$tabs = array(
 				array(
 					'id'        => 'overview',
 					'label'     => __( '概览', 'wp-china-yes' ),
@@ -214,15 +220,23 @@ final class KitRenderer {
 					'url'       => $admin_url( 'wpcy-services' ),
 					'icon_html' => self::kit_icon( 'sparkle' ),
 				),
-				array(
-					'id'        => 'diagnose',
-					'label'     => __( '诊断', 'wp-china-yes' ),
-					'url'       => $admin_url( 'wpcy-diagnose' ),
-					'icon_html' => self::kit_icon( 'tools' ),
-				),
 			);
+			if ( ! ( ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] ) ) ) {
+				$tabs[] = array(
+					'id'        => 'licenses',
+					'label'     => __( '授权', 'wp-china-yes' ),
+					'url'       => $admin_url( 'wpcy-licenses' ),
+					'icon_html' => self::kit_icon( 'shield-check' ),
+				);
+			}
+			$tabs[] = array(
+				'id'        => 'diagnose',
+				'label'     => __( '诊断', 'wp-china-yes' ),
+				'url'       => $admin_url( 'wpcy-diagnose' ),
+				'icon_html' => self::kit_icon( 'tools' ),
+			);
+		}
 
-		$wl          = WhiteLabel::resolve( $settings );
 		$support_url = isset( $links['help'] ) ? (string) $links['help'] : 'https://wpcy.com/go/support';
 		$defaults    = array(
 			'brand'        => __( '文派叶子', 'wp-china-yes' ),
@@ -2679,19 +2693,14 @@ final class KitRenderer {
 
 		if ( self::is_site_bound() ) {
 			AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
-			ProvidersView::render_card( $wl, $locked );
 		} elseif ( ! $hide_unlinked ) {
 			ob_start();
 			AppsView::render_services_card( $wl, self::page_url( 'wpcy-services' ) );
 			$apps_html = (string) ob_get_clean();
 
-			ob_start();
-			ProvidersView::render_card( $wl, $locked );
-			$providers_html = (string) ob_get_clean();
-
 			\Wenpai_Admin_UI::card_open(
 				array(
-					'title' => __( '云端工具与商业更新源', 'wp-china-yes' ),
+					'title' => __( '云端微应用', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -2704,17 +2713,135 @@ final class KitRenderer {
 							'desc'      => __( '绑定文派云通行证后自动同步云端签名的运维与内容小工具', 'wp-china-yes' ),
 							'body_html' => $apps_html,
 						),
+					),
+				)
+			);
+			\Wenpai_Admin_UI::card_foot(
+				array(
+					'meta'    => __( '商业扩展授权与更新源已独立至顶栏「授权」页管理', 'wp-china-yes' ),
+					'actions' => array(
 						array(
-							'icon'      => 'plug',
-							'title'     => __( '商业扩展授权与更新源', 'wp-china-yes' ),
-							'desc'      => __( '连接薇晓朵商城等商业更新通道，绑定通行证后可配置授权密钥', 'wp-china-yes' ),
-							'body_html' => $providers_html,
+							'label'   => __( '前往授权页 →', 'wp-china-yes' ),
+							'href'    => self::page_url( 'wpcy-licenses' ),
+							'variant' => 'ghost',
 						),
 					),
 				)
 			);
 			\Wenpai_Admin_UI::card_close();
 		}
+
+		echo '</div>';
+	}
+
+	/**
+	 * Dedicated Licenses & Commercial Update Providers screen (`?page=wpcy-licenses`).
+	 *
+	 * Consolidates Site Passport / WenPai Cloud rights, White-Label authorization,
+	 * cross-plugin identity sharing, and commercial update sources (WeiXiaoduo Mall,
+	 * WenPai Marketplace) in one focused top-level tab.
+	 *
+	 * @param array<string, mixed> $settings Settings snapshot.
+	 * @param bool                 $locked   Whether subsite settings are network-locked.
+	 */
+	private static function render_licenses( array $settings, bool $locked = false ): void {
+		$wl         = WhiteLabel::resolve( $settings );
+		$is_bound   = self::is_site_bound();
+		$hide_links = ! empty( $wl['enabled'] ) && ! empty( $wl['hide_links'] );
+		$scan       = ConflictDetector::scan();
+		$comp_count = count( $scan['synergies'] );
+		$wl_url     = self::page_url( 'wpcy-features', false, array( 'module' => 'whitelabel' ) );
+		$svc_url    = self::page_url( 'wpcy-services' );
+
+		\Wenpai_Admin_Shell::page_head(
+			__( '授权', 'wp-china-yes' ),
+			__( '管理站点通行证、全套品牌白标与商业扩展更新源。', 'wp-china-yes' ),
+			\Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => $is_bound ? __( '已绑定 · 解除绑定', 'wp-china-yes' ) : __( '绑定本站', 'wp-china-yes' ),
+					'variant' => $is_bound ? 'secondary' : 'primary',
+					'attrs'   => array(
+						'data-wpcy-action' => 'bind',
+						'data-wpcy-bound'  => $is_bound ? '1' : '0',
+					),
+				)
+			)
+		);
+
+		echo '<div class="wenpai-stack" data-wpcy-screen="licenses">';
+
+		\Wenpai_Admin_UI::card_open(
+			array(
+				'title' => __( '站点通行证与文派云权益', 'wp-china-yes' ),
+				'tile'  => false,
+				'attrs' => array( 'data-wpcy-licenses-passport' => '1' ),
+			)
+		);
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'user',
+				'title'        => __( '文派云通行证', 'wp-china-yes' ),
+				'desc'         => __( '绑定一次即可同步全站云额度与授权状态，已装文派组件自动复用。', 'wp-china-yes' ),
+				'pill'         => array(
+					'text'  => $is_bound ? __( '已绑定', 'wp-china-yes' ) : __( '未绑定', 'wp-china-yes' ),
+					'state' => $is_bound ? 'ok' : 'mute',
+				),
+				'control_html' => ! $hide_links
+					? \Wenpai_Admin_UI::button_html(
+						array(
+							'label'   => __( '控制台 ↗', 'wp-china-yes' ),
+							'href'    => 'https://wenpai.net/',
+							'target'  => '_blank',
+							'variant' => 'ghost',
+							'size'    => 'sm',
+						)
+					)
+					: '',
+			)
+		);
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'shield-check',
+				'title'        => __( '全套品牌白标', 'wp-china-yes' ),
+				'desc'         => __( '面向客户交付站点，一次授权覆盖全站文派组件品牌与推荐位。', 'wp-china-yes' ),
+				'pill'         => array(
+					'text'  => ! empty( $wl['entitled'] ) ? __( '已授权', 'wp-china-yes' ) : __( '未开通', 'wp-china-yes' ),
+					'state' => ! empty( $wl['entitled'] ) ? 'ok' : 'mute',
+				),
+				'control_html' => \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '配置', 'wp-china-yes' ),
+						'href'    => $wl_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					)
+				),
+			)
+		);
+		\Wenpai_Admin_UI::row(
+			array(
+				'icon'         => 'link',
+				'title'        => __( '生态组件联动', 'wp-china-yes' ),
+				'desc'         => __( '向文派心思、文派智储、文派头像等已启用插件共享站点身份与云额度。', 'wp-china-yes' ),
+				'pill'         => array(
+					'text'  => $comp_count > 0
+						? sprintf( /* translators: %d: active WenPai companion plugin count */ __( '%d 款已联动', 'wp-china-yes' ), $comp_count )
+						: __( '暂未启用伴生插件', 'wp-china-yes' ),
+					'state' => $comp_count > 0 ? 'ok' : 'mute',
+				),
+				'control_html' => \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '查看组件', 'wp-china-yes' ),
+						'href'    => $svc_url,
+						'variant' => 'ghost',
+						'size'    => 'sm',
+					)
+				),
+			)
+		);
+		\Wenpai_Admin_UI::card_close();
+
+		ProvidersView::render_card( $wl, $locked );
 
 		echo '</div>';
 	}

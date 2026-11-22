@@ -75,6 +75,7 @@ if ( ! function_exists( 'esc_html' ) ) {
 			'wpcy-connect'    => 'settings.html',
 			'wpcy-features'   => 'features.html',
 			'wpcy-services'   => 'services.html',
+			'wpcy-licenses'   => 'licenses.html',
 			'wpcy-diagnose'   => 'diagnose.html',
 			'wpcy-onboarding' => 'wizard.html',
 		);
@@ -162,6 +163,7 @@ $pages = array(
 	'settings.html'       => wpcy_proto_wrap( '设置 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-connect' ) ),
 	'features.html'       => wpcy_proto_wrap( '功能 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-features' ) ),
 	'services.html'       => wpcy_proto_wrap( '服务 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-services' ) ),
+	'licenses.html'       => wpcy_proto_wrap( '授权 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-licenses' ) ),
 	'diagnose.html'       => wpcy_proto_wrap( '诊断 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-diagnose' ) ),
 	'wizard.html'         => wpcy_proto_wrap( '首次配置 — 文派叶子 4.0', wpcy_proto_render( 'wpcy-onboarding' ) ),
 	'help.html'           => wpcy_proto_wrap( '帮助与支持 — 文派叶子 4.0', wpcy_proto_render( 'wpcy', array(), array( 'view' => 'help' ) ) ),
