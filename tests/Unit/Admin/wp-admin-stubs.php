@@ -316,6 +316,37 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'has_action' ) ) {
+	/**
+	 * Whether any test callback is registered for an action hook.
+	 *
+	 * @param string $tag Hook name.
+	 * @return bool
+	 */
+	function has_action( $tag ) {
+		return ! empty( AdminStore::$hooks[ $tag ] ) && is_array( AdminStore::$hooks[ $tag ] );
+	}
+}
+
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Run recorded test action callbacks from AdminStore::$hooks.
+	 *
+	 * @param string $tag     Hook name.
+	 * @param mixed  ...$args Extra arguments.
+	 * @return void
+	 */
+	function do_action( $tag, ...$args ) {
+		if ( ! empty( AdminStore::$hooks[ $tag ] ) && is_array( AdminStore::$hooks[ $tag ] ) ) {
+			foreach ( AdminStore::$hooks[ $tag ] as $callback ) {
+				if ( is_callable( $callback ) ) {
+					$callback( ...$args );
+				}
+			}
+		}
+	}
+}
+
 if ( ! function_exists( 'register_rest_route' ) ) {
 	/**
 	 * Record a REST route.
@@ -537,13 +568,27 @@ if ( ! function_exists( 'wp_remote_get' ) ) {
 	 *
 	 * @param string               $url  URL.
 	 * @param array<string, mixed> $args Args.
-	 * @return WP_Error
+	 * @return array<string, mixed>|WP_Error
 	 */
 	function wp_remote_get( $url, $args = array() ) {
 		AdminStore::$http[] = array(
 			'url'  => (string) $url,
 			'args' => is_array( $args ) ? $args : array(),
 		);
+		if ( array() !== AdminStore::$http_responses ) {
+			$next = array_shift( AdminStore::$http_responses );
+			if ( $next instanceof WP_Error ) {
+				return $next;
+			}
+			$code = is_array( $next ) && isset( $next['code'] ) ? (int) $next['code'] : 200;
+			$body = is_array( $next ) && isset( $next['body'] ) ? (string) $next['body'] : '';
+			return array(
+				'response' => array(
+					'code' => $code,
+				),
+				'body'     => $body,
+			);
+		}
 		return new WP_Error( 'http_disabled', 'no network in unit tests' );
 	}
 }

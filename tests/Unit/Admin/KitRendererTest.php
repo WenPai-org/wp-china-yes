@@ -12,7 +12,9 @@ namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Admin\KitRenderer;
+use WenPai\ChinaYes\Admin\WhiteLabel;
 use WenPai\ChinaYes\Config\Defaults;
+use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
@@ -565,5 +567,91 @@ class KitRendererTest extends TestCase {
 		$this->assertStringContainsString( '国内化体检与一键修复', $diagnose );
 		$this->assertStringContainsString( 'data-wpcy-audit-fix="1"', $diagnose );
 		$this->assertStringNotContainsString( 'style="', $diagnose );
+	}
+
+	/**
+	 * Cold cache on a bound site's WhiteLabel screen triggers one guarded refresh and unlocks immediately,
+	 * while `WhiteLabel::is_entitled()` itself stays strictly non-blocking.
+	 */
+	public function test_whitelabel_cold_cache_guarded_refresh_unlocks_bound_site(): void {
+		$repo                 = new Repository();
+		$identity             = $repo->get_identity();
+		$binding              = is_array( $identity['binding'] ) ? $identity['binding'] : array();
+		$binding['status']    = 'bound';
+		$binding['site_hash'] = 'site_hash_wl_cold_01';
+		$identity['binding']  = $binding;
+		$repo->set_identity( $identity );
+		$repo->set_credential( 'cred_wl_cold_test' );
+
+		add_filter(
+			'wpcy_services_api',
+			static function () {
+				return 'https://mock.wpcy.test/v1';
+			}
+		);
+
+		// Direct `WhiteLabel::is_entitled()` never performs outbound HTTP on a cold cache.
+		$this->assertFalse( WhiteLabel::is_entitled() );
+		$this->assertCount( 0, AdminStore::$http );
+
+		AdminStore::$http_responses[] = array(
+			'code' => 200,
+			'body' => wp_json_encode(
+				array(
+					'entitlements' => array(
+						array(
+							'id'      => 'wpcy-oem-cold-1',
+							'service' => 'oem',
+							'tier'    => 'agency',
+							'status'  => 'active',
+							'quota'   => array(),
+						),
+					),
+				)
+			),
+		);
+
+		$unlocked = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
+		$this->assertCount( 1, AdminStore::$http );
+		$this->assertStringContainsString( '/v1/sites/site_hash_wl_cold_01/entitlements', AdminStore::$http[0]['url'] );
+		$this->assertStringContainsString( '保存白标设置', $unlocked );
+		$this->assertStringNotContainsString( '开通商业白标授权', $unlocked );
+		$this->assertDoesNotMatchRegularExpression( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/u', $unlocked );
+
+		// Second render hits warm fresh cache with zero additional HTTP calls.
+		$this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
+		$this->assertCount( 1, AdminStore::$http );
+	}
+
+	/**
+	 * Failed cold-cache refresh on WhiteLabel view records short negative backoff and does not hammer upstream.
+	 */
+	public function test_whitelabel_cold_cache_failure_sets_backoff_and_avoids_hammering(): void {
+		$repo                 = new Repository();
+		$identity             = $repo->get_identity();
+		$binding              = is_array( $identity['binding'] ) ? $identity['binding'] : array();
+		$binding['status']    = 'bound';
+		$binding['site_hash'] = 'site_hash_wl_fail_01';
+		$identity['binding']  = $binding;
+		$repo->set_identity( $identity );
+		$repo->set_credential( 'cred_wl_fail_test' );
+
+		add_filter(
+			'wpcy_services_api',
+			static function () {
+				return 'https://mock.wpcy.test/v1';
+			}
+		);
+
+		// Empty response queue makes wp_remote_get return WP_Error.
+		$first = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
+		$this->assertCount( 1, AdminStore::$http );
+		$this->assertStringContainsString( '开通商业白标授权', $first );
+		$this->assertNotEmpty( get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) );
+
+		// Repeated page load during backoff skips outbound HTTP completely.
+		$second = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
+		$this->assertCount( 1, AdminStore::$http );
+		$this->assertStringContainsString( '开通商业白标授权', $second );
 	}
 }

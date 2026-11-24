@@ -54,6 +54,26 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Run recorded action callbacks stored in RestStore::$hooks.
+	 *
+	 * @param string $tag     Hook name.
+	 * @param mixed  ...$args Action arguments.
+	 * @return void
+	 */
+	function do_action( $tag, ...$args ) {
+		if ( empty( RestStore::$hooks[ $tag ] ) || ! is_array( RestStore::$hooks[ $tag ] ) ) {
+			return;
+		}
+		foreach ( RestStore::$hooks[ $tag ] as $callback ) {
+			if ( is_callable( $callback ) ) {
+				$callback( ...$args );
+			}
+		}
+	}
+}
+
 if ( ! function_exists( 'site_url' ) ) {
 	/**
 	 * Site URL stand-in.

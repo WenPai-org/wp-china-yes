@@ -67,6 +67,13 @@ final class AdminStore {
 	public static $http = array();
 
 	/**
+	 * Optional queued wp_remote_get responses, FIFO. Empty queue returns WP_Error.
+	 *
+	 * @var array<int, mixed>
+	 */
+	public static $http_responses = array();
+
+	/**
 	 * Blog ids returned by get_sites().
 	 *
 	 * @var list<int>
@@ -100,17 +107,18 @@ final class AdminStore {
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$transients   = array();
-		self::$routes       = array();
-		self::$hooks        = array();
-		self::$caps         = array();
-		self::$nonces       = array();
-		self::$is_admin     = true;
-		self::$http         = array();
-		self::$sites        = array( 1 );
-		self::$blog_id      = 1;
-		self::$blog_options = array();
-		self::$blog_stack   = array();
+		self::$transients     = array();
+		self::$routes         = array();
+		self::$hooks          = array();
+		self::$caps           = array();
+		self::$nonces         = array();
+		self::$is_admin       = true;
+		self::$http           = array();
+		self::$http_responses = array();
+		self::$sites          = array( 1 );
+		self::$blog_id        = 1;
+		self::$blog_options   = array();
+		self::$blog_stack     = array();
 	}
 
 	/**

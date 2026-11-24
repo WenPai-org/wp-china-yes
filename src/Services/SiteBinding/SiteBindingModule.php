@@ -431,7 +431,30 @@ final class SiteBindingModule implements Module {
 		$this->delete_transient( $challenge_id );
 		$this->clear_confirm_retry( $challenge_id );
 
-		return $this->snapshot();
+		$snapshot = $this->snapshot();
+		if ( function_exists( 'do_action' ) ) {
+			try {
+				/**
+				 * Fires after a site binding challenge is confirmed and persisted.
+				 *
+				 * Receives the public binding snapshot (never the sealed or plaintext credential).
+				 *
+				 * @since 4.0.0
+				 *
+				 * @param array{status: string, site_hash: string|null, bound_at: string|null} $snapshot Public binding snapshot.
+				 */
+				do_action( 'wpcy_site_bound', $snapshot );
+			} catch ( \Throwable $e ) {
+				$this->warn(
+					'Post-bind hook threw an exception.',
+					array(
+						'exception' => get_class( $e ),
+					)
+				);
+			}
+		}
+
+		return $snapshot;
 	}
 
 	/**
@@ -495,6 +518,7 @@ final class SiteBindingModule implements Module {
 		if ( function_exists( 'delete_transient' ) ) {
 			delete_transient( EntitlementsModule::TRANSIENT_FRESH );
 			delete_transient( EntitlementsModule::TRANSIENT_STALE );
+			delete_transient( EntitlementsModule::TRANSIENT_BACKOFF );
 			delete_transient( CatalogModule::TRANSIENT_FRESH );
 			delete_transient( CatalogModule::TRANSIENT_STALE );
 		}

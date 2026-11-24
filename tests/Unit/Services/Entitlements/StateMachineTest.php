@@ -344,6 +344,46 @@ class StateMachineTest extends TestCase {
 	}
 
 	/**
+	 * Cold-cache guarded refresh sets negative backoff on failure and avoids repeated upstream calls.
+	 */
+	public function test_cold_cache_guarded_refresh_sets_backoff_and_recovers_after_bind(): void {
+		$module = $this->bound_module( null );
+		$this->queue_unreachable();
+
+		// First cold-cache refresh hits upstream once, fails, and activates short negative backoff.
+		$this->assertFalse( $module->maybe_refresh_cold_cache() );
+		$this->assertCount( 1, EntitlementsStore::$requests );
+		$this->assertNotEmpty( EntitlementsStore::get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) );
+
+		// Repeated cold-cache calls during backoff do not hammer upstream.
+		$this->assertFalse( $module->maybe_refresh_cold_cache() );
+		$this->assertCount( 1, EntitlementsStore::$requests );
+
+		// Fresh bind event clears backoff and warms fresh cache immediately.
+		$this->queue_json(
+			array(
+				'entitlements' => array(
+					array(
+						'id'      => 'wpcy-oem-01',
+						'service' => 'oem',
+						'tier'    => 'agency',
+						'status'  => 'active',
+						'quota'   => array(),
+					),
+				),
+			)
+		);
+		$module->on_site_bound();
+		$this->assertCount( 2, EntitlementsStore::$requests );
+		$this->assertTrue( $module->filter_has_entitlement( false, 'oem' ) );
+		$this->assertEmpty( EntitlementsStore::get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) );
+
+		// Warm fresh cache skips guarded refresh completely.
+		$this->assertFalse( $module->maybe_refresh_cold_cache() );
+		$this->assertCount( 2, EntitlementsStore::$requests );
+	}
+
+	/**
 	 * Bound module that optionally queues a fixture as the next HTTP 200.
 	 *
 	 * HTTP, API base, and transients are injected so --filter StateMachine

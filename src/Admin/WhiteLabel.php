@@ -208,6 +208,44 @@ final class WhiteLabel {
 	}
 
 	/**
+	 * Trigger a single guarded license-cache refresh when rendering the WhiteLabel
+	 * settings view on a bound site whose fresh cache is missing (cold cache).
+	 *
+	 * Never called from `is_entitled()` or frontend display filters so normal page
+	 * requests stay strictly non-blocking.
+	 *
+	 * @since 4.0.0
+	 */
+	public static function maybe_refresh_license_cache(): void {
+		if ( defined( 'WPCY_WHITELABEL' ) && (bool) constant( 'WPCY_WHITELABEL' ) ) {
+			return;
+		}
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'get_transient' ) ) {
+			return;
+		}
+		$identity = get_option( 'wpcy_site_identity', array() );
+		$bound    = is_array( $identity )
+			&& isset( $identity['binding'] )
+			&& is_array( $identity['binding'] )
+			&& 'bound' === (string) ( $identity['binding']['status'] ?? '' );
+		if ( ! $bound ) {
+			return;
+		}
+		if ( is_array( get_transient( EntitlementsModule::TRANSIENT_FRESH ) ) ) {
+			return;
+		}
+		if ( ! empty( get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) ) ) {
+			return;
+		}
+		if ( function_exists( 'has_action' ) && function_exists( 'do_action' ) && false !== has_action( 'wpcy_entitlements_maybe_refresh' ) ) {
+			do_action( 'wpcy_entitlements_maybe_refresh' );
+			return;
+		}
+		$entitlements = new EntitlementsModule( new Repository() );
+		$entitlements->maybe_refresh_cold_cache();
+	}
+
+	/**
 	 * Resolve effective white-label state from settings snapshot and optional PHP constants.
 	 *
 	 * Supported wp-config.php constants:

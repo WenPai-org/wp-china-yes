@@ -1,6 +1,6 @@
 <?php
 /**
- * Entitlements fetch and cache. Default does not contact production.
+ * Entitlements fetch and cache (1h fresh, 72h stale fallback).
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -40,6 +40,13 @@ final class EntitlementsModule implements Module {
 	public const TRANSIENT_STALE = 'wpcy_entitlements_stale';
 
 	/**
+	 * Negative backoff transient set after a failed guarded refresh.
+	 *
+	 * @since 4.0.0
+	 */
+	public const TRANSIENT_BACKOFF = 'wpcy_entitlements_backoff';
+
+	/**
 	 * Fresh TTL in seconds.
 	 *
 	 * @since 4.0.0
@@ -52,6 +59,14 @@ final class EntitlementsModule implements Module {
 	 * @since 4.0.0
 	 */
 	public const TTL_STALE = 259200;
+
+	/**
+	 * Short negative backoff TTL in seconds (5 minutes) so a down upstream
+	 * never stalls repeated admin loads.
+	 *
+	 * @since 4.0.0
+	 */
+	public const TTL_BACKOFF = 300;
 
 	/**
 	 * Restricted-layer service slugs. Baseline modules do not consult this filter.
@@ -154,9 +169,72 @@ final class EntitlementsModule implements Module {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_action( 'wpcy_site_bound', array( $this, 'on_site_bound' ) );
+		add_action( 'wpcy_entitlements_maybe_refresh', array( $this, 'on_maybe_refresh' ) );
 		add_filter( 'wpcy_entitlement_allows', array( $this, 'filter_allows' ), 10, 2 );
 		add_filter( 'wenpai_site_entitlements', array( $this, 'filter_suite_entitlements' ) );
 		add_filter( 'wenpai_has_entitlement', array( $this, 'filter_has_entitlement' ), 10, 2 );
+	}
+
+	/**
+	 * Action wrapper for guarded cold-cache refresh (`wpcy_entitlements_maybe_refresh`).
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_maybe_refresh(): void {
+		$this->maybe_refresh_cold_cache();
+	}
+
+	/**
+	 * Warm entitlements cache immediately after site binding completes.
+	 *
+	 * Non-fatal: upstream errors or throwables never interrupt the binding response.
+	 *
+	 * @since 4.0.0
+	 */
+	public function on_site_bound(): void {
+		$this->clear_backoff();
+		if ( ! $this->can_attempt_refresh() ) {
+			return;
+		}
+		try {
+			$fetched = $this->refresh();
+			if ( null === $fetched ) {
+				$this->set_backoff();
+			}
+		} catch ( \Throwable $e ) {
+			$this->set_backoff();
+		}
+	}
+
+	/**
+	 * Run a single guarded refresh when the site is bound and fresh cache is missing.
+	 *
+	 * Skips when fresh cache is warm, backoff is active, site is unbound, or outbound is off.
+	 * Writes a short negative-backoff transient on failure so repeated admin loads stay fast.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return bool True when fresh cache was populated, false when skipped or failed.
+	 */
+	public function maybe_refresh_cold_cache(): bool {
+		if ( is_array( $this->read_list( self::TRANSIENT_FRESH ) ) ) {
+			return false;
+		}
+		if ( $this->in_backoff() || ! $this->can_attempt_refresh() ) {
+			return false;
+		}
+		try {
+			$fetched = $this->refresh();
+			if ( is_array( $fetched ) ) {
+				return true;
+			}
+			$this->set_backoff();
+			return false;
+		} catch ( \Throwable $e ) {
+			$this->set_backoff();
+			return false;
+		}
 	}
 
 	/**
@@ -383,6 +461,46 @@ final class EntitlementsModule implements Module {
 		}
 		call_user_func( $this->set_transient, self::TRANSIENT_FRESH, $payload, self::TTL_FRESH );
 		call_user_func( $this->set_transient, self::TRANSIENT_STALE, $payload, self::TTL_STALE );
+		$this->clear_backoff();
+	}
+
+	/**
+	 * Whether preconditions for an outbound refresh are satisfied (bound + hash + outbound allowed).
+	 */
+	private function can_attempt_refresh(): bool {
+		$identity = $this->repository->get_identity();
+		$binding  = isset( $identity['binding'] ) && is_array( $identity['binding'] ) ? $identity['binding'] : array();
+		$status   = isset( $binding['status'] ) && is_string( $binding['status'] ) ? $binding['status'] : '';
+		if ( 'bound' !== $status || '' === $this->site_hash() ) {
+			return false;
+		}
+
+		return $this->client->outbound_allowed();
+	}
+
+	/**
+	 * Whether a recent failed guarded refresh placed us in short negative backoff.
+	 */
+	private function in_backoff(): bool {
+		return ! empty( call_user_func( $this->get_transient, self::TRANSIENT_BACKOFF ) );
+	}
+
+	/**
+	 * Record a short negative-backoff transient after an upstream refresh failure.
+	 */
+	private function set_backoff(): void {
+		call_user_func( $this->set_transient, self::TRANSIENT_BACKOFF, 1, self::TTL_BACKOFF );
+	}
+
+	/**
+	 * Clear any active negative-backoff transient.
+	 */
+	private function clear_backoff(): void {
+		if ( 'get_transient' === $this->get_transient && function_exists( 'delete_transient' ) ) {
+			delete_transient( self::TRANSIENT_BACKOFF );
+			return;
+		}
+		call_user_func( $this->set_transient, self::TRANSIENT_BACKOFF, 0, 1 );
 	}
 
 	/**
