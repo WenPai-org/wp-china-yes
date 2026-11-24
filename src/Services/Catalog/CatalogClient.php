@@ -22,8 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * GET {API}/v1/sites/{site_hash}/catalog.
  *
  * Catalog fields are copied from the server body. This class does not
- * invent items, prices, or entitlement states. Production host is
- * blocked unless an explicit test flag is on (ChallengeClient).
+ * invent items, prices, or entitlement states. Uses `ChallengeClient::api_base()`
+ * (defaults to `https://license.wenpai.net/v1`); any HTTPS URL is allowed and an
+ * empty base disables outbound.
  */
 final class CatalogClient {
 
@@ -89,7 +90,7 @@ final class CatalogClient {
 	 * @since 4.0.0
 	 *
 	 * @param string $site_hash  Bound site hash from site binding.
-	 * @param string $credential Plaintext credential for the staging header.
+	 * @param string $credential Plaintext credential for Bearer auth.
 	 * @return array{catalog_version: string, items: list<array<string, mixed>>}|WP_Error
 	 */
 	public function fetch( string $site_hash, string $credential = '' ) {
@@ -217,7 +218,7 @@ final class CatalogClient {
 	 * GET JSON. Never logs the credential.
 	 *
 	 * @param string $url        Absolute URL.
-	 * @param string $credential Plaintext credential for the mock header.
+	 * @param string $credential Plaintext credential for Bearer auth.
 	 * @return array<string, mixed>|WP_Error
 	 */
 	private function get( string $url, string $credential ) {

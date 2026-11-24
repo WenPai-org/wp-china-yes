@@ -11,11 +11,14 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Tests\Unit\Services\SiteBinding;
 
 use PHPUnit\Framework\TestCase;
+use WenPai\ChinaYes\Admin\WhiteLabel;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Config\Schema;
 use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Rest\BindingController;
 use WenPai\ChinaYes\Rest\RestError;
+use WenPai\ChinaYes\Services\Entitlements\Client as EntitlementsClient;
+use WenPai\ChinaYes\Services\Entitlements\EntitlementsModule;
 use WenPai\ChinaYes\Services\SiteBinding\ChallengeClient;
 use WenPai\ChinaYes\Services\SiteBinding\SiteBindingModule;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
@@ -363,6 +366,113 @@ class ChallengeFlowTest extends TestCase {
 		$stored = get_option( Schema::SITE_IDENTITY );
 		$this->assertNull( $stored['binding']['credential'] );
 		$this->assertStringNotContainsString( $this->confirm_fixture['credential'], BindingStore::$log_sink );
+	}
+
+	/**
+	 * Binding confirmation triggers entitlement refresh via `wpcy_site_bound` and unlocks WhiteLabel.
+	 */
+	public function test_confirm_triggers_entitlement_refresh_and_unlocks_whitelabel() {
+		$repo              = new Repository();
+		$entitlement_calls = array();
+		$hook_payload      = null;
+
+		$ent_client   = new EntitlementsClient(
+			null,
+			function ( string $url, array $args ) use ( &$entitlement_calls ) {
+				$entitlement_calls[] = array(
+					'url'  => $url,
+					'args' => $args,
+				);
+				return array(
+					'response' => array( 'code' => 200 ),
+					'body'     => wp_json_encode(
+						array(
+							'entitlements' => array(
+								array(
+									'id'      => 'wpcy-oem-01',
+									'service' => 'oem',
+									'tier'    => 'agency',
+									'status'  => 'active',
+									'quota'   => array(),
+								),
+							),
+						)
+					),
+				);
+			},
+			BindingStore::$api
+		);
+		$entitlements = new EntitlementsModule( $repo, null, $ent_client );
+		$entitlements->register();
+
+		add_action(
+			'wpcy_site_bound',
+			static function ( $snapshot ) use ( &$hook_payload ) {
+				$hook_payload = $snapshot;
+			}
+		);
+
+		$this->assertFalse( WhiteLabel::is_entitled() );
+
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$this->queue_json( $this->confirm_fixture );
+		$bound = $module->start();
+
+		$this->assertIsArray( $bound );
+		$this->assertSame( 'bound', $bound['status'] );
+		$this->assertIsArray( $hook_payload );
+		$this->assertSame( 'bound', $hook_payload['status'] );
+		$this->assertArrayNotHasKey( 'credential', $hook_payload );
+
+		$this->assertCount( 1, $entitlement_calls );
+		$this->assertStringContainsString(
+			'/v1/sites/' . $this->confirm_fixture['site_hash'] . '/entitlements',
+			$entitlement_calls[0]['url']
+		);
+		$this->assertSame(
+			'Bearer ' . $this->confirm_fixture['credential'],
+			$entitlement_calls[0]['args']['headers'][ EntitlementsClient::AUTH_HEADER ]
+		);
+		$this->assertTrue( WhiteLabel::is_entitled() );
+	}
+
+	/**
+	 * Upstream failure or throwing listener during post-bind refresh never fails bind confirmation.
+	 */
+	public function test_confirm_remains_successful_when_post_bind_refresh_fails() {
+		$repo              = new Repository();
+		$entitlement_calls = 0;
+
+		$ent_client   = new EntitlementsClient(
+			null,
+			static function () use ( &$entitlement_calls ) {
+				++$entitlement_calls;
+				return new WP_Error( 'http_request_failed', 'upstream 503' );
+			},
+			BindingStore::$api
+		);
+		$entitlements = new EntitlementsModule( $repo, null, $ent_client );
+		$entitlements->register();
+
+		add_action(
+			'wpcy_site_bound',
+			static function () {
+				throw new \RuntimeException( 'Simulated third-party hook failure' );
+			}
+		);
+
+		$module = $this->module();
+		$this->queue_json( $this->start_fixture );
+		$this->queue_json( $this->confirm_fixture );
+		$bound = $module->start();
+
+		$this->assertIsArray( $bound );
+		$this->assertSame( 'bound', $bound['status'] );
+		$this->assertSame( $this->confirm_fixture['site_hash'], $bound['site_hash'] );
+		$this->assertSame( 1, $entitlement_calls );
+		$this->assertFalse( WhiteLabel::is_entitled() );
+		$this->assertNotEmpty( get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) );
 	}
 
 	/**

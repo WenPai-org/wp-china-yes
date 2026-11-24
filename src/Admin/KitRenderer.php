@@ -2349,6 +2349,7 @@ final class KitRenderer {
 		$heartbeat = 'on' === (string) ( $conn['heartbeat'] ?? 'off' );
 		$feeds     = 'block' === (string) ( $conn['dashboard_feeds'] ?? 'allow' );
 		$scope     = self::conn_scope( $settings, $conn );
+		WhiteLabel::maybe_refresh_license_cache();
 		$wl        = WhiteLabel::resolve( $settings );
 		$entitled  = ! empty( $wl['entitled'] );
 		$wl_locked = $locked || $wl['locked'] || ! $entitled;

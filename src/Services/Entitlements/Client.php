@@ -22,8 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * GET {API}/v1/sites/{site_hash}/entitlements.
  *
  * Quota numbers are copied from the server body. This class does not
- * compute usage, parse prices, or invent limits. Production host is
- * blocked unless an explicit test flag is on (ChallengeClient).
+ * compute usage, parse prices, or invent limits. Uses `ChallengeClient::api_base()`
+ * (defaults to `https://license.wenpai.net/v1`); any HTTPS URL is allowed and an
+ * empty base disables outbound.
  */
 final class Client {
 
@@ -241,7 +242,7 @@ final class Client {
 	 * GET JSON. Never logs the credential.
 	 *
 	 * @param string $url        Absolute URL.
-	 * @param string $credential Plaintext credential for the mock header.
+	 * @param string $credential Plaintext credential for Bearer auth.
 	 * @return array<string, mixed>|WP_Error
 	 */
 	private function get( string $url, string $credential ) {
