@@ -38,13 +38,6 @@ final class ProvidersView {
 			return;
 		}
 
-		$mall_id   = Presets::WEIXIAODUO_MALL;
-		$market_id = Presets::WENPAI_MARKETPLACE;
-		$field_cls = 'wenpai-field field wenpai-field--row' . ( $locked ? ' is-disabled' : '' );
-		$dis_attr  = $locked ? ' disabled' : '';
-		$email_id  = 'wpcy-prov-email-' . $mall_id;
-		$key_id    = 'wpcy-prov-key-' . $mall_id;
-
 		\Wenpai_Admin_UI::card_open(
 			array(
 				'title' => __( '商业扩展授权与更新源', 'wp-china-yes' ),
@@ -56,6 +49,44 @@ final class ProvidersView {
 			)
 		);
 
+		self::render_provider_item(
+			Presets::WEIXIAODUO_MALL,
+			'plug',
+			__( '薇晓朵商城', 'wp-china-yes' ),
+			__( '连接商城授权密钥后，已购商业主题与插件可通过国内更新通道自动接收升级。', 'wp-china-yes' ),
+			$locked
+		);
+
+		self::render_provider_item(
+			Presets::WENPAI_MARKETPLACE,
+			'sparkle',
+			__( '文派集市', 'wp-china-yes' ),
+			__( '连接文派集市授权密钥后，已购文派商业插件与扩展可通过国内更新通道自动接收升级。', 'wp-china-yes' ),
+			$locked
+		);
+
+		\Wenpai_Admin_UI::card_close();
+	}
+
+	/**
+	 * Render one interactive provider row and its collapsible connection panel.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id     Preset provider id.
+	 * @param string $icon   Kit icon key.
+	 * @param string $title  Display name.
+	 * @param string $desc   Row description.
+	 * @param bool   $locked Whether subsite settings are network-locked.
+	 * @return void
+	 */
+	private static function render_provider_item( string $id, string $icon, string $title, string $desc, bool $locked ): void {
+		$field_cls  = 'wenpai-field field wenpai-field--row' . ( $locked ? ' is-disabled' : '' );
+		$dis_attr   = $locked ? ' disabled' : '';
+		$email_id   = 'wpcy-prov-email-' . $id;
+		$key_id     = 'wpcy-prov-key-' . $id;
+		$update_url = function_exists( 'admin_url' ) ? admin_url( 'update-core.php?force-check=1' ) : 'update-core.php?force-check=1';
+
 		$toggle_btn = \Wenpai_Admin_UI::button_html(
 			array(
 				'label'    => __( '配置连接', 'wp-china-yes' ),
@@ -64,7 +95,7 @@ final class ProvidersView {
 				'class'    => 'btn-sm',
 				'disabled' => $locked,
 				'attrs'    => array(
-					'data-wpcy-prov-toggle' => $mall_id,
+					'data-wpcy-prov-toggle' => $id,
 					'aria-expanded'         => 'false',
 				),
 			)
@@ -72,32 +103,32 @@ final class ProvidersView {
 
 		\Wenpai_Admin_UI::row(
 			array(
-				'icon'         => 'plug',
-				'title'        => __( '薇晓朵商城', 'wp-china-yes' ),
-				'desc'         => __( '连接商城授权密钥后，已购商业主题与插件可通过国内更新通道自动接收升级。', 'wp-china-yes' ),
+				'icon'         => $icon,
+				'title'        => $title,
+				'desc'         => $desc,
 				'pill'         => array(
 					'text'  => __( '未连接', 'wp-china-yes' ),
 					'state' => 'mute',
 				),
-				'control_html' => '<span data-wpcy-prov-actions="' . esc_attr( $mall_id ) . '">' . $toggle_btn . '</span>',
+				'control_html' => '<span data-wpcy-prov-actions="' . esc_attr( $id ) . '">' . $toggle_btn . '</span>',
 				'attrs'        => array(
-					'data-wpcy-prov-row' => $mall_id,
+					'data-wpcy-prov-row' => $id,
 				),
 			)
 		);
 
-		echo '<div class="wenpai-stack--xs" data-wpcy-prov-panel="' . esc_attr( $mall_id ) . '" hidden>';
-		echo '<p class="meta" data-wpcy-prov-status="' . esc_attr( $mall_id ) . '"></p>';
+		echo '<div class="wenpai-stack--xs" data-wpcy-prov-panel="' . esc_attr( $id ) . '" data-wpcy-prov-name="' . esc_attr( $title ) . '" hidden>';
+		echo '<p class="meta" data-wpcy-prov-status="' . esc_attr( $id ) . '"></p>';
 
-		echo '<div class="wenpai-stack--xs" data-wpcy-prov-form="' . esc_attr( $mall_id ) . '">';
+		echo '<div class="wenpai-stack--xs" data-wpcy-prov-form="' . esc_attr( $id ) . '">';
 		echo '<div class="' . esc_attr( $field_cls ) . '">';
 		echo '<div class="field-label"><label for="' . esc_attr( $email_id ) . '">' . esc_html__( '购买邮箱', 'wp-china-yes' ) . '</label></div>';
-		echo '<div class="field-ctl"><input id="' . esc_attr( $email_id ) . '" type="email" autocomplete="email" placeholder="name@example.com" data-wpcy-prov-email="' . esc_attr( $mall_id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
+		echo '<div class="field-ctl"><input id="' . esc_attr( $email_id ) . '" type="email" autocomplete="email" placeholder="name@example.com" data-wpcy-prov-email="' . esc_attr( $id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
 		echo '</div>';
 
 		echo '<div class="' . esc_attr( $field_cls ) . '">';
 		echo '<div class="field-label"><label for="' . esc_attr( $key_id ) . '">' . esc_html__( '授权密钥', 'wp-china-yes' ) . '</label></div>';
-		echo '<div class="field-ctl"><input id="' . esc_attr( $key_id ) . '" type="password" autocomplete="off" placeholder="' . esc_attr__( '输入商城订单授权密钥', 'wp-china-yes' ) . '" data-wpcy-prov-key="' . esc_attr( $mall_id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
+		echo '<div class="field-ctl"><input id="' . esc_attr( $key_id ) . '" type="password" autocomplete="off" placeholder="' . esc_attr__( '输入订单授权密钥', 'wp-china-yes' ) . '" data-wpcy-prov-key="' . esc_attr( $id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
 		echo '</div>';
 
 		echo '<div class="wenpai-row wenpai-row--tight">';
@@ -109,14 +140,14 @@ final class ProvidersView {
 				'class'    => 'btn-sm',
 				'disabled' => $locked,
 				'attrs'    => array(
-					'data-wpcy-prov-connect' => $mall_id,
+					'data-wpcy-prov-connect' => $id,
 				),
 			)
 		);
 		echo '</div>';
 		echo '</div>';
 
-		echo '<div class="wenpai-row wenpai-row--tight" data-wpcy-prov-connected="' . esc_attr( $mall_id ) . '" hidden>';
+		echo '<div class="wenpai-row wenpai-row--tight" data-wpcy-prov-connected="' . esc_attr( $id ) . '" hidden>';
 		\Wenpai_Admin_UI::button(
 			array(
 				'label'    => __( '检测连接', 'wp-china-yes' ),
@@ -125,7 +156,7 @@ final class ProvidersView {
 				'class'    => 'btn-sm',
 				'disabled' => $locked,
 				'attrs'    => array(
-					'data-wpcy-prov-test' => $mall_id,
+					'data-wpcy-prov-test' => $id,
 				),
 			)
 		);
@@ -136,11 +167,10 @@ final class ProvidersView {
 				'variant' => 'secondary',
 				'class'   => 'btn-sm',
 				'attrs'   => array(
-					'data-wpcy-prov-products-btn' => $mall_id,
+					'data-wpcy-prov-products-btn' => $id,
 				),
 			)
 		);
-		$update_url = function_exists( 'admin_url' ) ? admin_url( 'update-core.php?force-check=1' ) : 'update-core.php?force-check=1';
 		\Wenpai_Admin_UI::button(
 			array(
 				'label'   => __( '检查更新 ↗', 'wp-china-yes' ),
@@ -148,7 +178,7 @@ final class ProvidersView {
 				'variant' => 'ghost',
 				'size'    => 'sm',
 				'attrs'   => array(
-					'data-wpcy-prov-updates' => $mall_id,
+					'data-wpcy-prov-updates' => $id,
 				),
 			)
 		);
@@ -160,30 +190,13 @@ final class ProvidersView {
 				'class'    => 'btn-sm',
 				'disabled' => $locked,
 				'attrs'    => array(
-					'data-wpcy-prov-disconnect' => $mall_id,
+					'data-wpcy-prov-disconnect' => $id,
 				),
 			)
 		);
 		echo '</div>';
 
-		echo '<div data-wpcy-prov-products="' . esc_attr( $mall_id ) . '" hidden></div>';
+		echo '<div data-wpcy-prov-products="' . esc_attr( $id ) . '" hidden></div>';
 		echo '</div>';
-
-		\Wenpai_Admin_UI::row(
-			array(
-				'icon'  => 'sparkle',
-				'title' => __( '文派集市', 'wp-china-yes' ),
-				'desc'  => __( '文派生态商业插件与云服务统一分发渠道。', 'wp-china-yes' ),
-				'pill'  => array(
-					'text'  => __( '即将开放', 'wp-china-yes' ),
-					'state' => 'mute',
-				),
-				'attrs' => array(
-					'data-wpcy-prov-row' => $market_id,
-				),
-			)
-		);
-
-		\Wenpai_Admin_UI::card_close();
 	}
 }

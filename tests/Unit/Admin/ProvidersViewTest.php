@@ -95,28 +95,32 @@ class ProvidersViewTest extends TestCase {
 		$this->assertStringContainsString( 'data-wpcy-providers-card="1"', $html );
 		$this->assertStringContainsString( 'data-wpcy-locked="0"', $html );
 		$this->assertStringContainsString( '薇晓朵商城', $html );
+		$this->assertStringContainsString( '文派集市', $html );
 		$this->assertStringContainsString( '未连接', $html );
 		$this->assertStringContainsString( '配置连接', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-actions="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-toggle="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-panel="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-status="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-form="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-email="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( '购买邮箱', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-key="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( '授权密钥', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-connect="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( '验证并连接', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-connected="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-test="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-products-btn="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-updates="weixiaoduo-mall"', $html );
 		$this->assertStringContainsString( '检查更新 ↗', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-disconnect="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( 'data-wpcy-prov-products="weixiaoduo-mall"', $html );
-		$this->assertStringContainsString( '文派集市', $html );
-		$this->assertStringContainsString( '即将开放', $html );
+
+		foreach ( array( 'weixiaoduo-mall', 'wenpai-marketplace' ) as $provider_id ) {
+			$this->assertStringContainsString( 'data-wpcy-prov-actions="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-toggle="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-panel="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-status="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-form="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-email="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-key="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-connect="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-connected="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-test="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-products-btn="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-updates="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-disconnect="' . $provider_id . '"', $html );
+			$this->assertStringContainsString( 'data-wpcy-prov-products="' . $provider_id . '"', $html );
+		}
+
+		$this->assertStringNotContainsString( '即将开放', $html );
 		$this->assertStringNotContainsString( 'style="', $html );
 		$this->assertStringNotContainsString( ' disabled', $html );
 	}
@@ -130,9 +134,11 @@ class ProvidersViewTest extends TestCase {
 		$html = $this->render_card( array(), true );
 
 		$this->assertStringContainsString( 'data-wpcy-locked="1"', $html );
-		$this->assertMatchesRegularExpression( '/<button[^>]*data-wpcy-prov-toggle="weixiaoduo-mall"[^>]*disabled|<button[^>]*disabled[^>]*data-wpcy-prov-toggle="weixiaoduo-mall"/', $html );
-		$this->assertMatchesRegularExpression( '/<input[^>]*data-wpcy-prov-email="weixiaoduo-mall"[^>]*disabled/', $html );
-		$this->assertMatchesRegularExpression( '/<input[^>]*data-wpcy-prov-key="weixiaoduo-mall"[^>]*disabled/', $html );
+		foreach ( array( 'weixiaoduo-mall', 'wenpai-marketplace' ) as $provider_id ) {
+			$this->assertMatchesRegularExpression( '/<button[^>]*data-wpcy-prov-toggle="' . $provider_id . '"[^>]*disabled|<button[^>]*disabled[^>]*data-wpcy-prov-toggle="' . $provider_id . '"/', $html );
+			$this->assertMatchesRegularExpression( '/<input[^>]*data-wpcy-prov-email="' . $provider_id . '"[^>]*disabled/', $html );
+			$this->assertMatchesRegularExpression( '/<input[^>]*data-wpcy-prov-key="' . $provider_id . '"[^>]*disabled/', $html );
+		}
 		$this->assertStringContainsString( 'wenpai-field field wenpai-field--row is-disabled', $html );
 		$this->assertStringNotContainsString( 'style="', $html );
 	}

@@ -43,15 +43,15 @@ class PresetsTest extends TestCase {
 	}
 
 	/**
-	 * Marketplace is coming_soon with empty api_url.
+	 * Marketplace is available with frozen wenpai.net origin.
 	 */
-	public function test_wenpai_marketplace_is_coming_soon() {
+	public function test_wenpai_marketplace_is_available() {
 		$row = Presets::get( 'wenpai-marketplace' );
 		$this->assertIsArray( $row );
 		$this->assertSame( 'wenpai-marketplace', $row['id'] );
 		$this->assertSame( '文派集市', $row['name'] );
-		$this->assertSame( 'coming_soon', $row['status'] );
-		$this->assertSame( '', $row['api_url'] );
+		$this->assertSame( 'available', $row['status'] );
+		$this->assertSame( 'https://wenpai.net', $row['api_url'] );
 	}
 
 	/**

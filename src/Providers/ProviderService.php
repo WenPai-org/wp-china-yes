@@ -128,7 +128,11 @@ final class ProviderService {
 		if ( 'coming_soon' === $preset['status'] ) {
 			return RestError::make(
 				'wpcy_provider_coming_soon',
-				__( '文派集市即将开放，现在还不能连接。', 'wp-china-yes' ),
+				sprintf(
+					/* translators: %s: provider display name. */
+					__( '%s即将开放，现在还不能连接。', 'wp-china-yes' ),
+					$preset['name']
+				),
 				400
 			);
 		}
@@ -152,7 +156,11 @@ final class ProviderService {
 			);
 			return RestError::make(
 				'wpcy_provider_unreachable',
-				__( '暂时无法连接薇晓朵商城，请稍后重试。', 'wp-china-yes' ),
+				sprintf(
+					/* translators: %s: provider display name. */
+					__( '暂时无法连接%s，请稍后重试。', 'wp-china-yes' ),
+					$preset['name']
+				),
 				503
 			);
 		}
@@ -171,7 +179,11 @@ final class ProviderService {
 		if ( ! $this->store->put_license_key( $id, $license_key ) ) {
 			return RestError::make(
 				'wpcy_provider_unreachable',
-				__( '暂时无法连接薇晓朵商城，请稍后重试。', 'wp-china-yes' ),
+				sprintf(
+					/* translators: %s: provider display name. */
+					__( '暂时无法连接%s，请稍后重试。', 'wp-china-yes' ),
+					$preset['name']
+				),
 				503
 			);
 		}
@@ -277,7 +289,11 @@ final class ProviderService {
 			);
 			return RestError::make(
 				'wpcy_provider_unreachable',
-				__( '暂时无法连接薇晓朵商城，请稍后重试。', 'wp-china-yes' ),
+				sprintf(
+					/* translators: %s: provider display name. */
+					__( '暂时无法连接%s，请稍后重试。', 'wp-china-yes' ),
+					$preset['name']
+				),
 				503
 			);
 		}

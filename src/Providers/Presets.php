@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Two ids only: weixiaoduo-mall (available) and wenpai-marketplace (coming_soon).
+ * Two ids only: weixiaoduo-mall and wenpai-marketplace (both available).
  */
 final class Presets {
 
@@ -27,7 +27,7 @@ final class Presets {
 	public const WEIXIAODUO_MALL = 'weixiaoduo-mall';
 
 	/**
-	 * WenPai marketplace id (placeholder).
+	 * WenPai marketplace id.
 	 *
 	 * @since 4.0.0
 	 */
@@ -78,8 +78,8 @@ final class Presets {
 			self::WENPAI_MARKETPLACE => array(
 				'id'      => self::WENPAI_MARKETPLACE,
 				'name'    => __( '文派集市', 'wp-china-yes' ),
-				'status'  => 'coming_soon',
-				'api_url' => '',
+				'status'  => 'available',
+				'api_url' => 'https://wenpai.net',
 			),
 		);
 	}

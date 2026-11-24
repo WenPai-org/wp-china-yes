@@ -58,8 +58,9 @@ class ProvidersControllerTest extends TestCase {
 		$this->assertCount( 2, $data['providers'] );
 		$this->assertSame( 'weixiaoduo-mall', $data['providers'][0]['id'] );
 		$this->assertSame( 'wenpai-marketplace', $data['providers'][1]['id'] );
-		$this->assertSame( 'coming_soon', $data['providers'][1]['status'] );
+		$this->assertSame( 'available', $data['providers'][1]['status'] );
 		$this->assertSame( 'disconnected', $data['providers'][0]['connection'] );
+		$this->assertSame( 'disconnected', $data['providers'][1]['connection'] );
 		$this->secret_free( $data, 'alice@example.com' );
 	}
 
@@ -95,20 +96,31 @@ class ProvidersControllerTest extends TestCase {
 	}
 
 	/**
-	 * Coming soon message is frozen.
+	 * WenPai marketplace connects cleanly and hides secrets.
 	 */
-	public function test_connect_coming_soon_message() {
-		$controller      = new ProvidersController( $this->service( 'bound' ) );
-		$request         = new WP_REST_Request();
-		$request->params = array( 'id' => 'wenpai-marketplace' );
-		$request->json   = array(
-			'email'       => 'alice@example.com',
-			'license_key' => 'key',
+	public function test_connect_wenpai_marketplace_success_shape() {
+		BindingStore::$responses = array(
+			array(
+				'code' => 200,
+				'body' => '{"success":true,"data":{"product_list":[]}}',
+			),
 		);
-		$result          = $controller->connect( $request );
-		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'wpcy_provider_coming_soon', $result->get_error_code() );
-		$this->assertSame( '文派集市即将开放，现在还不能连接。', $result->get_error_message() );
+		$controller              = new ProvidersController( $this->service( 'bound' ) );
+		$request                 = new WP_REST_Request();
+		$request->params         = array( 'id' => 'wenpai-marketplace' );
+		$request->json           = array(
+			'email'       => 'alice@example.com',
+			'license_key' => 'WP-MARKET-SECRET',
+		);
+		$response                = $controller->connect( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'wenpai-marketplace', $data['id'] );
+		$this->assertSame( 'available', $data['status'] );
+		$this->assertSame( 'connected', $data['connection'] );
+		$this->assertSame( 'a***@example.com', $data['email_masked'] );
+		$this->assertStringStartsWith( 'https://wenpai.net/', BindingStore::$requests[0]['url'] );
+		$this->secret_free( $data, 'alice@example.com' );
 	}
 
 	/**

@@ -55,14 +55,42 @@ class ProviderServiceTest extends TestCase {
 	}
 
 	/**
-	 * Coming soon is 400 wpcy_provider_coming_soon.
+	 * WenPai marketplace connects against https://wenpai.net WC AM API and persists separately.
 	 */
-	public function test_connect_coming_soon_is_400() {
-		$service = $this->service( 'bound' );
-		$result  = $service->connect( 'wenpai-marketplace', 'a@example.com', 'key' );
+	public function test_connect_wenpai_marketplace_success_persists() {
+		BindingStore::$responses = array(
+			array(
+				'code' => 200,
+				'body' => '{"success":true,"data":{"product_list":[{"product_id":77,"slug":"wpcy-whitelabel","title":"文派白标"}]}}',
+			),
+		);
+		$service                 = $this->service( 'bound' );
+		$result                  = $service->connect( 'wenpai-marketplace', 'buyer@wenpai.net', 'WP-MARKET-KEY' );
+		$this->assertIsArray( $result );
+		$this->assertSame( 'wenpai-marketplace', $result['id'] );
+		$this->assertSame( 'available', $result['status'] );
+		$this->assertSame( 'connected', $result['connection'] );
+		$this->assertSame( 'b***@wenpai.net', $result['email_masked'] );
+		$this->assertSame( 1, $result['product_count'] );
+		$this->assertSame( 'WP-MARKET-KEY', ( new Store() )->license_key( 'wenpai-marketplace' ) );
+		$this->assertCount( 1, BindingStore::$requests );
+		$this->assertStringStartsWith( 'https://wenpai.net/', BindingStore::$requests[0]['url'] );
+		$this->assertStringContainsString( 'wc_am_action=product_list', BindingStore::$requests[0]['url'] );
+	}
+
+	/**
+	 * Unreachable error message uses the provider display name.
+	 */
+	public function test_connect_wenpai_marketplace_unreachable_uses_provider_name() {
+		BindingStore::$responses = array(
+			new WP_Error( 'http_request_failed', 'timeout' ),
+		);
+		$service                 = $this->service( 'bound' );
+		$result                  = $service->connect( 'wenpai-marketplace', 'buyer@wenpai.net', 'key' );
 		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'wpcy_provider_coming_soon', $result->get_error_code() );
-		$this->assertSame( 400, $result->get_error_data()['status'] );
+		$this->assertSame( 'wpcy_provider_unreachable', $result->get_error_code() );
+		$this->assertSame( 503, $result->get_error_data()['status'] );
+		$this->assertSame( '暂时无法连接文派集市，请稍后重试。', $result->get_error_message() );
 	}
 
 	/**
