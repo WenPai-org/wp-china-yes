@@ -51,7 +51,7 @@ final class CachePurger {
 		}
 
 		if ( function_exists( 'has_action' ) && has_action( 'litespeed_purge_all' ) && function_exists( 'do_action' ) ) {
-			do_action( 'litespeed_purge_all', $reason );
+			do_action( 'litespeed_purge_all', $reason ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- third-party LiteSpeed Cache purge hook.
 			$purged[] = 'litespeed_cache';
 		}
 
@@ -59,7 +59,7 @@ final class CachePurger {
 			rt_nginx_helper_purge_all();
 			$purged[] = 'nginx_helper';
 		} elseif ( function_exists( 'has_action' ) && has_action( 'rt_nginx_helper_purge_all' ) && function_exists( 'do_action' ) ) {
-			do_action( 'rt_nginx_helper_purge_all' );
+			do_action( 'rt_nginx_helper_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- third-party Nginx Helper purge hook.
 			$purged[] = 'nginx_helper';
 		}
 
