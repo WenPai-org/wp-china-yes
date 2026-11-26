@@ -81,10 +81,29 @@ class WhitelistTest extends TestCase {
 	}
 
 	/**
-	 * Down node keeps the origin URL.
+	 * Down primary node falls back to domestic mirror when fallback host is healthy.
 	 */
-	public function test_keeps_origin_when_node_unhealthy() {
+	public function test_falls_back_to_domestic_mirror_when_primary_unhealthy() {
 		$module = $this->module( array( 'jsdelivr' ), array( 'jsd.admincdn.com' => false ) );
+		$origin = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
+
+		$this->assertSame(
+			'https://cdn.jsdmirror.com/npm/jquery@3/dist/jquery.min.js',
+			$module->rewrite( $origin )
+		);
+	}
+
+	/**
+	 * Both primary and domestic fallback down keeps the origin URL.
+	 */
+	public function test_keeps_origin_when_primary_and_fallback_unhealthy() {
+		$module = $this->module(
+			array( 'jsdelivr' ),
+			array(
+				'jsd.admincdn.com'  => false,
+				'cdn.jsdmirror.com' => false,
+			)
+		);
 		$origin = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
 
 		$this->assertSame( $origin, $module->rewrite( $origin ) );
@@ -157,13 +176,148 @@ class WhitelistTest extends TestCase {
 	}
 
 	/**
-	 * Emoji key with jsd down keeps origin.
+	 * Emoji key with jsd down falls back to domestic zstatic mirror, and keeps origin when both down.
 	 */
-	public function test_emoji_keeps_origin_when_jsd_down() {
-		$module = $this->module( array( 'emoji' ), array( 'jsd.admincdn.com' => false ) );
+	public function test_emoji_fallback_when_jsd_down() {
 		$origin = 'https://s.w.org/images/core/emoji/15.0.3/svg/1f600.svg';
 
-		$this->assertSame( $origin, $module->rewrite( $origin ) );
+		$domestic = $this->module( array( 'emoji' ), array( 'jsd.admincdn.com' => false ) );
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/@twemoji/api/dist/15.0.3/svg/1f600.svg',
+			$domestic->rewrite( $origin )
+		);
+
+		$both_down = $this->module(
+			array( 'emoji' ),
+			array(
+				'jsd.admincdn.com' => false,
+				's4.zstatic.net'   => false,
+			)
+		);
+		$this->assertSame( $origin, $both_down->rewrite( $origin ) );
+	}
+
+	/**
+	 * All four admincdn public-library hosts fall back to verified domestic mirrors without double paths.
+	 */
+	public function test_all_admincdn_hosts_fall_back_to_domestic_mirrors() {
+		$module = $this->module(
+			array( 'google_fonts', 'google_ajax', 'cdnjs', 'jsdelivr' ),
+			array(
+				'googlefonts.admincdn.com' => false,
+				'googleajax.admincdn.com'  => false,
+				'cdnjs.admincdn.com'       => false,
+				'jsd.admincdn.com'         => false,
+			)
+		);
+
+		$this->assertSame(
+			'https://fonts.googleapis.cn/css2?family=Roboto:wght@400',
+			$module->rewrite( 'https://fonts.googleapis.com/css2?family=Roboto:wght@400' )
+		);
+
+		$ajax = $module->rewrite( 'https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js' );
+		$this->assertSame( 'https://s4.zstatic.net/ajax/libs/jquery/3.7.1/jquery.min.js', $ajax );
+		$this->assertStringNotContainsString( '/ajax/libs/ajax/libs', $ajax );
+
+		$cdnjs = $module->rewrite( 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js' );
+		$this->assertSame( 'https://s4.zstatic.net/ajax/libs/jquery/3.7.1/jquery.min.js', $cdnjs );
+		$this->assertStringNotContainsString( '/ajax/libs/ajax/libs', $cdnjs );
+
+		$this->assertSame(
+			'https://cdn.jsdmirror.com/gh/org/repo@1.0/dist/app.js',
+			$module->rewrite( 'https://cdn.jsdelivr.net/gh/org/repo@1.0/dist/app.js' )
+		);
+		$this->assertSame(
+			'https://cdn.jsdmirror.com/bootstrap/3.3.7/css/bootstrap.min.css',
+			$module->rewrite( 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' )
+		);
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/react@18/umd/react.production.min.js',
+			$module->rewrite( 'https://unpkg.com/react@18/umd/react.production.min.js' )
+		);
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/jquery/jquery-3.7.1.min.js',
+			$module->rewrite( 'https://code.jquery.com/jquery-3.7.1.min.js' )
+		);
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/vue@3/dist/vue.global.prod.js',
+			$module->rewrite( 'https://unpkg.com/vue@3/dist/vue.global.prod.js' )
+		);
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/datatables.net/1.13.6/js/jquery.dataTables.min.js',
+			$module->rewrite( 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js' )
+		);
+		$this->assertSame(
+			'https://s4.zstatic.net/npm/tailwindcss@3/dist/tailwind.min.css',
+			$module->rewrite( 'https://unpkg.com/tailwindcss@3/dist/tailwind.min.css' )
+		);
+	}
+
+	/**
+	 * When both primary and domestic fallback hosts are down, all sources return origin URL.
+	 */
+	public function test_returns_origin_when_both_primary_and_domestic_fallback_down() {
+		$module = $this->module(
+			array( 'google_fonts', 'google_ajax', 'cdnjs', 'jsdelivr' ),
+			array(
+				'googlefonts.admincdn.com' => false,
+				'fonts.googleapis.cn'      => false,
+				'googleajax.admincdn.com'  => false,
+				'cdnjs.admincdn.com'       => false,
+				's4.zstatic.net'           => false,
+				'jsd.admincdn.com'         => false,
+				'cdn.jsdmirror.com'        => false,
+			)
+		);
+
+		$urls = array(
+			'https://fonts.googleapis.com/css2?family=Roboto:wght@400',
+			'https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js',
+			'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js',
+			'https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js',
+			'https://unpkg.com/react@18/umd/react.production.min.js',
+		);
+
+		foreach ( $urls as $origin ) {
+			$this->assertSame( $origin, $module->rewrite( $origin ), $origin );
+		}
+	}
+
+	/**
+	 * Fallback table filter allows overriding domestic fallback targets.
+	 */
+	public function test_fallback_table_filter_overrides_targets() {
+		add_filter(
+			'wpcy_public_assets_fallback_table',
+			static function ( array $table ): array {
+				$table['cdnjs']['cdnjs.cloudflare.com/ajax/libs'] = 'lib.baomitu.com';
+				return $table;
+			}
+		);
+
+		$module = $this->module( array( 'cdnjs' ), array( 'cdnjs.admincdn.com' => false ) );
+		$this->assertSame(
+			'https://lib.baomitu.com/jquery/3.7.1/jquery.min.js',
+			$module->rewrite( 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js' )
+		);
+	}
+
+	/**
+	 * Fallback table excludes wpstatic.admincdn.com and public.admincdn.com.
+	 */
+	public function test_fallback_table_excludes_wpstatic() {
+		$targets = array();
+		foreach ( AssetMap::fallback_table() as $pairs ) {
+			foreach ( $pairs as $replace ) {
+				$targets[] = $replace;
+			}
+		}
+
+		$haystack = implode( ' ', $targets );
+		$this->assertStringNotContainsString( 'wpstatic.admincdn.com', $haystack );
+		$this->assertStringNotContainsString( 'public.admincdn.com', $haystack );
+		$this->assertArrayNotHasKey( 'admin', AssetMap::fallback_table() );
 	}
 
 	/**

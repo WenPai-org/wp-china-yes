@@ -98,18 +98,26 @@ final class Checker {
 	private $events;
 
 	/**
+	 * Optional mirror health cache updated on each target probe.
+	 *
+	 * @var MirrorHealth|null
+	 */
+	private $health;
+
+	/**
 	 * Wire HTTP, store, config, and clock. Constructor does not probe.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param callable|null $http_get  Defaults to wp_remote_get().
-	 * @param callable|null $get_store Defaults to get_transient().
-	 * @param callable|null $set_store Defaults to set_transient().
-	 * @param object|null   $config    Optional dotted-path config (Config or Repository).
-	 * @param callable|null $now       Defaults to gmdate UTC Z.
-	 * @param Events|null   $events    Optional event log for group transitions.
+	 * @param callable|null     $http_get  Defaults to wp_remote_get().
+	 * @param callable|null     $get_store Defaults to get_transient().
+	 * @param callable|null     $set_store Defaults to set_transient().
+	 * @param object|null       $config    Optional dotted-path config (Config or Repository).
+	 * @param callable|null     $now       Defaults to gmdate UTC Z.
+	 * @param Events|null       $events    Optional event log for group transitions.
+	 * @param MirrorHealth|null $health    Optional mirror health cache. Defaults to a MirrorHealth bound to the store callbacks.
 	 */
-	public function __construct( $http_get = null, $get_store = null, $set_store = null, $config = null, $now = null, $events = null ) {
+	public function __construct( $http_get = null, $get_store = null, $set_store = null, $config = null, $now = null, $events = null, $health = null ) {
 		$this->http_get  = null !== $http_get ? $http_get : 'wp_remote_get';
 		$this->get_store = null !== $get_store ? $get_store : 'get_transient';
 		$this->set_store = null !== $set_store ? $set_store : 'set_transient';
@@ -118,6 +126,7 @@ final class Checker {
 			return gmdate( 'Y-m-d\TH:i:s\Z' );
 		};
 		$this->events    = $events instanceof Events ? $events : null;
+		$this->health    = $health instanceof MirrorHealth ? $health : null;
 	}
 
 	/**
@@ -153,6 +162,19 @@ final class Checker {
 		}
 
 		return $this->events;
+	}
+
+	/**
+	 * Mirror health cache written after each probe target.
+	 *
+	 * @since 4.0.0
+	 */
+	private function health(): MirrorHealth {
+		if ( ! $this->health instanceof MirrorHealth ) {
+			$this->health = new MirrorHealth( $this->get_store, $this->set_store );
+		}
+
+		return $this->health;
 	}
 
 	/**
@@ -255,9 +277,17 @@ final class Checker {
 	 */
 	private function probe_target( array $spec, string $checked_at ): array {
 		$domestic = $this->hit( $spec['url'] );
+		$host     = MirrorHealth::host_of( $spec['target'] );
 
 		if ( $domestic['ok'] ) {
+			if ( '' !== $host ) {
+				$this->health()->remember( $host, 'up', Origins::UP_TTL );
+			}
 			return $this->row( $spec['target'], self::RESULT_OK, $domestic['latency_ms'], $checked_at, null );
+		}
+
+		if ( '' !== $host ) {
+			$this->health()->remember( $host, 'down', Origins::DOWN_TTL );
 		}
 
 		$upstream = $this->hit( $spec['upstream_url'] );

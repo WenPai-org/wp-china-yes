@@ -35,16 +35,18 @@ final class Defaults {
 			'profile'              => 'domestic',
 			'profile_confirmed_at' => null,
 			'connectivity'         => array(
-				'wordpress_org'       => 'auto',
-				'public_assets'       => array(
+				'wordpress_org'           => 'auto',
+				'public_assets'           => array(
 					'items' => Schema::PUBLIC_ASSETS,
 					'scope' => 'both',
 				),
-				'avatar'              => 'cravatar_cn',
-				'heartbeat'           => 'off',
-				'dashboard_feeds'     => 'allow',
-				'admin_locale_follow' => true,
-				'icon_photos'         => array(
+				'avatar'                  => 'cravatar_cn',
+				'heartbeat'               => 'off',
+				'dashboard_feeds'         => 'allow',
+				'admin_locale_follow'     => true,
+				'browser_fallback_loader' => true,
+				'purge_cache_on_failover' => true,
+				'icon_photos'             => array(
 					'enabled'         => 'off',
 					'mirrored_base'   => '',
 					'native_api_base' => '',
@@ -89,8 +91,9 @@ final class Defaults {
 				),
 			),
 			'diagnostics'          => array(
-				'scheduled_checks' => true,
-				'client_probe_url' => '',
+				'scheduled_checks'     => true,
+				'client_probe_url'     => '',
+				'client_probe_enabled' => true,
 			),
 			'data_residency'       => array(
 				'ruleset_version' => 1,

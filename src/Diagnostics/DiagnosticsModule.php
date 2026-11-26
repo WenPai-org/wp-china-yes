@@ -13,6 +13,7 @@ namespace WenPai\ChinaYes\Diagnostics;
 use WenPai\ChinaYes\Cli\ConfigCommand;
 use WenPai\ChinaYes\Cli\DoctorCommand;
 use WenPai\ChinaYes\Cli\StatusCommand;
+use WenPai\ChinaYes\Connectivity\PublicAssets\Manifest;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 
@@ -54,6 +55,13 @@ final class DiagnosticsModule implements Module {
 	private $site_health;
 
 	/**
+	 * Signed mirror manifest client.
+	 *
+	 * @var Manifest|null
+	 */
+	private ?Manifest $manifest;
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -61,11 +69,13 @@ final class DiagnosticsModule implements Module {
 	 * @param object|null     $config      Config read model.
 	 * @param Checker|null    $checker     Probe runner.
 	 * @param SiteHealth|null $site_health Debug section.
+	 * @param Manifest|null   $manifest    Optional signed mirror manifest client.
 	 */
-	public function __construct( $config = null, $checker = null, $site_health = null ) {
+	public function __construct( $config = null, $checker = null, $site_health = null, ?Manifest $manifest = null ) {
 		$this->config      = ( is_object( $config ) && method_exists( $config, 'get' ) ) ? $config : null;
 		$this->checker     = $checker instanceof Checker ? $checker : null;
 		$this->site_health = $site_health instanceof SiteHealth ? $site_health : null;
+		$this->manifest    = $manifest;
 	}
 
 	/**
@@ -110,18 +120,68 @@ final class DiagnosticsModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function register(): void {
+		add_filter( 'cron_schedules', array( $this, 'register_cron_schedules' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval -- 10-minute manifest sync interval per T4.3 spec.
 		add_action( self::CRON_HOOK, array( $this, 'run_scheduled' ) );
+		add_action( Manifest::CRON_HOOK, array( $this, 'run_manifest_sync' ) );
 
 		if ( $this->scheduled_checks_enabled() ) {
 			if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 				wp_schedule_event( time(), 'hourly', self::CRON_HOOK );
 			}
+			if ( ! wp_next_scheduled( Manifest::CRON_HOOK ) ) {
+				wp_schedule_event( time(), Manifest::CRON_SCHEDULE, Manifest::CRON_HOOK );
+			}
 		} else {
 			wp_clear_scheduled_hook( self::CRON_HOOK );
+			wp_clear_scheduled_hook( Manifest::CRON_HOOK );
 		}
 
 		$this->site_health()->register();
 		$this->register_cli();
+	}
+
+	/**
+	 * Register 10-minute WP-Cron recurrence for signed mirror manifest sync.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @param array<string, array<string, mixed>> $schedules Existing cron schedules.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public function register_cron_schedules( array $schedules ): array {
+		if ( ! isset( $schedules[ Manifest::CRON_SCHEDULE ] ) ) {
+			$schedules[ Manifest::CRON_SCHEDULE ] = array(
+				'interval' => 600,
+				'display'  => 'Every 10 Minutes (WPCY Manifest)',
+			);
+		}
+
+		return $schedules;
+	}
+
+	/**
+	 * Cron callback for 10-minute signed mirror manifest sync.
+	 *
+	 * @since 4.1.0
+	 */
+	public function run_manifest_sync(): void {
+		if ( ! $this->scheduled_checks_enabled() ) {
+			return;
+		}
+
+		$this->manifest()->sync();
+	}
+
+	/**
+	 * Manifest client instance.
+	 */
+	private function manifest(): Manifest {
+		if ( null === $this->manifest ) {
+			$cfg            = $this->config instanceof \WenPai\ChinaYes\Core\Config ? $this->config : null;
+			$this->manifest = new Manifest( $cfg );
+		}
+
+		return $this->manifest;
 	}
 
 	/**

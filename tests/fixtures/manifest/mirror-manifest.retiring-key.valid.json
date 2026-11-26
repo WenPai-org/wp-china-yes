@@ -1,0 +1,63 @@
+{
+  "schema": "admincdn.mirror-manifest/v1",
+  "version": 2026112602,
+  "issuedAt": "2026-11-26T08:01:00Z",
+  "ttl": 600,
+  "backupHost": "backup.admincdn.com",
+  "killSwitch": false,
+  "classes": {
+    "npm": {
+      "resourceKind": "immutable_pkg",
+      "primary": "https://jsd.admincdn.com/npm/{pkg}@{ver}/{file}",
+      "backupHost": "https://backup.admincdn.com",
+      "state": "ok",
+      "regions": {
+        "cn-east": "ok",
+        "cn-south": "ok"
+      },
+      "clientFallbacks": [
+        "https://s4.zstatic.net/npm/{pkg}@{ver}/{file}",
+        "https://cdn.jsdmirror.com/npm/{pkg}@{ver}/{file}"
+      ],
+      "sri": "auto",
+      "hashes": {
+        "jquery@3.7.1/dist/jquery.min.js": "sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs"
+      }
+    },
+    "googlefonts": {
+      "resourceKind": "dynamic_css",
+      "primary": "https://googlefonts.admincdn.com/{path}",
+      "state": "ok",
+      "regions": {},
+      "clientFallbacks": [
+        "https://fonts.googleapis.cn/{path}"
+      ],
+      "sri": null
+    },
+    "wpstatic": {
+      "resourceKind": "api_and_zip",
+      "primary": "https://wpstatic.admincdn.com/{ver}/{path}",
+      "backupHost": null,
+      "state": "ok",
+      "clientFallbacks": [],
+      "sri": "auto"
+    },
+    "release": {
+      "resourceKind": "release_redirect",
+      "primary": "https://release.admincdn.com/{project}/{ver}/{artifact}",
+      "state": "degraded",
+      "clientFallbacks": [],
+      "sri": null
+    }
+  },
+  "notices": [
+    {
+      "id": "notice-2026-11-t25",
+      "level": "info",
+      "message": "萌芽加速 🌱 /ajax/libs/ 与 /npm/ 跨语言验签基线就绪。",
+      "publishedAt": "2026-11-26T08:00:00Z"
+    }
+  ],
+  "keyId": "admincdn-test-2026-10-retiring",
+  "sig": "ed25519:ePQnLHEcjszsOhaho05pCekzbbrW1LxvGgXeOTge4EzNu1eYmkEy/Mb/p9w1FmPyOD3TBqkQJ33Mc6b2h8qdDw=="
+}

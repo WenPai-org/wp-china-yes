@@ -74,6 +74,14 @@ final class ClientProbeController {
 	 */
 	public function get_item( WP_REST_Request $request ): WP_REST_Response {
 		unset( $request );
+		if ( ! $this->probe_enabled() ) {
+			return RestError::ok(
+				array(
+					'checked_at' => null,
+					'probes'     => array(),
+				)
+			);
+		}
 		return RestError::ok( $this->stored() );
 	}
 
@@ -87,6 +95,15 @@ final class ClientProbeController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( WP_REST_Request $request ) {
+		if ( ! $this->probe_enabled() ) {
+			return RestError::ok(
+				array(
+					'checked_at' => null,
+					'probes'     => array(),
+				)
+			);
+		}
+
 		$body = SettingsController::body( $request );
 		if ( ! is_array( $body ) || ! isset( $body['probes'] ) || ! is_array( $body['probes'] ) ) {
 			return RestError::invalid_schema();
@@ -143,10 +160,10 @@ final class ClientProbeController {
 	}
 
 	/**
-	 * Drop extra keys so GET matches {target,result,latency_ms}.
+	 * Drop extra keys so GET matches {target,result,latency_ms} plus optional sanitized RUM fields.
 	 *
 	 * @param array<int|string, mixed> $probes Stored rows.
-	 * @return list<array{target: string, result: string, latency_ms: int|null}>
+	 * @return list<array<string, mixed>>
 	 */
 	private function project_probes( array $probes ): array {
 		$out = array();
@@ -163,11 +180,12 @@ final class ClientProbeController {
 			if ( null !== $latency && ( ! is_int( $latency ) || $latency < 1 ) ) {
 				$latency = null;
 			}
-			$out[] = array(
+			$item  = array(
 				'target'     => $target,
 				'result'     => $result,
 				'latency_ms' => $latency,
 			);
+			$out[] = self::append_rum_fields( $item, $row );
 		}
 
 		return $out;
@@ -196,7 +214,7 @@ final class ClientProbeController {
 	 *
 	 * @param mixed              $row     Incoming row.
 	 * @param array<int, string> $allowed Allow-list hosts.
-	 * @return array{target: string, result: string, latency_ms: int|null}|null
+	 * @return array<string, mixed>|null
 	 */
 	private function parse_probe( $row, array $allowed ) {
 		if ( ! is_array( $row ) ) {
@@ -223,11 +241,58 @@ final class ClientProbeController {
 			}
 		}
 
-		return array(
+		$item = array(
 			'target'     => $host,
 			'result'     => $result,
 			'latency_ms' => $latency,
 		);
+
+		return self::append_rum_fields( $item, $row );
+	}
+
+	/**
+	 * Append optional sanitized RUM fields (province, isp, switched_fallback, tao) when present.
+	 *
+	 * @param array<string, mixed> $item Base probe fields.
+	 * @param array<string, mixed> $row  Source probe row.
+	 * @return array<string, mixed>
+	 */
+	private static function append_rum_fields( array $item, array $row ): array {
+		foreach ( array( 'province', 'isp' ) as $str_key ) {
+			if ( isset( $row[ $str_key ] ) && is_string( $row[ $str_key ] ) ) {
+				$clean = trim( (string) preg_replace( '/[\x00-\x1f\x7f<>]/', '', $row[ $str_key ] ) );
+				if ( '' !== $clean ) {
+					$item[ $str_key ] = self::truncate_utf8( $clean, 32 );
+				}
+			}
+		}
+		foreach ( array( 'switched_fallback', 'tao' ) as $bool_key ) {
+			if ( isset( $row[ $bool_key ] ) && is_bool( $row[ $bool_key ] ) ) {
+				$item[ $bool_key ] = $row[ $bool_key ];
+			}
+		}
+		return $item;
+	}
+
+	/**
+	 * Truncate a UTF-8 string safely to a maximum character count.
+	 *
+	 * @param string $value Input string.
+	 * @param int    $limit Max UTF-8 characters.
+	 */
+	private static function truncate_utf8( string $value, int $limit ): string {
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $value, 0, $limit, 'UTF-8' );
+		}
+		$cut = preg_replace( '/^(.{0,' . $limit . '}).*/su', '$1', $value );
+		return is_string( $cut ) ? $cut : '';
+	}
+
+	/**
+	 * Whether browser probe collection/reporting is enabled.
+	 */
+	private function probe_enabled(): bool {
+		return (bool) $this->repository->get( 'diagnostics.client_probe_enabled', true );
 	}
 
 	/**

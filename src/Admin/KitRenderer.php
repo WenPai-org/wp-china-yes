@@ -3723,6 +3723,10 @@ final class KitRenderer {
 			echo '</form>';
 		}
 
+		if ( 'admincdn' === $id ) {
+			ManifestStatusCard::render();
+		}
+
 		$plugin_url = ! empty( $spec['plugin_url'] ) ? $spec['plugin_url'] : 'https://wpcy.com/';
 		\Wenpai_Admin_UI::card_open(
 			array(
@@ -4131,6 +4135,8 @@ final class KitRenderer {
 		);
 		self::render_conflict_and_synergy_rows( $scan );
 		\Wenpai_Admin_UI::card_close();
+
+		ManifestStatusCard::render();
 
 		\Wenpai_Admin_UI::card_open(
 			array(

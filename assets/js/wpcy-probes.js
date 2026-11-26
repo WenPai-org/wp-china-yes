@@ -25,9 +25,11 @@
 
 	function getConfig() {
 		const cfg = window.wpcyAdmin || {};
+		const diag = (cfg.settings && cfg.settings.diagnostics) ? cfg.settings.diagnostics : {};
 		return {
 			restRoot: String(cfg.restRoot || '').replace(/\/+$/, ''),
-			nonce: String(cfg.nonce || '')
+			nonce: String(cfg.nonce || ''),
+			probeEnabled: diag.client_probe_enabled !== false
 		};
 	}
 
@@ -54,6 +56,19 @@
 		return Date.now();
 	}
 
+	function detectTao(url) {
+		try {
+			if (typeof performance !== 'undefined' && typeof performance.getEntriesByName === 'function') {
+				const entries = performance.getEntriesByName(url);
+				const last = entries && entries.length ? entries[entries.length - 1] : null;
+				return Boolean(last && (last.responseStart > 0 || last.transferSize > 0));
+			}
+		} catch (e) {
+			// Ignore unsupported PerformanceResourceTiming environments.
+		}
+		return false;
+	}
+
 	async function measureOne(entry) {
 		const t0 = nowMs();
 		try {
@@ -63,20 +78,24 @@
 				url: entry.url,
 				target: entry.target,
 				result: 'ok',
-				latency_ms: elapsed
+				latency_ms: elapsed,
+				switched_fallback: false,
+				tao: detectTao(entry.url)
 			};
 		} catch (e) {
 			return {
 				url: entry.url,
 				target: entry.target,
 				result: 'down',
-				latency_ms: null
+				latency_ms: null,
+				switched_fallback: false,
+				tao: false
 			};
 		}
 	}
 
 	async function runAndPersistBrowserProbes() {
-		if (probeInFlight) {
+		if (probeInFlight || !getConfig().probeEnabled) {
 			return;
 		}
 		probeInFlight = true;
