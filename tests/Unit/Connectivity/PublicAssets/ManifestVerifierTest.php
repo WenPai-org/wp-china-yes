@@ -177,4 +177,38 @@ class ManifestVerifierTest extends TestCase {
 		$this->assertFalse( $expired_res['ok'] );
 		$this->assertSame( 'expired', $expired_res['code'] );
 	}
+
+	/**
+	 * Built-in production keyring pins ed25519-2026-11 and rejects test fixtures fail-closed.
+	 */
+	public function test_default_production_keyring_pin_and_fail_closed_behavior(): void {
+		$default = ManifestVerifier::default_keyring();
+		$this->assertArrayHasKey( 'ed25519-2026-11', $default );
+
+		$entry = $default['ed25519-2026-11'];
+		$this->assertSame( 'ed25519-2026-11', $entry['keyId'] );
+		$this->assertSame( 'NjI6q59iLFO72n6J+KhIeJbPTbVP6KUBVV2W5IjJOoo=', $entry['publicKeyB64'] );
+		$this->assertSame( 'active', $entry['status'] );
+		$this->assertSame(
+			'0e37e4691a2e42efe7b4fce346a13385b2c675a0b2c5ab8e4df636fc8b870978',
+			hash( 'sha256', $entry['publicKeyB64'] )
+		);
+		$this->assertSame(
+			SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES,
+			strlen( sodium_base642bin( $entry['publicKeyB64'], SODIUM_BASE64_VARIANT_ORIGINAL ) )
+		);
+
+		// Default keyring (omitted/$keyring=null) rejects test-key-signed fixtures fail-closed.
+		$doc = json_decode( (string) file_get_contents( $this->fixture_dir() . '/mirror-manifest.valid.json' ), false ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local test fixture.
+		$res = ManifestVerifier::verify_detailed( $doc, null, self::EVAL_NOW, true );
+		$this->assertFalse( $res['ok'] );
+		$this->assertSame( 'unknown_key', $res['code'] );
+		$this->assertFalse( ManifestVerifier::verify( $doc ) );
+		$this->assertFalse( Manifest::verify( $doc ) );
+
+		// Explicit empty keyring must remain fail-closed rather than falling back to DEFAULT_KEYRING.
+		$empty_res = ManifestVerifier::verify_detailed( $doc, array(), self::EVAL_NOW, true );
+		$this->assertFalse( $empty_res['ok'] );
+		$this->assertSame( 'unknown_key', $empty_res['code'] );
+	}
 }

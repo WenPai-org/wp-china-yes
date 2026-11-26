@@ -45,17 +45,46 @@ final class ManifestVerifier {
 	public const HEALTH_STATES = array( 'ok', 'degraded', 'down' );
 
 	/**
+	 * Built-in production Ed25519 trust keyring for admincdn.mirror-manifest/v1.
+	 *
+	 * Production key provisioned on updates.wenpai.net (2026-11-26); private half
+	 * never leaves the signing host. Only public keys belong in this map.
+	 *
+	 * @since 4.1.0
+	 * @var array<string, array{keyId: string, publicKeyB64: string, status: string, notBefore?: string, notAfter?: string}>
+	 */
+	public const DEFAULT_KEYRING = array(
+		'ed25519-2026-11' => array(
+			'keyId'        => 'ed25519-2026-11',
+			'publicKeyB64' => 'NjI6q59iLFO72n6J+KhIeJbPTbVP6KUBVV2W5IjJOoo=',
+			'status'       => 'active',
+			'notBefore'    => '2026-11-01T00:00:00Z',
+		),
+	);
+
+	/**
+	 * Return the built-in production keyring map (`keyId => entry`).
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return array<string, array{keyId: string, publicKeyB64: string, status: string, notBefore?: string, notAfter?: string}>
+	 */
+	public static function default_keyring(): array {
+		return self::DEFAULT_KEYRING;
+	}
+
+	/**
 	 * Verify a decoded manifest and return a structured result.
 	 *
 	 * @since 4.1.0
 	 *
 	 * @param mixed       $payload     Decoded JSON object (stdClass recommended) or map.
-	 * @param mixed       $keyring     Keyring object/map or `keys` map (`keyId => entry`).
+	 * @param mixed       $keyring     Keyring object/map or `keys` map (`keyId => entry`); null uses DEFAULT_KEYRING.
 	 * @param string|null $eval_now    Optional UTC RFC3339 evaluation timestamp.
 	 * @param bool        $enforce_ttl Whether to enforce issuedAt + ttl expiry against eval_now/current UTC.
 	 * @return array{ok: bool, code: string, detail: string}
 	 */
-	public static function verify_detailed( $payload, $keyring, ?string $eval_now = null, bool $enforce_ttl = false ): array {
+	public static function verify_detailed( $payload, $keyring = null, ?string $eval_now = null, bool $enforce_ttl = false ): array {
 		if ( ! is_object( $payload ) && ( ! is_array( $payload ) || self::is_list( $payload ) ) ) {
 			return self::fail( 'invalid_payload', 'Manifest must be a JSON object.' );
 		}
@@ -78,7 +107,7 @@ final class ManifestVerifier {
 			return self::fail( 'malformed_sig', 'Signature must match ed25519:<88-char-base64>.' );
 		}
 
-		$keys = self::normalize_keyring( $keyring );
+		$keys = self::normalize_keyring( null === $keyring ? self::DEFAULT_KEYRING : $keyring );
 		if ( ! isset( $keys[ $key_id ] ) ) {
 			return self::fail( 'unknown_key', 'Unknown keyId: ' . $key_id );
 		}
@@ -160,11 +189,11 @@ final class ManifestVerifier {
 	 * @since 4.1.0
 	 *
 	 * @param mixed       $payload     Decoded JSON object or map.
-	 * @param mixed       $keyring     Keyring object/map or `keys` map.
+	 * @param mixed       $keyring     Keyring object/map or `keys` map; null uses DEFAULT_KEYRING.
 	 * @param string|null $eval_now    Optional UTC RFC3339 evaluation timestamp.
 	 * @param bool        $enforce_ttl Whether to enforce TTL expiry.
 	 */
-	public static function verify( $payload, $keyring, ?string $eval_now = null, bool $enforce_ttl = false ): bool {
+	public static function verify( $payload, $keyring = null, ?string $eval_now = null, bool $enforce_ttl = false ): bool {
 		$res = self::verify_detailed( $payload, $keyring, $eval_now, $enforce_ttl );
 		return $res['ok'];
 	}

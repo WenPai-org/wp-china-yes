@@ -134,11 +134,11 @@ class Manifest {
 	 * @since 4.1.0
 	 *
 	 * @param mixed       $manifest    Decoded JSON object or map.
-	 * @param mixed       $keyring     Keyring keys map or wrapper.
+	 * @param mixed       $keyring     Keyring keys map or wrapper; null uses ManifestVerifier::DEFAULT_KEYRING.
 	 * @param string|null $eval_now    Optional UTC RFC3339 timestamp.
 	 * @param bool        $enforce_ttl Whether to enforce TTL expiry.
 	 */
-	public static function verify( $manifest, $keyring, ?string $eval_now = null, bool $enforce_ttl = false ): bool {
+	public static function verify( $manifest, $keyring = null, ?string $eval_now = null, bool $enforce_ttl = false ): bool {
 		return ManifestVerifier::verify( $manifest, $keyring, $eval_now, $enforce_ttl );
 	}
 
@@ -639,7 +639,8 @@ class Manifest {
 		if ( null !== $this->keyring_override ) {
 			return $this->keyring_override;
 		}
-		return function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_mirror_manifest_keyring', array() ) : array();
+		$default = ManifestVerifier::default_keyring();
+		return function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_mirror_manifest_keyring', $default ) : $default;
 	}
 
 	/**
