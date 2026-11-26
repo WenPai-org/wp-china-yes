@@ -11,6 +11,8 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Tests\Unit\Diagnostics;
 
 use PHPUnit\Framework\TestCase;
+use WenPai\ChinaYes\Connectivity\MirrorHealth;
+use WenPai\ChinaYes\Connectivity\WordPressOrg\Origins;
 use WenPai\ChinaYes\Diagnostics\Checker;
 use WenPai\ChinaYes\Tests\Unit\Connectivity\MapConfig;
 use WP_Error;
@@ -254,6 +256,82 @@ class CheckerTest extends TestCase {
 		$latest = $this->checker()->latest();
 		$this->assertCount( 1, $latest );
 		$this->assertSame( Checker::RESULT_DOWN, $latest[0]['result'] );
+	}
+
+	/**
+	 * Probe failures write MirrorHealth as down and recovery writes it back to up.
+	 */
+	public function test_probe_writes_mirror_health_down_and_recovers_to_up() {
+		$states = array();
+		$ttls   = array();
+		$health = new MirrorHealth(
+			static function ( string $key ) use ( &$states ) {
+				return $states[ $key ] ?? false;
+			},
+			static function ( string $key, $value, int $ttl ) use ( &$states, &$ttls ) {
+				$states[ $key ] = $value;
+				$ttls[ $key ]   = $ttl;
+				return true;
+			}
+		);
+
+		$checker = new Checker(
+			array( $this, 'http_get' ),
+			'get_transient',
+			'set_transient',
+			new MapConfig( array( 'connectivity.avatar' => 'off' ) ),
+			static function () {
+				return '2026-11-26T00:00:00Z';
+			},
+			null,
+			$health
+		);
+
+		$this->codes = array(
+			'*'                  => 200,
+			'cdnjs.admincdn.com' => 0,
+			'jsd.admincdn.com'   => 0,
+			'cdn.jsdelivr.net'   => 0,
+		);
+		$rows        = $checker->run();
+		$by_target   = array();
+		foreach ( $rows as $row ) {
+			$by_target[ $row['target'] ] = $row['result'];
+		}
+
+		$this->assertSame( Checker::RESULT_FALLBACK, $by_target['cdnjs.admincdn.com'] );
+		$this->assertSame( Checker::RESULT_DOWN, $by_target['jsd.admincdn.com'] );
+		$this->assertSame( Checker::RESULT_OK, $by_target['googlefonts.admincdn.com'] );
+
+		$this->assertFalse( $health->is_healthy( 'cdnjs.admincdn.com' ) );
+		$this->assertFalse( $health->is_healthy( 'jsd.admincdn.com' ) );
+		$this->assertTrue( $health->is_healthy( 'googlefonts.admincdn.com' ) );
+		$this->assertSame( Origins::DOWN_TTL, $ttls[ MirrorHealth::STATE_PREFIX . md5( 'cdnjs.admincdn.com' ) ] );
+		$this->assertSame( Origins::DOWN_TTL, $ttls[ MirrorHealth::STATE_PREFIX . md5( 'jsd.admincdn.com' ) ] );
+		$this->assertSame( Origins::UP_TTL, $ttls[ MirrorHealth::STATE_PREFIX . md5( 'googlefonts.admincdn.com' ) ] );
+
+		$this->codes = array( '*' => 200 );
+		$checker->run();
+
+		$this->assertTrue( $health->is_healthy( 'cdnjs.admincdn.com' ) );
+		$this->assertTrue( $health->is_healthy( 'jsd.admincdn.com' ) );
+		$this->assertSame( Origins::UP_TTL, $ttls[ MirrorHealth::STATE_PREFIX . md5( 'cdnjs.admincdn.com' ) ] );
+		$this->assertSame( Origins::UP_TTL, $ttls[ MirrorHealth::STATE_PREFIX . md5( 'jsd.admincdn.com' ) ] );
+	}
+
+	/**
+	 * Checker without an explicit MirrorHealth still writes host state to the transient store.
+	 */
+	public function test_default_checker_writes_mirror_health_via_store() {
+		$this->codes = array(
+			'*'                        => 200,
+			'googlefonts.admincdn.com' => 0,
+		);
+		$this->checker()->run();
+
+		$key = MirrorHealth::STATE_PREFIX . md5( 'googlefonts.admincdn.com' );
+		$this->assertSame( 'down', DiagnosticsStore::$transients[ $key ] );
+		$this->assertSame( 'up', DiagnosticsStore::$transients[ MirrorHealth::STATE_PREFIX . md5( 'cdnjs.admincdn.com' ) ] );
 	}
 
 	/**

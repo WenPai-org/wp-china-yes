@@ -247,7 +247,7 @@ final class Plugin {
 		$registry->add( new DataResidencyModule( null, false, $config ) );
 		$registry->add( new SiteBlocklistModule( $config ) );
 
-		$checker = new Checker( null, null, null, $config, null, $events );
+		$checker = new Checker( null, null, null, $config, null, $events, $health );
 		$container->set( 'diagnostics.checker', $checker );
 		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
 		$registry->add( new SiteBindingModule( $config, $logger ) );

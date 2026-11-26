@@ -166,12 +166,18 @@ final class PublicAssetsModule implements ConditionalModule {
 			return $src;
 		}
 
-		if ( ! $this->health->is_healthy( MirrorHealth::host_of( $mapped ) ) ) {
-			return $src;
+		if ( $this->health->is_healthy( MirrorHealth::host_of( $mapped ) ) ) {
+			$this->count_once();
+			return $mapped;
 		}
 
-		$this->count_once();
-		return $mapped;
+		$fallback = $this->map->replace_with_fallback( $src, $enabled );
+		if ( $fallback !== $src && $this->health->is_healthy( MirrorHealth::host_of( $fallback ) ) ) {
+			$this->count_once();
+			return $fallback;
+		}
+
+		return $src;
 	}
 
 	/**
