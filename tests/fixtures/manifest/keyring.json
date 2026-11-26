@@ -1,0 +1,31 @@
+{
+  "schema": "admincdn.keyring/v1",
+  "warning": "DO_NOT_USE_IN_PROD: Test-only Ed25519 keys for T2.5 cross-language golden fixtures.",
+  "evalNow": "2026-11-26T08:05:00Z",
+  "keys": {
+    "admincdn-test-2026-11": {
+      "keyId": "admincdn-test-2026-11",
+      "publicKeyB64": "DInJU1h7jlsGWAHZmonois68DPvHabzCtkrwq3gxgQ4=",
+      "status": "active",
+      "notBefore": "2026-11-01T00:00:00Z",
+      "notAfter": "2027-02-01T00:00:00Z",
+      "DO_NOT_USE_IN_PROD_testPrivateKeyB64": "IdLWo738DF89wfxQ3+RzbNWeAKqTJZPaMq6eu+j7FsI="
+    },
+    "admincdn-test-2026-10-retiring": {
+      "keyId": "admincdn-test-2026-10-retiring",
+      "publicKeyB64": "UvGkIBJbp6eins/Y0zF236BZDtGvo7hO6Yq1CZprKEk=",
+      "status": "retiring",
+      "notBefore": "2026-10-01T00:00:00Z",
+      "notAfter": "2026-12-15T00:00:00Z",
+      "DO_NOT_USE_IN_PROD_testPrivateKeyB64": "JrN74WXTw1MfwD1GunQT80Z4HeFH0glgxcorEoDBeuQ="
+    },
+    "admincdn-test-2026-09-revoked": {
+      "keyId": "admincdn-test-2026-09-revoked",
+      "publicKeyB64": "iT4ujy6TOaMrM1cnqr/8bINvH0fphaJY2pAg9UQLQeM=",
+      "status": "revoked",
+      "notBefore": "2026-09-01T00:00:00Z",
+      "notAfter": "2026-12-01T00:00:00Z",
+      "DO_NOT_USE_IN_PROD_testPrivateKeyB64": "XjDJUfYbEjKt5xfzTpHkngo0dP+FkA1vR/kiCewrjnw="
+    }
+  }
+}

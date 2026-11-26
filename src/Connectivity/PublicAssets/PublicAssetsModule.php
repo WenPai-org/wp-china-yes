@@ -47,6 +47,20 @@ final class PublicAssetsModule implements ConditionalModule {
 	private MirrorHealth $health;
 
 	/**
+	 * Optional signed mirror manifest client.
+	 *
+	 * @var Manifest|null
+	 */
+	private ?Manifest $manifest;
+
+	/**
+	 * Optional frontend <2KB fallback SDK injector.
+	 *
+	 * @var BrowserFallbackLoader|null
+	 */
+	private ?BrowserFallbackLoader $browser_loader;
+
+	/**
 	 * Whether this request already counted one rewrite.
 	 *
 	 * @var bool
@@ -58,14 +72,24 @@ final class PublicAssetsModule implements ConditionalModule {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Config       $config Config read model.
-	 * @param AssetMap     $map    Whitelist table.
-	 * @param MirrorHealth $health Node health.
+	 * @param Config                     $config         Config read model.
+	 * @param AssetMap                   $map            Whitelist table.
+	 * @param MirrorHealth               $health         Node health.
+	 * @param Manifest|null              $manifest       Optional signed manifest manager.
+	 * @param BrowserFallbackLoader|null $browser_loader Optional browser SDK injector.
 	 */
-	public function __construct( Config $config, AssetMap $map, MirrorHealth $health ) {
-		$this->config = $config;
-		$this->map    = $map;
-		$this->health = $health;
+	public function __construct(
+		Config $config,
+		AssetMap $map,
+		MirrorHealth $health,
+		?Manifest $manifest = null,
+		?BrowserFallbackLoader $browser_loader = null
+	) {
+		$this->config         = $config;
+		$this->map            = $map;
+		$this->health         = $health;
+		$this->manifest       = $manifest;
+		$this->browser_loader = $browser_loader;
 	}
 
 	/**
@@ -136,7 +160,14 @@ final class PublicAssetsModule implements ConditionalModule {
 		add_filter( 'style_loader_src', array( $this, 'rewrite' ), 999 );
 		add_filter( 'script_loader_src', array( $this, 'rewrite' ), 999 );
 
-		if ( ! $this->emoji_enabled() || ! $this->health->is_healthy( 'jsd.admincdn.com' ) ) {
+		if ( null !== $this->browser_loader && Environment::FRONTEND === Scope::current() ) {
+			$this->browser_loader->register( new Environment( Environment::FRONTEND, true ) );
+		}
+
+		if ( ! $this->emoji_enabled()
+			|| ! $this->health->is_healthy( 'jsd.admincdn.com' )
+			|| ( null !== $this->manifest && $this->manifest->is_kill_switch() )
+		) {
 			return;
 		}
 
@@ -161,12 +192,32 @@ final class PublicAssetsModule implements ConditionalModule {
 			return $src;
 		}
 
+		$key = $this->map->match_key( $src, $enabled );
+		if ( null !== $this->manifest && '' !== $key ) {
+			$canonical = $this->map->replace_if_whitelisted( $src, array( $key ) );
+			$resolved  = $this->manifest->resolve_url( $src, $key, $this->health, null, $canonical );
+			if ( null !== $resolved ) {
+				if ( $resolved !== $src ) {
+					$this->count_once();
+				}
+				return $resolved;
+			}
+		}
+
 		$mapped = $this->map->replace_if_whitelisted( $src, $enabled );
 		if ( $mapped === $src ) {
 			return $src;
 		}
 
-		if ( $this->health->is_healthy( MirrorHealth::host_of( $mapped ) ) ) {
+		$primary_healthy = $this->health->is_healthy( MirrorHealth::host_of( $mapped ) );
+		if ( $primary_healthy && null !== $this->manifest ) {
+			$manifest_cls = Manifest::ASSET_KEY_TO_CLASS[ $key ] ?? ( 'emoji' === $key ? 'npm' : '' );
+			if ( '' !== $manifest_cls && 'down' === $this->manifest->class_state( $manifest_cls, $this->health ) ) {
+				$primary_healthy = false;
+			}
+		}
+
+		if ( $primary_healthy ) {
 			$this->count_once();
 			return $mapped;
 		}
@@ -275,6 +326,8 @@ final class PublicAssetsModule implements ConditionalModule {
 	/**
 	 * Print versioned Twemoji contract used by 3.x.
 	 *
+	 * Falls back to domestic s4.zstatic.net when the signed manifest marks npm as down.
+	 *
 	 * @since 4.0.0
 	 */
 	public function print_emoji_settings(): void {
@@ -283,7 +336,12 @@ final class PublicAssetsModule implements ConditionalModule {
 			: '';
 		$concat = function_exists( 'esc_url' ) ? esc_url( $concat ) : $concat;
 
-		echo '<script>window._wpemojiSettings={"baseUrl":"https://jsd.admincdn.com/npm/@twemoji/api@15.0.3/dist/72x72/","ext":".png","svgUrl":"https://jsd.admincdn.com/npm/@twemoji/api@15.0.3/dist/svg/","svgExt":".svg","source":{"concatemoji":"' . $concat . '"}};'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- concat already passed through esc_url when available.
+		$npm_down = null !== $this->manifest && 'down' === $this->manifest->class_state( 'npm', $this->health );
+		$base_dir = $npm_down
+			? 'https://s4.zstatic.net/npm/@twemoji/api@15.0.3/dist/'
+			: 'https://jsd.admincdn.com/npm/@twemoji/api@15.0.3/dist/';
+
+		echo '<script>window._wpemojiSettings={"baseUrl":"' . $base_dir . '72x72/","ext":".png","svgUrl":"' . $base_dir . 'svg/","svgExt":".svg","source":{"concatemoji":"' . $concat . '"}};'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- base_dir is a static literal and concat already passed through esc_url when available.
 		echo '</script>' . "\n";
 	}
 }

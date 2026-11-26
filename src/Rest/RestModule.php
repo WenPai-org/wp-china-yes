@@ -12,6 +12,7 @@ namespace WenPai\ChinaYes\Rest;
 
 use WenPai\ChinaYes\Admin\RecoveryPage;
 use WenPai\ChinaYes\Config\Repository;
+use WenPai\ChinaYes\Connectivity\PublicAssets\Manifest;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
 use WenPai\ChinaYes\Diagnostics\Checker;
@@ -71,6 +72,13 @@ final class RestModule implements Module {
 	private $events;
 
 	/**
+	 * Signed mirror manifest client.
+	 *
+	 * @var Manifest|null
+	 */
+	private ?Manifest $manifest;
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
@@ -80,12 +88,14 @@ final class RestModule implements Module {
 	 * @param RecoveryPage|null $recovery_page Hidden admin page.
 	 * @param Counters|null     $counters      Daily counters.
 	 * @param Events|null       $events        Event log.
+	 * @param Manifest|null     $manifest      Signed mirror manifest client.
 	 */
-	public function __construct( Repository $repository, $checker = null, $recovery_page = null, $counters = null, $events = null ) {
+	public function __construct( Repository $repository, $checker = null, $recovery_page = null, $counters = null, $events = null, ?Manifest $manifest = null ) {
 		$this->repository    = $repository;
 		$this->recovery_page = $recovery_page instanceof RecoveryPage ? $recovery_page : null;
 		$this->counters      = $counters instanceof Counters ? $counters : null;
 		$this->events        = $events instanceof Events ? $events : null;
+		$this->manifest      = $manifest;
 		$this->checker       = $checker instanceof Checker
 			? $checker
 			: new Checker( null, null, null, $repository, null, $this->events() );
@@ -154,6 +164,7 @@ final class RestModule implements Module {
 		$event_log      = new EventsController( $this->events() );
 		$suite          = new SuiteController();
 		$tools          = new ToolsController( $this->repository, $this->checker );
+		$manifest_ctrl  = new ManifestController( $this->manifest ?? new Manifest( $this->repository ) );
 		( new ProvidersController( null, $this->repository ) )->register_routes();
 
 		register_rest_route(
@@ -498,6 +509,26 @@ final class RestModule implements Module {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $tools, 'refresh_public_catalog' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/manifest',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $manifest_ctrl, 'get_item' ),
+				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/manifest/refresh',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $manifest_ctrl, 'refresh' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_write' ),
 			)
 		);

@@ -1,0 +1,82 @@
+{
+  "schema": "admincdn.canonical-vectors/v1",
+  "vectors": [
+    {
+      "name": "empty_containers_and_scalars",
+      "input": {
+        "emptyObj": {},
+        "emptyArr": [],
+        "nil": null,
+        "yes": true,
+        "no": false,
+        "zero": 0,
+        "neg": -42,
+        "sig": "ed25519:ignored-during-canonicalization"
+      },
+      "expectedCanonical": "{\"emptyArr\":[],\"emptyObj\":{},\"neg\":-42,\"nil\":null,\"no\":false,\"yes\":true,\"zero\":0}",
+      "expectedSha256": "a8ffec69ae20e32573285b45f485e660333f247ca154bbae294ac4124a432a70"
+    },
+    {
+      "name": "numeric_string_keys_utf8_order",
+      "input": {
+        "10": "ten",
+        "2": "two",
+        "0": "zero",
+        "a": "alpha",
+        "nested": {
+          "20": 20,
+          "3": 3,
+          "100": 100
+        }
+      },
+      "expectedCanonical": "{\"0\":\"zero\",\"10\":\"ten\",\"2\":\"two\",\"a\":\"alpha\",\"nested\":{\"100\":100,\"20\":20,\"3\":3}}",
+      "expectedSha256": "a8e6f668e8e6b473f595f2e285529afbe62ee89eba64fcfa20b31fe9fd5125e3"
+    },
+    {
+      "name": "utf8_cjk_emoji_and_astral_key_order",
+      "input": {
+        "🌱": "sprout",
+        "Ａ": "fullwidth-A",
+        "中文键": "萌芽加速/测试",
+        "path": "https://jsd.admincdn.com/npm/jquery@3.7.1/dist/jquery.min.js"
+      },
+      "expectedCanonical": "{\"path\":\"https://jsd.admincdn.com/npm/jquery@3.7.1/dist/jquery.min.js\",\"中文键\":\"萌芽加速/测试\",\"Ａ\":\"fullwidth-A\",\"🌱\":\"sprout\"}",
+      "expectedSha256": "a888ac3cc5b65c197da27f9e6269147be245213814851b5aa3fc2e7e990b1385"
+    },
+    {
+      "name": "escapes_and_control_bytes",
+      "input": {
+        "ctrl": "\u0001\b\f\n\r\t\"\\/",
+        "arr": [
+          {
+            "z": 1,
+            "a": []
+          }
+        ]
+      },
+      "expectedCanonical": "{\"arr\":[{\"a\":[],\"z\":1}],\"ctrl\":\"\\u0001\\b\\f\\n\\r\\t\\\"\\\\/\"}",
+      "expectedSha256": "786821c2052288f30ce755ad11a9c66fdd40cfba566d3ee65bf2d576a3e78395"
+    },
+    {
+      "name": "key_sorting_nested_deep",
+      "input": {
+        "z": {
+          "b": 2,
+          "a": {
+            "y": true,
+            "x": false
+          }
+        },
+        "a": [
+          {
+            "k2": 2,
+            "k1": 1
+          },
+          {}
+        ]
+      },
+      "expectedCanonical": "{\"a\":[{\"k1\":1,\"k2\":2},{}],\"z\":{\"a\":{\"x\":false,\"y\":true},\"b\":2}}",
+      "expectedSha256": "0566d8ccb8caeb4c932ec369d2c95eb0a70ff8ce5be785dd98cb44effc1fdac3"
+    }
+  ]
+}

@@ -315,14 +315,18 @@ final class Schema {
 				'additionalProperties' => false,
 				'required'             => array( 'scheduled_checks' ),
 				'properties'           => array(
-					'scheduled_checks' => array(
+					'scheduled_checks'     => array(
 						'type'    => 'boolean',
 						'default' => true,
 					),
-					'client_probe_url' => array(
+					'client_probe_url'     => array(
 						'type'      => 'string',
 						'maxLength' => 2048,
 						'default'   => '',
+					),
+					'client_probe_enabled' => array(
+						'type'    => 'boolean',
+						'default' => true,
 					),
 				),
 			),
@@ -374,12 +378,12 @@ final class Schema {
 			'additionalProperties' => false,
 			'required'             => array( 'wordpress_org', 'public_assets', 'avatar', 'heartbeat', 'dashboard_feeds' ),
 			'properties'           => array(
-				'wordpress_org'       => array(
+				'wordpress_org'           => array(
 					'type'    => 'string',
 					'enum'    => array( 'auto', 'off' ),
 					'default' => 'auto',
 				),
-				'public_assets'       => array(
+				'public_assets'           => array(
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'required'             => array( 'items', 'scope' ),
@@ -400,26 +404,34 @@ final class Schema {
 						),
 					),
 				),
-				'avatar'              => array(
+				'avatar'                  => array(
 					'type'    => 'string',
 					'enum'    => self::AVATAR,
 					'default' => 'cravatar_cn',
 				),
-				'heartbeat'           => array(
+				'heartbeat'               => array(
 					'type'    => 'string',
 					'enum'    => array( 'on', 'off' ),
 					'default' => 'off',
 				),
-				'dashboard_feeds'     => array(
+				'dashboard_feeds'         => array(
 					'type'    => 'string',
 					'enum'    => array( 'block', 'allow' ),
 					'default' => 'allow',
 				),
-				'admin_locale_follow' => array(
+				'admin_locale_follow'     => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
-				'icon_photos'         => self::icon_photos(),
+				'browser_fallback_loader' => array(
+					'type'    => 'boolean',
+					'default' => true,
+				),
+				'purge_cache_on_failover' => array(
+					'type'    => 'boolean',
+					'default' => true,
+				),
+				'icon_photos'             => self::icon_photos(),
 			),
 		);
 	}

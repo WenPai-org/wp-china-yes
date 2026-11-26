@@ -125,6 +125,32 @@ final class AssetMap {
 	}
 
 	/**
+	 * Find the enabled whitelist key matching $src, or empty string if unmatched.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @param string   $src     Original URL.
+	 * @param string[] $enabled Subset of schema enum values.
+	 */
+	public function match_key( string $src, array $enabled ): string {
+		$table = self::table();
+
+		foreach ( $enabled as $key ) {
+			if ( ! isset( $table[ $key ] ) ) {
+				continue;
+			}
+			foreach ( $table[ $key ] as $search => $unused ) {
+				unset( $unused );
+				if ( false !== strpos( $src, $search ) ) {
+					return $key;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Apply a feature-keyed search/replace table to $src for enabled keys.
 	 *
 	 * @param string                               $src     Original URL.

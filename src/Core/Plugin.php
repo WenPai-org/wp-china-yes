@@ -25,6 +25,8 @@ use WenPai\ChinaYes\Connectivity\Heartbeat\HeartbeatModule;
 use WenPai\ChinaYes\Connectivity\IconPhotos\IconPhotosModule;
 use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\PublicAssets\AssetMap;
+use WenPai\ChinaYes\Connectivity\PublicAssets\BrowserFallbackLoader;
+use WenPai\ChinaYes\Connectivity\PublicAssets\Manifest;
 use WenPai\ChinaYes\Connectivity\PublicAssets\PublicAssetsModule;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\MirrorProbe;
 use WenPai\ChinaYes\Connectivity\WordPressOrg\WordPressOrgModule;
@@ -231,9 +233,12 @@ final class Plugin {
 		$container->set( 'mirror_health', $health );
 		$registry->add( new WordPressOrgModule( $probe, null, null, $health ) );
 
-		$map = new AssetMap();
+		$map            = new AssetMap();
+		$manifest       = new Manifest( $config );
+		$browser_loader = new BrowserFallbackLoader( $config, $manifest );
 		$container->set( 'public_assets.map', $map );
-		$registry->add( new PublicAssetsModule( $config, $map, $health ) );
+		$container->set( 'public_assets.manifest', $manifest );
+		$registry->add( new PublicAssetsModule( $config, $map, $health, $manifest, $browser_loader ) );
 
 		$registry->add( new AvatarModule( $config ) );
 		$registry->add( new HeartbeatModule( $config ) );
@@ -249,11 +254,11 @@ final class Plugin {
 
 		$checker = new Checker( null, null, null, $config, null, $events, $health );
 		$container->set( 'diagnostics.checker', $checker );
-		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ) ) );
+		$registry->add( new DiagnosticsModule( $config, $checker, new SiteHealth( $checker ), $manifest ) );
 		$registry->add( new SiteBindingModule( $config, $logger ) );
 		$entitlements = new EntitlementsModule( $config, $logger );
 		$registry->add( new AppsModule( null, null, new CachedEntitlements( $entitlements ), null, $logger ) );
-		$registry->add( new RestModule( $config, $checker, null, $counters, $events ) );
+		$registry->add( new RestModule( $config, $checker, null, $counters, $events, $manifest ) );
 		$registry->add( new AdminModule( $config ) );
 		$registry->add( new MaintenanceModule( $config ) );
 		$registry->add( $entitlements );

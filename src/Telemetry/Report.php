@@ -146,7 +146,7 @@ final class Report {
 	/**
 	 * Collect cached server + browser probe summaries without issuing any outbound HTTP request.
 	 *
-	 * @return array<string, list<array{target: string, result: string, latency_ms: int|null}>>
+	 * @return array<string, list<array<string, mixed>>>
 	 */
 	private function get_cached_probe_summary(): array {
 		$summary = array();
@@ -171,7 +171,12 @@ final class Report {
 			}
 		}
 
-		if ( function_exists( 'get_option' ) ) {
+		$browser_enabled = true;
+		if ( $this->config instanceof Repository ) {
+			$browser_enabled = (bool) $this->config->get( 'diagnostics.client_probe_enabled', true );
+		}
+
+		if ( $browser_enabled && function_exists( 'get_option' ) ) {
 			$raw_cli = get_option( ClientProbeController::OPTION, array() );
 			if ( is_array( $raw_cli ) && isset( $raw_cli['probes'] ) && is_array( $raw_cli['probes'] ) ) {
 				$cli_rows = array();
@@ -179,11 +184,27 @@ final class Report {
 					if ( ! is_array( $row ) || empty( $row['target'] ) || empty( $row['result'] ) ) {
 						continue;
 					}
-					$cli_rows[] = array(
+					$item = array(
 						'target'     => (string) $row['target'],
 						'result'     => (string) $row['result'],
 						'latency_ms' => isset( $row['latency_ms'] ) && is_numeric( $row['latency_ms'] ) ? (int) $row['latency_ms'] : null,
 					);
+					foreach ( array( 'province', 'isp' ) as $str_key ) {
+						if ( isset( $row[ $str_key ] ) && is_string( $row[ $str_key ] ) && '' !== $row[ $str_key ] ) {
+							if ( function_exists( 'mb_substr' ) ) {
+								$item[ $str_key ] = mb_substr( $row[ $str_key ], 0, 32, 'UTF-8' );
+							} else {
+								$cut              = preg_replace( '/^(.{0,32}).*/su', '$1', $row[ $str_key ] );
+								$item[ $str_key ] = is_string( $cut ) ? $cut : '';
+							}
+						}
+					}
+					foreach ( array( 'switched_fallback', 'tao' ) as $bool_key ) {
+						if ( isset( $row[ $bool_key ] ) && is_bool( $row[ $bool_key ] ) ) {
+							$item[ $bool_key ] = $row[ $bool_key ];
+						}
+					}
+					$cli_rows[] = $item;
 				}
 				if ( array() !== $cli_rows ) {
 					$summary['browser'] = $cli_rows;

@@ -729,7 +729,7 @@ final class AdminModule implements Module {
 			'before'
 		);
 
-		foreach ( array( 'probes', 'apps', 'providers' ) as $mod ) {
+		foreach ( array( 'probes', 'apps', 'providers', 'manifest-ui' ) as $mod ) {
 			$mod_file = 'assets/js/wpcy-' . $mod . '.js';
 			if ( is_readable( CHINA_YES_PLUGIN_PATH . $mod_file ) ) {
 				wp_enqueue_script(

@@ -121,11 +121,26 @@ function wpcy_uninstall_signed_caches(): void {
 	}
 }
 
+/**
+ * Delete signed mirror manifest LKG cache and clear its 10-minute cron hook.
+ *
+ * @since 4.1.0
+ *
+ * @return void
+ */
+function wpcy_uninstall_mirror_manifest(): void {
+	delete_option( 'wpcy_mirror_manifest' );
+	if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+		wp_clear_scheduled_hook( 'wpcy_mirror_manifest_sync' );
+	}
+}
+
 wpcy_uninstall_providers();
 wpcy_uninstall_onboarding();
 wpcy_uninstall_announcements_dismissed();
 wpcy_uninstall_apps_index_negative();
 wpcy_uninstall_signed_caches();
+wpcy_uninstall_mirror_manifest();
 
 if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'get_sites' ) ) {
 	$wpcy_sites = get_sites(
@@ -141,6 +156,7 @@ if ( function_exists( 'is_multisite' ) && is_multisite() && function_exists( 'ge
 		wpcy_uninstall_announcements_dismissed();
 		wpcy_uninstall_apps_index_negative();
 		wpcy_uninstall_signed_caches();
+		wpcy_uninstall_mirror_manifest();
 		restore_current_blog();
 	}
 }
