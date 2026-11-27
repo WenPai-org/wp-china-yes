@@ -300,9 +300,21 @@ class ManifestRoutingTest extends TestCase {
 			$module->rewrite( 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js' )
 		);
 
-		// wpstatic redline: never falls back to 3rd-party or s.w.org when unhealthy.
+		// wpstatic failover: unhealthy wpstatic.admincdn.com tries owned wpstatic.wenpai.com.cn -> wpstatic.feibisi.com.cn -> origin, never s.w.org or 3rd-party.
 		$wp_origin = 'https://wpstatic.admincdn.com/6.7.1/wp-includes/js/jquery/jquery.min.js';
-		$this->assertSame( $wp_origin, $manifest->resolve_url( $wp_origin, 'wp_org_assets', $health ) );
+		$this->assertSame(
+			'https://wpstatic.wenpai.com.cn/6.7.1/wp-includes/js/jquery/jquery.min.js',
+			$manifest->resolve_url( $wp_origin, 'wp_org_assets', $health )
+		);
+
+		$wp_all_down = new MirrorHealth(
+			array(
+				'wpstatic.admincdn.com'   => false,
+				'wpstatic.wenpai.com.cn'  => false,
+				'wpstatic.feibisi.com.cn' => false,
+			)
+		);
+		$this->assertSame( $wp_origin, $manifest->resolve_url( $wp_origin, 'wp_org_assets', $wp_all_down ) );
 
 		// Malformed stored manifest with third-party wpstatic.primary or clientFallbacks must never route away from origin.
 		$state['manifest']['classes']['wpstatic']['primary']         = 'https://evil-3p.example/{path}';
@@ -737,5 +749,185 @@ class ManifestRoutingTest extends TestCase {
 			$this->assertSame( $refreshed_at, (int) $state['stored_at'] );
 			$this->assertSame( 'invalid_signature', $state['last_error'] );
 		}
+	}
+
+	/**
+	 * Wpstatic fails over strictly to owned backup hosts (wpstatic.wenpai.com.cn -> wpstatic.feibisi.com.cn -> origin) and rejects s.w.org and third-party hosts.
+	 */
+	public function test_wpstatic_failover_to_owned_backups_and_strict_rejection_of_third_party(): void {
+		$signed = $this->signed_fixture( array( 'issuedAt' => '2026-11-26T08:00:00Z' ) );
+		$doc    = json_decode( $signed['raw'], true );
+		$this->assertIsArray( $doc );
+
+		$doc['classes']['wpstatic'] = array(
+			'resourceKind'    => 'api_and_zip',
+			'primary'         => 'https://wpstatic.admincdn.com/{path}',
+			'state'           => 'ok',
+			'clientFallbacks' => array(
+				'https://s.w.org/{path}',
+				'https://s4.zstatic.net/{path}',
+				'https://www.wenpai.com.cn/{path}',
+				'https://wenpai.com.cn/{path}',
+			),
+		);
+
+		$state    = array(
+			'manifest'  => $doc,
+			'stored_at' => time(),
+		);
+		$manifest = new Manifest(
+			new MapConfig( array() ),
+			new CachePurger(),
+			$signed['keyring'],
+			null,
+			static function () use ( &$state ) {
+				return $state;
+			}
+		);
+		$origin   = 'https://mysite.example/wp-includes/js/jquery/jquery.min.js';
+		$canon    = 'https://wpstatic.admincdn.com/6.8/wp-includes/js/jquery/jquery.min.js';
+
+		// Primary healthy -> wpstatic.admincdn.com.
+		$h_ok = new MirrorHealth( array( 'wpstatic.admincdn.com' => true ) );
+		$this->assertSame(
+			'https://wpstatic.admincdn.com/6.8/wp-includes/js/jquery/jquery.min.js',
+			$manifest->resolve_url( $origin, 'wp_org_assets', $h_ok, null, $canon )
+		);
+
+		// Primary unhealthy -> first owned backup wpstatic.wenpai.com.cn (ignoring s.w.org, zstatic, www., apex).
+		$h_b1 = new MirrorHealth(
+			array(
+				'wpstatic.admincdn.com'   => false,
+				'wpstatic.wenpai.com.cn'  => true,
+				'wpstatic.feibisi.com.cn' => true,
+				's.w.org'                 => true,
+				's4.zstatic.net'          => true,
+			)
+		);
+		$this->assertSame(
+			'https://wpstatic.wenpai.com.cn/6.8/wp-includes/js/jquery/jquery.min.js',
+			$manifest->resolve_url( $origin, 'wp_org_assets', $h_b1, null, $canon )
+		);
+
+		// Primary and first owned backup unhealthy -> second owned backup wpstatic.feibisi.com.cn.
+		$h_b2 = new MirrorHealth(
+			array(
+				'wpstatic.admincdn.com'   => false,
+				'wpstatic.wenpai.com.cn'  => false,
+				'wpstatic.feibisi.com.cn' => true,
+				's.w.org'                 => true,
+				's4.zstatic.net'          => true,
+			)
+		);
+		$this->assertSame(
+			'https://wpstatic.feibisi.com.cn/6.8/wp-includes/js/jquery/jquery.min.js',
+			$manifest->resolve_url( $origin, 'wp_org_assets', $h_b2, null, $canon )
+		);
+
+		// All three owned wpstatic hosts unhealthy -> original local WordPress URL, NEVER s.w.org or third-party.
+		$h_none = new MirrorHealth(
+			array(
+				'wpstatic.admincdn.com'   => false,
+				'wpstatic.wenpai.com.cn'  => false,
+				'wpstatic.feibisi.com.cn' => false,
+				's.w.org'                 => true,
+				's4.zstatic.net'          => true,
+			)
+		);
+		$this->assertSame(
+			$origin,
+			$manifest->resolve_url( $origin, 'wp_org_assets', $h_none, null, $canon )
+		);
+	}
+
+	/**
+	 * Manifest::ASSET_KEY_TO_CLASS maps unpkg, emoji, and code classes when provided by a signed manifest.
+	 */
+	public function test_manifest_resolves_unpkg_emoji_and_code_classes(): void {
+		$signed = $this->signed_fixture( array( 'issuedAt' => '2026-11-26T08:00:00Z' ) );
+		$doc    = json_decode( $signed['raw'], true );
+		$this->assertIsArray( $doc );
+
+		$doc['classes']['unpkg'] = array(
+			'resourceKind'    => 'immutable_pkg',
+			'primary'         => 'https://unpkg.admincdn.com/{pkg}@{ver}/{file}',
+			'state'           => 'ok',
+			'clientFallbacks' => array(
+				'https://unpkg.wenpai.com.cn/{pkg}@{ver}/{file}',
+				'https://unpkg.feibisi.com.cn/{pkg}@{ver}/{file}',
+			),
+		);
+		$doc['classes']['emoji'] = array(
+			'resourceKind'    => 'immutable_pkg',
+			'primary'         => 'https://emoji.admincdn.com/{path}',
+			'state'           => 'ok',
+			'clientFallbacks' => array(
+				'https://emoji.wenpai.com.cn/{path}',
+				'https://emoji.feibisi.com.cn/{path}',
+			),
+		);
+		$doc['classes']['code']  = array(
+			'resourceKind'    => 'immutable_pkg',
+			'primary'         => 'https://code.admincdn.com/{path}',
+			'state'           => 'ok',
+			'clientFallbacks' => array(
+				'https://code.wenpai.com.cn/{path}',
+				'https://code.feibisi.com.cn/{path}',
+			),
+		);
+
+		$state    = array(
+			'manifest'  => $doc,
+			'stored_at' => time(),
+		);
+		$manifest = new Manifest(
+			new MapConfig( array() ),
+			new CachePurger(),
+			$signed['keyring'],
+			null,
+			static function () use ( &$state ) {
+				return $state;
+			}
+		);
+
+		$health_ok = new MirrorHealth(
+			array(
+				'unpkg.admincdn.com' => true,
+				'emoji.admincdn.com' => true,
+				'code.admincdn.com'  => true,
+			)
+		);
+		$this->assertSame(
+			'https://unpkg.admincdn.com/react@18.2.0/umd/react.production.min.js',
+			$manifest->resolve_url( 'https://unpkg.com/react@18.2.0/umd/react.production.min.js', 'unpkg', $health_ok )
+		);
+		$this->assertSame(
+			'https://emoji.admincdn.com/images/core/emoji/15.0.3/svg/1f600.svg',
+			$manifest->resolve_url( 'https://s.w.org/images/core/emoji/15.0.3/svg/1f600.svg', 'emoji', $health_ok )
+		);
+		$this->assertSame(
+			'https://code.admincdn.com/jquery-3.7.1.min.js',
+			$manifest->resolve_url( 'https://code.jquery.com/jquery-3.7.1.min.js', 'code', $health_ok )
+		);
+
+		$health_down = new MirrorHealth(
+			array(
+				'unpkg.admincdn.com' => false,
+				'emoji.admincdn.com' => false,
+				'code.admincdn.com'  => false,
+			)
+		);
+		$this->assertSame(
+			'https://unpkg.wenpai.com.cn/react@18.2.0/umd/react.production.min.js',
+			$manifest->resolve_url( 'https://unpkg.com/react@18.2.0/umd/react.production.min.js', 'unpkg', $health_down )
+		);
+		$this->assertSame(
+			'https://emoji.wenpai.com.cn/images/core/emoji/15.0.3/svg/1f600.svg',
+			$manifest->resolve_url( 'https://s.w.org/images/core/emoji/15.0.3/svg/1f600.svg', 'emoji', $health_down )
+		);
+		$this->assertSame(
+			'https://code.wenpai.com.cn/jquery-3.7.1.min.js',
+			$manifest->resolve_url( 'https://code.jquery.com/jquery-3.7.1.min.js', 'code', $health_down )
+		);
 	}
 }

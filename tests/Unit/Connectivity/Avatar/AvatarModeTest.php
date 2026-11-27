@@ -11,6 +11,7 @@ namespace WenPai\ChinaYes\Tests\Unit\Connectivity\Avatar;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Connectivity\Avatar\AvatarModule;
+use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Tests\Unit\Connectivity\HookStore;
 use WenPai\ChinaYes\Tests\Unit\Connectivity\MapConfig;
@@ -95,7 +96,7 @@ class AvatarModeTest extends TestCase {
 		$this->assertTrue( $module->enabled( $config, $env ) );
 		$module->register();
 
-		foreach ( array( 'get_avatar_url', 'avatar_defaults', 'user_profile_picture_description', 'um_user_avatar_url_filter', 'bp_gravatar_url' ) as $tag ) {
+		foreach ( array( 'get_avatar', 'get_avatar_url', 'avatar_defaults', 'user_profile_picture_description', 'um_user_avatar_url_filter', 'bp_gravatar_url' ) as $tag ) {
 			$this->assertArrayHasKey( $tag, HookStore::$hooks, $tag );
 		}
 		$this->assertArrayHasKey( 'wp_head', HookStore::$hooks );
@@ -215,6 +216,145 @@ class AvatarModeTest extends TestCase {
 
 		$module->get_cravatar_url( $this->gravatar );
 		$this->assertSame( 1, $seen );
+	}
+
+	/**
+	 * Unhealthy cn.cravatar.com automatically fails over to avatar.wenpai.com.cn -> avatar.feibisi.com.cn.
+	 */
+	public function test_cravatar_cn_fails_over_to_owned_backup_domains_when_unhealthy(): void {
+		$primary_down = new AvatarModule(
+			$this->config( 'cravatar_cn' ),
+			new MirrorHealth(
+				array(
+					'cn.cravatar.com'       => false,
+					'avatar.wenpai.com.cn'  => true,
+					'avatar.feibisi.com.cn' => true,
+				)
+			)
+		);
+		$this->assertSame(
+			'https://avatar.wenpai.com.cn/avatar/00000000000000000000000000000000?s=96&d=mm&r=g',
+			$primary_down->get_cravatar_url( $this->gravatar )
+		);
+
+		ob_start();
+		$primary_down->add_avatar_preconnect();
+		$preconnect_b1 = (string) ob_get_clean();
+		$this->assertStringContainsString( 'avatar.wenpai.com.cn', $preconnect_b1 );
+		$this->assertStringNotContainsString( 'cn.cravatar.com', $preconnect_b1 );
+
+		$first_backup_down = new AvatarModule(
+			$this->config( 'cravatar_cn' ),
+			new MirrorHealth(
+				array(
+					'cn.cravatar.com'       => false,
+					'avatar.wenpai.com.cn'  => false,
+					'avatar.feibisi.com.cn' => true,
+				)
+			)
+		);
+		$this->assertSame(
+			'https://avatar.feibisi.com.cn/avatar/00000000000000000000000000000000?s=96&d=mm&r=g',
+			$first_backup_down->get_cravatar_url( $this->gravatar )
+		);
+
+		ob_start();
+		$first_backup_down->add_avatar_preconnect();
+		$preconnect_b2 = (string) ob_get_clean();
+		$this->assertStringContainsString( 'avatar.feibisi.com.cn', $preconnect_b2 );
+
+		// When all three hosts are marked down, keep cn.cravatar.com so client onerror can still retry and render C-logo.
+		$all_down = new AvatarModule(
+			$this->config( 'cravatar_cn' ),
+			new MirrorHealth(
+				array(
+					'cn.cravatar.com'       => false,
+					'avatar.wenpai.com.cn'  => false,
+					'avatar.feibisi.com.cn' => false,
+				)
+			)
+		);
+		$this->assertSame(
+			'https://cn.cravatar.com/avatar/00000000000000000000000000000000?s=96&d=mm&r=g',
+			$all_down->get_cravatar_url( $this->gravatar )
+		);
+	}
+
+	/**
+	 * Filter get_avatar injects multi-tier onerror with dataset.caIdx loop guard and inline Cravatar C-logo SVG.
+	 */
+	public function test_get_avatar_injects_onerror_backup_chain_and_c_logo_svg(): void {
+		$module = $this->module( 'cravatar_cn' );
+		$html   = '<img alt="User" src="https://cn.cravatar.com/avatar/abc123?s=96&amp;d=mm" srcset="https://cn.cravatar.com/avatar/abc123?s=192 2x" class="avatar avatar-96 photo" height="96" width="96" />';
+		$out    = $module->filter_get_avatar( $html );
+
+		$this->assertIsString( $out );
+		$this->assertStringContainsString( 'onerror="', $out );
+		$this->assertStringContainsString( "['avatar.wenpai.com.cn','avatar.feibisi.com.cn']", $out );
+		$this->assertStringContainsString( 'dataset.caIdx', $out );
+		$this->assertStringContainsString( 'i.onerror=null', $out );
+		$this->assertStringContainsString( "i.srcset=''", $out );
+		$this->assertStringContainsString( AvatarModule::fallback_svg_data_uri(), $out );
+		$this->assertStringNotContainsString( 'gravatar.admincdn.com', $out );
+
+		// Verify inline SVG data-URI decodes to official Cravatar C-logo (#1956d4 + white C + silhouette).
+		$svg_uri = AvatarModule::fallback_svg_data_uri();
+		$this->assertStringStartsWith( 'data:image/svg+xml,', $svg_uri );
+		$decoded_svg = rawurldecode( substr( $svg_uri, strlen( 'data:image/svg+xml,' ) ) );
+		$this->assertStringContainsString( '#1956d4', $decoded_svg );
+		$this->assertStringContainsString( '<circle ', $decoded_svg );
+		$this->assertStringContainsString( '<path ', $decoded_svg );
+		$this->assertStringNotContainsString( 'http://cravatar', $decoded_svg );
+		$this->assertStringNotContainsString( 'https://', $decoded_svg );
+
+		// When server-side failover already emitted avatar.wenpai.com.cn, onerror skips directly to avatar.feibisi.com.cn.
+		$b1_img = '<img src="https://avatar.wenpai.com.cn/avatar/abc123?s=96" />';
+		$b1_out = $module->filter_get_avatar( $b1_img );
+		$this->assertStringContainsString( "['avatar.feibisi.com.cn']", $b1_out );
+		$this->assertStringNotContainsString( "'avatar.wenpai.com.cn'", $b1_out );
+
+		// When server-side failover already emitted avatar.feibisi.com.cn, onerror drops straight to inline C-logo SVG.
+		$b2_img = '<img src="https://avatar.feibisi.com.cn/avatar/abc123?s=96">';
+		$b2_out = $module->filter_get_avatar( $b2_img );
+		$this->assertStringContainsString( '(this,[],', $b2_out );
+		$this->assertStringContainsString( $svg_uri, $b2_out );
+	}
+
+	/**
+	 * Filter get_avatar never modifies non-Cravatar images, off mode, or tags with existing onerror.
+	 */
+	public function test_get_avatar_skips_non_cravatar_off_mode_and_existing_onerror(): void {
+		$module = $this->module( 'cravatar_cn' );
+
+		$local_img = '<img src="https://mysite.example/wp-content/uploads/avatar.jpg" width="96" height="96" />';
+		$this->assertSame( $local_img, $module->filter_get_avatar( $local_img ) );
+
+		$gravatar_img = '<img src="https://secure.gravatar.com/avatar/abc123?s=96" />';
+		$this->assertSame( $gravatar_img, $module->filter_get_avatar( $gravatar_img ) );
+
+		$existing_onerror = '<img src="https://cn.cravatar.com/avatar/abc123?s=96" onerror="customHandler(this)" />';
+		$this->assertSame( $existing_onerror, $module->filter_get_avatar( $existing_onerror ) );
+
+		$off_module   = $this->module( 'off' );
+		$cravatar_img = '<img src="https://cn.cravatar.com/avatar/abc123?s=96" />';
+		$this->assertSame( $cravatar_img, $off_module->filter_get_avatar( $cravatar_img ) );
+	}
+
+	/**
+	 * Active WPAvatar companion disables both enabled() and filter_get_avatar() handoff.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_wpavatar_companion_handoff_disables_module_and_onerror_filter(): void {
+		define( 'WPAVATAR_VERSION', '1.8.0' );
+		$config = $this->config( 'cravatar_cn' );
+		$module = new AvatarModule( $config );
+		$env    = new Environment( Environment::FRONTEND, true );
+
+		$this->assertFalse( $module->enabled( $config, $env ) );
+		$img = '<img src="https://cn.cravatar.com/avatar/abc123?s=96" />';
+		$this->assertSame( $img, $module->filter_get_avatar( $img ) );
 	}
 
 	/**

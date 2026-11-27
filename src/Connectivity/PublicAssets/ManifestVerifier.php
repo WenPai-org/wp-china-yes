@@ -337,8 +337,13 @@ final class ManifestVerifier {
 				if ( ! is_string( $wpstatic_host ) || 'wpstatic.admincdn.com' !== strtolower( $wpstatic_host ) ) {
 					return self::fail( 'invalid_schema', 'wpstatic primary must use wpstatic.admincdn.com.' );
 				}
-				if ( array() !== $cls_vars['clientFallbacks'] ) {
-					return self::fail( 'invalid_schema', 'wpstatic clientFallbacks must be empty.' );
+				foreach ( $cls_vars['clientFallbacks'] as $wpstatic_fb ) {
+					$fb_host = function_exists( 'wp_parse_url' )
+						? wp_parse_url( $wpstatic_fb, PHP_URL_HOST )
+						: parse_url( $wpstatic_fb, PHP_URL_HOST ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- unit bootstrap may not load WordPress.
+					if ( ! is_string( $fb_host ) || ! in_array( strtolower( $fb_host ), AssetMap::WPSTATIC_BACKUP_HOSTS, true ) ) {
+						return self::fail( 'invalid_schema', 'wpstatic clientFallbacks may only use owned backup hosts.' );
+					}
 				}
 			}
 		}

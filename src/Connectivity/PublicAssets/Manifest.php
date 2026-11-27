@@ -43,6 +43,9 @@ class Manifest {
 		'gstatic'       => 'gstatic',
 		'google_ajax'   => 'googleajax',
 		'wp_org_assets' => 'wpstatic',
+		'unpkg'         => 'unpkg',
+		'emoji'         => 'emoji',
+		'code'          => 'code',
 	);
 
 	/**
@@ -58,6 +61,7 @@ class Manifest {
 		'ajax.googleapis.com',
 		's.w.org',
 		'unpkg.com',
+		'code.jquery.com',
 	);
 
 	/**
@@ -345,16 +349,7 @@ class Manifest {
 		$primary    = (string) ( $entry['primary'] ?? '' );
 
 		if ( 'wpstatic' === $cls ) {
-			if ( 'wpstatic.admincdn.com' !== $this->extract_host( $primary ) ) {
-				return $origin_url;
-			}
-			if ( 'ok' === $state && $health->is_healthy( 'wpstatic.admincdn.com' ) ) {
-				$expanded = self::expand_template( $primary, $tpl_source );
-				if ( null !== $expanded && 'wpstatic.admincdn.com' === $this->extract_host( $expanded ) ) {
-					return $expanded;
-				}
-			}
-			return $origin_url;
+			return $this->resolve_wpstatic_url( $origin_url, $tpl_source, $entry, $state, $health );
 		}
 
 		$had_template_match = false;
@@ -501,6 +496,10 @@ class Manifest {
 			$lib  = $m[1];
 			$ver  = $m[2];
 			$file = $m[3];
+		} elseif ( in_array( $host, array( 'unpkg.com', 'unpkg.admincdn.com' ), true ) && 1 === preg_match( '/^\/(@[^\/]+\/[^@\/]+|[^@\/]+)@([^\/]+)\/(.+)$/', $raw_path, $m ) ) {
+			$pkg  = $m[1];
+			$ver  = $m[2];
+			$file = $m[3];
 		}
 
 		$out = strtr(
@@ -531,6 +530,76 @@ class Manifest {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Resolve a wpstatic URL strictly within owned hosts (admincdn primary -> owned backup domains -> origin).
+	 *
+	 * Hard redline: wpstatic must NEVER route to s.w.org or any third-party mirror.
+	 *
+	 * @param string               $origin_url Original asset URL.
+	 * @param string               $tpl_source Normalized URL for template expansion.
+	 * @param array<string, mixed> $entry      Manifest wpstatic class entry.
+	 * @param string               $state      Effective class state.
+	 * @param MirrorHealth         $health     Mirror health evaluator.
+	 */
+	private function resolve_wpstatic_url(
+		string $origin_url,
+		string $tpl_source,
+		array $entry,
+		string $state,
+		MirrorHealth $health
+	): string {
+		$primary = (string) ( $entry['primary'] ?? '' );
+		if ( 'wpstatic.admincdn.com' !== $this->extract_host( $primary ) ) {
+			return $origin_url;
+		}
+
+		if ( 'ok' === $state && $health->is_healthy( 'wpstatic.admincdn.com' ) ) {
+			$expanded = self::expand_template( $primary, $tpl_source );
+			if ( null !== $expanded && 'wpstatic.admincdn.com' === $this->extract_host( $expanded ) ) {
+				return $expanded;
+			}
+			return $origin_url;
+		}
+
+		$owned_hosts = AssetMap::WPSTATIC_BACKUP_HOSTS;
+		$candidates  = array();
+		$seen_hosts  = array();
+
+		$raw_fallbacks = isset( $entry['clientFallbacks'] ) && is_array( $entry['clientFallbacks'] )
+			? $entry['clientFallbacks']
+			: array();
+		foreach ( $raw_fallbacks as $tpl ) {
+			if ( ! is_string( $tpl ) || '' === $tpl ) {
+				continue;
+			}
+			$host = $this->extract_host( $tpl );
+			if ( in_array( $host, $owned_hosts, true ) && ! isset( $seen_hosts[ $host ] ) ) {
+				$candidates[]        = $tpl;
+				$seen_hosts[ $host ] = true;
+			}
+		}
+
+		foreach ( $owned_hosts as $owned_host ) {
+			if ( ! isset( $seen_hosts[ $owned_host ] ) ) {
+				$candidates[]              = 'https://' . $owned_host . '/{path}';
+				$seen_hosts[ $owned_host ] = true;
+			}
+		}
+
+		foreach ( $candidates as $tpl ) {
+			$host = $this->extract_host( $tpl );
+			if ( ! in_array( $host, $owned_hosts, true ) || ! $health->is_healthy( $host ) ) {
+				continue;
+			}
+			$expanded = self::expand_template( $tpl, $tpl_source );
+			if ( null !== $expanded && in_array( $this->extract_host( $expanded ), $owned_hosts, true ) ) {
+				return $expanded;
+			}
+		}
+
+		return $origin_url;
 	}
 
 	/**

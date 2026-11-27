@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Connectivity\Avatar;
 
+use WenPai\ChinaYes\Connectivity\MirrorHealth;
 use WenPai\ChinaYes\Connectivity\Scope;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
@@ -24,6 +25,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Module id connectivity.avatar.
  */
 final class AvatarModule implements ConditionalModule {
+
+	/**
+	 * Owned dual-backup hosts for Cravatar failover in priority order.
+	 *
+	 * Never uses apex (`@`) or `www.` hosts.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @var list<string>
+	 */
+	public const BACKUP_HOSTS = array(
+		'avatar.wenpai.com.cn',
+		'avatar.feibisi.com.cn',
+	);
+
+	/**
+	 * Inline official Cravatar C-logo SVG (`#1956d4` blue background + white C + silhouette).
+	 *
+	 * Used as zero-network final fallback inside `get_avatar` `onerror` guard.
+	 *
+	 * @since 4.1.0
+	 */
+	public const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#1956d4"/><path d="M46 21a18 18 0 1 0 0 22" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="26" r="5.5" fill="#fff"/><path d="M23 41c0-5 4-8 9-8s9 3 9 8" fill="#fff"/></svg>';
 
 	/**
 	 * Gravatar and historic mirror hosts replaced by Cravatar.
@@ -56,14 +80,23 @@ final class AvatarModule implements ConditionalModule {
 	private Config $config;
 
 	/**
+	 * Mirror health evaluator for automatic Cravatar backup failover.
+	 *
+	 * @var MirrorHealth
+	 */
+	private MirrorHealth $health;
+
+	/**
 	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Config $config Config read model.
+	 * @param Config            $config Config read model.
+	 * @param MirrorHealth|null $health Optional mirror health evaluator.
 	 */
-	public function __construct( Config $config ) {
+	public function __construct( Config $config, ?MirrorHealth $health = null ) {
 		$this->config = $config;
+		$this->health = $health instanceof MirrorHealth ? $health : new MirrorHealth();
 	}
 
 	/**
@@ -134,7 +167,70 @@ final class AvatarModule implements ConditionalModule {
 		add_filter( 'um_user_avatar_url_filter', array( $this, 'get_cravatar_url' ), 1 );
 		add_filter( 'bp_gravatar_url', array( $this, 'get_cravatar_url' ), 1 );
 		add_filter( 'get_avatar_url', array( $this, 'filter_get_avatar_url' ), 1 );
+		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 20 );
 		add_action( 'wp_head', array( $this, 'add_avatar_preconnect' ), 1 );
+	}
+
+	/**
+	 * Return the URL-encoded inline SVG data-URI of the official Cravatar C-logo.
+	 *
+	 * @since 4.1.0
+	 */
+	public static function fallback_svg_data_uri(): string {
+		return 'data:image/svg+xml,' . rawurlencode( self::FALLBACK_SVG );
+	}
+
+	/**
+	 * Inject a minimal multi-tier failover and inline C-logo onerror handler on Cravatar <img> tags.
+	 *
+	 * Retries avatar.wenpai.com.cn -> avatar.feibisi.com.cn -> inline SVG C-logo data-URI,
+	 * guarded against infinite loops via dataset.caIdx. Never touches non-Cravatar images,
+	 * existing onerror attributes, off mode, or active WPAvatar handoff.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @param mixed $avatar Rendered avatar HTML markup.
+	 * @return mixed
+	 */
+	public function filter_get_avatar( $avatar ) {
+		if ( ! is_string( $avatar ) || '' === $avatar ) {
+			return $avatar;
+		}
+		if ( ConflictDetector::is_companion_active( 'wpavatar' ) ) {
+			return $avatar;
+		}
+
+		$mode = $this->mode_for_current( $this->config );
+		if ( ! in_array( $mode, array( 'cravatar_cn', 'cravatar_global' ), true ) ) {
+			return $avatar;
+		}
+
+		$result = preg_replace_callback(
+			'/<img\b[^>]*>/i',
+			function ( array $matches ): string {
+				$tag = $matches[0];
+				if ( 1 === preg_match( '/\bonerror\s*=/i', $tag ) ) {
+					return $tag;
+				}
+				if ( 1 !== preg_match( '/\bsrc\s*=\s*(["\'])(https?:\/\/((?:(?:cn|en)\.)?cravatar\.com|avatar\.(?:wenpai|feibisi)\.com\.cn)\/avatar\/[^"\']*)\1/i', $tag, $src_match ) ) {
+					return $tag;
+				}
+
+				$current_host = strtolower( $src_match[3] );
+				$next_hosts   = $this->onerror_backup_hosts_for( $current_host );
+				$handler      = $this->build_onerror_handler( $next_hosts );
+				$escaped      = function_exists( 'esc_attr' ) ? esc_attr( $handler ) : htmlspecialchars( $handler, ENT_QUOTES, 'UTF-8' );
+
+				if ( '/>' === substr( $tag, -2 ) ) {
+					return rtrim( substr( $tag, 0, -2 ) ) . ' onerror="' . $escaped . '" />';
+				}
+
+				return rtrim( substr( $tag, 0, -1 ) ) . ' onerror="' . $escaped . '">';
+			},
+			$avatar
+		);
+
+		return is_string( $result ) ? $result : $avatar;
 	}
 
 	/**
@@ -179,17 +275,12 @@ final class AvatarModule implements ConditionalModule {
 		}
 
 		$mode = $this->mode_for_current( $this->config );
-
-		switch ( $mode ) {
-			case 'cravatar_cn':
-				$rewritten = $this->replace_avatar_url( $url, 'cn.cravatar.com' );
-				break;
-			case 'cravatar_global':
-				$rewritten = $this->replace_avatar_url( $url, 'en.cravatar.com' );
-				break;
-			default:
-				return $url;
+		$host = $this->resolve_active_host( $mode );
+		if ( '' === $host ) {
+			return $url;
 		}
+
+		$rewritten = $this->replace_avatar_url( $url, $host );
 
 		if ( $count && $rewritten !== $url ) {
 			$this->count_rewrite();
@@ -264,13 +355,7 @@ final class AvatarModule implements ConditionalModule {
 	 */
 	public function add_avatar_preconnect(): void {
 		$mode = $this->mode_for_current( $this->config );
-		$host = '';
-
-		if ( 'cravatar_cn' === $mode ) {
-			$host = 'cn.cravatar.com';
-		} elseif ( 'cravatar_global' === $mode ) {
-			$host = 'en.cravatar.com';
-		}
+		$host = $this->resolve_active_host( $mode );
 
 		if ( '' === $host ) {
 			return;
@@ -281,6 +366,60 @@ final class AvatarModule implements ConditionalModule {
 
 		echo '<link rel="dns-prefetch" href="//' . $host_attr . '">' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above when helpers exist.
 		echo '<link rel="preconnect" href="' . $url_attr . '" crossorigin>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above when helpers exist.
+	}
+
+	/**
+	 * Resolve the active healthy Cravatar host for $mode, failing over to owned backups if unhealthy.
+	 *
+	 * @param string $mode Avatar mode (`cravatar_cn`, `cravatar_global`, `off`).
+	 */
+	private function resolve_active_host( string $mode ): string {
+		if ( 'cravatar_cn' === $mode ) {
+			$primary = 'cn.cravatar.com';
+		} elseif ( 'cravatar_global' === $mode ) {
+			$primary = 'en.cravatar.com';
+		} else {
+			return '';
+		}
+
+		$candidates = array_merge( array( $primary ), self::BACKUP_HOSTS );
+		foreach ( $candidates as $candidate ) {
+			if ( $this->health->is_healthy( $candidate ) ) {
+				return $candidate;
+			}
+		}
+
+		return $primary;
+	}
+
+	/**
+	 * Determine remaining owned backup hosts to try on browser image error for $current_host.
+	 *
+	 * @param string $current_host Lowercase host currently present in the img src attribute.
+	 * @return list<string>
+	 */
+	private function onerror_backup_hosts_for( string $current_host ): array {
+		$pos = array_search( $current_host, self::BACKUP_HOSTS, true );
+		if ( false !== $pos ) {
+			return array_slice( self::BACKUP_HOSTS, $pos + 1 );
+		}
+		return self::BACKUP_HOSTS;
+	}
+
+	/**
+	 * Build a minimal, double-quote-free, loop-guarded inline JS onerror handler.
+	 *
+	 * @param string[] $backup_hosts Ordered owned backup hosts to try before inline SVG C-logo.
+	 */
+	private function build_onerror_handler( array $backup_hosts ): string {
+		$js_hosts = array();
+		foreach ( $backup_hosts as $host ) {
+			$js_hosts[] = "'" . $host . "'";
+		}
+		$hosts_literal = '[' . implode( ',', $js_hosts ) . ']';
+		$svg_uri       = self::fallback_svg_data_uri();
+
+		return "(function(i,h,f){var n=+(i.dataset.caIdx||0);i.dataset.caIdx=n+1;i.srcset='';if(h[n]){i.src=i.src.replace(/\\/\\/[^\\/]+/,'//'+h[n])}else{i.onerror=null;i.src=f}})(this," . $hosts_literal . ",'" . $svg_uri . "')";
 	}
 
 	/**

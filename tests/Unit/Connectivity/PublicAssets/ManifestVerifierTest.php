@@ -150,10 +150,12 @@ class ManifestVerifierTest extends TestCase {
 
 		$bad_wpstatic_fb = json_decode( (string) file_get_contents( $this->fixture_dir() . '/mirror-manifest.valid.json' ), false ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local test fixture.
 		$this->assertIsObject( $bad_wpstatic_fb );
-		$bad_wpstatic_fb->classes->wpstatic->clientFallbacks = array( 'https://s.w.org/{path}' ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- JSON fixture schema field.
-		$bad_fb_res = ManifestVerifier::verify_detailed( $bad_wpstatic_fb, $keyring, self::EVAL_NOW, true );
-		$this->assertFalse( $bad_fb_res['ok'] );
-		$this->assertSame( 'invalid_schema', $bad_fb_res['code'] );
+		foreach ( array( 'https://s.w.org/{path}', 'https://s4.zstatic.net/{path}', 'https://www.wenpai.com.cn/{path}' ) as $disallowed_fb ) {
+			$bad_wpstatic_fb->classes->wpstatic->clientFallbacks = array( $disallowed_fb ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- JSON fixture schema field.
+			$bad_fb_res = ManifestVerifier::verify_detailed( $bad_wpstatic_fb, $keyring, self::EVAL_NOW, true );
+			$this->assertFalse( $bad_fb_res['ok'], 'Expected schema failure for ' . $disallowed_fb );
+			$this->assertSame( 'invalid_schema', $bad_fb_res['code'] );
+		}
 
 		// Re-sign sub-second manifest using test seed from keyring.json.
 		$key_vars = get_object_vars( get_object_vars( $keyring )['keys'] );
@@ -161,6 +163,20 @@ class ManifestVerifierTest extends TestCase {
 		$seed     = sodium_base642bin( (string) $active['DO_NOT_USE_IN_PROD_testPrivateKeyB64'], SODIUM_BASE64_VARIANT_ORIGINAL );
 		$kp       = sodium_crypto_sign_seed_keypair( $seed );
 		$sk       = sodium_crypto_sign_secretkey( $kp );
+
+		// Owned wpstatic backup hosts (wpstatic.wenpai.com.cn, wpstatic.feibisi.com.cn) are permitted when properly signed.
+		$owned_wpstatic = json_decode( (string) file_get_contents( $this->fixture_dir() . '/mirror-manifest.valid.json' ), false ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local test fixture.
+		$this->assertIsObject( $owned_wpstatic );
+		$owned_wpstatic->classes->wpstatic->clientFallbacks = array( // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- JSON fixture schema field.
+			'https://wpstatic.wenpai.com.cn/{path}',
+			'https://wpstatic.feibisi.com.cn/{path}',
+		);
+		unset( $owned_wpstatic->sig );
+		$owned_wpstatic->sig = ManifestVerifier::SIG_PREFIX . sodium_bin2base64(
+			sodium_crypto_sign_detached( ManifestVerifier::canonical_json( $owned_wpstatic ), $sk ),
+			SODIUM_BASE64_VARIANT_ORIGINAL
+		);
+		$this->assertTrue( ManifestVerifier::verify( $owned_wpstatic, $keyring, self::EVAL_NOW, true ) );
 
 		$subsec           = clone $manifest;
 		$subsec->issuedAt = '2026-11-26T08:00:00.100Z'; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- JSON fixture schema field.

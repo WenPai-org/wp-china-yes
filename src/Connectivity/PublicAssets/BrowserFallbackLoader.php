@@ -105,11 +105,7 @@ final class BrowserFallbackLoader {
 		$fallbacks = $mf_cfg['fallbacks'];
 
 		if ( array() === $fallbacks ) {
-			$fallbacks = array(
-				'npm'         => array( 'https://cdn.jsdmirror.com' ),
-				'cdnjs'       => array( 'https://s4.zstatic.net/ajax/libs/{lib}/{ver}/{file}' ),
-				'googlefonts' => array( 'https://fonts.googleapis.cn' ),
-			);
+			$fallbacks = AssetMap::browser_fallback_defaults();
 		}
 
 		$rum = '';

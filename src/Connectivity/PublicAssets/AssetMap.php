@@ -20,6 +20,86 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class AssetMap {
 
 	/**
+	 * Owned dual-backup root domains in priority order (functional subdomains only; never apex @ or www.).
+	 *
+	 * @since 4.1.0
+	 *
+	 * @var list<string>
+	 */
+	public const BACKUP_ROOT_DOMAINS = array(
+		'wenpai.com.cn',
+		'feibisi.com.cn',
+	);
+
+	/**
+	 * Owned backup hosts exclusively permitted for wpstatic failover.
+	 *
+	 * Hard redline: wpstatic must never fall back to s.w.org or third-party mirrors.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @var list<string>
+	 */
+	public const WPSTATIC_BACKUP_HOSTS = array(
+		'wpstatic.wenpai.com.cn',
+		'wpstatic.feibisi.com.cn',
+	);
+
+	/**
+	 * Static browser fallback chains consulted when no signed manifest provides clientFallbacks.
+	 *
+	 * Always prepends owned dual-backup functional subdomains (`*.wenpai.com.cn`, `*.feibisi.com.cn`)
+	 * ahead of third-party domestic mirrors. Never uses apex (`@`) or `www.` hosts, and excludes `wpstatic`.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return array<string, list<string>>
+	 */
+	public static function browser_fallback_defaults(): array {
+		return array(
+			'cdnjs'       => array(
+				'https://cdnjs.wenpai.com.cn/{lib}/{ver}/{file}',
+				'https://cdnjs.feibisi.com.cn/{lib}/{ver}/{file}',
+				'https://s4.zstatic.net/ajax/libs/{lib}/{ver}/{file}',
+			),
+			'npm'         => array(
+				'https://jsd.wenpai.com.cn',
+				'https://jsd.feibisi.com.cn',
+				'https://cdn.jsdmirror.com',
+				'https://s4.zstatic.net/npm/{pkg}@{ver}/{file}',
+			),
+			'googlefonts' => array(
+				'https://googlefonts.wenpai.com.cn',
+				'https://googlefonts.feibisi.com.cn',
+				'https://fonts.googleapis.cn',
+			),
+			'gstatic'     => array(
+				'https://gstatic.wenpai.com.cn',
+				'https://gstatic.feibisi.com.cn',
+			),
+			'googleajax'  => array(
+				'https://googleajax.wenpai.com.cn',
+				'https://googleajax.feibisi.com.cn',
+				'https://s4.zstatic.net/ajax/libs/{lib}/{ver}/{file}',
+			),
+			'unpkg'       => array(
+				'https://unpkg.wenpai.com.cn',
+				'https://unpkg.feibisi.com.cn',
+				'https://s4.zstatic.net/npm/{pkg}@{ver}/{file}',
+			),
+			'emoji'       => array(
+				'https://emoji.wenpai.com.cn',
+				'https://emoji.feibisi.com.cn',
+				'https://s4.zstatic.net/npm/@twemoji/api/dist/{path}',
+			),
+			'code'        => array(
+				'https://code.wenpai.com.cn',
+				'https://code.feibisi.com.cn',
+			),
+		);
+	}
+
+	/**
 	 * Replacement table. Keys are schema enum values.
 	 *
 	 * Jsdelivr also absorbs 3.x admincdn_dev (unpkg / jquery / vue / datatables).

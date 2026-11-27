@@ -211,8 +211,12 @@ final class PublicAssetsModule implements ConditionalModule {
 
 		$primary_healthy = $this->health->is_healthy( MirrorHealth::host_of( $mapped ) );
 		if ( $primary_healthy && null !== $this->manifest ) {
-			$manifest_cls = Manifest::ASSET_KEY_TO_CLASS[ $key ] ?? ( 'emoji' === $key ? 'npm' : '' );
-			if ( '' !== $manifest_cls && 'down' === $this->manifest->class_state( $manifest_cls, $this->health ) ) {
+			$manifest_cls = Manifest::ASSET_KEY_TO_CLASS[ $key ] ?? '';
+			$cls_state    = '' !== $manifest_cls ? $this->manifest->class_state( $manifest_cls, $this->health ) : null;
+			if ( null === $cls_state && 'emoji' === $key ) {
+				$cls_state = $this->manifest->class_state( 'npm', $this->health );
+			}
+			if ( 'down' === $cls_state ) {
 				$primary_healthy = false;
 			}
 		}
@@ -336,7 +340,11 @@ final class PublicAssetsModule implements ConditionalModule {
 			: '';
 		$concat = function_exists( 'esc_url' ) ? esc_url( $concat ) : $concat;
 
-		$npm_down = null !== $this->manifest && 'down' === $this->manifest->class_state( 'npm', $this->health );
+		$emoji_state = null !== $this->manifest ? $this->manifest->class_state( 'emoji', $this->health ) : null;
+		if ( null === $emoji_state && null !== $this->manifest ) {
+			$emoji_state = $this->manifest->class_state( 'npm', $this->health );
+		}
+		$npm_down = 'down' === $emoji_state;
 		$base_dir = $npm_down
 			? 'https://s4.zstatic.net/npm/@twemoji/api@15.0.3/dist/'
 			: 'https://jsd.admincdn.com/npm/@twemoji/api@15.0.3/dist/';

@@ -240,7 +240,7 @@ final class Plugin {
 		$container->set( 'public_assets.manifest', $manifest );
 		$registry->add( new PublicAssetsModule( $config, $map, $health, $manifest, $browser_loader ) );
 
-		$registry->add( new AvatarModule( $config ) );
+		$registry->add( new AvatarModule( $config, $health ) );
 		$registry->add( new HeartbeatModule( $config ) );
 		$registry->add( new DashboardFeedsModule( $config ) );
 		$registry->add( new AdminLocaleModule( $config ) );
