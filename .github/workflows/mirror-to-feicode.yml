@@ -1,0 +1,62 @@
+name: Mirror to FeiCode
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - '*'
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-to-feicode
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    if: github.repository == 'WenPai-org/wp-china-yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Configure FeiCode SSH deploy key
+        env:
+          FEICODE_MIRROR_SSH_KEY: ${{ secrets.FEICODE_MIRROR_SSH_KEY }}
+        run: |
+          if [ -z "$FEICODE_MIRROR_SSH_KEY" ]; then
+            echo "::error::FEICODE_MIRROR_SSH_KEY secret is not configured."
+            exit 1
+          fi
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$FEICODE_MIRROR_SSH_KEY" > "$HOME/.ssh/feicode_mirror"
+          chmod 600 "$HOME/.ssh/feicode_mirror"
+          ssh-keyscan -p 2222 -H feicode.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Push refs to FeiCode mirror
+        env:
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/feicode_mirror -o IdentitiesOnly=yes -p 2222
+          FEICODE_URL: ssh://git@feicode.com:2222/WenPai-org/wp-china-yes.git
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git fetch origin main:refs/remotes/origin/main master:refs/remotes/origin/master --tags
+            git push "$FEICODE_URL" \
+              refs/remotes/origin/main:refs/heads/main \
+              refs/remotes/origin/master:refs/heads/master
+            git push --tags "$FEICODE_URL"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            git push "$FEICODE_URL" "refs/tags/${GITHUB_REF_NAME}"
+          else
+            git push "$FEICODE_URL" "HEAD:refs/heads/${GITHUB_REF_NAME}"
+            git push --tags "$FEICODE_URL"
+          fi
