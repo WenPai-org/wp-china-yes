@@ -47,28 +47,28 @@ final class ManifestStatusCard {
 
 		$items = array(
 			array(
-				'label' => __( '当前生效清单来源', 'wp-china-yes' ),
+				'label' => __( '当前调度来源', 'wp-china-yes' ),
 				'value' => $source_label,
 				'attrs' => array( 'data-wpcy-manifest-field' => 'active_source' ),
 			),
 			array(
-				'label' => __( '清单版本与签发时间', 'wp-china-yes' ),
-				'value' => $has ? ( '#' . $version . ' · ' . ( '' !== $issued ? $issued : '-' ) ) : __( '尚未同步（使用内置静态表）', 'wp-china-yes' ),
+				'label' => __( '最近同步版本', 'wp-china-yes' ),
+				'value' => $has ? ( '#' . $version . ' · ' . self::format_issued_at( $issued ) ) : __( '尚未同步（使用内置默认映射）', 'wp-china-yes' ),
 				'attrs' => array( 'data-wpcy-manifest-field' => 'version' ),
 			),
 			array(
-				'label' => __( '本地缓存账龄', 'wp-china-yes' ),
+				'label' => __( '缓存更新时间', 'wp-china-yes' ),
 				'value' => $age_label,
 				'attrs' => array( 'data-wpcy-manifest-field' => 'age' ),
 			),
 			array(
-				'label' => __( '签名密钥标识（keyId）', 'wp-china-yes' ),
+				'label' => __( '安全校验密钥', 'wp-china-yes' ),
 				'value' => '' !== $key_id ? $key_id : '-',
 				'attrs' => array( 'data-wpcy-manifest-field' => 'key_id' ),
 			),
 			array(
-				'label' => __( '熔断直连状态（killSwitch）', 'wp-china-yes' ),
-				'value' => $ks ? __( '已触发直连回源（全量暂停加速）', 'wp-china-yes' ) : __( '正常签名调度', 'wp-china-yes' ),
+				'label' => __( '紧急回源状态', 'wp-china-yes' ),
+				'value' => $ks ? __( '已暂停加速（直连官方源）', 'wp-china-yes' ) : __( '正常加速调度', 'wp-china-yes' ),
 				'attrs' => array( 'data-wpcy-manifest-field' => 'kill_switch' ),
 			),
 		);
@@ -116,8 +116,8 @@ final class ManifestStatusCard {
 
 		\Wenpai_Admin_UI::card_open(
 			array(
-				'title' => __( '签名镜像清单状态', 'wp-china-yes' ),
-				'icon'  => 'shield-check',
+				'title' => __( '镜像调度与安全清单', 'wp-china-yes' ),
+				'tile'  => false,
 				'attrs' => array( 'data-wpcy-manifest-card' => '1' ),
 			)
 		);
@@ -131,8 +131,8 @@ final class ManifestStatusCard {
 			array(
 				'icon'         => 'refresh',
 				'state'        => ! empty( $snap['kill_switch'] ) ? 'bad' : ( ! empty( $snap['has_manifest'] ) ? 'ok' : '' ),
-				'title'        => __( '立即校验并同步签名清单', 'wp-china-yes' ),
-				'desc'         => __( '优先从主渠道拉取并执行 Ed25519 验签，失败自动切换备用源或保留 7 天内本地安全缓存。', 'wp-china-yes' ),
+				'title'        => __( '立即同步安全清单', 'wp-china-yes' ),
+				'desc'         => __( '优先从主渠道获取并校验数字签名，异常时自动切换备用源或保留 7 天内本地缓存。', 'wp-china-yes' ),
 				'control_html' => \Wenpai_Admin_UI::button_html(
 					array(
 						'label'   => __( '立即刷新清单', 'wp-china-yes' ),
@@ -147,8 +147,8 @@ final class ManifestStatusCard {
 			array(
 				'icon'         => 'eye',
 				'state'        => $probe_on ? 'ok' : '',
-				'title'        => __( '浏览器连通性探测上报', 'wp-china-yes' ),
-				'desc'         => __( '帮助文派判断镜像可用性。仅上报当前页面资源耗时与地区运营商摘要，可随时一键关闭。', 'wp-china-yes' ),
+				'title'        => __( '浏览器连通性监测', 'wp-china-yes' ),
+				'desc'         => __( '帮助文派判断镜像可用性，仅记录页面资源加载耗时与地区运营商摘要，可随时一键关闭。', 'wp-china-yes' ),
 				'control_html' => $toggle_html,
 			)
 		);
@@ -175,19 +175,38 @@ final class ManifestStatusCard {
 	 */
 	private static function source_label( string $source, bool $has ): string {
 		if ( ! $has ) {
-			return __( '静态内置映射表', 'wp-china-yes' );
+			return __( '内置默认映射', 'wp-china-yes' );
 		}
 		if ( 'primary' === $source ) {
-			return __( '主渠道签名清单（updates.wenpai.net）', 'wp-china-yes' );
+			return __( '主渠道（updates.wenpai.net）', 'wp-china-yes' );
 		}
 		if ( 'secondary' === $source ) {
-			return __( '备用渠道签名清单（OSS 镜像源）', 'wp-china-yes' );
+			return __( '备用渠道（对象存储镜像）', 'wp-china-yes' );
 		}
-		return __( '本地最近一次已验证缓存（LKG）', 'wp-china-yes' );
+		return __( '本地最近有效缓存', 'wp-china-yes' );
 	}
 
 	/**
-	 * Format LKG cache age.
+	 * Format ISO-8601 UTC timestamp to site-local readable datetime.
+	 *
+	 * @param string $issued Raw ISO-8601 timestamp.
+	 */
+	private static function format_issued_at( string $issued ): string {
+		if ( '' === $issued ) {
+			return '-';
+		}
+		$ts = strtotime( $issued );
+		if ( false === $ts ) {
+			return $issued;
+		}
+		if ( function_exists( 'wp_date' ) ) {
+			return (string) wp_date( 'Y-m-d H:i', $ts );
+		}
+		return gmdate( 'Y-m-d H:i', $ts );
+	}
+
+	/**
+	 * Format cache age cleanly.
 	 *
 	 * @param int|null $age   Age in seconds, or null.
 	 * @param bool     $stale Whether age exceeds 7 days.
@@ -199,7 +218,7 @@ final class ManifestStatusCard {
 		if ( $stale ) {
 			return sprintf(
 				/* translators: %d: hours elapsed since cache storage */
-				__( '已超过 7 天安全期（%d 小时前），已回退静态表', 'wp-china-yes' ),
+				__( '已超过 7 天安全期（%d 小时前），已回退默认映射', 'wp-china-yes' ),
 				(int) floor( $age / 3600 )
 			);
 		}

@@ -2311,9 +2311,12 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 		 *                        'collapsible' (group becomes details, title row is the
 		 *                        summary and ends with the kit chevron, D-31), 'open'
 		 *                        (start expanded; collapsible only).
-		 *     @type array  $links  array of array( label, href ) or strings (label only).
-		 *     @type string $class  Extra classes.
-		 *     @type array  $attrs  Extra attributes.
+		 *     @type array        $links    array of array( label, href ) or strings (label only).
+		 *     @type string|array $feedback Optional feedback link (URL string or Wenpai_Admin_Shell::feedback_url()
+		 *                                  config array plus optional 'label'); hidden automatically in white-label
+		 *                                  mode unless a custom URL is provided.
+		 *     @type string       $class    Extra classes.
+		 *     @type array        $attrs    Extra attributes.
 		 * }
 		 * @return string
 		 */
@@ -2386,6 +2389,16 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 				$html .= $fold ? '</div></details>' : '</div>';
 			}
 			$links = isset( $args['links'] ) && is_array( $args['links'] ) ? $args['links'] : array();
+			if ( isset( $args['feedback'] ) && class_exists( 'Wenpai_Admin_Shell', false ) ) {
+				$fb = Wenpai_Admin_Shell::resolve_feedback( $args['feedback'], $args );
+				if ( '' !== $fb['url'] ) {
+					$links[] = array(
+						'href'    => $fb['url'],
+						'label'   => $fb['label'],
+						'new_tab' => true,
+					);
+				}
+			}
 			if ( array() !== $links ) {
 				$html .= '<div class="wenpai-help__links">';
 				foreach ( $links as $link ) {
@@ -2396,7 +2409,16 @@ if ( ! class_exists( 'Wenpai_Admin_UI', false ) ) {
 					if ( ! is_array( $link ) || empty( $link['href'] ) ) {
 						continue;
 					}
-					$html .= '<a href="' . esc_url( (string) $link['href'] ) . '">' . esc_html( isset( $link['label'] ) ? (string) $link['label'] : (string) $link['href'] ) . '</a>';
+					$new_tab = ! empty( $link['new_tab'] );
+					$tgt     = $new_tab ? ' target="_blank" rel="noopener noreferrer"' : '';
+					$hint    = '';
+					if ( $new_tab ) {
+						$nt_label = isset( $args['new_tab_label'] ) ? (string) $args['new_tab_label'] : '（在新标签页打开）';
+						if ( '' !== $nt_label ) {
+							$hint = '<span class="screen-reader-text">' . esc_html( $nt_label ) . '</span>';
+						}
+					}
+					$html .= '<a href="' . esc_url( (string) $link['href'] ) . '"' . $tgt . '>' . esc_html( isset( $link['label'] ) ? (string) $link['label'] : (string) $link['href'] ) . $hint . '</a>';
 				}
 				$html .= '</div>';
 			}

@@ -2188,7 +2188,7 @@ final class KitRenderer {
 				__( '自定义新闻源地址', 'wp-china-yes' ),
 				__( '需返回包含标题、链接与摘要的 HTTPS 公告列表；留空保持默认源。', 'wp-china-yes' ),
 				$wl['news_feed_url'],
-				'https://example.com/wp-json/agency/v1/news',
+				'https://wenpai.org/wp-json/agency/v1/news',
 				300,
 				$wl_locked
 			);
@@ -2386,9 +2386,31 @@ final class KitRenderer {
 						: $oem_url . '?site_uuid=' . rawurlencode( $ident['site_uuid'] );
 				}
 			}
+			$is_bound = self::is_site_bound();
+			$wl_ctas  = '';
+			if ( ! $is_bound ) {
+				$wl_ctas .= \Wenpai_Admin_UI::button_html(
+					array(
+						'label'   => __( '绑定本站同步授权', 'wp-china-yes' ),
+						'type'    => 'button',
+						'variant' => 'secondary',
+						'size'    => 'sm',
+						'attrs'   => array( 'data-wpcy-action' => 'bind' ),
+					)
+				) . ' ';
+			}
+			$wl_ctas .= \Wenpai_Admin_UI::button_html(
+				array(
+					'label'   => __( '前往开通授权', 'wp-china-yes' ),
+					'href'    => $oem_url,
+					'variant' => 'primary',
+					'size'    => 'sm',
+					'target'  => '_blank',
+				)
+			);
 			\Wenpai_Admin_UI::card_open(
 				array(
-					'title' => __( '开通商业白标授权（Agency / OEM）', 'wp-china-yes' ),
+					'title' => __( '商业白标授权', 'wp-china-yes' ),
 					'tile'  => false,
 				)
 			);
@@ -2401,23 +2423,7 @@ final class KitRenderer {
 						'text'  => __( '未授权', 'wp-china-yes' ),
 						'state' => 'mute',
 					),
-					'control_html' => \Wenpai_Admin_UI::button_html(
-						array(
-							'label'   => __( '绑定本站同步授权', 'wp-china-yes' ),
-							'type'    => 'button',
-							'variant' => 'secondary',
-							'size'    => 'sm',
-							'attrs'   => array( 'data-wpcy-action' => 'bind' ),
-						)
-					) . ' ' . \Wenpai_Admin_UI::button_html(
-						array(
-							'label'   => __( '前往开通授权', 'wp-china-yes' ),
-							'href'    => $oem_url,
-							'variant' => 'primary',
-							'size'    => 'sm',
-							'target'  => '_blank',
-						)
-					),
+					'control_html' => $wl_ctas,
 				)
 			);
 			\Wenpai_Admin_UI::card_close();
@@ -2459,11 +2465,11 @@ final class KitRenderer {
 		echo '<div class="wenpai-stack--xs" data-wpcy-wl-fields="1"' . ( ( $wl['enabled'] || ! $entitled ) ? '' : ' hidden' ) . '>';
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside field_row_* helpers.
 		echo self::field_row_input( 'wl_brand_name', 'text', __( '品牌名称', 'wp-china-yes' ), __( '替换顶栏品牌名、左侧菜单名与插件列表署名；留空时左侧菜单默认显示「文派」。', 'wp-china-yes' ), $wl['brand_name'], __( '例如：某某数字建站', 'wp-china-yes' ), 64, $wl_locked );
-		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助中心地址', 'wp-china-yes' ), '', $wl['help_url'], 'https://example.com/help', 300, $wl_locked );
-		echo self::field_row_input( 'wl_feedback_url', 'url', __( '工单与反馈地址', 'wp-china-yes' ), '', $wl['feedback_url'], 'https://example.com/support', 300, $wl_locked );
-		echo self::field_row_input( 'wl_docs_url', 'url', __( '产品文档地址', 'wp-china-yes' ), '', $wl['docs_url'], 'https://example.com/docs', 300, $wl_locked );
-		echo self::field_row_input( 'wl_news_feed_url', 'url', __( '自定义新闻源地址', 'wp-china-yes' ), __( '概览页 HTTPS 公告列表接口地址，留空保持默认源。', 'wp-china-yes' ), $wl['news_feed_url'], 'https://example.com/wp-json/agency/v1/news', 300, $wl_locked );
-		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义图标地址', 'wp-china-yes' ), __( '建议使用 44×44 正方形透明背景 PNG 或 SVG。', 'wp-china-yes' ), $wl['logo_url'], 'https://example.com/logo.svg', 300, $wl_locked );
+		echo self::field_row_input( 'wl_help_url', 'url', __( '帮助中心地址', 'wp-china-yes' ), '', $wl['help_url'], 'https://docs.wenpai.org/help', 300, $wl_locked );
+		echo self::field_row_input( 'wl_feedback_url', 'url', __( '工单与反馈地址', 'wp-china-yes' ), '', $wl['feedback_url'], 'https://docs.wenpai.org/support', 300, $wl_locked );
+		echo self::field_row_input( 'wl_docs_url', 'url', __( '产品文档地址', 'wp-china-yes' ), '', $wl['docs_url'], 'https://docs.wenpai.org/docs', 300, $wl_locked );
+		echo self::field_row_input( 'wl_news_feed_url', 'url', __( '自定义新闻源地址', 'wp-china-yes' ), __( '概览页 HTTPS 公告列表接口地址，留空保持默认源。', 'wp-china-yes' ), $wl['news_feed_url'], 'https://wenpai.org/wp-json/agency/v1/news', 300, $wl_locked );
+		echo self::field_row_input( 'wl_logo_url', 'url', __( '自定义图标地址', 'wp-china-yes' ), __( '建议使用 44×44 正方形透明背景 PNG 或 SVG。', 'wp-china-yes' ), $wl['logo_url'], 'https://wenpai.org/logo.svg', 300, $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_logo', __( '隐藏顶栏品牌图标', 'wp-china-yes' ), __( '仅显示纯文字品牌名称', 'wp-china-yes' ), $wl['hide_logo'], $wl_locked );
 		echo self::field_row_checkbox( 'wl_hide_links', __( '隐藏未安装扩展与默认外链', 'wp-china-yes' ), __( '隐藏「服务」页未安装插件推荐及未自定义地址的默认链接', 'wp-china-yes' ), $wl['hide_links'], $wl_locked );
 		echo self::field_row_checkbox( 'wl_promo_hidden', __( '在概览页隐藏左侧推荐卡片', 'wp-china-yes' ), __( '概览页默认不提供关闭按钮；勾选后隐藏左下推荐位，不勾选时可作为你的代理商品牌服务推荐位。', 'wp-china-yes' ), $wl['promo_hidden'], $wl_locked );
@@ -2472,7 +2478,7 @@ final class KitRenderer {
 		echo self::field_row_input( 'wl_promo_title', 'text', __( '概览推荐位标题', 'wp-china-yes' ), __( '面向客户展示你的主机续费、年度护航或定制开发信息；留空按品牌名自动生成。', 'wp-china-yes' ), $wl['promo_title'], __( '例如：云服务器续费与年度安全护航专享', 'wp-china-yes' ), 80, $wl_locked );
 		echo self::field_row_input( 'wl_promo_desc', 'text', __( '概览推荐位说明', 'wp-china-yes' ), '', $wl['promo_desc'], __( '例如：含每日异地备份、SSL 续签与专属工程师支持。', 'wp-china-yes' ), 200, $wl_locked );
 		echo self::field_row_input( 'wl_promo_cta_label', 'text', __( '推荐位按钮文字', 'wp-china-yes' ), '', $wl['promo_cta_label'], __( '例如：联系专属顾问 ↗', 'wp-china-yes' ), 32, $wl_locked );
-		echo self::field_row_input( 'wl_promo_cta_url', 'url', __( '推荐位跳转地址', 'wp-china-yes' ), __( '留空时默认复用上方的工单或帮助中心地址。', 'wp-china-yes' ), $wl['promo_cta_url'], 'https://example.com/renew', 300, $wl_locked );
+		echo self::field_row_input( 'wl_promo_cta_url', 'url', __( '推荐位跳转地址', 'wp-china-yes' ), __( '留空时默认复用上方的工单或帮助中心地址。', 'wp-china-yes' ), $wl['promo_cta_url'], 'https://wenpai.org/renew', 300, $wl_locked );
 		echo '</div>';
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		\Wenpai_Admin_UI::fold_list(
@@ -2605,9 +2611,15 @@ final class KitRenderer {
 				$pill_state = $is_on ? 'ok' : 'mute';
 			}
 
+			$short_plugin_name = trim( (string) preg_replace( '/[（(].*$/u', '', (string) ( $spec['plugin_name'] ?? '' ) ) );
+			$short_takeover    = '' !== $short_plugin_name
+				/* translators: %s: companion plugin short name */
+				? sprintf( __( '已由%s接管', 'wp-china-yes' ), $short_plugin_name )
+				: __( '已由独立插件接管', 'wp-china-yes' );
+
 			$metric_text = ! empty( $report['summary'] )
 				? (string) $report['summary']
-				: ( $plugin_state['active'] ? $spec['takeover_desc'] : ( $is_builtin ? ( $builtin_metrics[ $id ] ?? '' ) : $spec['takeover_desc'] ) );
+				: ( $plugin_state['active'] ? $short_takeover : ( $is_builtin ? ( $builtin_metrics[ $id ] ?? '' ) : $short_takeover ) );
 
 			$ctl_html = ( ! $is_builtin || $plugin_state['active'] )
 				? \Wenpai_Admin_UI::pill_html(

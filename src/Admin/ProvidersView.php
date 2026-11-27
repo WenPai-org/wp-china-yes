@@ -123,7 +123,7 @@ final class ProvidersView {
 		echo '<div class="wenpai-stack--xs" data-wpcy-prov-form="' . esc_attr( $id ) . '">';
 		echo '<div class="' . esc_attr( $field_cls ) . '">';
 		echo '<div class="field-label"><label for="' . esc_attr( $email_id ) . '">' . esc_html__( '购买邮箱', 'wp-china-yes' ) . '</label></div>';
-		echo '<div class="field-ctl"><input id="' . esc_attr( $email_id ) . '" type="email" autocomplete="email" placeholder="name@example.com" data-wpcy-prov-email="' . esc_attr( $id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
+		echo '<div class="field-ctl"><input id="' . esc_attr( $email_id ) . '" type="email" autocomplete="email" placeholder="' . esc_attr__( '输入购买时填写的邮箱', 'wp-china-yes' ) . '" data-wpcy-prov-email="' . esc_attr( $id ) . '"' . $dis_attr . '></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static disabled attribute.
 		echo '</div>';
 
 		echo '<div class="' . esc_attr( $field_cls ) . '">';

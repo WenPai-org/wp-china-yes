@@ -97,7 +97,7 @@ class ManifestStatusCardTest extends TestCase {
 		$this->assertStringContainsString( '帮助文派判断镜像可用性', $html );
 		$this->assertStringContainsString( 'checked="checked"', $html );
 		$this->assertSame( 0, preg_match( '/\bstyle\s*=/i', $html ) );
-		$this->assertSame( 0, preg_match( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/', $html ) );
+		$this->assertSame( 0, preg_match( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b|上报|killSwitch|Ed25519|keyId|\bLKG\b|\bOSS\b|账龄/', $html ) );
 
 		$html_off = ManifestStatusCard::render_html( $manifest, false );
 		$this->assertStringContainsString( 'data-wpcy-action="client-probe-toggle"', $html_off );

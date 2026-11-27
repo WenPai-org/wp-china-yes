@@ -136,8 +136,8 @@ final class RecoveryPage {
 		echo '<style id="wpcy-recovery-css">
 .wpcy-rec{max-width:560px;margin:44px auto 64px;font-family:-apple-system,"Noto Sans","Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif;color:#1e1e1e;font-size:14px;line-height:22px;-webkit-font-smoothing:antialiased}
 .wpcy-rec .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:24px 28px}
-.wpcy-rec .card-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.wpcy-rec .tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:#fbf3dc;color:#9a7208}
+.wpcy-rec .wpcy-rec-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.wpcy-rec .wpcy-rec-tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:#fbf3dc;color:#9a7208}
 .wpcy-rec .card-title{font-size:16px;line-height:24px;font-weight:400;margin:0}
 .wpcy-rec .card-sub{color:#646970;font-size:13px;line-height:20px;margin:0}
 .wpcy-rec .lead{margin:0 0 4px}
@@ -171,7 +171,7 @@ final class RecoveryPage {
 
 		echo '<div class="wpcy-rec">';
 		echo '<article class="card">';
-		echo '<div class="card-head"><div class="tile" aria-hidden="true">';
+		echo '<div class="wpcy-rec-head"><div class="wpcy-rec-tile" aria-hidden="true">';
 		echo '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L20.2169 2.82598C20.6745 2.92766 21 3.33347 21 3.80217V13.7889C21 15.795 19.9974 17.6684 18.3282 18.7812L12 23L5.6718 18.7812C4.00261 17.6684 3 15.795 3 13.7889V3.80217C3 3.33347 3.32553 2.92766 3.78307 2.82598L12 1ZM12 3.04879L5 4.60434V13.7889C5 15.1263 5.6684 16.3752 6.7812 17.1171L12 20.5963L17.2188 17.1171C18.3316 16.3752 19 15.1263 19 13.7889V4.60434L12 3.04879Z"/></svg>';
 		echo '</div><div><h1 class="card-title">' . esc_html__( '文派叶子 · 恢复模式', 'wp-china-yes' ) . '</h1>';
 		echo '<p class="card-sub">' . esc_html__( '此页不依赖 JavaScript，后台样式错乱或站点无法访问时也能打开', 'wp-china-yes' ) . '</p></div></div>';

@@ -188,6 +188,10 @@ body.wenpai-ui-page .wenpai-app select {
   cursor: pointer;
   background: var(--wenpai-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23646970'%3E%3Cpath d='M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z'/%3E%3C/svg%3E") no-repeat right 10px center / 16px 16px;
 }
+body.wenpai-ui-page .wenpai-app select::picker-icon {
+  display: none;
+  content: none;
+}
 
 /* 跟 WPCY 4.0 E：系统原生圆点 + accent，不自绘 18px 圈。 */
 body.wenpai-ui-page .wenpai-app .choice input[type="radio"] {
@@ -726,6 +730,11 @@ body.wenpai-ui-page .wenpai-app code.wenpai-code {
     -webkit-appearance: menulist;
     background-image: none;
     padding-right: var(--wenpai-space-2-5);
+  }
+  body.wenpai-ui-page .wenpai-app select::picker-icon,
+  .wenpai-app select::picker-icon {
+    display: revert;
+    content: revert;
   }
 }
 

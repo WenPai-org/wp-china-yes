@@ -6,15 +6,27 @@
 
 	function sourceLabel( source, has ) {
 		if ( ! has ) {
-			return '静态内置映射表';
+			return '内置默认映射';
 		}
 		if ( source === 'primary' ) {
-			return '主渠道签名清单（updates.wenpai.net）';
+			return '主渠道（updates.wenpai.net）';
 		}
 		if ( source === 'secondary' ) {
-			return '备用渠道签名清单（OSS 镜像源）';
+			return '备用渠道（对象存储镜像）';
 		}
-		return '本地最近一次已验证缓存（LKG）';
+		return '本地最近有效缓存';
+	}
+
+	function formatIssuedAt( issued ) {
+		if ( ! issued ) {
+			return '-';
+		}
+		var d = new Date( issued );
+		if ( isNaN( d.getTime() ) ) {
+			return String( issued );
+		}
+		var pad = function ( n ) { return n < 10 ? '0' + n : String( n ); };
+		return d.getFullYear() + '-' + pad( d.getMonth() + 1 ) + '-' + pad( d.getDate() ) + ' ' + pad( d.getHours() ) + ':' + pad( d.getMinutes() );
 	}
 
 	function formatAge( age, stale ) {
@@ -23,7 +35,7 @@
 		}
 		var n = Number( age );
 		if ( stale ) {
-			return '已超过 7 天安全期（' + Math.floor( n / 3600 ) + ' 小时前），已回退静态表';
+			return '已超过 7 天安全期（' + Math.floor( n / 3600 ) + ' 小时前），已回退默认映射';
 		}
 		if ( n < 60 ) {
 			return '刚刚更新';
@@ -69,10 +81,10 @@
 				var m = data && data.manifest;
 				if ( card && m ) {
 					updateField( card, 'active_source', sourceLabel( m.active_source, !!m.has_manifest ) );
-					updateField( card, 'version', m.has_manifest ? ( '#' + m.version + ' · ' + ( m.issued_at || '-' ) ) : '尚未同步（使用内置静态表）' );
+					updateField( card, 'version', m.has_manifest ? ( '#' + m.version + ' · ' + formatIssuedAt( m.issued_at ) ) : '尚未同步（使用内置默认映射）' );
 					updateField( card, 'age', formatAge( m.age_seconds, !!m.stale_lkg ) );
 					updateField( card, 'key_id', m.key_id || '-' );
-					updateField( card, 'kill_switch', m.kill_switch ? '已触发直连回源（全量暂停加速）' : '正常签名调度' );
+					updateField( card, 'kill_switch', m.kill_switch ? '已暂停加速（直连官方源）' : '正常加速调度' );
 					if ( m.last_error || m.switch_reason ) {
 						updateField( card, 'switch_reason', ( m.last_error || '' ) + ( m.switch_reason ? ' · ' + m.switch_reason : '' ) );
 					}

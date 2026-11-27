@@ -195,7 +195,7 @@ class KitRendererTest extends TestCase {
 
 		// Unentitled white-label view shows locked gate card and disabled inputs.
 		$gated = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
-		$this->assertStringContainsString( '开通商业白标授权', $gated );
+		$this->assertStringContainsString( '商业白标授权', $gated );
 		$this->assertStringContainsString( 'https://wpcy.com/go/oem', $gated );
 
 		// Entitled white-label view unlocks save button and custom news feed input (wrapped transient format).
@@ -227,7 +227,7 @@ class KitRendererTest extends TestCase {
 		);
 		$this->assertStringContainsString( '保存白标设置', $unlocked );
 		$this->assertStringContainsString( '星云建站', $unlocked );
-		$this->assertStringNotContainsString( '开通商业白标授权', $unlocked );
+		$this->assertStringNotContainsString( '商业白标授权', $unlocked );
 	}
 
 	/**
@@ -615,7 +615,7 @@ class KitRendererTest extends TestCase {
 		$this->assertCount( 1, AdminStore::$http );
 		$this->assertStringContainsString( '/v1/sites/site_hash_wl_cold_01/entitlements', AdminStore::$http[0]['url'] );
 		$this->assertStringContainsString( '保存白标设置', $unlocked );
-		$this->assertStringNotContainsString( '开通商业白标授权', $unlocked );
+		$this->assertStringNotContainsString( '商业白标授权', $unlocked );
 		$this->assertDoesNotMatchRegularExpression( '/遥测|匿名数据|opt-in|entitlement|套餐|\bPro\b/u', $unlocked );
 
 		// Second render hits warm fresh cache with zero additional HTTP calls.
@@ -646,12 +646,12 @@ class KitRendererTest extends TestCase {
 		// Empty response queue makes wp_remote_get return WP_Error.
 		$first = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
 		$this->assertCount( 1, AdminStore::$http );
-		$this->assertStringContainsString( '开通商业白标授权', $first );
+		$this->assertStringContainsString( '商业白标授权', $first );
 		$this->assertNotEmpty( get_transient( EntitlementsModule::TRANSIENT_BACKOFF ) );
 
 		// Repeated page load during backoff skips outbound HTTP completely.
 		$second = $this->render_page( 'wpcy-features', array(), array( 'module' => 'whitelabel' ) );
 		$this->assertCount( 1, AdminStore::$http );
-		$this->assertStringContainsString( '开通商业白标授权', $second );
+		$this->assertStringContainsString( '商业白标授权', $second );
 	}
 }
