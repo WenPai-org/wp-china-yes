@@ -347,6 +347,7 @@ class DataIsolationTest extends TestCase {
 	public function test_apps_module_id_and_install_without_wpdb() {
 		$module = new AppsModule();
 		$this->assertSame( 'services.apps', $module->id() );
+		DataStore::maybe_install();
 		DataStore::install();
 		$this->assertSame( 'wp_wpcy_app_data', $module->store()->table_name() );
 	}

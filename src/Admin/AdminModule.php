@@ -14,7 +14,6 @@ use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Core\Module;
-use WenPai\ChinaYes\Diagnostics\ConflictDetector;
 use WenPai\ChinaYes\Diagnostics\RouteGroups;
 use WenPai\ChinaYes\Migration\LegacyReader;
 use WenPai\ChinaYes\Migration\Runner;
@@ -192,16 +191,7 @@ final class AdminModule implements Module {
 	 * @param mixed $slug        Companion plugin menu slug.
 	 */
 	public function filter_suite_parent_slug( $parent_slug, $slug = '' ): string {
-		if ( $this->in_network_admin() ) {
-			return is_string( $parent_slug ) ? $parent_slug : '';
-		}
-		$clean = is_string( $slug ) ? sanitize_key( $slug ) : '';
-		if ( '' === $clean || self::SLUG === $clean || 0 === strpos( $clean, self::SLUG . '-' ) ) {
-			return is_string( $parent_slug ) ? $parent_slug : '';
-		}
-		$settings = $this->repository->all();
-		$grouped  = ! empty( $settings['admin']['group_suite_menus'] );
-		return $grouped ? self::SLUG : ( is_string( $parent_slug ) ? $parent_slug : '' );
+		return SuiteMenuHelper::filter_suite_parent_slug( $this->repository, $this->in_network_admin(), $parent_slug, $slug );
 	}
 
 	/**
@@ -212,79 +202,7 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function append_legacy_suite_submenus(): void {
-		if ( $this->in_network_admin() ) {
-			return;
-		}
-		$settings = $this->repository->all();
-		if ( empty( $settings['admin']['group_suite_menus'] ) ) {
-			return;
-		}
-		if ( ! isset( $GLOBALS['submenu'][ self::SLUG ] ) || ! is_array( $GLOBALS['submenu'][ self::SLUG ] ) ) {
-			return;
-		}
-
-		$existing = array();
-		foreach ( $GLOBALS['submenu'][ self::SLUG ] as $entry ) {
-			if ( is_array( $entry ) && isset( $entry[2] ) ) {
-				$existing[ (string) $entry[2] ] = true;
-			}
-		}
-
-		$suite_slugs = array(
-			'wpslug',
-			'wpsss',
-			'wpavatar',
-			'wpavatar-settings',
-			'wpcomments',
-			'wpcomments-settings',
-			'wp-chinese-converter',
-			'wpicp',
-			'wpicp_license_settings',
-			'wpstatic',
-			'wpfonts',
-			'wpphoto',
-			'wpmind',
-			'wpbridge',
-		);
-
-		if ( isset( $GLOBALS['submenu']['options-general.php'] ) && is_array( $GLOBALS['submenu']['options-general.php'] ) ) {
-			foreach ( $GLOBALS['submenu']['options-general.php'] as $item ) {
-				if ( ! is_array( $item ) || ! isset( $item[0], $item[1], $item[2] ) ) {
-					continue;
-				}
-				$item_slug = (string) $item[2];
-				if ( ! in_array( $item_slug, $suite_slugs, true ) ) {
-					continue;
-				}
-				$target = 'options-general.php?page=' . $item_slug;
-				if ( isset( $existing[ $item_slug ] ) || isset( $existing[ $target ] ) ) {
-					continue;
-				}
-				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- appending opt-in suite shortcut to own submenu.
-				$GLOBALS['submenu'][ self::SLUG ][] = array( (string) $item[0], (string) $item[1], $target );
-				$existing[ $target ]                = true;
-			}
-		}
-
-		if ( isset( $GLOBALS['menu'] ) && is_array( $GLOBALS['menu'] ) ) {
-			$adm_script = 'admin';
-			$adm_entry  = $adm_script . '.php?page=';
-			foreach ( $GLOBALS['menu'] as $top_item ) {
-				if ( ! is_array( $top_item ) || ! isset( $top_item[0], $top_item[1], $top_item[2] ) ) {
-					continue;
-				}
-				$top_slug = (string) $top_item[2];
-				if ( ! in_array( $top_slug, $suite_slugs, true ) ) {
-					continue;
-				}
-				$target = $adm_entry . $top_slug;
-				if ( ! isset( $existing[ $top_slug ] ) && ! isset( $existing[ $target ] ) ) {
-					// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- appending opt-in suite shortcut to own submenu.
-					$GLOBALS['submenu'][ self::SLUG ][] = array( (string) $top_item[0], (string) $top_item[1], $target );
-					$existing[ $target ]                = true;
-				}
-			}
-		}
+		SuiteMenuHelper::append_legacy_suite_submenus( $this->repository, $this->in_network_admin() );
 	}
 
 	/**
@@ -294,15 +212,7 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function maybe_redirect_wrong_parent(): void {
-		$script = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
-		if ( '' === $script && isset( $_SERVER['SCRIPT_NAME'] ) ) {
-			$script = basename( sanitize_text_field( wp_unslash( (string) $_SERVER['SCRIPT_NAME'] ) ) );
-		}
-		if ( 'options-general.php' === $script && ( 'wp-china-yes' === $this->current_page() || $this->is_app_screen() ) ) {
-			$this->redirect_legacy_options_url();
-			return;
-		}
-		$this->rescue_companion_page_url( $script );
+		SuiteMenuHelper::maybe_redirect_wrong_parent( $this->current_page(), $this->is_app_screen(), $this->in_network_admin() );
 	}
 
 	/**
@@ -312,78 +222,7 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function redirect_legacy_options_url(): void {
-		if ( $this->in_network_admin() ) {
-			return;
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		$slug = $this->current_page();
-		if ( 'wp-china-yes' === $slug ) {
-			$slug = self::SLUG;
-		} elseif ( ! $this->is_app_screen() || '' === $slug ) {
-			$this->rescue_companion_page_url( '' );
-			return;
-		}
-		$extra = $this->preserved_query_args();
-		wp_safe_redirect( self::app_url( $slug, $extra ) );
-		exit;
-	}
-
-	/**
-	 * Redirect a companion plugin settings request when opened with an alias slug (e.g. `wpavatar`
-	 * instead of `wpavatar-settings`) or under the wrong parent script (`options-general.php` vs top-level).
-	 *
-	 * @param string $current_script Current `pagenow` basename, or `''` when triggered from `admin_page_access_denied`.
-	 */
-	private function rescue_companion_page_url( string $current_script ): void {
-		if ( $this->in_network_admin() || ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		$slug = $this->current_page();
-		if ( '' === $slug || $this->is_app_screen() ) {
-			return;
-		}
-		$live_url = ConflictDetector::resolve_live_url_for_page_slug( $slug );
-		if ( '' === $live_url ) {
-			return;
-		}
-		if ( '' !== $current_script ) {
-			$parts       = function_exists( 'wp_parse_url' ) ? wp_parse_url( $live_url ) : parse_url( $live_url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- fallback for standalone unit tests.
-			$target_file = is_array( $parts ) && isset( $parts['path'] ) ? basename( (string) $parts['path'] ) : '';
-			$query_vars  = array();
-			if ( is_array( $parts ) && isset( $parts['query'] ) ) {
-				parse_str( (string) $parts['query'], $query_vars );
-			}
-			$target_page = isset( $query_vars['page'] ) && is_string( $query_vars['page'] ) ? $query_vars['page'] : '';
-			if ( $target_file === $current_script && $target_page === $slug ) {
-				return;
-			}
-		}
-		$extra = $this->preserved_query_args();
-		if ( array() !== $extra && function_exists( 'add_query_arg' ) ) {
-			$live_url = (string) add_query_arg( $extra, $live_url );
-		}
-		wp_safe_redirect( $live_url );
-		exit;
-	}
-
-	/**
-	 * Collect safe scalar query parameters (excluding `page`) to preserve across canonical 302 redirects.
-	 *
-	 * @return array<string, string>
-	 */
-	private function preserved_query_args(): array {
-		$extra = array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- preserving safe read-only navigation query args across 302.
-		foreach ( $_GET as $key => $val ) {
-			$clean_key = sanitize_key( (string) $key );
-			if ( '' === $clean_key || 'page' === $clean_key || ! is_scalar( $val ) ) {
-				continue;
-			}
-			$extra[ $clean_key ] = sanitize_text_field( wp_unslash( (string) $val ) );
-		}
-		return $extra;
+		SuiteMenuHelper::redirect_legacy_options_url( $this->current_page(), $this->is_app_screen(), $this->in_network_admin() );
 	}
 
 	/**
@@ -473,28 +312,7 @@ final class AdminModule implements Module {
 	 * @since 4.0.0
 	 */
 	public function collapse_internal_submenus(): void {
-		$internal_tabs = array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose', 'wpcy-onboarding' );
-		if ( function_exists( 'remove_submenu_page' ) ) {
-			foreach ( array( 'wpcy-connect', 'wpcy-features', 'wpcy-services', 'wpcy-licenses', 'wpcy-diagnose' ) as $tab_slug ) {
-				remove_submenu_page( self::SLUG, $tab_slug );
-			}
-		}
-		if ( ! isset( $GLOBALS['submenu'][ self::SLUG ] ) || ! is_array( $GLOBALS['submenu'][ self::SLUG ] ) ) {
-			return;
-		}
-		foreach ( $GLOBALS['submenu'][ self::SLUG ] as $idx => $entry ) {
-			if ( is_array( $entry ) && isset( $entry[2] ) && in_array( (string) $entry[2], $internal_tabs, true ) ) {
-				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- pruning own horizontal-tab slugs from sidebar submenu.
-				unset( $GLOBALS['submenu'][ self::SLUG ][ $idx ] );
-			}
-		}
-		if ( 1 === count( $GLOBALS['submenu'][ self::SLUG ] ) ) {
-			$only = reset( $GLOBALS['submenu'][ self::SLUG ] );
-			if ( is_array( $only ) && isset( $only[2] ) && self::SLUG === (string) $only[2] ) {
-				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- mirrors wp-admin/includes/menu.php single-item submenu collapse so no empty dropdown renders.
-				unset( $GLOBALS['submenu'][ self::SLUG ] );
-			}
-		}
+		SuiteMenuHelper::collapse_internal_submenus();
 	}
 
 	/**
@@ -680,67 +498,11 @@ final class AdminModule implements Module {
 	 * @param string $hook_suffix Current admin screen id.
 	 */
 	public function enqueue( string $hook_suffix ): void {
-		if ( 'index.php' === $hook_suffix && $this->should_show_dashboard_news_widget( $this->repository->all() ) ) {
-			if ( class_exists( '\Wenpai_Admin_Loader', false ) ) {
-				\Wenpai_Admin_Loader::enqueue( array( 'full' => false ) );
-			}
-			return;
-		}
+		$show_widget   = 'index.php' === $hook_suffix && $this->should_show_dashboard_news_widget( $this->repository->all() );
+		$is_app_screen = $this->is_app_screen();
+		$bootstrap     = $is_app_screen ? $this->bootstrap_payload() : array();
 
-		if ( ! $this->is_app_screen() ) {
-			return;
-		}
-
-		if ( class_exists( '\Wenpai_Admin_Loader', false ) ) {
-			\Wenpai_Admin_Loader::enqueue( array( 'pages' => self::APP_PAGES ) );
-		}
-
-		$css_path = CHINA_YES_PLUGIN_PATH . 'assets/css/wpcy-admin.css';
-		if ( is_readable( $css_path ) ) {
-			wp_enqueue_style(
-				self::HANDLE,
-				CHINA_YES_PLUGIN_URL . 'assets/css/wpcy-admin.css',
-				array( 'wenpai-admin-ui' ),
-				CHINA_YES_VERSION . '-' . (int) filemtime( $css_path )
-			);
-		}
-
-		$js_path = CHINA_YES_PLUGIN_PATH . 'assets/js/wpcy-admin.js';
-		if ( ! is_readable( $js_path ) ) {
-			return;
-		}
-
-		wp_enqueue_script(
-			self::HANDLE,
-			CHINA_YES_PLUGIN_URL . 'assets/js/wpcy-admin.js',
-			array( 'wenpai-admin-ui' ),
-			CHINA_YES_VERSION . '-' . (int) filemtime( $js_path ),
-			true
-		);
-
-		$payload = wp_json_encode( $this->bootstrap_payload() );
-		if ( ! is_string( $payload ) ) {
-			return;
-		}
-
-		wp_add_inline_script(
-			self::HANDLE,
-			'window.wpcyAdmin = ' . $payload . ';',
-			'before'
-		);
-
-		foreach ( array( 'probes', 'apps', 'providers', 'manifest-ui' ) as $mod ) {
-			$mod_file = 'assets/js/wpcy-' . $mod . '.js';
-			if ( is_readable( CHINA_YES_PLUGIN_PATH . $mod_file ) ) {
-				wp_enqueue_script(
-					self::HANDLE . '-' . $mod,
-					CHINA_YES_PLUGIN_URL . $mod_file,
-					array( self::HANDLE ),
-					CHINA_YES_VERSION,
-					true
-				);
-			}
-		}
+		AdminAssetEnqueuer::enqueue( $hook_suffix, $is_app_screen, $show_widget, $bootstrap );
 	}
 
 	/**

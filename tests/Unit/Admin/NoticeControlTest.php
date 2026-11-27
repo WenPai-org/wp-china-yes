@@ -1,6 +1,6 @@
 <?php
 /**
- * NoticeControl: core notices never match; third-party rules do.
+ * NoticeControl: notification center drawer + built-in promo rules safety & governance tests.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -11,16 +11,18 @@ declare(strict_types=1);
 namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
+use WenPai\ChinaYes\Admin\NoticeControl\NoticeCenter;
 use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
+use WenPai\ChinaYes\Admin\NoticeControl\PromoRules;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\Environment;
 use WenPai\ChinaYes\Tests\Unit\Config\OptionStore;
-use WenPai\ChinaYes\Tests\Unit\Support\LegacyFixtureKey;
+use WP_REST_Request;
 
 require_once __DIR__ . '/wp-admin-stubs.php';
 
 /**
- * Acceptance: core / update-nag / Site Health selectors never hide.
+ * Verifies PromoRules redlines, NoticeCenter native-hub yield, and NoticeControlModule wiring.
  */
 class NoticeControlTest extends TestCase {
 
@@ -33,362 +35,127 @@ class NoticeControlTest extends TestCase {
 		parent::setUp();
 		AdminStore::reset();
 		OptionStore::reset();
+		AdminStore::$is_admin               = true;
+		AdminStore::$caps['manage_options'] = true;
 	}
 
 	/**
-	 * Sample fixture has no core / update-nag / Site Health selectors.
+	 * Every built-in promotional rule passes sanitization and targets a specific plugin element.
 	 */
-	public function test_sample_fixture_has_no_protected_selectors() {
-		$raw = file_get_contents( $this->fixture() ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture.
-		$this->assertNotFalse( $raw );
-		$this->assertSame( 0, preg_match( '/update-nag|site-health|site_health|health-check|update-core|core-update/i', $raw ) );
+	public function test_builtin_promo_rules_all_pass_redline_sanitizer() {
+		$rules     = PromoRules::builtin_rules();
+		$selectors = PromoRules::active_selectors();
 
-		$decoded = json_decode( $raw, true );
-		$this->assertIsArray( $decoded );
-		foreach ( $decoded['rules'] as $rule ) {
-			$this->assertArrayNotHasKey( 'selector', $rule );
+		$this->assertNotEmpty( $rules );
+		$this->assertCount( count( $rules ), $selectors );
+		$this->assertContains( '.wpforms-review-notice', $selectors );
+		$this->assertContains( '.yst-license-notice', $selectors );
+		$this->assertContains( '.rank-math-review-notice', $selectors );
+
+		$css = PromoRules::build_css();
+		$this->assertStringContainsString( '.wpforms-review-notice', $css );
+		$this->assertStringEndsWith( '{display:none!important;}', $css );
+	}
+
+	/**
+	 * Core updates, security alerts, Site Health, generic classes, and injection payloads are rejected.
+	 */
+	public function test_protected_and_unsafe_selectors_are_rejected() {
+		$blocked = array(
+			'.update-nag',
+			'.update_nag',
+			'.notice',
+			'.updated',
+			'.error',
+			'.notice-warning',
+			'.notice.notice-error',
+			'.site-health-notice',
+			'#update-core',
+			'.core-update-banner',
+			'.security-alert-box',
+			'#setting-error-settings_updated',
+			'.settings-error',
+			'*',
+			'div.promo',
+			'.a, .b',
+			'.foo{display:block}',
+		);
+
+		foreach ( $blocked as $selector ) {
+			$this->assertSame( '', PromoRules::sanitize_selector( $selector ), 'Expected rejected: ' . $selector );
 		}
+
+		$this->assertSame( '.acme-promo-notice', PromoRules::sanitize_selector( ' .acme-promo-notice ' ) );
+		$this->assertSame( '#acme-upsell-bar', PromoRules::sanitize_selector( '#acme-upsell-bar' ) );
 	}
 
 	/**
-	 * Core update, security, and Site Health hooks never match.
+	 * Module enables when either drawer or hide_promo is on, and disables in recovery mode.
 	 */
-	public function test_core_notice_hooks_never_match() {
-		$module = $this->module_from_fixture();
-		$module->refresh();
-
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'update-nag' ) );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'update_nag notice notice-warning' ) );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'notice-error', 'core' ) );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'site-health-notice' ) );
-		$this->assertFalse( $module->should_hide( 'site_health_notice', 'notice' ) );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'health-check-wp-update-available' ) );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'notice-warning', 'health-check' ) );
-		$this->assertTrue( $module->is_protected( 'admin_notices', 'update-nag' ) );
-		$this->assertTrue( $module->is_protected( 'admin_notices', 'notice', 'core' ) );
-	}
-
-	/**
-	 * A rule that names a protected class is dropped at load.
-	 */
-	public function test_protected_rule_in_payload_is_dropped() {
-		$payload = SignedPayload::encode(
-			array(
-				'rules_version' => 1,
-				'issued_at'     => '2026-09-03T00:00:00Z',
-				'rules'         => array(
-					array(
-						'id'     => 'hide-update-nag',
-						'plugin' => 'wordpress',
-						'hook'   => 'admin_notices',
-						'class'  => 'update-nag',
-					),
-					array(
-						'id'     => 'acme-dashboard-banner',
-						'plugin' => 'acme-seo',
-						'hook'   => 'admin_notices',
-						'class'  => 'acme-promo-banner',
-					),
-				),
-			)
-		);
-
-		$module = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( $payload ) {
-				return $payload;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-		$module->refresh();
-
-		$ids = array();
-		foreach ( $module->active_rules() as $rule ) {
-			$ids[] = $rule['id'];
-		}
-		$this->assertNotContains( 'hide-update-nag', $ids );
-		$this->assertContains( 'acme-dashboard-banner', $ids );
-		$this->assertFalse( $module->should_hide( 'admin_notices', 'update-nag' ) );
-	}
-
-	/**
-	 * Third-party promo class from the sample fixture does match.
-	 */
-	public function test_third_party_promo_matches() {
-		$module = $this->module_from_fixture();
-		$module->refresh();
-
-		$this->assertTrue( $module->should_hide( 'admin_notices', 'woocommerce-message' ) );
-		$this->assertTrue( $module->consider( 'admin_notices', 'woocommerce-message', 'woocommerce' ) );
-
-		$hidden = $module->hidden_items();
-		$this->assertNotEmpty( $hidden );
-		$this->assertSame( 'woocommerce', $hidden[0]['plugin'] );
-		$this->assertSame( 'woo-connect-promo', $hidden[0]['rule'] );
-		$this->assertNotSame( '', $hidden[0]['first_hidden'] );
-		$this->assertSame( 1, $hidden[0]['count'] );
-	}
-
-	/**
-	 * Protected notices are not recorded even when consider() is called.
-	 */
-	public function test_protected_consider_does_not_record() {
-		$module = $this->module_from_fixture();
-		$module->refresh();
-
-		$this->assertFalse( $module->consider( 'admin_notices', 'update-nag', 'core' ) );
-		$this->assertSame( array(), $module->hidden_items() );
-	}
-
-	/**
-	 * Arbitrary CSS selector field is rejected (3.x adblock_rule is not used).
-	 */
-	public function test_selector_field_is_rejected() {
-		$payload = SignedPayload::encode(
-			array(
-				'rules_version' => 1,
-				'issued_at'     => '2026-09-03T00:00:00Z',
-				'rules'         => array(
-					array(
-						'id'       => 'css-selector',
-						'plugin'   => 'acme',
-						'hook'     => 'admin_notices',
-						'class'    => 'acme-banner',
-						'selector' => '.notice, #wpfooter',
-					),
-				),
-			)
-		);
-
-		$module = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( $payload ) {
-				return $payload;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-		$module->refresh();
-		$this->assertSame( array(), $module->active_rules() );
-	}
-
-	/**
-	 * Module is gated by modules.notice_control.
-	 */
-	public function test_enabled_follows_config() {
+	public function test_enabled_respects_both_switches_and_recovery_mode() {
 		$repo = new Repository();
 		$env  = new Environment( Environment::ADMIN );
 		$mod  = new NoticeControlModule( $repo );
 
 		$repo->set( 'modules.notice_control', true );
+		$repo->set( 'admin.hide_promo', false );
 		$this->assertTrue( $mod->enabled( $repo, $env ) );
 
 		$repo->set( 'modules.notice_control', false );
+		$repo->set( 'admin.hide_promo', true );
+		$this->assertTrue( $mod->enabled( $repo, $env ) );
+
+		$repo->set( 'modules.notice_control', false );
+		$repo->set( 'admin.hide_promo', false );
+		$this->assertFalse( $mod->enabled( $repo, $env ) );
+
+		$repo->set( 'modules.notice_control', true );
+		$repo->set( 'recovery_mode', true );
 		$this->assertFalse( $mod->enabled( $repo, $env ) );
 	}
 
 	/**
-	 * Generic WP class notice-warning is dropped and prints no CSS.
+	 * NoticeCenter excludes operational core screens and yields when native WP notification hub is detected.
 	 */
-	public function test_generic_notice_warning_rule_prints_no_css() {
-		$payload = SignedPayload::encode(
-			array(
-				'rules_version' => 1,
-				'issued_at'     => '2026-09-03T00:00:00Z',
-				'rules'         => array(
-					array(
-						'id'     => 'hide-warning',
-						'plugin' => 'acme',
-						'hook'   => 'admin_notices',
-						'class'  => 'notice-warning',
-					),
-				),
-			)
-		);
+	public function test_notice_center_excludes_core_screens_and_yields_to_native_hub() {
+		$this->assertTrue( NoticeCenter::should_activate_on_screen( 'plugins.php' ) );
+		$this->assertFalse( NoticeCenter::should_activate_on_screen( 'update-core.php' ) );
+		$this->assertFalse( NoticeCenter::should_activate_on_screen( 'site-health.php' ) );
+		$this->assertFalse( NoticeCenter::should_activate_on_screen( 'update.php' ) );
 
-		$module = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( $payload ) {
-				return $payload;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-		$module->refresh();
-
-		$this->assertSame( array(), $module->active_rules() );
-		$this->assertNotEmpty( $module->discarded_rules() );
-
-		ob_start();
-		$module->print_hide_styles();
-		$css = (string) ob_get_clean();
-		$this->assertSame( '', $css );
-		$this->assertStringNotContainsString( 'update-nag', $css );
-		$this->assertStringNotContainsString( 'notice-warning', $css );
-		$this->assertSame( array(), $module->hidden_items() );
+		AdminStore::$hooks['wpcy_notice_center_native_detected'][] = static function () {
+			return true;
+		};
+		$this->assertTrue( NoticeCenter::has_native_notification_center() );
+		$this->assertFalse( NoticeCenter::should_activate_on_screen( 'plugins.php' ) );
 	}
 
 	/**
-	 * Update-nag is never emitted as a hide selector.
+	 * Registering hooks attaches Admin Bar drawer, assets, promo CSS, and REST status route.
 	 */
-	public function test_update_nag_never_appears_in_hide_css() {
-		$payload = SignedPayload::encode(
-			array(
-				'rules_version' => 1,
-				'issued_at'     => '2026-09-03T00:00:00Z',
-				'rules'         => array(
-					array(
-						'id'     => 'hide-nag',
-						'plugin' => 'wordpress',
-						'hook'   => 'admin_notices',
-						'class'  => 'update-nag',
-					),
-					array(
-						'id'     => 'acme-banner',
-						'plugin' => 'acme-seo',
-						'hook'   => 'admin_notices',
-						'class'  => 'acme-promo-banner',
-					),
-				),
-			)
-		);
+	public function test_register_wires_drawer_and_rest_status() {
+		$repo = new Repository();
+		$repo->set( 'modules.notice_control', true );
+		$repo->set( 'admin.hide_promo', true );
 
-		$module = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( $payload ) {
-				return $payload;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-		$module->refresh();
+		$mod = new NoticeControlModule( $repo );
+		$mod->register();
 
-		ob_start();
-		$module->print_hide_styles();
-		$css = (string) ob_get_clean();
-		$this->assertStringNotContainsString( 'update-nag', $css );
-		$this->assertStringContainsString( 'acme-promo-banner', $css );
-		$this->assertSame( array(), $module->hidden_items() );
-	}
+		$this->assertArrayHasKey( 'rest_api_init', AdminStore::$hooks );
+		$this->assertArrayHasKey( 'admin_bar_menu', AdminStore::$hooks );
+		$this->assertArrayHasKey( 'admin_enqueue_scripts', AdminStore::$hooks );
+		$this->assertArrayHasKey( 'admin_footer', AdminStore::$hooks );
 
-	/**
-	 * Empty source does not invent production rules.
-	 */
-	public function test_empty_source_has_no_rules() {
-		$module = new NoticeControlModule( new Repository() );
-		$this->assertSame( '', $module->source() );
-		$this->assertSame( array(), $module->active_rules() );
-	}
+		$mod->register_routes();
+		$routes = array_column( AdminStore::$routes, 'route' );
+		$this->assertContains( '/notice-control/hidden', $routes );
 
-	/**
-	 * Valid signature caches notice rules.
-	 */
-	public function test_valid_signature_caches_rules() {
-		$payload = SignedPayload::encode( $this->unsigned_document() );
-		$module  = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( $payload ) {
-				return $payload;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-		$cached  = $module->refresh();
-		$this->assertIsArray( $cached );
-		$ids = array();
-		foreach ( $module->active_rules() as $rule ) {
-			$ids[] = $rule['id'];
-		}
-		$this->assertContains( 'acme-dashboard-banner', $ids );
-	}
-
-	/**
-	 * Invalid signature keeps the previous valid document.
-	 */
-	public function test_invalid_signature_keeps_previous() {
-		$valid   = SignedPayload::encode( $this->unsigned_document() );
-		$bad_doc = SignedPayload::corrupt( json_decode( $valid, true ) );
-		$bad     = wp_json_encode( $bad_doc );
-		$calls   = 0;
-		$module  = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( &$calls, $valid, $bad ) {
-				++$calls;
-				return 1 === $calls ? $valid : $bad;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-
-		$first  = $module->refresh();
-		$second = $module->refresh();
-		$this->assertSame( $first['issued_at'], $second['issued_at'] );
-		$this->assertSame( $first['rules'], $second['rules'] );
-	}
-
-	/**
-	 * Missing signature keeps the previous valid document.
-	 */
-	public function test_missing_signature_keeps_previous() {
-		$valid  = SignedPayload::encode( $this->unsigned_document() );
-		$plain  = wp_json_encode( $this->unsigned_document( '2026-09-12T00:00:00Z' ) );
-		$calls  = 0;
-		$module = new NoticeControlModule(
-			new Repository(),
-			'mock://rules',
-			static function () use ( &$calls, $valid, $plain ) {
-				++$calls;
-				return 1 === $calls ? $valid : $plain;
-			},
-			null,
-			SignedPayload::verifier()
-		);
-
-		$first  = $module->refresh();
-		$second = $module->refresh();
-		$this->assertSame( '2026-09-03T00:00:00Z', $second['issued_at'] );
-		$this->assertSame( $first['issued_at'], $second['issued_at'] );
-	}
-
-	/**
-	 * Unsigned notice-rules document.
-	 *
-	 * @param string $issued Issued-at stamp.
-	 * @return array<string, mixed>
-	 */
-	private function unsigned_document( string $issued = '2026-09-03T00:00:00Z' ): array {
-		return array(
-			'rules_version' => 1,
-			'issued_at'     => $issued,
-			'rules'         => array(
-				array(
-					'id'     => 'acme-dashboard-banner',
-					'plugin' => 'acme-seo',
-					'hook'   => 'admin_notices',
-					'class'  => 'acme-promo-banner',
-				),
-			),
-		);
-	}
-
-	/**
-	 * Fixture path.
-	 */
-	private function fixture(): string {
-		return dirname( __DIR__, 2 ) . '/fixtures/notice-rules/sample.json';
-	}
-
-	/**
-	 * Module pointed at the sample fixture.
-	 */
-	private function module_from_fixture(): NoticeControlModule {
-		return new NoticeControlModule( new Repository(), $this->fixture(), null, null, LegacyFixtureKey::verifier() );
+		$response = $mod->rest_status( new WP_REST_Request() );
+		$data     = $response->get_data();
+		$this->assertIsArray( $data );
+		$this->assertTrue( $data['drawer_enabled'] );
+		$this->assertTrue( $data['hide_promo_enabled'] );
+		$this->assertSame( 'drawer', $data['mode'] );
+		$this->assertGreaterThan( 10, $data['builtin_promo_count'] );
 	}
 }

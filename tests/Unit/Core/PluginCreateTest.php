@@ -63,7 +63,6 @@ class PluginCreateTest extends TestCase {
 				'services.catalog',
 				'admin.notice_control',
 				'admin.announcements',
-				'admin.element_hide',
 				'providers',
 			),
 			$plugin->registry()->ids()

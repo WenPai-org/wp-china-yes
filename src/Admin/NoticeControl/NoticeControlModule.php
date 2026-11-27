@@ -1,6 +1,10 @@
 <?php
 /**
- * Versioned notice-hide rules. Core / security / Site Health are never hidden.
+ * Admin notice governance: Notification Center drawer + built-in promotional banner hiding.
+ *
+ * Replaces the legacy dual empty-source remote rule modules with a zero-overhead local
+ * implementation aligned with WordPress Notification Center / Declared Intent principles.
+ * Core updates, security alerts, and Site Health notices are never folded or hidden.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -10,13 +14,10 @@ declare(strict_types=1);
 
 namespace WenPai\ChinaYes\Admin\NoticeControl;
 
-use WenPai\ChinaYes\Apps\CacheKey;
-use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Core\ConditionalModule;
 use WenPai\ChinaYes\Core\Config;
 use WenPai\ChinaYes\Core\Environment;
-use WenPai\ChinaYes\Core\Logger;
 use WenPai\ChinaYes\Rest\Permissions;
 use WenPai\ChinaYes\Rest\RestError;
 use WenPai\ChinaYes\Rest\RestModule;
@@ -28,89 +29,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Module id admin.notice_control. Empty source disables production fetch.
+ * Module id `admin.notice_control`.
  *
- * Does not accept user CSS selectors. Rules come from versioned JSON.
+ * Controls both:
+ * - `modules.notice_control`: Admin Bar notification center drawer for non-critical notices.
+ * - `admin.hide_promo`: Built-in CSS hiding for persistent third-party promotional banners.
  */
 final class NoticeControlModule implements ConditionalModule {
-
-	/**
-	 * Production rules URL is not selected yet (M3). Empty disables fetch.
-	 *
-	 * @since 4.0.0
-	 */
-	public const PRODUCTION_URL = '';
-
-	/**
-	 * Base name of the transient holding the last successful rules document.
-	 *
-	 * The live name is cache_key(): this base plus CacheKey::VERSION and the
-	 * verifier's trust fingerprint. A transient under the bare base name is a
-	 * cache from an older release; it is never read and is deleted on the
-	 * next successful store and on uninstall.
-	 *
-	 * @since 4.0.0
-	 */
-	public const TRANSIENT_KEY = 'wpcy_notice_rules';
-
-	/**
-	 * Option holding the hidden-notice log. Not a user setting.
-	 *
-	 * @since 4.0.0
-	 */
-	public const LOG_OPTION = 'wpcy_notice_control_log';
-
-	/**
-	 * Cache TTL in seconds (24h).
-	 *
-	 * @since 4.0.0
-	 */
-	public const TTL = 86400;
-
-	/**
-	 * Cron hook for the daily pull.
-	 *
-	 * @since 4.0.0
-	 */
-	public const CRON_HOOK = 'wpcy_notice_rules_refresh';
-
-	/**
-	 * WordPress generic notice class/id tokens. Rules naming these are dropped.
-	 *
-	 * @since 4.0.0
-	 * @var list<string>
-	 */
-	public const GENERIC_CLASSES = array(
-		'notice',
-		'updated',
-		'error',
-		'update-nag',
-		'is-dismissible',
-		'inline',
-	);
-
-	/**
-	 * Tokens that mark core update, security, or Site Health notices.
-	 *
-	 * @since 4.0.0
-	 * @var list<string>
-	 */
-	public const PROTECTED_TOKENS = array(
-		'core',
-		'update-nag',
-		'update_nag',
-		'site-health',
-		'site_health',
-		'health-check',
-		'health_check',
-		'wp-site-health',
-		'wp_site_health',
-		'core-update',
-		'core_update',
-		'update-core',
-		'update_core',
-		'security',
-	);
 
 	/**
 	 * Settings access.
@@ -120,65 +45,23 @@ final class NoticeControlModule implements ConditionalModule {
 	private Repository $config;
 
 	/**
-	 * Local path or HTTPS URL. Empty means do not fetch.
+	 * Notification center drawer controller.
 	 *
-	 * @var string
+	 * @var NoticeCenter
 	 */
-	private string $source;
+	private NoticeCenter $center;
 
 	/**
-	 * Optional HTTP/file fetcher. Callable is not a PHP 7.4 property type.
-	 *
-	 * @var callable|null
-	 */
-	private $fetcher;
-
-	/**
-	 * Optional diagnostic logger.
-	 *
-	 * @var Logger|null
-	 */
-	private $logger;
-
-	/**
-	 * Ed25519 verifier.
-	 *
-	 * @var ManifestVerifier
-	 */
-	private ManifestVerifier $verifier;
-
-	/**
-	 * Rules dropped by the class/id whitelist in the last sanitize.
-	 *
-	 * @var list<array{id: string, class: string, reason: string}>
-	 */
-	private array $discarded = array();
-
-	/**
-	 * In-memory hidden log keyed by rule id.
-	 *
-	 * @var array<string, array{plugin: string, rule: string, first_hidden: string, count: int}>
-	 */
-	private array $log = array();
-
-	/**
-	 * Constructor. Does not register hooks or fetch.
+	 * Constructor. Does not register hooks.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param Repository            $config   Settings access.
-	 * @param string                $source   Fixture path or HTTPS URL. Empty disables fetch.
-	 * @param callable|null         $fetcher  Optional `fn(string $source): string`.
-	 * @param Logger|null           $logger   Diagnostic sink for discarded rules.
-	 * @param ManifestVerifier|null $verifier Ed25519 verifier.
+	 * @param Repository        $config Settings access.
+	 * @param NoticeCenter|null $center Optional notification center instance.
 	 */
-	public function __construct( Repository $config, string $source = '', $fetcher = null, $logger = null, $verifier = null ) {
-		$this->config   = $config;
-		$this->source   = $source;
-		$this->fetcher  = is_callable( $fetcher ) ? $fetcher : null;
-		$this->logger   = $logger instanceof Logger ? $logger : null;
-		$this->verifier = $verifier instanceof ManifestVerifier ? $verifier : new ManifestVerifier();
-		$this->log      = $this->load_log();
+	public function __construct( Repository $config, ?NoticeCenter $center = null ) {
+		$this->config = $config;
+		$this->center = $center instanceof NoticeCenter ? $center : new NoticeCenter();
 	}
 
 	/**
@@ -191,14 +74,14 @@ final class NoticeControlModule implements ConditionalModule {
 	}
 
 	/**
-	 * Admin plus REST (route registration) and cron.
+	 * Admin plus REST (status route).
 	 *
 	 * @since 4.0.0
 	 *
 	 * @return list<string>
 	 */
 	public function contexts(): array {
-		return Environment::CONTEXTS;
+		return array( Environment::ADMIN, Environment::REST );
 	}
 
 	/**
@@ -213,7 +96,7 @@ final class NoticeControlModule implements ConditionalModule {
 	}
 
 	/**
-	 * True when modules.notice_control is true and not recovery.
+	 * Active whenever not in recovery mode and at least one governance switch is on.
 	 *
 	 * @since 4.0.0
 	 *
@@ -223,44 +106,54 @@ final class NoticeControlModule implements ConditionalModule {
 	public function enabled( Config $config, Environment $environment ): bool {
 		unset( $environment );
 
-		if ( true === $this->config->get( 'recovery_mode', false ) ) {
+		if ( true === $config->get( 'recovery_mode', false ) ) {
 			return false;
 		}
 
-		return true === $config->get( 'modules.notice_control', false );
+		return $this->drawer_enabled( $config ) || $this->hide_promo_enabled( $config );
 	}
 
 	/**
-	 * Hook REST, admin hide, and refresh. Constructor does not register hooks.
+	 * Whether the notification center drawer is enabled.
+	 *
+	 * @param Config|null $config Optional config override.
+	 */
+	public function drawer_enabled( ?Config $config = null ): bool {
+		$source = $config instanceof Config ? $config : $this->config;
+		return true === $source->get( 'modules.notice_control', false );
+	}
+
+	/**
+	 * Whether built-in promotional banner hiding is enabled.
+	 *
+	 * @param Config|null $config Optional config override.
+	 */
+	public function hide_promo_enabled( ?Config $config = null ): bool {
+		$source = $config instanceof Config ? $config : $this->config;
+		return true === $source->get( 'admin.hide_promo', true );
+	}
+
+	/**
+	 * Hook REST status route, notification center drawer, and promo banner stylesheet.
 	 *
 	 * @since 4.0.0
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
-		add_action( 'admin_head', array( $this, 'print_hide_styles' ) );
-		add_action( self::CRON_HOOK, array( $this, 'cron_refresh' ) );
 
-		if ( '' === $this->source ) {
-			return;
+		if ( $this->drawer_enabled() ) {
+			add_action( 'admin_bar_menu', array( $this->center, 'add_admin_bar_node' ), 999 );
+			add_action( 'admin_enqueue_scripts', array( $this->center, 'enqueue_assets' ) );
+			add_action( 'admin_footer', array( $this->center, 'render_drawer' ) );
 		}
-		if ( function_exists( 'wp_next_scheduled' ) && ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			if ( function_exists( 'wp_schedule_event' ) ) {
-				wp_schedule_event( time(), 'daily', self::CRON_HOOK );
-			}
+
+		if ( $this->hide_promo_enabled() ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_promo_hide_css' ), 20 );
 		}
 	}
 
 	/**
-	 * Cron callback. refresh() returns the document and cannot be the hook.
-	 *
-	 * @since 4.0.0
-	 */
-	public function cron_refresh(): void {
-		$this->refresh();
-	}
-
-	/**
-	 * GET /notice-control/hidden for the diagnose DataViews tab.
+	 * Register GET /wpcy/v1/notice-control/hidden for diagnostics.
 	 *
 	 * @since 4.0.0
 	 */
@@ -270,616 +163,77 @@ final class NoticeControlModule implements ConditionalModule {
 			'/notice-control/hidden',
 			array(
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'rest_hidden' ),
+				'callback'            => array( $this, 'rest_status' ),
 				'permission_callback' => array( Permissions::class, 'manage_options_read' ),
 			)
 		);
 	}
 
 	/**
-	 * Hidden-notice log for diagnose. Never errors.
-	 *
-	 * @since 4.0.0
+	 * Return governance status and built-in promo rule metadata.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @phpstan-param WP_REST_Request<array<string, mixed>> $request
 	 * @return WP_REST_Response
 	 */
-	public function rest_hidden( WP_REST_Request $request ): WP_REST_Response {
+	public function rest_status( WP_REST_Request $request ): WP_REST_Response {
 		unset( $request );
-		return RestError::ok( array( 'items' => $this->hidden_items() ) );
+		return RestError::ok( $this->diagnostics() );
 	}
 
 	/**
-	 * Configured source. Empty when production fetch is disabled.
+	 * Structured diagnostics snapshot for admin/REST consumers.
 	 *
-	 * @since 4.0.0
+	 * @return array{
+	 *     drawer_enabled: bool,
+	 *     hide_promo_enabled: bool,
+	 *     native_hub_detected: bool,
+	 *     builtin_promo_count: int,
+	 *     mode: string,
+	 *     items: list<array{id: string, plugin: string, label: string}>
+	 * }
 	 */
-	public function source(): string {
-		return $this->source;
-	}
-
-	/**
-	 * Whether hook / class / plugin names a core update, security, or Site Health notice.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param string $hook        Admin hook.
-	 * @param string $css_class   Notice CSS class.
-	 * @param string $plugin      Plugin slug.
-	 */
-	public function is_protected( string $hook, string $css_class, string $plugin = '' ): bool {
-		return $this->contains_protected_token( $hook )
-			|| $this->contains_protected_token( $css_class )
-			|| $this->contains_protected_token( $plugin );
-	}
-
-	/**
-	 * Whether this notice should be hidden. Protected targets never match.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param string $hook      Admin hook.
-	 * @param string $css_class Notice CSS class.
-	 * @param string $plugin    Plugin slug.
-	 */
-	public function should_hide( string $hook, string $css_class, string $plugin = '' ): bool {
-		if ( $this->is_protected( $hook, $css_class, $plugin ) ) {
-			return false;
-		}
-
-		return is_array( $this->matching_rule( $hook, $css_class ) );
-	}
-
-	/**
-	 * First matching non-protected rule, or null.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param string $hook      Admin hook.
-	 * @param string $css_class Notice CSS class.
-	 * @return array{id: string, plugin: string, hook: string, class: string}|null
-	 */
-	public function matching_rule( string $hook, string $css_class ) {
-		foreach ( $this->active_rules() as $rule ) {
-			if ( '' !== $rule['hook'] && 0 !== strcasecmp( $rule['hook'], $hook ) ) {
-				continue;
-			}
-			if ( '' !== $rule['class'] && ! $this->class_list_has( $css_class, $rule['class'] ) ) {
-				continue;
-			}
-			if ( '' === $rule['hook'] && '' === $rule['class'] ) {
-				continue;
-			}
-			return $rule;
-		}
-
-		return null;
-	}
-
-	/**
-	 * Record a hide when the notice is not protected and matches a rule.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param string $hook      Admin hook.
-	 * @param string $css_class Notice CSS class.
-	 * @param string $plugin    Plugin slug.
-	 * @return bool True when hidden.
-	 */
-	public function consider( string $hook, string $css_class, string $plugin = '' ): bool {
-		if ( $this->is_protected( $hook, $css_class, $plugin ) ) {
-			return false;
-		}
-
-		$rule = $this->matching_rule( $hook, $css_class );
-		if ( ! is_array( $rule ) ) {
-			return false;
-		}
-
-		$this->record_hidden( $rule, $plugin );
-		return true;
-	}
-
-	/**
-	 * Hidden rows for diagnose: plugin / rule / first_hidden / count.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @return list<array{id: string, plugin: string, rule: string, first_hidden: string, count: int}>
-	 */
-	public function hidden_items(): array {
-		$out = array();
-		foreach ( $this->log as $row ) {
-			$out[] = array(
-				'id'           => $row['rule'],
-				'plugin'       => $row['plugin'],
-				'rule'         => $row['rule'],
-				'first_hidden' => $row['first_hidden'],
-				'count'        => $row['count'],
+	public function diagnostics(): array {
+		$items = array();
+		foreach ( PromoRules::builtin_rules() as $rule ) {
+			$items[] = array(
+				'id'     => $rule['id'],
+				'plugin' => $rule['plugin'],
+				'label'  => $rule['label'],
 			);
 		}
-		return $out;
+
+		$native = NoticeCenter::has_native_notification_center();
+		$mode   = $native ? 'yield_to_native' : ( $this->drawer_enabled() ? 'drawer' : 'off' );
+
+		return array(
+			'drawer_enabled'      => $this->drawer_enabled(),
+			'hide_promo_enabled'  => $this->hide_promo_enabled(),
+			'native_hub_detected' => $native,
+			'builtin_promo_count' => count( PromoRules::active_selectors() ),
+			'mode'                => $mode,
+			'items'               => $items,
+		);
 	}
 
 	/**
-	 * Print hide styles for active rule classes. Not user selectors.
-	 *
-	 * @since 4.0.0
+	 * Attach curated promo-hiding CSS cleanly onto the core `wp-admin` stylesheet handle.
 	 */
-	public function print_hide_styles(): void {
-		$selectors = array();
-		foreach ( $this->active_rules() as $rule ) {
-			$name = $this->sanitize_class( $rule['class'] );
-			if ( '' === $name || ! $this->is_allowed_class( $name ) ) {
-				continue;
-			}
-			$selectors[] = '.' . $name;
+	public function enqueue_promo_hide_css(): void {
+		if ( ! $this->hide_promo_enabled() ) {
+			return;
 		}
-		$selectors = array_values( array_unique( $selectors ) );
-		if ( array() === $selectors ) {
+		if ( function_exists( 'is_admin' ) && ! is_admin() ) {
 			return;
 		}
 
-		echo '<style id="wpcy-notice-control">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed tag.
-		echo esc_html( implode( ',', $selectors ) ) . '{display:none!important;}';
-		echo '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed tag.
-	}
-
-	/**
-	 * Fetch, sanitize, replace the cache. Failure keeps the previous cache.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @return array{rules_version: int, issued_at: string, rules: list<array{id: string, plugin: string, hook: string, class: string}>}|null
-	 */
-	public function refresh() {
-		$previous = $this->cached_document();
-		if ( '' === $this->source ) {
-			return $previous;
-		}
-
-		$this->discarded = array();
-
-		$raw = $this->read_source();
-		if ( '' === $raw ) {
-			return $previous;
-		}
-
-		$decoded = json_decode( $raw, true );
-		if ( ! is_array( $decoded ) || ! $this->verifier->verify( $decoded ) ) {
-			if ( $this->logger instanceof Logger ) {
-				$this->logger->log(
-					'warning',
-					'Notice control rules signature invalid; keeping previous cache.',
-					array(
-						'code' => 'wpcy_notice_rules_signature_invalid',
-					)
-				);
-			}
-			return $previous;
-		}
-
-		unset( $decoded['signature'] );
-		$clean = $this->sanitize_document( $decoded );
-		if ( ! is_array( $clean ) ) {
-			return $previous;
-		}
-
-		$this->store( $clean );
-		return $clean;
-	}
-
-	/**
-	 * Transient name of the cached document for this verifier's keys.
-	 *
-	 * @since 4.0.0
-	 */
-	public function cache_key(): string {
-		return CacheKey::for( self::TRANSIENT_KEY, $this->verifier );
-	}
-
-	/**
-	 * Last stored document, or null.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @return array{rules_version: int, issued_at: string, rules: list<array{id: string, plugin: string, hook: string, class: string}>}|null
-	 */
-	public function cached_document() {
-		if ( ! function_exists( 'get_transient' ) ) {
-			return null;
-		}
-		$stored = get_transient( $this->cache_key() );
-		$clean  = $this->sanitize_document( $stored );
-		return is_array( $clean ) ? $clean : null;
-	}
-
-	/**
-	 * Rules that passed the iron law.
-	 *
-	 * @return list<array{id: string, plugin: string, hook: string, class: string}>
-	 */
-	public function active_rules(): array {
-		$cached = $this->cached_document();
-		if ( ! is_array( $cached ) && '' !== $this->source ) {
-			$this->refresh();
-			$cached = $this->cached_document();
-		}
-		if ( ! is_array( $cached ) ) {
-			return array();
-		}
-
-		return $cached['rules'];
-	}
-
-	/**
-	 * Append or increment a hidden-notice row.
-	 *
-	 * @param array{id: string, plugin: string, hook: string, class: string} $rule   Matched rule.
-	 * @param string                                                         $plugin Plugin slug override.
-	 */
-	private function record_hidden( array $rule, string $plugin ): void {
-		$id = $rule['id'];
-		if ( '' === $id ) {
+		$css = PromoRules::build_css();
+		if ( '' === $css ) {
 			return;
 		}
 
-		$now    = gmdate( 'Y-m-d\\TH:i:s\\Z' );
-		$source = '' !== $plugin ? $plugin : $rule['plugin'];
-
-		if ( ! isset( $this->log[ $id ] ) ) {
-			$this->log[ $id ] = array(
-				'plugin'       => $source,
-				'rule'         => $id,
-				'first_hidden' => $now,
-				'count'        => 0,
-			);
+		if ( function_exists( 'wp_add_inline_style' ) ) {
+			wp_add_inline_style( 'wp-admin', $css );
 		}
-
-		++$this->log[ $id ]['count'];
-		if ( '' !== $source ) {
-			$this->log[ $id ]['plugin'] = $source;
-		}
-
-		$this->persist_log();
-	}
-
-	/**
-	 * Keep a spec-shaped rules document. Protected rules are dropped.
-	 *
-	 * @param mixed $decoded Candidate.
-	 * @return array{rules_version: int, issued_at: string, rules: list<array{id: string, plugin: string, hook: string, class: string}>}|null
-	 */
-	private function sanitize_document( $decoded ) {
-		if ( ! is_array( $decoded ) || ! isset( $decoded['rules'] ) || ! is_array( $decoded['rules'] ) ) {
-			return null;
-		}
-
-		$version = isset( $decoded['rules_version'] ) ? (int) $decoded['rules_version'] : 0;
-		if ( $version < 1 ) {
-			return null;
-		}
-
-		$issued = isset( $decoded['issued_at'] ) && is_string( $decoded['issued_at'] )
-			? $decoded['issued_at']
-			: '';
-
-		$rules = array();
-		foreach ( $decoded['rules'] as $row ) {
-			$rule = $this->sanitize_rule( $row );
-			if ( is_array( $rule ) ) {
-				$rules[] = $rule;
-			}
-		}
-
-		return array(
-			'rules_version' => $version,
-			'issued_at'     => $issued,
-			'rules'         => $rules,
-		);
-	}
-
-	/**
-	 * One rule. Rejects core / update-nag / Site Health targets.
-	 *
-	 * @param mixed $row Candidate.
-	 * @return array{id: string, plugin: string, hook: string, class: string}|null
-	 */
-	private function sanitize_rule( $row ) {
-		if ( ! is_array( $row ) ) {
-			return null;
-		}
-
-		$id = isset( $row['id'] ) && is_string( $row['id'] ) ? trim( $row['id'] ) : '';
-		if ( '' === $id || strlen( $id ) > 128 ) {
-			return null;
-		}
-
-		$plugin = isset( $row['plugin'] ) && is_string( $row['plugin'] ) ? trim( $row['plugin'] ) : '';
-		$hook   = isset( $row['hook'] ) && is_string( $row['hook'] ) ? trim( $row['hook'] ) : '';
-		$class  = isset( $row['class'] ) && is_string( $row['class'] ) ? trim( $row['class'] ) : '';
-
-		if ( isset( $row['selector'] ) && is_string( $row['selector'] ) && '' !== $row['selector'] ) {
-			$this->discard_rule( $id, $class, 'selector_rejected' );
-			return null;
-		}
-
-		if ( '' !== $class && ! $this->is_allowed_class( $class ) ) {
-			$this->discard_rule( $id, $class, 'generic_or_invalid_class' );
-			return null;
-		}
-
-		if ( $this->is_protected( $hook, $class, $plugin ) ) {
-			$this->discard_rule( $id, $class, 'protected' );
-			return null;
-		}
-
-		if ( '' === $hook && '' === $class ) {
-			return null;
-		}
-
-		return array(
-			'id'     => $id,
-			'plugin' => $plugin,
-			'hook'   => $hook,
-			'class'  => $class,
-		);
-	}
-
-	/**
-	 * Read the source. Local files do not use HTTP. Remote only https://wpcy.com/.
-	 *
-	 * @return string
-	 */
-	private function read_source(): string {
-		if ( is_callable( $this->fetcher ) ) {
-			$result = call_user_func( $this->fetcher, $this->source );
-			return is_string( $result ) ? $result : '';
-		}
-
-		if ( $this->is_local_path( $this->source ) ) {
-			if ( ! is_readable( $this->source ) ) {
-				return '';
-			}
-			$raw = file_get_contents( $this->source ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local fixture, not a remote URL.
-			return is_string( $raw ) ? $raw : '';
-		}
-
-		if ( 0 !== strpos( $this->source, 'https://wpcy.com/' ) ) {
-			return '';
-		}
-
-		if ( ! function_exists( 'wp_remote_get' ) ) {
-			return '';
-		}
-
-		$response = wp_remote_get(
-			$this->source,
-			array(
-				'timeout'   => 10,
-				'sslverify' => true,
-			)
-		);
-		if ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) {
-			return '';
-		}
-
-		$code = function_exists( 'wp_remote_retrieve_response_code' )
-			? (int) wp_remote_retrieve_response_code( $response )
-			: 0;
-		if ( 200 !== $code ) {
-			return '';
-		}
-
-		if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
-			return '';
-		}
-		return (string) wp_remote_retrieve_body( $response );
-	}
-
-	/**
-	 * Persist a sanitized document.
-	 *
-	 * @param array{rules_version: int, issued_at: string, rules: list<array{id: string, plugin: string, hook: string, class: string}>} $document Document.
-	 */
-	private function store( array $document ): void {
-		if ( function_exists( 'delete_transient' ) ) {
-			delete_transient( self::TRANSIENT_KEY );
-		}
-		if ( function_exists( 'set_transient' ) ) {
-			$ttl = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : self::TTL;
-			set_transient( $this->cache_key(), $document, $ttl );
-		}
-	}
-
-	/**
-	 * Whether $haystack (hook, class list, or plugin) contains a protected token.
-	 *
-	 * @param string $haystack Raw value.
-	 */
-	private function contains_protected_token( string $haystack ): bool {
-		$normalized = strtolower( str_replace( '_', '-', $haystack ) );
-		if ( '' === $normalized ) {
-			return false;
-		}
-
-		foreach ( self::PROTECTED_TOKENS as $token ) {
-			$needle = str_replace( '_', '-', strtolower( $token ) );
-			if ( $normalized === $needle ) {
-				return true;
-			}
-			if ( false !== strpos( $normalized, $needle ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Whether a space-separated class list contains $needle.
-	 *
-	 * @param string $class_list HTML class attribute.
-	 * @param string $needle     Rule class.
-	 */
-	private function class_list_has( string $class_list, string $needle ): bool {
-		$needle = strtolower( trim( $needle ) );
-		if ( '' === $needle ) {
-			return false;
-		}
-		$parts = preg_split( '/\s+/', strtolower( $class_list ) );
-		if ( ! is_array( $parts ) ) {
-			return false;
-		}
-		return in_array( $needle, $parts, true );
-	}
-
-	/**
-	 * Rules dropped by whitelist / iron law during the last sanitize.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @return list<array{id: string, class: string, reason: string}>
-	 */
-	public function discarded_rules(): array {
-		return $this->discarded;
-	}
-
-	/**
-	 * Whether a class/id token is plugin-specific and not a WP generic notice class.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param string $token Class or id token.
-	 */
-	public function is_allowed_class( string $token ): bool {
-		$first = strtok( $token, ' ' );
-		$token = strtolower( trim( is_string( $first ) ? $first : '' ) );
-		if ( 1 !== preg_match( '/^[a-z0-9-]+$/', $token ) ) {
-			return false;
-		}
-		if ( in_array( $token, self::GENERIC_CLASSES, true ) ) {
-			return false;
-		}
-		if ( 0 === strpos( $token, 'notice-' ) ) {
-			return false;
-		}
-		if ( 'update-core' === $token || 0 === strpos( $token, 'update-core-' ) ) {
-			return false;
-		}
-		if ( 0 === strpos( $token, 'site-health' ) ) {
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
-	 * Record a discarded rule and log a diagnostic line.
-	 *
-	 * @param string $id        Rule id.
-	 * @param string $css_class Class token.
-	 * @param string $reason    Machine reason.
-	 */
-	private function discard_rule( string $id, string $css_class, string $reason ): void {
-		$this->discarded[] = array(
-			'id'     => $id,
-			'class'  => $css_class,
-			'reason' => $reason,
-		);
-		if ( $this->logger instanceof Logger ) {
-			$this->logger->log(
-				'warning',
-				'Notice control rule discarded.',
-				array(
-					'rule'   => $id,
-					'class'  => $css_class,
-					'reason' => $reason,
-				)
-			);
-		}
-	}
-
-	/**
-	 * Single HTML class token from a rule class field.
-	 *
-	 * @param string $css_class Raw class.
-	 */
-	private function sanitize_class( string $css_class ): string {
-		$token = strtok( trim( $css_class ), ' ' );
-		if ( ! is_string( $token ) ) {
-			return '';
-		}
-		if ( function_exists( 'sanitize_html_class' ) ) {
-			return sanitize_html_class( $token );
-		}
-		$clean = preg_replace( '/[^A-Za-z0-9_-]/', '', $token );
-		return is_string( $clean ) ? $clean : '';
-	}
-
-	/**
-	 * Whether $source is a local filesystem path, not an HTTP URL.
-	 *
-	 * @param string $source Source.
-	 */
-	private function is_local_path( string $source ): bool {
-		return 0 !== strpos( $source, 'http://' ) && 0 !== strpos( $source, 'https://' );
-	}
-
-	/**
-	 * Load the persisted hidden log.
-	 *
-	 * @return array<string, array{plugin: string, rule: string, first_hidden: string, count: int}>
-	 */
-	private function load_log(): array {
-		if ( ! function_exists( 'get_option' ) ) {
-			return array();
-		}
-		$stored = get_option( self::LOG_OPTION, array() );
-		return is_array( $stored ) ? $this->sanitize_log( $stored ) : array();
-	}
-
-	/**
-	 * Write the hidden log.
-	 */
-	private function persist_log(): void {
-		if ( function_exists( 'update_option' ) ) {
-			update_option( self::LOG_OPTION, $this->log, false );
-		}
-	}
-
-	/**
-	 * Keep plugin / rule / first_hidden / count only.
-	 *
-	 * @param mixed $stored Option value.
-	 * @return array<string, array{plugin: string, rule: string, first_hidden: string, count: int}>
-	 */
-	private function sanitize_log( $stored ): array {
-		if ( ! is_array( $stored ) ) {
-			return array();
-		}
-
-		$out = array();
-		foreach ( $stored as $key => $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			$id = is_string( $key ) ? $key : '';
-			if ( isset( $row['rule'] ) && is_string( $row['rule'] ) && '' !== $row['rule'] ) {
-				$id = $row['rule'];
-			}
-			if ( '' === $id ) {
-				continue;
-			}
-			$out[ $id ] = array(
-				'plugin'       => isset( $row['plugin'] ) && is_string( $row['plugin'] ) ? $row['plugin'] : '',
-				'rule'         => $id,
-				'first_hidden' => isset( $row['first_hidden'] ) && is_string( $row['first_hidden'] ) ? $row['first_hidden'] : '',
-				'count'        => isset( $row['count'] ) ? (int) $row['count'] : 0,
-			);
-		}
-
-		return $out;
 	}
 }

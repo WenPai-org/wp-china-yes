@@ -125,10 +125,16 @@ class AdminModuleTest extends TestCase {
 	 * Ordinary admin page: no fullscreen chrome, no admin-bar math, no History API.
 	 */
 	public function test_app_source_respects_ordinary_admin_page_constraints() {
-		$root  = dirname( __DIR__, 3 );
-		$files = array(
-			$root . '/src/Admin/KitRenderer.php',
-			$root . '/assets/js/wpcy-admin.js',
+		$root       = dirname( __DIR__, 3 );
+		$view_files = glob( $root . '/src/Admin/Views/*.php' );
+		$js_files   = glob( $root . '/assets/js/wpcy-admin-*.js' );
+		$files      = array_merge(
+			array(
+				$root . '/src/Admin/KitRenderer.php',
+				$root . '/assets/js/wpcy-admin.js',
+			),
+			is_array( $view_files ) ? $view_files : array(),
+			is_array( $js_files ) ? $js_files : array()
 		);
 
 		$joined = '';

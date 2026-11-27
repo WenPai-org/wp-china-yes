@@ -31,6 +31,20 @@ final class DataStore {
 	public const TABLE = 'wpcy_app_data';
 
 	/**
+	 * Schema version option key used by `maybe_install()` to avoid running `dbDelta` on every request.
+	 *
+	 * @since 4.0.0
+	 */
+	public const SCHEMA_VERSION_OPTION = 'wpcy_app_data_schema_version';
+
+	/**
+	 * Current table schema version.
+	 *
+	 * @since 4.0.0
+	 */
+	public const SCHEMA_VERSION = '1';
+
+	/**
 	 * Data key pattern from spec §4.
 	 *
 	 * @since 4.0.0
@@ -67,6 +81,23 @@ final class DataStore {
 	 */
 	public function __construct( $wpdb = null ) {
 		$this->wpdb = is_object( $wpdb ) ? $wpdb : null;
+	}
+
+	/**
+	 * Run `install()` at most once per schema version so `admin_init` does not run `dbDelta` on every request.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param object|null $wpdb Optional wpdb instance.
+	 */
+	public static function maybe_install( $wpdb = null ): void {
+		if ( function_exists( 'get_option' ) && self::SCHEMA_VERSION === (string) get_option( self::SCHEMA_VERSION_OPTION, '' ) ) {
+			return;
+		}
+		self::install( $wpdb );
+		if ( function_exists( 'update_option' ) ) {
+			update_option( self::SCHEMA_VERSION_OPTION, self::SCHEMA_VERSION, false );
+		}
 	}
 
 	/**

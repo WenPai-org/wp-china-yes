@@ -46,7 +46,14 @@ final class AppsModule implements Module {
 	private EntitlementsClient $entitlements;
 
 	/**
-	 * Constructor. Does not register hooks. Empty index source disables production fetch.
+	 * Configured apps index source. Empty keeps the micro-app sandbox dormant (zero DB table install).
+	 *
+	 * @var string
+	 */
+	private string $source = '';
+
+	/**
+	 * Constructor. Does not register hooks. Empty index source disables production fetch and auto table install.
 	 *
 	 * @since 4.0.0
 	 *
@@ -59,6 +66,7 @@ final class AppsModule implements Module {
 	public function __construct( $registry = null, $store = null, $entitlements = null, $index = null, $logger = null ) {
 		if ( $registry instanceof Registry ) {
 			$this->registry = $registry;
+			$this->source   = 'injected';
 		} else {
 			$logger = $logger instanceof Logger ? $logger : null;
 			$source = '';
@@ -66,6 +74,7 @@ final class AppsModule implements Module {
 				$filtered = apply_filters( 'wpcy_apps_index_source', '' );
 				$source   = is_string( $filtered ) ? $filtered : '';
 			}
+			$this->source   = $source;
 			$index          = $index instanceof Index ? $index : new Index( new ManifestVerifier(), $source, null, $logger );
 			$this->registry = new Registry( $index );
 		}
@@ -107,13 +116,15 @@ final class AppsModule implements Module {
 	}
 
 	/**
-	 * Hook REST and table install. Constructor does not register hooks.
+	 * Hook REST and on-demand table install (only when an apps index source is configured).
 	 *
 	 * @since 4.0.0
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
-		add_action( 'admin_init', array( DataStore::class, 'install' ) );
+		if ( '' !== $this->source ) {
+			add_action( 'admin_init', array( DataStore::class, 'maybe_install' ) );
+		}
 	}
 
 	/**

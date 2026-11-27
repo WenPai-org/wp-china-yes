@@ -11,7 +11,6 @@ namespace WenPai\ChinaYes\Core;
 
 use WenPai\ChinaYes\Admin\AdminModule;
 use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
-use WenPai\ChinaYes\Admin\ElementHide\ElementHideModule;
 use WenPai\ChinaYes\Admin\MaintenanceModule;
 use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\AppsModule;
@@ -263,10 +262,9 @@ final class Plugin {
 		$registry->add( new MaintenanceModule( $config ) );
 		$registry->add( $entitlements );
 		$registry->add( new CatalogModule( $config, $logger ) );
-		$registry->add( new NoticeControlModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_notice_rules_source', '' ) : '' ), null, $logger ) );
+		$registry->add( new NoticeControlModule( $config ) );
 		$default_ann = AnnouncementsModule::READ_URL;
 		$registry->add( new AnnouncementsModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_announcements_source', $default_ann ) : $default_ann ) ) );
-		$registry->add( new ElementHideModule( $config, self::source_string( function_exists( 'apply_filters' ) ? apply_filters( 'wpcy_element_hide_source', '' ) : '' ), null, $logger ) );
 		$registry->add( new UpdateBridge( $config, null, null, $logger ) );
 
 		return new self( $container, $registry, $environment );

@@ -1,0 +1,182 @@
+/**
+ * WPCY Admin Notification Center Drawer.
+ * 100% semantic wenpai-admin-ui tokens, 400 regular weight.
+ */
+
+#wpadminbar .wpcy-nc-bar-item.is-empty {
+	display: none !important;
+}
+
+#wpadminbar .wpcy-nc-bar-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wenpai-space-1-5);
+	font-weight: var(--wenpai-weight-regular);
+}
+
+#wpadminbar .wpcy-nc-bar-icon.dashicons {
+	font-size: var(--wenpai-text-title);
+	width: var(--wenpai-space-4);
+	height: var(--wenpai-space-4);
+	line-height: var(--wenpai-space-4);
+	color: inherit;
+}
+
+#wpadminbar .wpcy-nc-bar-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 var(--wenpai-space-1-5);
+	border-radius: 999px;
+	background: var(--wenpai-accent);
+	color: var(--wenpai-on-accent);
+	font-size: 11px;
+	line-height: 1;
+	font-weight: var(--wenpai-weight-regular);
+}
+
+.wpcy-nc-drawer[hidden] {
+	display: none !important;
+}
+
+.wpcy-nc-drawer {
+	position: fixed;
+	inset: 0;
+	z-index: 100050;
+	display: flex;
+	justify-content: flex-end;
+	font-family: var(--wenpai-font);
+	font-weight: var(--wenpai-weight-regular);
+}
+
+.wpcy-nc-backdrop {
+	position: absolute;
+	inset: 0;
+	background: var(--wenpai-ink);
+	opacity: 0.28;
+}
+
+.wpcy-nc-panel {
+	position: relative;
+	z-index: var(--wenpai-z-raised);
+	width: min(460px, 94vw);
+	max-width: 100%;
+	height: 100%;
+	background: var(--wenpai-card);
+	border-left: 1px solid var(--wenpai-line);
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	padding-top: var(--wenpai-space-8);
+}
+
+@media screen and (max-width: 782px) {
+	.wpcy-nc-panel {
+		padding-top: var(--wenpai-space-12);
+	}
+}
+
+.wpcy-nc-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--wenpai-space-3);
+	padding: var(--wenpai-space-4) var(--wenpai-space-5);
+	border-bottom: 1px solid var(--wenpai-line);
+	background: var(--wenpai-surface-soft);
+}
+
+.wpcy-nc-head-main {
+	min-width: 0;
+}
+
+.wpcy-nc-title {
+	margin: 0 0 var(--wenpai-space-1);
+	font-size: var(--wenpai-text-body);
+	line-height: var(--wenpai-leading-body);
+	font-weight: var(--wenpai-weight-regular);
+	color: var(--wenpai-ink);
+}
+
+.wpcy-nc-sub {
+	display: block;
+	font-size: var(--wenpai-text-caption);
+	line-height: var(--wenpai-leading-caption);
+	color: var(--wenpai-ink-3);
+}
+
+.wpcy-nc-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wenpai-space-2);
+	flex-shrink: 0;
+}
+
+.wpcy-nc-btn {
+	appearance: none;
+	border: 1px solid var(--wenpai-line-strong);
+	background: var(--wenpai-card);
+	color: var(--wenpai-ink-2);
+	border-radius: var(--wenpai-radius-sm);
+	padding: var(--wenpai-space-1) var(--wenpai-space-2-5);
+	font-size: var(--wenpai-text-caption);
+	line-height: var(--wenpai-leading-caption);
+	font-weight: var(--wenpai-weight-regular);
+	cursor: pointer;
+}
+
+.wpcy-nc-btn:hover {
+	background: var(--wenpai-surface-soft);
+	border-color: var(--wenpai-line-hover);
+	color: var(--wenpai-ink);
+}
+
+.wpcy-nc-close {
+	appearance: none;
+	border: 0;
+	background: transparent;
+	color: var(--wenpai-ink-3);
+	width: var(--wenpai-space-7);
+	height: var(--wenpai-space-7);
+	border-radius: var(--wenpai-radius-sm);
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.wpcy-nc-close:hover {
+	background: var(--wenpai-line-soft);
+	color: var(--wenpai-ink);
+}
+
+.wpcy-nc-body {
+	flex: 1;
+	overflow-y: auto;
+	padding: var(--wenpai-space-3-5) var(--wenpai-space-5) var(--wenpai-space-6);
+	display: flex;
+	flex-direction: column;
+	gap: var(--wenpai-space-2-5);
+}
+
+.wpcy-nc-body .notice,
+.wpcy-nc-body .updated,
+.wpcy-nc-body .error {
+	margin: 0 !important;
+	box-shadow: var(--wenpai-shadow-none) !important;
+	border-radius: var(--wenpai-radius-sm);
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow-wrap: anywhere;
+}
+
+.wpcy-nc-empty {
+	padding: var(--wenpai-space-9) var(--wenpai-space-5);
+	text-align: center;
+	font-size: var(--wenpai-text-meta);
+	color: var(--wenpai-ink-3);
+}

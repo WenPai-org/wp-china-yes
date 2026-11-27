@@ -1,7 +1,7 @@
 <?php
 /**
- * Element hide, notice control and announcements: verification never throws,
- * failures never re-store the cache, and the cache name is bound to the trusted keys.
+ * Signed announcements feed: verification never throws, failures never re-store
+ * the cache, and the cache name is bound to the trusted keys.
  *
  * @package WenPai\ChinaYes
  * @since   4.0.0
@@ -13,8 +13,6 @@ namespace WenPai\ChinaYes\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 use WenPai\ChinaYes\Admin\Announcements\AnnouncementsModule;
-use WenPai\ChinaYes\Admin\ElementHide\ElementHideModule;
-use WenPai\ChinaYes\Admin\NoticeControl\NoticeControlModule;
 use WenPai\ChinaYes\Apps\ManifestVerifier;
 use WenPai\ChinaYes\Config\Repository;
 use WenPai\ChinaYes\Rest\RestError;
@@ -24,7 +22,7 @@ use WenPai\ChinaYes\Tests\Unit\Support\TestKeys;
 require_once __DIR__ . '/wp-admin-stubs.php';
 
 /**
- * Same contract for the three signed admin feeds.
+ * Hardening contract for signed admin feeds.
  */
 class FeedHardeningTest extends TestCase {
 
@@ -41,15 +39,13 @@ class FeedHardeningTest extends TestCase {
 	}
 
 	/**
-	 * The three feeds: fixture directory and transient base name.
+	 * Signed feeds: fixture directory and transient base name.
 	 *
 	 * @return array<string, array{0: string, 1: string}>
 	 */
 	public function feeds(): array {
 		return array(
-			'element hide'   => array( 'element-hide', 'wpcy_element_hide_rules' ),
-			'notice control' => array( 'notice-rules', 'wpcy_notice_rules' ),
-			'announcements'  => array( 'announcements', 'wpcy_announcements' ),
+			'announcements' => array( 'announcements', 'wpcy_announcements' ),
 		);
 	}
 
@@ -166,21 +162,15 @@ class FeedHardeningTest extends TestCase {
 	 * @param array<int, string>|null $bodies   Bodies, or null for the HTTP path.
 	 * @param string                  $source   Source.
 	 * @param ManifestVerifier|null   $verifier Verifier; null trusts the throwaway key.
-	 * @return ElementHideModule|NoticeControlModule|AnnouncementsModule
 	 */
-	private function module( string $fixture, ?array $bodies, string $source = 'mock://feed', ?ManifestVerifier $verifier = null ) {
+	private function module( string $fixture, ?array $bodies, string $source = 'mock://feed', ?ManifestVerifier $verifier = null ): AnnouncementsModule {
+		unset( $fixture );
 		$verifier = $verifier instanceof ManifestVerifier ? $verifier : SignedPayload::verifier();
 		$fetcher  = null;
 		if ( null !== $bodies ) {
 			$fetcher = static function () use ( &$bodies ) {
 				return (string) array_shift( $bodies );
 			};
-		}
-		if ( 'element-hide' === $fixture ) {
-			return new ElementHideModule( new Repository(), $source, $fetcher, null, $verifier );
-		}
-		if ( 'notice-rules' === $fixture ) {
-			return new NoticeControlModule( new Repository(), $source, $fetcher, null, $verifier );
 		}
 		return new AnnouncementsModule( new Repository(), $source, $fetcher, $verifier );
 	}
